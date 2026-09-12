@@ -27,7 +27,7 @@ export const PaginaLegal: React.FC<{ pestanaInicial?: LegalDocType }> = ({ pesta
       <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur">
         <div className="max-w-4xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-400">Talent 360</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-navy-300">Talent 360</p>
             <h1 className="text-lg font-black text-white">Aviso de Privacidad y Términos</h1>
           </div>
           {/* A /inicio y NO a /app: en el dominio, la ruta /app la enruta Caddy al websocket
@@ -51,7 +51,7 @@ export const PaginaLegal: React.FC<{ pestanaInicial?: LegalDocType }> = ({ pesta
               onClick={() => setPestana(id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 pestana === id
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                  ? 'bg-accent text-white shadow-lg shadow-accent/20'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-slate-800'
               }`}
             >
@@ -68,12 +68,12 @@ export const PaginaLegal: React.FC<{ pestanaInicial?: LegalDocType }> = ({ pesta
 
       <footer className="border-t border-slate-800 mt-8">
         <div className="max-w-4xl mx-auto px-5 py-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[10px] text-slate-500 font-medium">
+          <p className="text-[10px] text-text-3 font-medium">
             Talent360 © 2026 — Plataforma Cumplimiento LFPDPPP &amp; LFT
           </p>
           <a
             href="mailto:privacidad@talent360.com.mx?subject=Solicitud%20ARCO%20-%20Talent360"
-            className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300"
+            className="text-[11px] font-bold text-navy-300 hover:text-navy-100"
           >
             privacidad@talent360.com.mx
           </a>

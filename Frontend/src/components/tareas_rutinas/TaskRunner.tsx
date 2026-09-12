@@ -1,6 +1,6 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { 
-    Coffee, Play, Check, Clock, Lock, Brain, Camera, Bot, 
+import {
+    Coffee, Play, Check, Clock, Lock, Brain, Camera, Bot,
     Pause, Trash2, Plus, X, AlertCircle, ChevronRight, User, HelpCircle,
     Search, RefreshCw, CheckCircle, XCircle, ShieldAlert, Sparkles, ClipboardList,
     Briefcase, FileCheck, ShieldCheck
@@ -8,7 +8,7 @@ import {
 import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, TaskAssignment } from '../../store/useTaskStore';
 import { useAppStore } from '../../store/useAppStore';
-import { ColorMap } from '../SaaSAccountSettings';
+import { ColorMap } from '../../design/theme';
 import axiosInstance from '../../lib/axios';
 import TaskEvidenceCapture from './TaskEvidenceCapture';
 import SupervisorPinValidation from './SupervisorPinValidation';
@@ -41,8 +41,8 @@ export function FichaTarea({
     const worker = globalUsers?.find((u: any) => u.id === assignment.userId);
 
     // Calcular el tiempo transcurrido o estimado
-    const elapsed = assignment.status === 'pending' ? 0 : 
-        ((assignment.accumulatedMins || 0) + 
+    const elapsed = assignment.status === 'pending' ? 0 :
+        ((assignment.accumulatedMins || 0) +
         (assignment.status === 'in_progress' && assignment.startedAtMins ? (globalSimTime - assignment.startedAtMins) : 0));
 
     const isOvertime = assignment.status !== 'pending' && elapsed > task.estimatedMins;
@@ -51,40 +51,40 @@ export function FichaTarea({
     // Determinar etiqueta, color de estado y fondo de tarjeta
     let badgeText = '';
     let badgeClass = '';
-    let cardClass = 'bg-white border-slate-200/70 hover:translate-x-0.5';
+    let cardClass = 'bg-white border-border/70 hover:translate-x-0.5';
 
     if (isOvertime && assignment.status !== 'completed' && assignment.status !== 'omitted') {
         badgeText = 'Tiempo Excedido';
-        badgeClass = 'bg-rose-100 text-rose-800 border-rose-200';
-        cardClass = 'bg-rose-50/50 border-rose-300 hover:-translate-y-0.5 shadow-rose-100/50';
+        badgeClass = 'bg-danger-bg text-danger-text border-danger-text/20';
+        cardClass = 'bg-danger-bg/50 border-danger-text/20 hover:-translate-y-0.5 shadow-danger-text/50';
     } else if (assignment.status === 'awaiting_validation') {
         badgeText = 'Por Validar';
-        badgeClass = 'bg-amber-50 text-amber-700 border-amber-200/50';
-        cardClass = 'bg-amber-50/10 border-amber-200 hover:-translate-y-0.5 shadow-amber-50/50';
+        badgeClass = 'bg-warning-bg text-warning-text border-warning-text/50';
+        cardClass = 'bg-warning-bg/10 border-warning-text/20 hover:-translate-y-0.5 shadow-warning-text/50';
     } else if (isFromPool) {
         badgeText = 'Bolsa de Trabajo';
-        badgeClass = 'bg-sky-50 text-sky-700 border-sky-200/50';
-        cardClass = 'bg-sky-50/10 border-sky-200/70 hover:-translate-y-0.5';
+        badgeClass = 'bg-navy-50 text-accent border-border/50';
+        cardClass = 'bg-navy-50/10 border-border/70 hover:-translate-y-0.5';
     } else if (assignment.status === 'in_progress') {
         badgeText = 'En Curso';
-        badgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200/55';
-        cardClass = 'bg-emerald-50/10 border-emerald-200/80 hover:-translate-y-0.5';
+        badgeClass = 'bg-success-bg text-success-text border-success-text/55';
+        cardClass = 'bg-success-bg/10 border-success-text/80 hover:-translate-y-0.5';
     } else if (assignment.status === 'paused') {
         badgeText = 'Pausada';
-        badgeClass = 'bg-slate-100 text-slate-600 border-slate-200';
-        cardClass = 'bg-slate-50/40 border-slate-200 hover:-translate-y-0.5';
+        badgeClass = 'bg-page text-text-2 border-border';
+        cardClass = 'bg-page/40 border-border hover:-translate-y-0.5';
     } else if (assignment.status === 'pending') {
         badgeText = 'Pendiente';
-        badgeClass = 'bg-indigo-50 text-indigo-700 border-indigo-200/50';
-        cardClass = 'bg-white border-slate-200/70 hover:-translate-y-0.5';
+        badgeClass = 'bg-navy-50 text-accent border-border/50';
+        cardClass = 'bg-white border-border/70 hover:-translate-y-0.5';
     } else if (assignment.status === 'completed') {
         badgeText = 'Completada';
-        badgeClass = 'bg-teal-50 text-teal-800 border-teal-200';
-        cardClass = 'bg-teal-50/5 border-slate-200 opacity-80';
+        badgeClass = 'bg-navy-50 text-navy-800 border-border';
+        cardClass = 'bg-navy-50/5 border-border opacity-80';
     } else if (assignment.status === 'omitted') {
         badgeText = 'Omitida';
-        badgeClass = 'bg-rose-50 text-rose-600 border-rose-100/50';
-        cardClass = 'bg-rose-50/5 border-slate-200 opacity-60';
+        badgeClass = 'bg-danger-bg text-danger-text border-danger-text/50';
+        cardClass = 'bg-danger-bg/5 border-border opacity-60';
     }
 
     // Calcular porcentaje de progreso
@@ -120,7 +120,7 @@ export function FichaTarea({
 
     // Nombre del colaborador a mostrar
     const roleName = getRoleName(Number(task.targetId));
-    const collaboratorName = isFromPool 
+    const collaboratorName = isFromPool
         ? (roleName ? `Bolsa: ${roleName}` : 'Bolsa Libre')
         : (worker?.name || `Colaborador #${assignment.userId}`);
 
@@ -128,16 +128,16 @@ export function FichaTarea({
     const showPlayPause = !isFromPool && assignment.userId === currentUser.id && !['completed', 'omitted', 'awaiting_validation'].includes(assignment.status);
 
     return (
-        <div 
+        <div
             onClick={onSelect}
-            className={`border rounded-2xl p-3.5 shadow-xs hover:shadow-sm transition-all duration-300 cursor-pointer active:scale-[0.99] text-left flex flex-col gap-2 relative overflow-hidden bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/50 border-slate-200/80 dark:border-slate-800/80 ${cardClass}`}
+            className={`border rounded-2xl p-3.5 shadow-xs hover:shadow-sm transition-all duration-300 cursor-pointer active:scale-[0.99] text-left flex flex-col gap-2 relative overflow-hidden bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/50 border-border/80 dark:border-slate-800/80 ${cardClass}`}
         >
             {/* Indicador lateral de color para diferenciar el tipo de tarea (category) */}
             <div className={`absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${
-                task.category === 'administrativo' ? 'from-emerald-400 to-emerald-600' :
-                task.category === 'operativo' ? 'from-blue-400 to-blue-600' :
-                task.category === 'mantenimiento' ? 'from-amber-400 to-amber-600' :
-                task.category === 'supervision' ? 'from-violet-400 to-violet-600' : 'from-indigo-400 to-violet-500'
+                task.category === 'administrativo' ? 'from-success-icon to-success-text' :
+                task.category === 'operativo' ? 'from-navy-400 to-accent' :
+                task.category === 'mantenimiento' ? 'from-warning-icon to-warning-text' :
+                task.category === 'supervision' ? 'from-navy-400 to-accent' : 'from-navy-400 to-accent'
             }`}></div>
 
             <div className="pl-2.5 flex flex-col justify-between flex-grow gap-2">
@@ -146,33 +146,33 @@ export function FichaTarea({
                     <div className="flex items-center gap-1.5 flex-wrap mb-1">
                         {/* Etiqueta de Prioridad / Categoría de Tarea */}
                         {task.priority === 'bloqueante' ? (
-                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200 shrink-0">
+                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-danger-bg text-danger-text border border-danger-text/20 shrink-0">
                                 ⚠️ Obligatoria
                             </span>
                         ) : task.category === 'operativo' ? (
-                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 shrink-0">
+                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-border shrink-0">
                                 ⚙️ Operativa
                             </span>
                         ) : task.category === 'administrativo' ? (
-                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 shrink-0">
+                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-success-bg text-success-text border border-success-text/20 shrink-0">
                                 📋 Administrativa
                             </span>
                         ) : task.category === 'mantenimiento' ? (
-                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 shrink-0">
+                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-warning-bg text-warning-text border border-warning-text/20 shrink-0">
                                 🔧 Mantenimiento
                             </span>
                         ) : task.category === 'supervision' ? (
-                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200 shrink-0">
+                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-border shrink-0">
                                 🔍 Supervisión
                             </span>
                         ) : (
-                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                            <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-page text-text-2 border border-border shrink-0">
                                 📌 Tarea
                             </span>
                         )}
 
                         {isNext && (
-                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 shrink-0">
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-danger-bg text-danger-text shrink-0">
                                 Siguiente
                             </span>
                         )}
@@ -180,7 +180,7 @@ export function FichaTarea({
                             <span className="text-[9px] font-bold text-slate-400 shrink-0">⏰ {(task as any).scheduledTime}</span>
                         )}
                     </div>
-                    <h4 className="font-black text-xs text-slate-800 dark:text-slate-100 leading-snug truncate">
+                    <h4 className="font-black text-xs text-text-1 dark:text-slate-100 leading-snug truncate">
                         {task.title}
                     </h4>
                     {task.description && (
@@ -191,22 +191,22 @@ export function FichaTarea({
                 </div>
 
                 {/* Progreso, Tiempo y Botón Play/Pause */}
-                <div className="flex items-center justify-between gap-3 mt-1 text-[9.5px] text-slate-500 font-bold border-t border-slate-100/70 dark:border-slate-800/50 pt-2 shrink-0">
+                <div className="flex items-center justify-between gap-3 mt-1 text-[9.5px] text-text-3 font-bold border-t border-border/70 dark:border-slate-800/50 pt-2 shrink-0">
                     <div className="flex items-center gap-2 flex-grow min-w-0">
                         {/* Barra de progreso slim */}
-                        <div className="w-16 bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden relative border border-slate-200/40 dark:border-slate-700/40 shrink-0">
-                            <div 
+                        <div className="w-16 bg-page dark:bg-slate-800 h-2 rounded-full overflow-hidden relative border border-border/40 dark:border-slate-700/40 shrink-0">
+                            <div
                                 className={`h-full absolute left-0 top-0 transition-all duration-300 ${
-                                    assignment.status === 'completed' ? 'bg-teal-500' :
+                                    assignment.status === 'completed' ? 'bg-accent' :
                                     assignment.status === 'omitted' ? 'bg-slate-400' :
-                                    isOvertime ? 'bg-rose-500/80' : 
-                                    assignment.status === 'in_progress' ? 'bg-gradient-to-r from-emerald-400 to-teal-500 animate-pulse' : 'bg-indigo-500/80'
+                                    isOvertime ? 'bg-danger-icon/80' :
+                                    assignment.status === 'in_progress' ? 'bg-gradient-to-r from-success-icon to-accent animate-pulse' : 'bg-accent/80'
                                 }`}
                                 style={{ width: `${percent}%` }}
                             ></div>
                         </div>
                         {/* Tiempo de duración */}
-                        <span className="text-[8.5px] font-black text-slate-600 dark:text-slate-300 truncate">
+                        <span className="text-[8.5px] font-black text-text-2 dark:text-slate-300 truncate">
                             {timeDisplay}
                         </span>
                     </div>
@@ -217,8 +217,8 @@ export function FichaTarea({
                             onClick={onPlayPause}
                             className={`w-5.5 h-5.5 rounded-full flex items-center justify-center border-none cursor-pointer transition-all hover:scale-110 active:scale-95 shadow-sm text-white shrink-0 ${
                                 assignment.status === 'in_progress'
-                                    ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/10'
-                                    : 'bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/10'
+                                    ? 'bg-warning-icon hover:bg-warning-text shadow-warning-text/10'
+                                    : 'bg-accent hover:bg-accent shadow-accent/10'
                             }`}
                             title={assignment.status === 'in_progress' ? 'Pausar Tarea' : 'Iniciar Tarea'}
                         >
@@ -256,7 +256,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
         carryOverAssignment
     } = useTaskStore();
     const { globalSimTime, addMatrixEvent, globalRoles, globalUsers, systemSettings } = useAppStore(); // Filtros y pestañas locales
-    
+
     const getModuleColor = (modId: string) => {
         if (modId === 'operativo') {
             return ColorMap.blue;
@@ -288,7 +288,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
     // §41: id de la asignación para la que se está pidiendo el PIN del supervisor.
     const [pinValidationFor, setPinValidationFor] = useState<string | null>(null);
     const [evidenceSubmitting, setEvidenceSubmitting] = useState(false);
-    
+
     // Modal de creación de tareas
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newTitle, setNewTitle] = useState('');
@@ -451,7 +451,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
         if (!assignedFromRoutineId) return null;
         const r = routines.find(rt => rt.id === assignedFromRoutineId);
         if (!r) return null;
-        
+
         const titleLower = r.title.toLowerCase();
         if (titleLower.includes('apertura')) {
             return {
@@ -516,7 +516,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
 
     // 1. Tareas de firma pendiente (para validar): a propósito SIN filtro de fecha — el trabajo
     // que nadie validó no puede desaparecer al día siguiente.
-    const awaitingValidationFiltered = filterBySearch(assignments.filter(a => 
+    const awaitingValidationFiltered = filterBySearch(assignments.filter(a =>
         a.status === 'awaiting_validation' && (isSupervisor ? true : a.userId === currentUser.id)
     ));
 
@@ -524,25 +524,25 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
     const puestoBolsaAssignments = assignments.filter(a => {
         const t = tasks.find(tsk => tsk.id === a.taskId);
         if (!t) return false;
-        
+
         const isTargetedToMyRole = isSupervisor || t.targetId === null || t.targetId === undefined || Number(t.targetId) === 0 || Number(t.targetId) === Number(currentUser.job_role_id);
-        
+
         // Pendiente en la bolsa (nadie la tiene asignada). 'spilled' cuenta: es lo que el
         // spill-over pone a las tareas BLOQUEANTES de un mando que cierra su turno, "para que las
         // rescate el suplente" — pero ninguna pantalla las pintaba, así que ese rescate no existía
         // y el trabajo desaparecía sin más (2026-08-22: 6 de las 7 tareas de cierre, invisibles).
         const isFreeInPool = a.userId === null && ['pending', 'spilled'].includes(a.status) && isTargetedToMyRole && esDeHoy(a);
-        
+
         // Pausada por otro colaborador que tiene exactamente mi puesto/rol
         const isPausedByPeer = a.userId !== null && a.userId !== currentUser.id && a.status === 'paused' && t.targetType === 'role' && Number(t.targetId) === Number(currentUser.job_role_id);
-        
+
         return isFreeInPool || isPausedByPeer;
     });
     const puestoAssignmentsFiltered = filterBySearch(puestoBolsaAssignments);
 
     // 3. Mis Tareas Activas (rutina + urgentes):
-    const activeAssignmentsFiltered = filterBySearch(assignments.filter(a => 
-        a.userId === currentUser.id && 
+    const activeAssignmentsFiltered = filterBySearch(assignments.filter(a =>
+        a.userId === currentUser.id &&
         ['pending', 'in_progress', 'paused'].includes(a.status) &&
         esDeHoy(a)
     ));
@@ -931,36 +931,36 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans px-1 pb-4 pt-1 select-none relative overflow-hidden w-full">
+        <div className="flex flex-col h-full bg-[#f8f9fe] text-text-1 font-sans px-1 pb-4 pt-1 select-none relative overflow-hidden w-full">
             {/* Header Anclado de Monedero Digital & Menú de Pestañas (Sticky Top en Móvil) */}
-            <div className="sticky top-0 z-20 bg-[#f8f9fe] dark:bg-slate-950 pt-1 pb-2 -mx-1 px-1 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0 select-none mb-3">
+            <div className="sticky top-0 z-20 bg-[#f8f9fe] dark:bg-slate-950 pt-1 pb-2 -mx-1 px-1 border-b border-border/50 dark:border-slate-800/50 shrink-0 select-none mb-3">
                 {/* Header de Monedero Digital & Gamificación Rediseñado */}
-                <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white rounded-3xl p-3.5 mb-2.5 shadow-lg border border-amber-400/30 flex items-center justify-between shrink-0 relative overflow-hidden">
+                <div className="bg-gradient-to-r from-warning-icon via-warning-text to-warning-text text-white rounded-3xl p-3.5 mb-2.5 shadow-lg border border-warning-text/30 flex items-center justify-between shrink-0 relative overflow-hidden">
                     {/* Glow radial decorativo */}
                     <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
-                    
+
                     <div className="flex items-center gap-3 relative z-10">
                         <div className="w-11 h-11 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl shadow-inner border border-white/25 shrink-0">
                             🪙
                         </div>
                         <div className="text-left leading-tight">
-                            <span className="text-[9.5px] font-black uppercase tracking-widest text-amber-100/90 block">Monedero Digital</span>
+                            <span className="text-[9.5px] font-black uppercase tracking-widest text-warning-text/90 block">Monedero Digital</span>
                             <div className="flex items-baseline gap-1 mt-0.5">
                                 <span className="text-xl font-black tracking-tight text-white drop-shadow-xs">
                                     ${walletData.balance_coins.toFixed(2)}
                                 </span>
-                                <span className="text-[11px] font-extrabold text-amber-200 uppercase tracking-wide">Coins</span>
+                                <span className="text-[11px] font-extrabold text-warning-text uppercase tracking-wide">Coins</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="flex flex-col items-end gap-1 relative z-10 shrink-0">
-                        <div className="bg-amber-950/30 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 flex items-center gap-1.5 shadow-inner">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-amber-200">NIVEL</span>
+                        <div className="bg-warning-text/30 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 flex items-center gap-1.5 shadow-inner">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-warning-text">NIVEL</span>
                             <span className="text-xs font-black text-white bg-white/20 px-1.5 py-0.2 rounded-md">{walletData.level}</span>
                         </div>
                         <div className="flex items-center gap-1 text-white text-[10.5px] font-extrabold pr-0.5">
-                            <span className="text-amber-200 text-xs">🌟</span>
+                            <span className="text-warning-text text-xs">🌟</span>
                             <span>{walletData.xp_points} XP</span>
                         </div>
                     </div>
@@ -975,16 +975,16 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                         className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl border transition-all cursor-pointer relative ${
                             filterTab === 'todos'
                                 ? 'text-white shadow-md scale-[1.01]'
-                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800'
+                                : 'bg-white text-text-3 border-border/85 hover:bg-page dark:bg-slate-900 dark:border-slate-800'
                         }`}
                         style={filterTab === 'todos' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
                     >
                         <ClipboardList size={17} className={filterTab === 'todos' ? 'text-white' : 'text-slate-400'} />
                         <span className="text-[9px] font-black uppercase mt-1">Todas</span>
                         <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
-                            filterTab === 'todos' 
-                                ? 'bg-white border-white' 
-                                : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                            filterTab === 'todos'
+                                ? 'bg-white border-white'
+                                : 'bg-page text-text-2 border-border dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
                         }`}
                             style={filterTab === 'todos' ? { color: activeColor.hex } : {}}
                         >
@@ -999,7 +999,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                         className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl border transition-all cursor-pointer relative ${
                             filterTab === 'mis_tareas'
                                 ? 'text-white shadow-md scale-[1.01]'
-                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800'
+                                : 'bg-white text-text-3 border-border/85 hover:bg-page dark:bg-slate-900 dark:border-slate-800'
                         }`}
                         style={filterTab === 'mis_tareas' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
                     >
@@ -1008,7 +1008,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                         <span className={`absolute -top-1 -right-1 text-[7.5px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
                             filterTab === 'mis_tareas'
                                 ? 'bg-white border-white animate-pulse'
-                                : 'bg-emerald-500 text-white border-emerald-400'
+                                : 'bg-success-icon text-white border-success-text'
                         }`}
                             style={filterTab === 'mis_tareas' ? { color: activeColor.hex } : {}}
                         >
@@ -1019,16 +1019,16 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
             </div>
 
             {/* Listado principal */}
-            <div 
+            <div
                 className="flex-1 overflow-y-auto pb-24 scrollbar-none"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
 
                 {displayedAssignments.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
+                    <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-3xl border border-border/60 p-6 shadow-sm">
                         <Sparkles size={36} className="text-[#2dce89] mb-2 animate-pulse" />
-                        <p className="text-sm font-black text-slate-700">¡Tablero limpio!</p>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-sm font-black text-text-2">¡Tablero limpio!</p>
+                        <p className="text-xs text-text-3 mt-1">
                             No se encontraron tareas en esta sección por ahora.
                         </p>
                     </div>
@@ -1101,16 +1101,16 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
 
                 return (
                     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fade-in text-left">
-                        <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 w-full max-w-md">
-                            <h3 className="font-black text-slate-800 text-sm mb-1 flex items-center gap-1.5">
+                        <div className="bg-white rounded-3xl p-5 shadow-2xl border border-border w-full max-w-md">
+                            <h3 className="font-black text-text-1 text-sm mb-1 flex items-center gap-1.5">
                                 🎓 Antes de empezar: {t.title}
                             </h3>
-                            <p className="text-xs text-slate-500 mb-3">
+                            <p className="text-xs text-text-3 mb-3">
                                 {academyGateDismissable
                                     ? 'Ya la completaste antes — puedes verla de nuevo o continuar directo.'
                                     : 'Es tu primera vez con esta tarea. Míralo completo antes de empezar.'}
                             </p>
-                            <div className="rounded-2xl overflow-hidden bg-slate-100 aspect-video mb-4">
+                            <div className="rounded-2xl overflow-hidden bg-page aspect-video mb-4">
                                 <iframe
                                     src={embedUrl}
                                     className="w-full h-full border-0"
@@ -1127,7 +1127,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                             setPendingStart(null);
                                             if (p) doStartTaskCooperative(p.assignmentId, p.isFromPool);
                                         }}
-                                        className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl border-none cursor-pointer"
+                                        className="flex-1 py-3 bg-page hover:bg-slate-200 text-text-2 font-black text-xs rounded-xl border-none cursor-pointer"
                                     >
                                         Saltar video
                                     </button>
@@ -1140,7 +1140,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                         setPendingStart(null);
                                         if (p) doStartTaskCooperative(p.assignmentId, p.isFromPool);
                                     }}
-                                    className="flex-1 py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl border-none cursor-pointer"
+                                    className="flex-1 py-3 bg-accent hover:bg-accent-hover text-white font-black text-xs rounded-xl border-none cursor-pointer"
                                 >
                                     Comenzar tarea
                                 </button>
@@ -1153,24 +1153,24 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
             {/* Modal de Historial */}
             {showHistoryModal && (
                 <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in text-left">
-                    <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200/80 w-full max-w-md max-h-[85vh] flex flex-col">
-                        <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pb-2 border-b border-slate-100 z-10 shrink-0">
-                            <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                    <div className="bg-white rounded-3xl p-6 shadow-xl border border-border/80 w-full max-w-md max-h-[85vh] flex flex-col">
+                        <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pb-2 border-b border-border z-10 shrink-0">
+                            <h3 className="text-sm font-black text-text-1 flex items-center gap-1.5">
                                 📜 Historial de Tareas de Hoy
                             </h3>
-                            <button 
+                            <button
                                 onClick={() => setShowHistoryModal(false)}
-                                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center border-none cursor-pointer"
+                                className="w-7 h-7 rounded-full bg-page hover:bg-slate-200 text-slate-400 hover:text-text-2 flex items-center justify-center border-none cursor-pointer"
                             >
                                 <X size={15} />
                             </button>
                         </div>
-                        
+
                         <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
                             {historyAssignmentsFiltered.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                                <div className="flex flex-col items-center justify-center py-12 text-center bg-page rounded-2xl p-6 border border-border">
                                     <AlertCircle size={32} className="text-slate-300 mb-2" />
-                                    <p className="text-xs font-black text-slate-700">Sin historial registrado</p>
+                                    <p className="text-xs font-black text-text-2">Sin historial registrado</p>
                                     <p className="text-[11px] text-slate-400 mt-1">
                                         No has completado ni omitido tareas durante tu turno actual.
                                     </p>
@@ -1182,19 +1182,19 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                         if (!t) return null;
 
                                         return (
-                                            <div 
+                                            <div
                                                 key={a.id}
                                                 onClick={() => {
                                                     handleSelectAssignment(a.id);
                                                     setShowHistoryModal(false);
                                                 }}
-                                                className="bg-slate-50/40 border border-slate-200/60 rounded-xl p-3 hover:bg-slate-50 transition-colors cursor-pointer"
+                                                className="bg-page/40 border border-border/60 rounded-xl p-3 hover:bg-page transition-colors cursor-pointer"
                                             >
                                                 <div className="flex justify-between items-start gap-2">
                                                     <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md border ${
-                                                        a.status === 'completed' ? 'bg-teal-50 text-teal-700 border-teal-200/50' :
-                                                        a.status === 'awaiting_validation' ? 'bg-amber-50 text-amber-700 border-amber-200/50' :
-                                                        'bg-rose-50 text-rose-700 border-rose-200/50'
+                                                        a.status === 'completed' ? 'bg-navy-50 text-accent border-border/50' :
+                                                        a.status === 'awaiting_validation' ? 'bg-warning-bg text-warning-text border-warning-text/50' :
+                                                        'bg-danger-bg text-danger-text border-danger-text/50'
                                                     }`}>
                                                     <span>
                                                         {a.status === 'completed' ? 'Completada' :
@@ -1206,7 +1206,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                         {a.accumulatedMins || t.estimatedMins} min
                                                     </span>
                                                 </div>
-                                                <h4 className="font-extrabold text-xs text-slate-700 mt-1.5 line-clamp-1">
+                                                <h4 className="font-extrabold text-xs text-text-2 mt-1.5 line-clamp-1">
                                                     {t.title}
                                                 </h4>
                                             </div>
@@ -1222,21 +1222,21 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
             {/* Modal de Plan de Trabajo Diario (§40): armar el plan de hoy + reporte de cierre */}
             {showPlanModal && isSupervisor && (
                 <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in text-left">
-                    <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200/80 w-full max-w-lg max-h-[90vh] flex flex-col">
-                        <div className="flex justify-between items-center mb-3 sticky top-0 bg-white pb-2 border-b border-slate-100 z-10 shrink-0">
-                            <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                    <div className="bg-white rounded-3xl p-6 shadow-xl border border-border/80 w-full max-w-lg max-h-[90vh] flex flex-col">
+                        <div className="flex justify-between items-center mb-3 sticky top-0 bg-white pb-2 border-b border-border z-10 shrink-0">
+                            <h3 className="text-sm font-black text-text-1 flex items-center gap-1.5">
                                 🗓️ Plan de Trabajo Diario
                             </h3>
                             <button
                                 onClick={() => setShowPlanModal(false)}
-                                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center border-none cursor-pointer"
+                                className="w-7 h-7 rounded-full bg-page hover:bg-slate-200 text-slate-400 hover:text-text-2 flex items-center justify-center border-none cursor-pointer"
                             >
                                 <X size={15} />
                             </button>
                         </div>
 
                         {/* Sub-tabs: Armar Plan / Reporte de Cierre */}
-                        <div className="flex bg-slate-100 rounded-xl p-1 mb-4 shrink-0">
+                        <div className="flex bg-page rounded-xl p-1 mb-4 shrink-0">
                             <button
                                 type="button"
                                 onClick={() => setPlanModalTab('armar')}
@@ -1262,7 +1262,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                         <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
                             {planModalTab === 'armar' && (
                                 <div className="space-y-4">
-                                    <p className="text-[11px] text-slate-500 font-semibold leading-normal">
+                                    <p className="text-[11px] text-text-3 font-semibold leading-normal">
                                         Retoma los pendientes de ayer que quieras traer al plan de hoy, o agrega tareas nuevas. Al confirmar, cada pendiente marcado queda re-fechado a hoy.
                                     </p>
 
@@ -1271,7 +1271,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                             Pendientes de Ayer ({yesterdayLeftovers.length})
                                         </h4>
                                         {yesterdayLeftovers.length === 0 ? (
-                                            <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-[11px] text-slate-400 font-bold">
+                                            <div className="bg-page border border-dashed border-border rounded-xl p-4 text-center text-[11px] text-slate-400 font-bold">
                                                 No quedaron pendientes de ayer. 🎉
                                             </div>
                                         ) : (
@@ -1284,7 +1284,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                     return (
                                                         <label
                                                             key={a.id}
-                                                            className="flex items-start gap-2.5 bg-slate-50/40 border border-slate-200/60 rounded-xl p-3 cursor-pointer hover:bg-slate-50 transition-colors"
+                                                            className="flex items-start gap-2.5 bg-page/40 border border-border/60 rounded-xl p-3 cursor-pointer hover:bg-page transition-colors"
                                                         >
                                                             <input
                                                                 type="checkbox"
@@ -1293,7 +1293,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                                 className="mt-0.5 shrink-0"
                                                             />
                                                             <div className="min-w-0 flex-1">
-                                                                <h5 className="font-extrabold text-xs text-slate-700 truncate">{t.title}</h5>
+                                                                <h5 className="font-extrabold text-xs text-text-2 truncate">{t.title}</h5>
                                                                 <p className="text-[9px] text-slate-400 font-semibold">
                                                                     {u?.name || (a.userId === null ? 'Bolsa de Trabajo' : `Usuario #${a.userId}`)}
                                                                 </p>
@@ -1312,7 +1312,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                             setCreatingTaskOrigin('planned');
                                             setShowCreateModal(true);
                                         }}
-                                        className="w-full py-2.5 rounded-xl text-xs font-black border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 bg-transparent cursor-pointer"
+                                        className="w-full py-2.5 rounded-xl text-xs font-black border border-dashed border-slate-300 text-text-3 hover:bg-page bg-transparent cursor-pointer"
                                     >
                                         + Agregar Tarea Nueva para Hoy
                                     </button>
@@ -1343,48 +1343,48 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                             type="date"
                                             value={planReportDate}
                                             onChange={(e) => setPlanReportDate(e.target.value)}
-                                            className="p-1.5 border border-slate-200 rounded-lg text-xs font-semibold outline-none"
+                                            className="p-1.5 border border-border rounded-lg text-xs font-semibold outline-none"
                                         />
                                     </div>
 
                                     {/* Totales agregados */}
                                     <div className="grid grid-cols-4 gap-1.5">
-                                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-2 text-center">
-                                            <p className="text-sm font-black text-slate-700">{reportTotals.total}</p>
+                                        <div className="bg-page border border-border rounded-xl p-2 text-center">
+                                            <p className="text-sm font-black text-text-2">{reportTotals.total}</p>
                                             <p className="text-[8px] font-bold text-slate-400 uppercase">Total</p>
                                         </div>
-                                        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-2 text-center">
-                                            <p className="text-sm font-black text-emerald-700">{reportTotals.completed}</p>
-                                            <p className="text-[8px] font-bold text-emerald-500 uppercase">Hechas</p>
+                                        <div className="bg-success-bg border border-success-text/20 rounded-xl p-2 text-center">
+                                            <p className="text-sm font-black text-success-text">{reportTotals.completed}</p>
+                                            <p className="text-[8px] font-bold text-success-text uppercase">Hechas</p>
                                         </div>
-                                        <div className="bg-rose-50 border border-rose-100 rounded-xl p-2 text-center">
-                                            <p className="text-sm font-black text-rose-700">{reportTotals.omitted}</p>
-                                            <p className="text-[8px] font-bold text-rose-500 uppercase">Omitidas</p>
+                                        <div className="bg-danger-bg border border-danger-text/20 rounded-xl p-2 text-center">
+                                            <p className="text-sm font-black text-danger-text">{reportTotals.omitted}</p>
+                                            <p className="text-[8px] font-bold text-danger-text uppercase">Omitidas</p>
                                         </div>
-                                        <div className="bg-amber-50 border border-amber-100 rounded-xl p-2 text-center">
-                                            <p className="text-sm font-black text-amber-700">{reportTotals.extra}</p>
-                                            <p className="text-[8px] font-bold text-amber-500 uppercase">Extras</p>
+                                        <div className="bg-warning-bg border border-warning-text/20 rounded-xl p-2 text-center">
+                                            <p className="text-sm font-black text-warning-text">{reportTotals.extra}</p>
+                                            <p className="text-[8px] font-bold text-warning-text uppercase">Extras</p>
                                         </div>
                                     </div>
 
                                     {reportByUser.length === 0 ? (
-                                        <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-[11px] text-slate-400 font-bold">
+                                        <div className="bg-page border border-dashed border-border rounded-xl p-4 text-center text-[11px] text-slate-400 font-bold">
                                             Sin asignaciones registradas ese día.
                                         </div>
                                     ) : (
                                         <div className="space-y-2">
                                             {reportByUser.map(r => (
-                                                <div key={r.userId} className="bg-white border border-slate-200 rounded-xl p-3">
+                                                <div key={r.userId} className="bg-white border border-border rounded-xl p-3">
                                                     <div className="flex items-center justify-between mb-1.5">
-                                                        <h5 className="font-extrabold text-xs text-slate-700">{r.name}</h5>
+                                                        <h5 className="font-extrabold text-xs text-text-2">{r.name}</h5>
                                                         <span className="text-[9px] font-bold text-slate-400">{r.total} tareas</span>
                                                     </div>
                                                     <div className="flex flex-wrap gap-1">
-                                                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700">✔ {r.completed} hechas</span>
-                                                        {r.omitted > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700">✕ {r.omitted} omitidas</span>}
-                                                        {r.stillOpen > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500">⏳ {r.stillOpen} abiertas</span>}
-                                                        {r.extra > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700">+{r.extra} extras</span>}
-                                                        {r.carriedOver > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700">↺ {r.carriedOver} de ayer</span>}
+                                                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-success-bg text-success-text">✔ {r.completed} hechas</span>
+                                                        {r.omitted > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-danger-bg text-danger-text">✕ {r.omitted} omitidas</span>}
+                                                        {r.stillOpen > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-page text-text-3">⏳ {r.stillOpen} abiertas</span>}
+                                                        {r.extra > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-warning-bg text-warning-text">+{r.extra} extras</span>}
+                                                        {r.carriedOver > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-navy-50 text-accent">↺ {r.carriedOver} de ayer</span>}
                                                     </div>
                                                 </div>
                                             ))}
@@ -1400,38 +1400,38 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
             {/* Modal de creación de tareas con ASISTENTE DE IA (Light Theme) */}
             {showCreateModal && (
                 <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in text-left">
-                    <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200/80 w-full max-w-md max-h-[92vh] overflow-y-auto custom-scrollbar">
-                        <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pb-2 border-b border-slate-50 z-10">
-                            <h3 className="text-lg font-black text-slate-800">Lanzar Tarea</h3>
-                            <button 
+                    <div className="bg-white rounded-3xl p-6 shadow-xl border border-border/80 w-full max-w-md max-h-[92vh] overflow-y-auto custom-scrollbar">
+                        <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pb-2 border-b border-border z-10">
+                            <h3 className="text-lg font-black text-text-1">Lanzar Tarea</h3>
+                            <button
                                 onClick={() => setShowCreateModal(false)}
-                                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center border-none cursor-pointer"
+                                className="w-7 h-7 rounded-full bg-page hover:bg-slate-200 text-slate-400 hover:text-text-2 flex items-center justify-center border-none cursor-pointer"
                             >
                                 <X size={15} />
                             </button>
                         </div>
 
                         {/* Asistente IA Rápido */}
-                        <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 mb-4 space-y-2">
-                            <p className="font-black text-xs text-blue-600 flex items-center gap-1">
+                        <div className="bg-navy-50/50 border border-border rounded-2xl p-4 mb-4 space-y-2">
+                            <p className="font-black text-xs text-accent flex items-center gap-1">
                                 <Sparkles size={13} /> Asistente de Creación Rápida con IA
                             </p>
-                            <p className="text-[10px] text-slate-500 font-semibold leading-normal">
+                            <p className="text-[10px] text-text-3 font-semibold leading-normal">
                                 Escribe lo que necesitas en lenguaje natural y la IA auto-completará los campos del formulario.
                             </p>
                             <div className="flex gap-2">
-                                <input 
+                                <input
                                     type="text"
                                     value={aiInput}
                                     onChange={e => setAiInput(e.target.value)}
                                     placeholder="Ej: Contar inventario de mermas por 20 minutos urgente para cajero"
-                                    className="flex-1 p-2 bg-white border border-slate-200 rounded-xl outline-none text-xs font-semibold focus:ring-1 focus:ring-blue-500"
+                                    className="flex-1 p-2 bg-white border border-border rounded-xl outline-none text-xs font-semibold focus:ring-1 focus-visible:ring-focus-ring"
                                 />
                                 <button
                                     type="button"
                                     onClick={handleAIParsing}
                                     disabled={!aiInput}
-                                    className="px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl border-none cursor-pointer flex items-center justify-center shrink-0 disabled:opacity-50"
+                                    className="px-3 bg-accent hover:bg-accent-hover text-white rounded-xl border-none cursor-pointer flex items-center justify-center shrink-0 disabled:opacity-50"
                                     title="Interpretar texto con IA"
                                 >
                                     <Sparkles size={13} />
@@ -1441,27 +1441,27 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
 
                         <form onSubmit={handleCreateTaskSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-black text-slate-500 uppercase mb-1.5">
+                                <label className="block text-xs font-black text-text-3 uppercase mb-1.5">
                                     Título de la Tarea
                                 </label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     value={newTitle}
                                     onChange={e => setNewTitle(e.target.value)}
                                     placeholder="Ej: Limpieza de cafetera industrial..."
                                     required
-                                    className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-xs font-semibold"
+                                    className="w-full p-2.5 border border-border bg-page rounded-xl focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent outline-none text-xs font-semibold"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-black text-slate-500 uppercase mb-1.5">
+                                <label className="block text-xs font-black text-text-3 uppercase mb-1.5">
                                     Puesto Responsable
                                 </label>
-                                <select 
+                                <select
                                     value={newTargetRole}
                                     onChange={e => setNewTargetRole(Number(e.target.value))}
-                                    className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-xs font-semibold"
+                                    className="w-full p-2.5 border border-border bg-page rounded-xl focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent outline-none text-xs font-semibold"
                                 >
                                     <option value={0}>Cualquiera (Bolsa de Trabajo General)</option>
                                     {globalRoles?.map((role: any) => (
@@ -1472,28 +1472,28 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-black text-slate-500 uppercase mb-1.5">
+                                    <label className="block text-xs font-black text-text-3 uppercase mb-1.5">
                                         Tiempo Est. (Minutos)
                                     </label>
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         min={5}
                                         max={240}
                                         value={newMins}
                                         onChange={e => setNewMins(Number(e.target.value))}
                                         required
-                                        className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-xs font-semibold"
+                                        className="w-full p-2.5 border border-border bg-page rounded-xl focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent outline-none text-xs font-semibold"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-black text-slate-500 uppercase mb-1.5">
+                                    <label className="block text-xs font-black text-text-3 uppercase mb-1.5">
                                         Prioridad
                                     </label>
-                                    <select 
+                                    <select
                                         value={newPriority}
                                         onChange={e => setNewPriority(e.target.value as any)}
-                                        className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-xs font-semibold"
+                                        className="w-full p-2.5 border border-border bg-page rounded-xl focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent outline-none text-xs font-semibold"
                                     >
                                         <option value="normal">Normal</option>
                                         <option value="bloqueante">Bloqueante (Obligatoria)</option>
@@ -1501,9 +1501,9 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                 </div>
                             </div>
 
-                            <button 
-                                type="submit" 
-                                className="w-full py-3 bg-indigo-600 hover:bg-indigo-800 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer mt-2"
+                            <button
+                                type="submit"
+                                className="w-full py-3 bg-accent hover:bg-navy-800 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer mt-2"
                             >
                                 Lanzar Tarea a Bolsa
                             </button>
@@ -1545,17 +1545,17 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
 
                 return (
                     <div className="fixed inset-0 bg-slate-900/35 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in text-left">
-                        <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200/80 w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar flex flex-col">
+                        <div className="bg-white rounded-3xl p-6 shadow-xl border border-border/80 w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar flex flex-col">
                             {/* Header */}
-                            <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
+                            <div className="flex justify-between items-start mb-4 border-b border-border pb-3">
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded border ${
-                                            a.status === 'awaiting_validation' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                            a.userId === null ? 'bg-sky-50 text-sky-700 border-sky-200' :
-                                            a.status === 'in_progress' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                            a.status === 'paused' ? 'bg-slate-100 text-slate-600 border-slate-200' :
-                                            'bg-indigo-50 text-indigo-800 border-indigo-200'
+                                            a.status === 'awaiting_validation' ? 'bg-warning-bg text-warning-text border-warning-text/20' :
+                                            a.userId === null ? 'bg-navy-50 text-accent border-border' :
+                                            a.status === 'in_progress' ? 'bg-success-bg text-success-text border-success-text/20' :
+                                            a.status === 'paused' ? 'bg-page text-text-2 border-border' :
+                                            'bg-navy-50 text-navy-800 border-border'
                                         }`}>
                                             {a.status === 'awaiting_validation' ? 'Por Validar' :
                                              a.userId === null ? 'Bolsa de Trabajo' :
@@ -1563,18 +1563,18 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                              a.status === 'paused' ? 'Pausada' : 'Pendiente'}
                                         </span>
                                         {t.priority === 'bloqueante' && (
-                                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100">
+                                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-danger-bg text-danger-text border border-danger-text/20">
                                                 ⚠️ Obligatoria
                                             </span>
                                         )}
                                     </div>
-                                    <h3 className="text-base font-black text-slate-800 mt-2 leading-snug">
+                                    <h3 className="text-base font-black text-text-1 mt-2 leading-snug">
                                         {t.title}
                                     </h3>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => handleSelectAssignment(null)}
-                                    className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center border-none cursor-pointer shrink-0"
+                                    className="w-7 h-7 rounded-full bg-page hover:bg-slate-200 text-slate-400 hover:text-text-2 flex items-center justify-center border-none cursor-pointer shrink-0"
                                 >
                                     <X size={15} />
                                 </button>
@@ -1583,7 +1583,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                             {/* Content */}
                             <div className="space-y-3.5 flex-1">
                                 {/* Metadata compacta en una sola línea, sin caja de rejilla */}
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 font-bold">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-text-3 font-bold">
                                     <span className="flex items-center gap-1">
                                         <User size={12} className="text-slate-400" />
                                         {isFromPool ? 'Bolsa de Trabajo' : (worker?.name || `Usuario #${a.userId}`)}
@@ -1598,7 +1598,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                 </div>
 
                                 {t.description && (
-                                    <p className="text-xs text-slate-600 font-semibold leading-relaxed">
+                                    <p className="text-xs text-text-2 font-semibold leading-relaxed">
                                         {t.description}
                                     </p>
                                 )}
@@ -1619,52 +1619,52 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
 
                                     return (
                                         <div className="space-y-2.5">
-                                            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                                            <div className="flex items-center justify-between text-[11px] font-bold text-text-3">
                                                 <span>Paso {Math.min(activeStepIndex + 1, steps.length)} de {steps.length}</span>
                                                 <span>{doneCount} completados</span>
                                             </div>
                                             <div className="flex gap-1">
                                                 {steps.map((s, idx) => (
                                                     <div key={s.step_number} className={`flex-1 h-1 rounded-full ${
-                                                        idx < activeStepIndex || completedSteps[`${s.step_number}_${s.title}`] ? 'bg-emerald-500' :
-                                                        idx === activeStepIndex ? 'bg-indigo-600' : 'bg-slate-200'
+                                                        idx < activeStepIndex || completedSteps[`${s.step_number}_${s.title}`] ? 'bg-success-icon' :
+                                                        idx === activeStepIndex ? 'bg-accent' : 'bg-slate-200'
                                                     }`} />
                                                 ))}
                                             </div>
 
                                             {currentStep ? (
-                                                <div className="border border-indigo-100 bg-indigo-50/40 rounded-2xl p-3.5 space-y-2.5">
+                                                <div className="border border-border bg-navy-50/40 rounded-2xl p-3.5 space-y-2.5">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black shrink-0">{currentStep.step_number}</span>
-                                                        <p className="text-xs font-extrabold text-indigo-900">{currentStep.title}</p>
+                                                        <span className="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center text-[10px] font-black shrink-0">{currentStep.step_number}</span>
+                                                        <p className="text-xs font-extrabold text-brand-dark">{currentStep.title}</p>
                                                     </div>
                                                     {currentStep.detailed_instruction && (
-                                                        <p className="text-[10.5px] text-slate-600 leading-relaxed font-medium">
+                                                        <p className="text-[10.5px] text-text-2 leading-relaxed font-medium">
                                                             {currentStep.detailed_instruction}
                                                         </p>
                                                     )}
 
                                                     {showAssistantHere && (
-                                                        <div className="bg-white rounded-xl border border-indigo-100 p-2.5 space-y-2">
-                                                            <p className="text-[10px] font-black text-indigo-800 flex items-center gap-1"><Bot size={12} className="text-[#8a2be2]" /> {t.assistantPrompt || 'Asistente de evidencia'}</p>
+                                                        <div className="bg-white rounded-xl border border-border p-2.5 space-y-2">
+                                                            <p className="text-[10px] font-black text-navy-800 flex items-center gap-1"><Bot size={12} className="text-accent" /> {t.assistantPrompt || 'Asistente de evidencia'}</p>
                                                             {t.assistantType === 'evidencia_foto' && (
                                                                 !photoDone ? (
-                                                                    <button type="button" onClick={() => setCapturingEvidenceFor(a.id)} className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-indigo-700 rounded-lg border border-indigo-100 text-[10px] font-black flex items-center justify-center gap-1.5 cursor-pointer">
+                                                                    <button type="button" onClick={() => setCapturingEvidenceFor(a.id)} className="w-full py-2 bg-page hover:bg-page text-accent rounded-lg border border-border text-[10px] font-black flex items-center justify-center gap-1.5 cursor-pointer">
                                                                         <Camera size={12} /> Capturar foto de evidencia
                                                                     </button>
                                                                 ) : (
-                                                                    <div className="flex items-center gap-1.5 text-emerald-700 text-[10.5px] font-bold">
-                                                                        <img src={localInput} alt="Evidencia" className="w-6 h-6 rounded object-cover border border-emerald-200" />
+                                                                    <div className="flex items-center gap-1.5 text-success-text text-[10.5px] font-bold">
+                                                                        <img src={localInput} alt="Evidencia" className="w-6 h-6 rounded object-cover border border-success-text/20" />
                                                                         <Check size={12} /> Evidencia lista
-                                                                        <button type="button" onClick={() => { setPhotoDone(false); setLocalInput(''); }} className="ml-auto text-[9px] font-black underline text-slate-500 hover:text-slate-700 border-none bg-transparent cursor-pointer">Cambiar</button>
+                                                                        <button type="button" onClick={() => { setPhotoDone(false); setLocalInput(''); }} className="ml-auto text-[9px] font-black underline text-text-3 hover:text-text-2 border-none bg-transparent cursor-pointer">Cambiar</button>
                                                                     </div>
                                                                 )
                                                             )}
                                                             {t.assistantType === 'captura_numero' && (
-                                                                <input type="number" value={localInput} onChange={e => setLocalInput(e.target.value)} placeholder="Cantidad..." className="w-full p-2 text-xs border border-slate-200 rounded-lg" />
+                                                                <input type="number" value={localInput} onChange={e => setLocalInput(e.target.value)} placeholder="Cantidad..." className="w-full p-2 text-xs border border-border rounded-lg" />
                                                             )}
                                                             {t.assistantType === 'texto' && (
-                                                                <input type="text" value={localInput} onChange={e => setLocalInput(e.target.value)} placeholder="Reporte breve..." className="w-full p-2 text-xs border border-slate-200 rounded-lg" />
+                                                                <input type="text" value={localInput} onChange={e => setLocalInput(e.target.value)} placeholder="Reporte breve..." className="w-full p-2 text-xs border border-border rounded-lg" />
                                                             )}
                                                         </div>
                                                     )}
@@ -1687,13 +1687,13 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                                 markStepDone(a.id, stepKey, activeStepIndex + 1);
                                                             }
                                                         }}
-                                                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-[10.5px] font-black cursor-pointer border-none"
+                                                        className="w-full py-2 bg-accent hover:bg-accent-hover disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-[10.5px] font-black cursor-pointer border-none"
                                                     >
                                                         {showAssistantHere ? (evidenceSubmitting ? 'Validando…' : 'Completar tarea') : 'Marcar paso listo'}
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center gap-1.5 text-emerald-700 text-[11px] font-bold p-2">
+                                                <div className="flex items-center gap-1.5 text-success-text text-[11px] font-bold p-2">
                                                     <Check size={13} /> Todos los pasos completados
                                                 </div>
                                             )}
@@ -1701,8 +1701,8 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                             {doneCount > 0 && (
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {steps.slice(0, doneCount).map(s => (
-                                                        <span key={s.step_number} className="text-[10px] font-bold text-slate-500 flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-full px-2 py-0.5">
-                                                            <Check size={10} className="text-emerald-600" /> {s.title}
+                                                        <span key={s.step_number} className="text-[10px] font-bold text-text-3 flex items-center gap-1 bg-page border border-border rounded-full px-2 py-0.5">
+                                                            <Check size={10} className="text-success-text" /> {s.title}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -1716,13 +1716,13 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                             <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Subtareas obligatorias</h5>
                                             <div className="space-y-1">
                                                 {t.subTasks.map(sub => (
-                                                    <label key={sub.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100/60 hover:bg-indigo-50/20 cursor-pointer transition-colors shadow-xs">
+                                                    <label key={sub.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-border/60 hover:bg-navy-50/20 cursor-pointer transition-colors shadow-xs">
                                                         <input
                                                             type="checkbox"
                                                             defaultChecked={sub.completed}
-                                                            className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                                                            className="w-3.5 h-3.5 text-accent rounded border-slate-300 focus-visible:ring-focus-ring"
                                                         />
-                                                        <span className="text-xs text-slate-700 font-semibold">{sub.text}</span>
+                                                        <span className="text-xs text-text-2 font-semibold">{sub.text}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -1732,7 +1732,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
 
                                 {/* Caso: Tarea esperando validación (Solo para Supervisor) */}
                                 {a.status === 'awaiting_validation' && (
-                                    <div className="space-y-3 pt-2 border-t border-slate-100">
+                                    <div className="space-y-3 pt-2 border-t border-border">
                                         {/* §41 (cableado 2026-07-26): validación con PIN del supervisor en ESTE
                                             dispositivo. Antes, una tarea en "Por Validar" solo se destrababa si el
                                             supervisor abría su propia sesión — cosa que en piso no ocurre, así que
@@ -1743,7 +1743,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                             <button
                                                 type="button"
                                                 onClick={() => setPinValidationFor(a.id)}
-                                                className="w-full py-2.5 rounded-xl border border-violet-200 bg-violet-50 text-violet-700 font-black text-xs flex items-center justify-center gap-2 hover:bg-violet-100 transition-colors"
+                                                className="w-full py-2.5 rounded-xl border border-border bg-navy-50 text-accent font-black text-xs flex items-center justify-center gap-2 hover:bg-accent-soft transition-colors"
                                             >
                                                 <ShieldCheck size={14} />
                                                 Validar con PIN del supervisor
@@ -1754,13 +1754,13 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                             tarea se guardaba y NADIE lo mostraba — el supervisor validaba sin
                                             saber qué debía revisar. Se pinta aquí, donde se decide. */}
                                         {t.validationCriteria && t.validationCriteria.filter(c => c && c.trim()).length > 0 && (
-                                            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs">
-                                                <p className="font-extrabold text-emerald-800 flex items-center gap-1.5 mb-1.5">
+                                            <div className="p-3 bg-success-bg rounded-xl border border-success-text/20 text-xs">
+                                                <p className="font-extrabold text-success-text flex items-center gap-1.5 mb-1.5">
                                                     ✅ Qué revisar antes de aprobar:
                                                 </p>
                                                 <ul className="space-y-1">
                                                     {t.validationCriteria.filter(c => c && c.trim()).map((c, i) => (
-                                                        <li key={i} className="flex items-start gap-1.5 text-emerald-900">
+                                                        <li key={i} className="flex items-start gap-1.5 text-success-text">
                                                             <span className="mt-0.5 shrink-0">•</span><span>{c}</span>
                                                         </li>
                                                     ))}
@@ -1769,14 +1769,14 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                         )}
 
                                         {a.assistantData && (
-                                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                                                <p className="font-extrabold text-blue-700 flex items-center gap-1.5 mb-1.5">
+                                            <div className="p-3 bg-page rounded-xl border border-border text-xs">
+                                                <p className="font-extrabold text-accent flex items-center gap-1.5 mb-1.5">
                                                     📸 Evidencia presentada:
                                                 </p>
-                                                <p className="text-slate-800 font-black bg-white p-2.5 rounded-lg border border-slate-100">
+                                                <p className="text-text-1 font-black bg-white p-2.5 rounded-lg border border-border">
                                                     {t.assistantType === 'evidencia_foto' ? (
-                                                        <span className="flex items-center gap-1.5 text-slate-800">
-                                                            <Camera size={13} className="text-indigo-500" />
+                                                        <span className="flex items-center gap-1.5 text-text-1">
+                                                            <Camera size={13} className="text-accent" />
                                                             {String(a.assistantData)} (Evidencia Fotográfica)
                                                         </span>
                                                     ) : (
@@ -1787,32 +1787,32 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                         )}
 
                                         {rejectingAssignmentId === a.id ? (
-                                            <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl space-y-2.5 animate-in slide-in-from-top-2 duration-150">
-                                                <p className="text-xs font-black text-rose-800">
+                                            <div className="p-3 bg-danger-bg border border-danger-text/20 rounded-xl space-y-2.5 animate-in slide-in-from-top-2 duration-150">
+                                                <p className="text-xs font-black text-danger-text">
                                                     Razón de devolución / Corrección requerida:
                                                 </p>
-                                                <textarea 
+                                                <textarea
                                                     value={rejectFeedback}
                                                     onChange={e => setRejectFeedback(e.target.value)}
                                                     placeholder="Ej: Te faltó limpiar el área trasera, por favor hazlo antes de terminar..."
                                                     rows={2.5}
-                                                    className="w-full p-2.5 border border-slate-200 bg-white rounded-lg outline-none text-xs font-semibold focus:ring-2 focus:ring-rose-500"
+                                                    className="w-full p-2.5 border border-border bg-white rounded-lg outline-none text-xs font-semibold focus:ring-2 focus-visible:ring-danger-text"
                                                 />
                                                 <div className="flex gap-2 justify-end">
-                                                    <button 
+                                                    <button
                                                         type="button"
                                                         onClick={() => { setRejectingAssignmentId(null); setRejectFeedback(''); }}
-                                                        className="px-3 py-1.5 bg-white text-slate-500 rounded-lg text-[10px] font-black border border-slate-200 cursor-pointer"
+                                                        className="px-3 py-1.5 bg-white text-text-3 rounded-lg text-[10px] font-black border border-border cursor-pointer"
                                                     >
                                                         Cancelar
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         type="button"
                                                         onClick={() => {
                                                             handleReject(a.id, t.title);
                                                             handleSelectAssignment(null);
                                                         }}
-                                                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[10px] font-black border-none cursor-pointer"
+                                                        className="px-3 py-1.5 bg-danger-text hover:bg-danger-text text-white rounded-lg text-[10px] font-black border-none cursor-pointer"
                                                     >
                                                         Devolver Tarea
                                                     </button>
@@ -1822,30 +1822,30 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                             <div className="flex gap-2 justify-end mt-2 pt-2">
                                                 {isSupervisor ? (
                                                     <>
-                                                        <button 
+                                                        <button
                                                             type="button"
                                                             onClick={() => setRejectingAssignmentId(a.id)}
-                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 hover:bg-rose-50 text-rose-600 rounded-xl text-xs font-black border border-rose-200 cursor-pointer bg-transparent"
+                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 hover:bg-danger-bg text-danger-text rounded-xl text-xs font-black border border-danger-text/20 cursor-pointer bg-transparent"
                                                         >
                                                             <XCircle size={14} /> Devolver Tarea
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             type="button"
                                                             onClick={() => {
                                                                 handleApprove(a.id, t.title);
                                                                 handleSelectAssignment(null);
                                                             }}
-                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black border-none shadow-sm cursor-pointer transition-all hover:scale-105"
+                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-success-text hover:bg-success-text text-white rounded-xl text-xs font-black border-none shadow-sm cursor-pointer transition-all hover:scale-105"
                                                         >
                                                             <CheckCircle size={14} /> Validar y Firmar
                                                         </button>
                                                     </>
                                                 ) : pinValidatingAssignmentId === a.id ? (
-                                                    <div className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                                    <div className="w-full p-3 bg-page border border-border rounded-xl space-y-2">
                                                         <select
                                                             value={pinValidateSupervisorId}
                                                             onChange={e => setPinValidateSupervisorId(e.target.value ? Number(e.target.value) : '')}
-                                                            className="w-full p-2 text-xs border border-slate-200 rounded-lg bg-white"
+                                                            className="w-full p-2 text-xs border border-border rounded-lg bg-white"
                                                         >
                                                             <option value="">Selecciona al supervisor...</option>
                                                             {availableSupervisors.map((s: any) => (
@@ -1859,16 +1859,16 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                             inputMode="numeric"
                                                             maxLength={6}
                                                             placeholder="PIN del supervisor"
-                                                            className="w-full p-2 text-xs border border-slate-200 rounded-lg text-center tracking-widest"
+                                                            className="w-full p-2 text-xs border border-border rounded-lg text-center tracking-widest"
                                                         />
                                                         {pinValidateError && (
-                                                            <p className="text-[10px] text-rose-600 font-bold text-center">{pinValidateError}</p>
+                                                            <p className="text-[10px] text-danger-text font-bold text-center">{pinValidateError}</p>
                                                         )}
                                                         <div className="flex gap-2">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => { setPinValidatingAssignmentId(null); setPinValidateError(null); setPinValidateValue(''); }}
-                                                                className="flex-1 py-2 text-[10px] font-black text-slate-500 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                                                                className="flex-1 py-2 text-[10px] font-black text-text-3 bg-white border border-border rounded-lg cursor-pointer"
                                                             >
                                                                 Cancelar
                                                             </button>
@@ -1876,7 +1876,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                                 type="button"
                                                                 disabled={pinValidateLoading}
                                                                 onClick={() => handleValidateWithPin(a.id, 'completed', t.title)}
-                                                                className="flex-1 py-2 text-[10px] font-black text-white bg-emerald-600 rounded-lg cursor-pointer disabled:opacity-50"
+                                                                className="flex-1 py-2 text-[10px] font-black text-white bg-success-text rounded-lg cursor-pointer disabled:opacity-50"
                                                             >
                                                                 {pinValidateLoading ? '...' : 'Confirmar'}
                                                             </button>
@@ -1890,7 +1890,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                         <button
                                                             type="button"
                                                             onClick={() => setPinValidatingAssignmentId(a.id)}
-                                                            className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-blue-600"
+                                                            className="flex items-center gap-1 text-[10px] font-bold text-text-3 hover:text-accent"
                                                         >
                                                             <Lock size={11} /> Validar con PIN de supervisor
                                                         </button>
@@ -1903,14 +1903,14 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
 
                                 {/* Caso: Tarea de la Bolsa de Trabajo */}
                                 {isFromPool && (
-                                    <div className="pt-3 border-t border-slate-100 flex gap-2">
+                                    <div className="pt-3 border-t border-border flex gap-2">
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 reserveTaskFromPool(a.id, currentUser.id, globalSimTime);
                                                 handleSelectAssignment(null);
                                             }}
-                                            className="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-xs rounded-xl border border-indigo-200 cursor-pointer flex items-center justify-center gap-1.5"
+                                            className="flex-1 py-3 bg-navy-50 hover:bg-accent-soft text-accent font-black text-xs rounded-xl border border-border cursor-pointer flex items-center justify-center gap-1.5"
                                         >
                                             <Clock size={13} /> Reservar
                                         </button>
@@ -1920,7 +1920,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                 handleStartTaskCooperative(a.id, true);
                                                 handleSelectAssignment(null);
                                             }}
-                                            className="flex-1 py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-1.5"
+                                            className="flex-1 py-3 bg-accent hover:bg-accent-hover text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-1.5"
                                         >
                                             <Play size={13} className="fill-white" /> Iniciar Ya
                                         </button>
@@ -1929,7 +1929,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
 
                                 {/* Caso: Tarea propia activa / en progreso / pausada */}
                                 {!isFromPool && a.userId === currentUser.id && a.status !== 'awaiting_validation' && (
-                                    <div className="space-y-3 pt-3 border-t border-slate-100">
+                                    <div className="space-y-3 pt-3 border-t border-border">
                                         {/* Acciones de ejecución */}
                                         {a.status === 'pending' || a.status === 'paused' ? (
                                             <div className="flex gap-2 w-full">
@@ -1940,7 +1940,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                             releaseTask(a.id);
                                                             handleSelectAssignment(null);
                                                         }}
-                                                        className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/50 font-black text-xs rounded-xl cursor-pointer flex items-center justify-center gap-1.5"
+                                                        className="flex-1 py-3 bg-danger-bg hover:bg-danger-bg text-danger-text border border-danger-text/50 font-black text-xs rounded-xl cursor-pointer flex items-center justify-center gap-1.5"
                                                     >
                                                         <XCircle size={13} /> Liberar Bolsa
                                                     </button>
@@ -1950,7 +1950,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                      onClick={() => {
                                                          handleStartTaskCooperative(a.id, false);
                                                      }}
-                                                     className="flex-1 py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-2"
+                                                     className="flex-1 py-3 bg-accent hover:bg-accent-hover text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-2"
                                                  >
                                                      <Play size={13} className="fill-white" /> Iniciar Tarea
                                                  </button>
@@ -1962,7 +1962,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                      <button
                                                          type="button"
                                                          onClick={() => pauseTask(a.id)}
-                                                         className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl border border-slate-200 cursor-pointer flex items-center justify-center gap-2"
+                                                         className="flex-1 py-3 bg-page hover:bg-slate-200 text-text-2 font-black text-xs rounded-xl border border-border cursor-pointer flex items-center justify-center gap-2"
                                                      >
                                                          <Pause size={13} /> Pausar Tarea
                                                      </button>
@@ -1984,40 +1984,40 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                                  showToast("¡Tarea completada!", 'success');
                                                                  handleSelectAssignment(null);
                                                              }}
-                                                             className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 text-white font-black text-xs rounded-xl border-none shadow-md cursor-pointer flex items-center justify-center gap-2"
+                                                             className="flex-1 py-3 bg-success-text hover:bg-success-text disabled:bg-page disabled:text-slate-400 text-white font-black text-xs rounded-xl border-none shadow-md cursor-pointer flex items-center justify-center gap-2"
                                                          >
                                                              <Check size={13} /> Completar
                                                          </button>
                                                      )}
                                                  </div>
                                                  {!requiredStepsDone && t.assistantType === 'ninguno' && (
-                                                     <p className="text-[10px] text-amber-600 font-bold text-center -mt-1.5">Completa los pasos obligatorios del manual para poder terminar.</p>
+                                                     <p className="text-[10px] text-warning-text font-bold text-center -mt-1.5">Completa los pasos obligatorios del manual para poder terminar.</p>
                                                  )}
 
                                                  {/* Mini Asistente de evidencias (solo si no hay manual de pasos — si lo hay, ya se muestra embebido arriba) */}
                                                  {t.assistantType !== 'ninguno' && !assistantShownInSteps && (
-                                                     <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl space-y-2.5 text-left">
-                                                         <p className="font-black text-indigo-900 flex items-center gap-1 text-[11px]">
-                                                             <Bot size={13} className="text-[#8a2be2]" /> Asistente de Evidencias
+                                                     <div className="p-3 bg-navy-50 border border-border rounded-2xl space-y-2.5 text-left">
+                                                         <p className="font-black text-brand-dark flex items-center gap-1 text-[11px]">
+                                                             <Bot size={13} className="text-accent" /> Asistente de Evidencias
                                                          </p>
-                                                         <p className="text-slate-700 font-bold text-[10.5px] leading-relaxed">{t.assistantPrompt}</p>
-                                                         
+                                                         <p className="text-text-2 font-bold text-[10.5px] leading-relaxed">{t.assistantPrompt}</p>
+
                                                          {t.assistantType === 'evidencia_foto' && (
                                                              <div className="space-y-2">
                                                                  {!photoDone ? (
                                                                      <button
                                                                          type="button"
                                                                          onClick={() => setCapturingEvidenceFor(a.id)}
-                                                                         className="w-full py-2.5 bg-white hover:bg-slate-50 text-indigo-800 rounded-xl border border-indigo-200 text-[10px] font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                                                         className="w-full py-2.5 bg-white hover:bg-page text-navy-800 rounded-xl border border-border text-[10px] font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                                                                      >
                                                                          <Camera size={13} /> Capturar Foto de Evidencia
                                                                      </button>
                                                                  ) : (
-                                                                     <div className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-800 text-[11px]">
-                                                                         <img src={localInput} alt="Evidencia" className="w-7 h-7 rounded object-cover border border-emerald-200 shrink-0" />
-                                                                         <Check size={13} className="text-emerald-600 font-black shrink-0" />
+                                                                     <div className="flex items-center gap-2 p-2 bg-success-bg border border-success-text/20 rounded-xl text-success-text text-[11px]">
+                                                                         <img src={localInput} alt="Evidencia" className="w-7 h-7 rounded object-cover border border-success-text/20 shrink-0" />
+                                                                         <Check size={13} className="text-success-text font-black shrink-0" />
                                                                          <span className="font-bold truncate">Evidencia capturada</span>
-                                                                         <button type="button" onClick={() => { setPhotoDone(false); setLocalInput(''); }} className="ml-auto text-[9.5px] font-black underline text-slate-500 hover:text-slate-700 border-none bg-transparent cursor-pointer shrink-0">Cambiar</button>
+                                                                         <button type="button" onClick={() => { setPhotoDone(false); setLocalInput(''); }} className="ml-auto text-[9.5px] font-black underline text-text-3 hover:text-text-2 border-none bg-transparent cursor-pointer shrink-0">Cambiar</button>
                                                                      </div>
                                                                  )}
                                                              </div>
@@ -2029,7 +2029,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                                  value={localInput}
                                                                  onChange={e => setLocalInput(e.target.value)}
                                                                  placeholder="Ingresa la cantidad..."
-                                                                 className="w-full p-2 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-semibold"
+                                                                 className="w-full p-2 border border-border bg-white rounded-xl focus:ring-2 focus-visible:ring-focus-ring outline-none text-xs font-semibold"
                                                              />
                                                          )}
 
@@ -2039,7 +2039,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                                  value={localInput}
                                                                  onChange={e => setLocalInput(e.target.value)}
                                                                  placeholder="Escribe reporte de fin de tarea..."
-                                                                 className="w-full p-2 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-semibold"
+                                                                 className="w-full p-2 border border-border bg-white rounded-xl focus:ring-2 focus-visible:ring-focus-ring outline-none text-xs font-semibold"
                                                              />
                                                          )}
 
@@ -2054,7 +2054,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                                  }
                                                              }}
                                                              disabled={!localInput || evidenceSubmitting}
-                                                             className="w-full py-2 bg-indigo-600 disabled:bg-slate-100 disabled:text-slate-400 hover:bg-indigo-800 text-white rounded-xl text-[10px] font-black shadow-sm transition-colors cursor-pointer border-none"
+                                                             className="w-full py-2 bg-accent disabled:bg-page disabled:text-slate-400 hover:bg-navy-800 text-white rounded-xl text-[10px] font-black shadow-sm transition-colors cursor-pointer border-none"
                                                          >
                                                              {evidenceSubmitting ? 'Validando…' : 'Enviar Evidencia y Completar'}
                                                          </button>
@@ -2067,20 +2067,20 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                             no un solo clic — y ya notifica al backend (ver omitAssignment). */}
                                         {t.priority !== 'bloqueante' && (
                                             omittingAssignmentId === a.id ? (
-                                                <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl space-y-2.5 animate-in slide-in-from-top-2 duration-150">
-                                                    <p className="text-xs font-black text-rose-800">¿Por qué se omite esta tarea?</p>
+                                                <div className="p-3 bg-danger-bg border border-danger-text/20 rounded-xl space-y-2.5 animate-in slide-in-from-top-2 duration-150">
+                                                    <p className="text-xs font-black text-danger-text">¿Por qué se omite esta tarea?</p>
                                                     <textarea
                                                         value={omitReason}
                                                         onChange={e => setOmitReason(e.target.value)}
                                                         placeholder="Ej: no había insumos suficientes en el área..."
                                                         rows={2}
-                                                        className="w-full p-2.5 border border-slate-200 bg-white rounded-lg outline-none text-xs font-semibold focus:ring-2 focus:ring-rose-500"
+                                                        className="w-full p-2.5 border border-border bg-white rounded-lg outline-none text-xs font-semibold focus:ring-2 focus-visible:ring-danger-text"
                                                     />
                                                     <div className="flex gap-2 justify-end">
                                                         <button
                                                             type="button"
                                                             onClick={() => { setOmittingAssignmentId(null); setOmitReason(''); }}
-                                                            className="px-3 py-1.5 bg-white text-slate-500 rounded-lg text-[10px] font-black border border-slate-200 cursor-pointer"
+                                                            className="px-3 py-1.5 bg-white text-text-3 rounded-lg text-[10px] font-black border border-border cursor-pointer"
                                                         >
                                                             Cancelar
                                                         </button>
@@ -2092,7 +2092,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                                 showToast("Tarea omitida", 'info');
                                                                 handleSelectAssignment(null);
                                                             }}
-                                                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-[10px] font-black border-none cursor-pointer"
+                                                            className="px-3 py-1.5 bg-danger-text hover:bg-danger-text disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-[10px] font-black border-none cursor-pointer"
                                                         >
                                                             Confirmar y omitir
                                                         </button>
@@ -2102,7 +2102,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                 <button
                                                     type="button"
                                                     onClick={() => setOmittingAssignmentId(a.id)}
-                                                    className="w-full py-1.5 bg-transparent text-slate-400 hover:text-rose-600 font-bold text-[10.5px] cursor-pointer text-center border-none"
+                                                    className="w-full py-1.5 bg-transparent text-slate-400 hover:text-danger-text font-bold text-[10.5px] cursor-pointer text-center border-none"
                                                 >
                                                     Omitir esta tarea
                                                 </button>
@@ -2119,29 +2119,29 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
             {/* Modal Celebrativo de Monedas Ganadas (+XP & +Coins) */}
             {celebration && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[120] flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[2.5rem] p-7 max-w-xs w-full shadow-2xl text-center border border-amber-200 relative animate-in zoom-in-95 duration-300">
-                        <div className="w-20 h-20 bg-gradient-to-tr from-amber-400 to-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30 animate-bounce">
+                    <div className="bg-white rounded-[2.5rem] p-7 max-w-xs w-full shadow-2xl text-center border border-warning-text/20 relative animate-in zoom-in-95 duration-300">
+                        <div className="w-20 h-20 bg-gradient-to-tr from-warning-icon to-warning-icon rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-warning-text/30 animate-bounce">
                             <span className="text-4xl">🪙</span>
                         </div>
-                        <h3 className="text-xl font-black text-slate-900 tracking-tight mb-1">¡Recompensa Obtenida! 🎉</h3>
-                        <p className="text-xs font-bold text-slate-500 mb-4 px-2 truncate">{celebration.title}</p>
-                        
-                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5 flex items-center justify-around">
+                        <h3 className="text-xl font-black text-text-1 tracking-tight mb-1">¡Recompensa Obtenida! 🎉</h3>
+                        <p className="text-xs font-bold text-text-3 mb-4 px-2 truncate">{celebration.title}</p>
+
+                        <div className="bg-warning-bg border border-warning-text/20 rounded-2xl p-4 mb-5 flex items-center justify-around">
                             <div className="text-center">
-                                <span className="text-xs font-black text-amber-700 block uppercase tracking-wider">Monedas</span>
-                                <span className="text-2xl font-black text-amber-600">+${celebration.coins.toFixed(2)}</span>
+                                <span className="text-xs font-black text-warning-text block uppercase tracking-wider">Monedas</span>
+                                <span className="text-2xl font-black text-warning-text">+${celebration.coins.toFixed(2)}</span>
                             </div>
-                            <div className="h-8 w-px bg-amber-200"></div>
+                            <div className="h-8 w-px bg-warning-bg"></div>
                             <div className="text-center">
-                                <span className="text-xs font-black text-indigo-700 block uppercase tracking-wider">Experiencia</span>
-                                <span className="text-2xl font-black text-indigo-600">+{celebration.xp} XP</span>
+                                <span className="text-xs font-black text-accent block uppercase tracking-wider">Experiencia</span>
+                                <span className="text-2xl font-black text-accent">+{celebration.xp} XP</span>
                             </div>
                         </div>
 
                         <button
                             type="button"
                             onClick={() => setCelebration(null)}
-                            className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md border-none cursor-pointer active:scale-95 transition-all"
+                            className="w-full py-3.5 bg-gradient-to-r from-warning-icon to-warning-text hover:from-warning-text hover:to-warning-text text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md border-none cursor-pointer active:scale-95 transition-all"
                         >
                             ¡Excelente! Continuar
                         </button>

@@ -134,13 +134,13 @@ export default function Buzones() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-slate-100 pb-4">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <MessageSquareWarning className="text-rose-600" size={24} />
+          <h3 className="text-xl font-black text-text-1 tracking-tight flex items-center gap-2">
+            <MessageSquareWarning className="text-danger-text" size={24} />
             Buzones
           </h3>
-          <p className="text-xs text-slate-500 font-medium mt-0.5 max-w-2xl">
+          <p className="text-xs text-text-3 font-medium mt-0.5 max-w-2xl">
             Lo que la plantilla manda desde el Reloj: denuncias de compañeros (confidenciales), el buzón
             anónimo de RRHH (sin autor, sólo lo lee el administrador) y la evaluación 360 del ciclo.
           </p>
@@ -148,42 +148,42 @@ export default function Buzones() {
         <button
           type="button"
           onClick={cargar}
-          className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl border-none cursor-pointer shrink-0"
+          className="p-2.5 bg-page hover:bg-slate-200 text-text-2 rounded-xl border-none cursor-pointer shrink-0"
           title="Recargar"
         >
           <RefreshCw size={16} className={cargando ? 'animate-spin' : ''} />
         </button>
       </div>
 
-      <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl w-full overflow-x-auto">
+      <div className="flex items-center gap-2 bg-page p-1.5 rounded-2xl w-full overflow-x-auto">
         {pestanas.map(p => (
           <button
             key={p.id}
             type="button"
             onClick={() => setPestana(p.id)}
             className={`flex-shrink-0 flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl transition-all border-none cursor-pointer ${
-              pestana === p.id ? 'bg-white text-slate-900 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-700'
+              pestana === p.id ? 'bg-white text-text-1 shadow-sm' : 'bg-transparent text-text-3 hover:text-text-2'
             }`}
           >
             {p.bloqueada ? <Lock size={14} /> : p.icon}
             {p.label}
             {!p.bloqueada && (
-              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-slate-200 text-slate-700">{p.total}</span>
+              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-slate-200 text-text-2">{p.total}</span>
             )}
           </button>
         ))}
       </div>
 
       {error && (
-        <div role="alert" className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-center gap-3 text-xs font-bold">
-          <AlertTriangle size={18} className="shrink-0 text-rose-600" />
+        <div role="alert" className="p-4 bg-danger-bg border border-danger-text/20 text-danger-text rounded-2xl flex items-center gap-3 text-xs font-bold">
+          <AlertTriangle size={18} className="shrink-0 text-danger-text" />
           {error}
         </div>
       )}
 
       {cargando && !error && (
-        <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500">
-          <RefreshCw size={22} className="animate-spin text-indigo-500" />
+        <div className="py-12 flex flex-col items-center justify-center gap-3 text-text-3">
+          <RefreshCw size={22} className="animate-spin text-accent" />
           <span className="text-xs font-bold">Cargando buzones...</span>
         </div>
       )}
@@ -191,22 +191,22 @@ export default function Buzones() {
       {!cargando && !error && pestana === 'denuncias' && (
         <div className="space-y-3">
           {denuncias.length === 0 && (
-            <p className="p-8 text-center text-xs font-bold text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+            <p className="p-8 text-center text-xs font-bold text-text-3 bg-page rounded-2xl border border-border">
               No hay denuncias registradas.
             </p>
           )}
           {denuncias.map(d => (
-            <article key={d.id} className="p-4 rounded-2xl border border-slate-200 bg-white space-y-2">
+            <article key={d.id} className="p-4 rounded-2xl border border-border bg-white space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-extrabold uppercase rounded-full border border-rose-200/60">
+                <span className="px-2.5 py-1 bg-danger-bg text-danger-text text-[10px] font-extrabold uppercase rounded-full border border-danger-text/60">
                   {etiquetaDe(ETIQUETA_DENUNCIA, d.type)}
                 </span>
                 <time className="text-[11px] text-slate-400 font-semibold">{fecha(d.created_at)}</time>
               </div>
-              <p className="text-sm text-slate-800 whitespace-pre-wrap">{d.details}</p>
-              <p className="text-[11px] text-slate-500 font-semibold">
-                Sobre <strong className="text-slate-700">{d.accused?.name || 'colaborador dado de baja'}</strong>
-                {' · '}reporta <strong className="text-slate-700">{d.reporter?.name || 'colaborador dado de baja'}</strong>
+              <p className="text-sm text-text-1 whitespace-pre-wrap">{d.details}</p>
+              <p className="text-[11px] text-text-3 font-semibold">
+                Sobre <strong className="text-text-2">{d.accused?.name || 'colaborador dado de baja'}</strong>
+                {' · '}reporta <strong className="text-text-2">{d.reporter?.name || 'colaborador dado de baja'}</strong>
                 <span className="text-slate-400"> (confidencial: la persona reportada no ve quién reporta)</span>
               </p>
             </article>
@@ -217,24 +217,24 @@ export default function Buzones() {
       {!cargando && !error && pestana === 'anonimo' && (
         <div className="space-y-3">
           {anonimoBloqueado && (
-            <p className="p-8 text-center text-xs font-bold text-slate-500 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-center gap-2">
+            <p className="p-8 text-center text-xs font-bold text-text-3 bg-page rounded-2xl border border-border flex items-center justify-center gap-2">
               <Lock size={14} /> El buzón anónimo sólo lo lee el administrador de la empresa.
             </p>
           )}
           {!anonimoBloqueado && anonimos.length === 0 && (
-            <p className="p-8 text-center text-xs font-bold text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+            <p className="p-8 text-center text-xs font-bold text-text-3 bg-page rounded-2xl border border-border">
               El buzón anónimo está vacío.
             </p>
           )}
           {!anonimoBloqueado && anonimos.map(a => (
-            <article key={a.id} className="p-4 rounded-2xl border border-slate-200 bg-white space-y-2">
+            <article key={a.id} className="p-4 rounded-2xl border border-border bg-white space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-extrabold uppercase rounded-full border border-indigo-200/60">
+                <span className="px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-extrabold uppercase rounded-full border border-border/60">
                   {etiquetaDe(ETIQUETA_ANONIMO, a.type)}
                 </span>
                 <time className="text-[11px] text-slate-400 font-semibold">{fecha(a.created_at)}</time>
               </div>
-              <p className="text-sm text-slate-800 whitespace-pre-wrap">{a.content}</p>
+              <p className="text-sm text-text-1 whitespace-pre-wrap">{a.content}</p>
               <p className="text-[11px] text-slate-400 font-semibold">Anónimo: el sistema no guarda quién lo envió.</p>
             </article>
           ))}
@@ -244,48 +244,48 @@ export default function Buzones() {
       {!cargando && !error && pestana === 'evaluacion' && (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <label htmlFor="ciclo-360" className="text-xs font-bold text-slate-600">Ciclo</label>
+            <label htmlFor="ciclo-360" className="text-xs font-bold text-text-2">Ciclo</label>
             <input
               id="ciclo-360"
               type="month"
               value={ciclo}
               onChange={e => setCiclo(e.target.value || mesActual())}
-              className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-700"
+              className="px-3 py-1.5 border border-border rounded-xl text-xs font-bold text-text-2"
             />
             <span className="text-[11px] text-slate-400 font-semibold">Promedios de 1 a 5 · el evaluado nunca ve quién lo calificó.</span>
           </div>
           {puntajes.length === 0 && (
-            <p className="p-8 text-center text-xs font-bold text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+            <p className="p-8 text-center text-xs font-bold text-text-3 bg-page rounded-2xl border border-border">
               Nadie ha sido evaluado en este ciclo.
             </p>
           )}
           {puntajes.length > 0 && (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200">
+            <div className="overflow-x-auto rounded-2xl border border-border">
               <table className="w-full border-collapse text-left text-xs">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="py-3 px-4 font-black text-slate-500 uppercase tracking-wider">Colaborador</th>
-                    <th className="py-3 px-3 font-black text-slate-500 uppercase tracking-wider text-center">Evaluaciones</th>
-                    <th className="py-3 px-3 font-black text-slate-500 uppercase tracking-wider text-center">Equipo</th>
-                    <th className="py-3 px-3 font-black text-slate-500 uppercase tracking-wider text-center">Actitud</th>
-                    <th className="py-3 px-3 font-black text-slate-500 uppercase tracking-wider text-center">Desempeño</th>
-                    <th className="py-3 px-3 font-black text-slate-500 uppercase tracking-wider text-center">Liderazgo</th>
-                    <th className="py-3 px-3 font-black text-slate-700 uppercase tracking-wider text-center">General</th>
+                  <tr className="bg-page border-b border-border">
+                    <th className="py-3 px-4 font-black text-text-3 uppercase tracking-wider">Colaborador</th>
+                    <th className="py-3 px-3 font-black text-text-3 uppercase tracking-wider text-center">Evaluaciones</th>
+                    <th className="py-3 px-3 font-black text-text-3 uppercase tracking-wider text-center">Equipo</th>
+                    <th className="py-3 px-3 font-black text-text-3 uppercase tracking-wider text-center">Actitud</th>
+                    <th className="py-3 px-3 font-black text-text-3 uppercase tracking-wider text-center">Desempeño</th>
+                    <th className="py-3 px-3 font-black text-text-3 uppercase tracking-wider text-center">Liderazgo</th>
+                    <th className="py-3 px-3 font-black text-text-2 uppercase tracking-wider text-center">General</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {puntajes.map(p => (
-                    <tr key={p.user_id} className="hover:bg-slate-50/60">
+                    <tr key={p.user_id} className="hover:bg-page/60">
                       <td className="py-3 px-4">
-                        <div className="font-bold text-slate-800">{p.name}</div>
+                        <div className="font-bold text-text-1">{p.name}</div>
                         <div className="text-[10px] text-slate-400 font-semibold">{p.job_role || 'Sin puesto'}</div>
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-slate-600">{p.evaluations_received}</td>
+                      <td className="py-3 px-3 text-center font-bold text-text-2">{p.evaluations_received}</td>
                       <td className="py-3 px-3 text-center">{p.avg_teamwork}</td>
                       <td className="py-3 px-3 text-center">{p.avg_attitude}</td>
                       <td className="py-3 px-3 text-center">{p.avg_performance}</td>
                       <td className="py-3 px-3 text-center">{p.avg_leadership}</td>
-                      <td className="py-3 px-3 text-center font-black text-indigo-700">{p.overall_score}</td>
+                      <td className="py-3 px-3 text-center font-black text-accent">{p.overall_score}</td>
                     </tr>
                   ))}
                 </tbody>

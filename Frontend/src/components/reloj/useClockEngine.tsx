@@ -17,11 +17,11 @@ import { shouldBlockForLateTolerance } from './logic/accessBlock';
 
 export function useClockEngine(overrideUser?: any) {
   const assignments = useTaskStore(s => s.assignments);
-  
+
   // --- FULLSTACK GLOBAL STATE ---
-  
+
   const [globalPermissions, setGlobalPermissions] = useState<string[]>([]);
-  
+
   useEffect(() => {
     fetchState();
 
@@ -55,7 +55,7 @@ export function useClockEngine(overrideUser?: any) {
     punctualityStatus,
     fetchPunctualityStatus
   } = useAppStore();
-  
+
   const currentUser = overrideUser || globalUser;
   const setCurrentUser = overrideUser ? () => {} : setGlobalUser;
   const isSimulator = !!overrideUser;
@@ -220,16 +220,16 @@ export function useClockEngine(overrideUser?: any) {
   let leySillaConfig = systemSettings.leySillaConfig || {};
 
   const setLeySillaConfig = (v: any) => updateSetting('leySillaConfig', typeof v === 'function' ? v(leySillaConfig) : v);
-  
+
   let featureFlags = systemSettings.featureFlags || {};
   const setFeatureFlags = (v: any) => updateSetting('featureFlags', typeof v === 'function' ? v(featureFlags) : v);
-  
+
   let mealSettings = systemSettings.mealSettings || {};
   const setMealSettings = (v: any) => updateSetting('mealSettings', typeof v === 'function' ? v(mealSettings) : v);
-  
+
   let timeBankConfigs = systemSettings.timeBankConfigs || {};
   const setTimeBankConfigs = (v: any) => updateSetting('timeBankConfigs', typeof v === 'function' ? v(timeBankConfigs) : v);
-  
+
   const adminConfigs = systemSettings.adminConfigs || {};
   const setAdminConfigs = (v: any) => updateSetting('adminConfigs', typeof v === 'function' ? v(adminConfigs) : v);
 
@@ -261,14 +261,14 @@ export function useClockEngine(overrideUser?: any) {
           };
       }
   }
-  
+
   const globalStoreShiftStart = systemSettings.globalStoreShiftStart;
   const setGlobalStoreShiftStart = (v: any) => updateSetting('globalStoreShiftStart', typeof v === 'function' ? v(globalStoreShiftStart) : v);
-  
+
   const globalStoreShiftEnd = systemSettings.globalStoreShiftEnd;
   const setGlobalStoreShiftEnd = (v: any) => updateSetting('globalStoreShiftEnd', typeof v === 'function' ? v(globalStoreShiftEnd) : v);
 
-  
+
 
   // NOTA (refactor Jul 2026 — migración de polling a WebSockets, tarea #41): antes este intervalo
   // corría cada 5s para todos los usuarios conectados, incluso sin ningún cambio real que sincronizar.
@@ -336,7 +336,7 @@ export function useClockEngine(overrideUser?: any) {
     // DoorNoticeCreated/MealQueueTurnChanged a PrivateChannel y agregó la autorización en
     // routes/channels.php — canal privado real, ya no cualquiera puede escuchar fichajes de otro tenant.
     const channel = echoInstance.private(channelName);
-    
+
     channel.listen('.App\\Events\\StoreOpened', (e: any) => {
       console.log('StoreOpened event received via WebSockets:', e);
       fetchState();
@@ -360,7 +360,7 @@ export function useClockEngine(overrideUser?: any) {
       channel.stopListening('.App\\Events\\TimeEntryRecorded');
     };
   }, [currentUser?.tenant_id]);
-  
+
   useEffect(() => {
     const roles = Array.isArray(globalRoles) ? globalRoles : [];
     const perms = Array.isArray(dbPermissions) ? dbPermissions : [];
@@ -381,21 +381,21 @@ export function useClockEngine(overrideUser?: any) {
   const [tasksChecked, setTasksChecked] = useState({ t1: false, t2: false, t3: false });
 
 
-  
+
 
   const [amnestyActive, setAmnestyActive] = useState(MOCK_STORE.hasAmnesty);
   const [requireEvaluation, setRequireEvaluation] = useState(MOCK_STORE.requireEvaluation);
-  
-  
+
+
   // ESTADO GLOBAL SIMULADO
   const initialState = globalUsers.reduce((acc, user) => ({ ...acc, [user.id]: 'inactive' }), {});
   // const [globalClockStates, setGlobalClockStates] = useState(initialState);
-  
+
   // Fase 3: Banco de Tiempo y Candados Biológicos
   const [globalTimeBank, setGlobalTimeBank] = useState<Record<number, number>>({});
   const [activeTimers, setActiveTimers] = useState<Record<number, { type: 'meal'|'short_break', startSimTime: number }>>({});
   const [breaksTaken, setBreaksTaken] = useState<Record<number, number>>({});
-  
+
 
   // FASE 4: Sistema de Alertas Buddy
   const [buddyAlerts, setBuddyAlerts] = useState<Record<number, {id: number, msg: string, type: 'info' | 'warning'}[]>>({});
@@ -439,8 +439,8 @@ export function useClockEngine(overrideUser?: any) {
     return {
     isGlobalLoading: false,
       ...acc,
-      [user.id]: { 
-        start: user.shiftStart, 
+      [user.id]: {
+        start: user.shiftStart,
         end: user.shiftEnd,
         mealStart: activeTimers[user.id]?.type === 'meal' ? activeTimers[user.id].startSimTime : null,
         mealMinutes: user.mealMinutes,
@@ -510,7 +510,7 @@ export function useClockEngine(overrideUser?: any) {
         setSimTimeMinutes(Math.max(0, newSimMinutes));
       };
       syncTime();
-      interval = setInterval(syncTime, 10000); 
+      interval = setInterval(syncTime, 10000);
     }
     return () => clearInterval(interval);
   }, [isRealTimeMode]);
@@ -661,7 +661,7 @@ export function useClockEngine(overrideUser?: any) {
   const simMins = currentSimTime % 60;
   const ampm = simHours >= 12 ? 'pm' : 'am';
   const displayHours = simHours > 12 ? simHours - 12 : simHours;
-  
+
   // Hora para alertas y logs
   const formattedTime = `${displayHours.toString()}:${simMins.toString().padStart(2, '0')} ${ampm}`;
 
@@ -696,19 +696,19 @@ export function useClockEngine(overrideUser?: any) {
       })()
     : null;
 
-  
+
   // const clockState = globalClockStates[currentUser.id];
-  
+
   const updateClockState = (userId: any, state: any) => {
     setGlobalClockStates((prev: any) => {
         const prevState = prev[userId] || 'inactive';
-        
+
         if (prevState !== state) {
             let actionName = 'Cambio de estado';
             let type: 'success'|'warning'|'error'|'info'|'system' = 'info';
             let desc = `Transición de [${prevState.toUpperCase()}] a [${state.toUpperCase()}]`;
-            
-            if (state === 'active' && prevState === 'inactive') { 
+
+            if (state === 'active' && prevState === 'inactive') {
                 actionName = 'Fichaje de Entrada';
                 // Trigger Tasks
                 const u = globalUsers.find(user => user.id === userId);
@@ -734,10 +734,10 @@ export function useClockEngine(overrideUser?: any) {
                     desc = `Fichaje con retardo. El empleado llegó tarde por ${evaluacion.lateMins} minutos.`;
                 }
             }
-            else if (state === 'inactive' || state === 'finished') { 
+            else if (state === 'inactive' || state === 'finished') {
                 // BUG FIX: 'finished' es el nuevo estado post-checkout. Manejamos ambos por compatibilidad.
-                actionName = 'Fichaje de Salida'; 
-                type = 'warning'; 
+                actionName = 'Fichaje de Salida';
+                type = 'warning';
                 setCheckOutTimes((prev: any) => ({ ...prev, [userId]: currentSimTime }));
                 // Trigger Spill-over de tareas no completadas
                 const u = globalUsers.find(user => user.id === userId);
@@ -745,33 +745,33 @@ export function useClockEngine(overrideUser?: any) {
                     useTaskStore.getState().handleSpillOver(userId, u.job_role_id ?? 0);
                 }
             }
-            else if (state === 'meal') { 
-                actionName = 'Salida a Comer'; 
-                type = 'info'; 
+            else if (state === 'meal') {
+                actionName = 'Salida a Comer';
+                type = 'info';
                 setMealStartTimes((prev: any) => ({ ...prev, [userId]: currentSimTime }));
             }
-            else if (prevState === 'meal' && state === 'active') { 
-                actionName = 'Regreso de Comida'; 
-                type = 'success'; 
+            else if (prevState === 'meal' && state === 'active') {
+                actionName = 'Regreso de Comida';
+                type = 'success';
                 setMealEndTimes((prev: any) => ({ ...prev, [userId]: currentSimTime }));
             }
-            else if (state === 'short_break') { 
-                actionName = 'Descanso Corto (Ley Silla)'; 
-                type = 'info'; 
+            else if (state === 'short_break') {
+                actionName = 'Descanso Corto (Ley Silla)';
+                type = 'info';
                 setBreakStartTimes((prev: any) => ({ ...prev, [userId]: currentSimTime }));
             }
-            else if (prevState === 'short_break' && state === 'active') { 
-                actionName = 'Fin de Descanso'; 
-                type = 'success'; 
+            else if (prevState === 'short_break' && state === 'active') {
+                actionName = 'Fin de Descanso';
+                type = 'success';
                 setBreakEndTimes((prev: any) => ({ ...prev, [userId]: currentSimTime }));
             }
             else if (state === 'contingency') { actionName = 'Contingencia / Retardo'; type = 'error'; }
             else if (state === 'waiting_room') { actionName = 'En Sala de Espera'; type = 'system'; }
-            
+
             useAppStore.getState().addMatrixEvent(
-               actionName, 
-               desc, 
-               type, 
+               actionName,
+               desc,
+               type,
                userId
             );
         }
@@ -791,7 +791,7 @@ export function useClockEngine(overrideUser?: any) {
 
   const [globalBroadcastMessage, setGlobalBroadcastMessage] = useState<string | null>(null);
   const [broadcastInput, setBroadcastInput] = useState("");
-  
+
   // Aquí vivían `privateMessages`, `privateInput` y `privateTarget`: un mapa que nadie llenaba
   // nunca y dos campos para redactar que ninguna pantalla usaba. El "mensaje privado del admin"
   // no existía como función, y la rama que lo pintaba en RelojVisual era inalcanzable.
@@ -799,9 +799,9 @@ export function useClockEngine(overrideUser?: any) {
   // Se borraron el 2026-08-06 al darle modo privado al Chat Operativo del Monitor, que es donde
   // el mando escribe ahora. El colaborador los lee de `misMensajesPrivados` en el store, que se
   // llena desde `/sync/state`.
-  
+
   const [justificanteText, setJustificanteText] = useState("");
-  
+
 
   // NOTA (refactor Jul 2026): showEmergencyOpenModal, emergencyOpenSubmitting, showContingencyModal,
   // contingencySubmitting y activeContingency ahora viven en hooks/useStoreOpening.ts.
@@ -891,7 +891,7 @@ export function useClockEngine(overrideUser?: any) {
   const calculateDailyStats = (user: any, targetDay: any) => {
     const dayData = dailyHistory[targetDay] || {};
     const userData = dayData[user.id] || {};
-    
+
     // Fallback to real-time state if looking at currentDay
     const isCurrentDay = targetDay === currentDay;
     const effectiveStatus = isCurrentDay ? (globalClockStates[user.id] || 'inactive') : (userData.status || 'inactive');
@@ -907,24 +907,24 @@ export function useClockEngine(overrideUser?: any) {
     else if (effectiveMealStart && !effectiveMealEnd) mealTaken = currentSimTime - effectiveMealStart;
 
     let status = 'A tiempo';
-    let statusClass = 'bg-emerald-100 text-emerald-700';
+    let statusClass = 'bg-success-bg text-success-text';
     let penaltyText = null;
 
     if (isAbsentLoc) {
         status = 'Falta';
-        statusClass = 'bg-rose-100 text-rose-700';
+        statusClass = 'bg-danger-bg text-danger-text';
     } else if (isLateLoc) {
         status = 'Retardo';
-        statusClass = 'bg-amber-100 text-amber-700';
+        statusClass = 'bg-warning-bg text-warning-text';
         penaltyText = '-$50';
     } else if (effectiveStatus === 'inactive' && !effectiveArrival && !isAbsentLoc) {
         status = 'No Fichado';
-        statusClass = 'bg-slate-100 text-slate-500';
+        statusClass = 'bg-page text-text-3';
     }
 
     if (mealTaken > timeBankConfigs.mealMinutes) {
         status = 'Penalidad';
-        statusClass = 'bg-amber-100 text-amber-700';
+        statusClass = 'bg-warning-bg text-warning-text';
         penaltyText = `-${(mealTaken - timeBankConfigs.mealMinutes) * 3}m`;
     }
 
@@ -936,31 +936,31 @@ export function useClockEngine(overrideUser?: any) {
 
   // Matrix Tabs
   const [matrixTab, setMatrixTab] = useState('simulador');
-  
+
   const [weeklyHistory, setWeeklyHistory] = useState<any>({});
 
   // RESTAURADO TEMPORALMENTE PARA EVITAR PANTALLA BLANCA (Hasta completar Fase 7)
-  
 
-  
-  
+
+
+
   const urlParams = new URLSearchParams(window.location.search);
   const isNativeURL = urlParams.get('mode') === 'native';
   const isNativeMode = featureFlags.modoNativo || isNativeURL;
-  
+
   // Fase 2: Reservación de Comidas
-  
+
 
   // Global Settings movidos a Matrix Rules
-  
-  
+
+
   const {
     reservedMeals, setReservedMeals,
     hasReservedMeal, setHasReservedMeal,
     userReservedMealSlots, setUserReservedMealSlots
   } = useAppStore();
-  
-  
+
+
   const confirmMealReservation = async (startSlotIndex: number) => {
     const safeStartHour = mealSettings?.startHour ?? 13;
     const safeStepMins = mealSettings?.stepMins ?? 15;
@@ -973,7 +973,7 @@ export function useClockEngine(overrideUser?: any) {
     // Add safe checks to needed blocks
     const userMealMinutes = currentUser?.mealMinutes || timeBankConfigs?.mealMinutes || 60;
     const neededBlocks = Math.ceil(userMealMinutes / safeStepMins);
-    
+
     let blocksToReserve: string[] = [];
     for(let j=0; j<neededBlocks; j++) {
        const bMins = safeStartHour * 60 + ((startSlotIndex + j) * safeStepMins);
@@ -999,13 +999,13 @@ export function useClockEngine(overrideUser?: any) {
 
     setHasReservedMeal({ ...hasReservedMeal, [currentUser.id]: true });
     setUserReservedMealSlots({ ...userReservedMealSlots, [currentUser.id]: blocksToReserve });
-    
+
     blocksToReserve.forEach(slot => {
        if (!newReservedMeals[slot]) newReservedMeals[slot] = [];
        newReservedMeals[slot].push({ userId: currentUser.id, role: currentUser.role });
     });
     setReservedMeals(newReservedMeals);
-    
+
     // We can't access syncToDB here if it's defined later, but since it's just a fetch:
     try {
         const todayStr = new Date().toLocaleDateString('sv-SE');
@@ -1018,7 +1018,7 @@ export function useClockEngine(overrideUser?: any) {
         });
         window.dispatchEvent(new Event('db_sync_updated'));
         setShowMealReservationModal(false);
-        
+
         // EVENTO DE BITACORA PARA MATRIX/SANDBOX
         useAppStore.getState().addMatrixEvent(
             '🍽️ Reservación de Comida',
@@ -1036,15 +1036,15 @@ export function useClockEngine(overrideUser?: any) {
   const cancelMealReservation = async (userId: number) => {
     try {
       const mySlots = userReservedMealSlots[userId] || [];
-      
+
       const newHasReserved = { ...hasReservedMeal };
       delete newHasReserved[userId];
       setHasReservedMeal(newHasReserved);
-      
+
       const newSlots = { ...userReservedMealSlots };
       delete newSlots[userId];
       setUserReservedMealSlots(newSlots);
-      
+
       const newReservedMeals = { ...reservedMeals };
       mySlots.forEach(slot => {
         if (newReservedMeals[slot]) {
@@ -1055,7 +1055,7 @@ export function useClockEngine(overrideUser?: any) {
         }
       });
       setReservedMeals(newReservedMeals);
-      
+
       const todayStr = new Date().toLocaleDateString('sv-SE');
       await axiosInstance.post('/sync/clock', {
         user_id: userId,
@@ -1065,7 +1065,7 @@ export function useClockEngine(overrideUser?: any) {
         details: 'Cancelled meal reservation'
       });
       window.dispatchEvent(new Event('db_sync_updated'));
-      
+
       const targetUser = globalUsers.find((u: any) => u.id === userId) || currentUser;
       useAppStore.getState().addMatrixEvent(
         '🍽️ Cancelación de Comida',
@@ -1083,31 +1083,31 @@ export function useClockEngine(overrideUser?: any) {
     try {
       const slotsA = userReservedMealSlots[userAId] || [];
       const slotsB = userReservedMealSlots[userBId] || [];
-      
+
       const hasA = !!hasReservedMeal[userAId];
       const hasB = !!hasReservedMeal[userBId];
-      
+
       const newSlots = { ...userReservedMealSlots };
       if (slotsB.length > 0) {
         newSlots[userAId] = slotsB;
       } else {
         delete newSlots[userAId];
       }
-      
+
       if (slotsA.length > 0) {
         newSlots[userBId] = slotsA;
       } else {
         delete newSlots[userBId];
       }
       setUserReservedMealSlots(newSlots);
-      
+
       const newHasReserved = { ...hasReservedMeal };
       newHasReserved[userAId] = hasB;
       newHasReserved[userBId] = hasA;
       setHasReservedMeal(newHasReserved);
-      
+
       const newReservedMeals = { ...reservedMeals };
-      
+
       slotsA.forEach(slot => {
         if (newReservedMeals[slot]) {
           newReservedMeals[slot] = newReservedMeals[slot].filter((item: any) => Number(item.userId) !== Number(userAId));
@@ -1118,10 +1118,10 @@ export function useClockEngine(overrideUser?: any) {
           newReservedMeals[slot] = newReservedMeals[slot].filter((item: any) => Number(item.userId) !== Number(userBId));
         }
       });
-      
+
       const userAObj = globalUsers.find((u: any) => u.id === userAId) || currentUser;
       const userBObj = globalUsers.find((u: any) => u.id === userBId) || { name: 'Compañero', role: 'Colaborador' };
-      
+
       slotsB.forEach(slot => {
         if (!newReservedMeals[slot]) newReservedMeals[slot] = [];
         newReservedMeals[slot].push({ userId: userAId, role: userAObj.role });
@@ -1131,7 +1131,7 @@ export function useClockEngine(overrideUser?: any) {
         newReservedMeals[slot].push({ userId: userBId, role: userBObj.role });
       });
       setReservedMeals(newReservedMeals);
-      
+
       const todayStr = new Date().toLocaleDateString('sv-SE');
       // R103 (merge FE): `swap_with` ESTRUCTURADO — el backend valida server-side el pareo, que
       // ambos tengan el MISMO job_role_id de expediente y que el actor sea parte del swap
@@ -1155,7 +1155,7 @@ export function useClockEngine(overrideUser?: any) {
         details: `Swapped meal slots with user ${userAId}`
       });
       window.dispatchEvent(new Event('db_sync_updated'));
-      
+
       useAppStore.getState().addMatrixEvent(
         '🔄 Intercambio de Comida',
         `${userAObj.name} intercambió su horario de comida con ${userBObj.name}.`,
@@ -1171,7 +1171,7 @@ export function useClockEngine(overrideUser?: any) {
   const requestBreak = async (userId: number) => {
     try {
       const timeStr = formattedTime;
-      
+
       if (isSandboxMode) {
         setPendingBreakRequests((prev: any) => ({
           ...prev,
@@ -1191,7 +1191,7 @@ export function useClockEngine(overrideUser?: any) {
           time: timeStr,
           details: { note: 'Solicitud de descanso Ley Silla' }
         });
-        
+
         useAppStore.setState((s: any) => ({
           globalPendingBreakRequests: {
             ...s.globalPendingBreakRequests,
@@ -1223,7 +1223,7 @@ export function useClockEngine(overrideUser?: any) {
           ...prev,
           [targetUserId]: currentSimTime
         }));
-        
+
         updateClockState(targetUserId, 'short_break');
 
         useAppStore.getState().addMatrixEvent(
@@ -1243,7 +1243,7 @@ export function useClockEngine(overrideUser?: any) {
         useAppStore.setState((s: any) => {
           const nextPending = { ...s.globalPendingBreakRequests };
           delete nextPending[targetUserId];
-          
+
           return {
             globalPendingBreakRequests: nextPending,
             globalClockStates: {
@@ -1306,7 +1306,7 @@ export function useClockEngine(overrideUser?: any) {
       showCustomAlert('⚠️ Error al rechazar la solicitud.');
     }
   };
-  
+
   // NOTA (refactor Jul 2026): keyholders, showKeyDelegationModal, nextDayEncargadoId y toda la
   // lógica de "quién tiene llaves" ahora viven en hooks/useKeyholderDelegation.ts — ver la llamada
   // a useKeyholderDelegation() más arriba.
@@ -1360,7 +1360,7 @@ export function useClockEngine(overrideUser?: any) {
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
-      
+
       const tone = userClockPrefs.selectedTone;
 
       if (tone === 'cheerful') {
@@ -1452,7 +1452,7 @@ export function useClockEngine(overrideUser?: any) {
           osc.stop(ctx.currentTime + 0.5);
         } else if (type === 'tienda_cerrada') {
           osc.type = 'square';
-          osc.frequency.setValueAtTime(400, ctx.currentTime); 
+          osc.frequency.setValueAtTime(400, ctx.currentTime);
           osc.frequency.setValueAtTime(300, ctx.currentTime + 0.2);
           osc.frequency.setValueAtTime(400, ctx.currentTime + 0.4);
           gain.gain.setValueAtTime(0.1, ctx.currentTime);
@@ -1510,7 +1510,7 @@ export function useClockEngine(overrideUser?: any) {
   // Auto-Open Store when Encargado is in perimeter
   useEffect(() => {
     if (isSimulator) return; // No auto-abrir la tienda en el simulador QA Matrix
-    
+
     if (storeStatus === 'closed' && Number(currentUser?.id) === Number(activeEncargadoId) && isWithinPerimeter) {
       handleOpenStore(false);
       showCustomAlert("📍 Encargado detectado en perímetro. Sucursal abierta automáticamente vía GPS.");
@@ -1545,17 +1545,17 @@ export function useClockEngine(overrideUser?: any) {
   /*
   useEffect(() => {
     if (storeStatus !== 'open' || !featureFlags.comidas) return;
-    
+
     const isCheckIn = globalClockStates[currentUser.id] === 'active' || globalClockStates[currentUser.id] === 'short_break';
     const noReserved = !hasReservedMeal[currentUser.id];
-    
+
     if (isCheckIn && noReserved && globalCheckInTimes[currentUser.id] !== undefined) {
         const myCheckInTime = globalCheckInTimes[currentUser.id];
         const sameTimeUsers = globalUsers.filter(x => globalCheckInTimes[x.id] === myCheckInTime).sort((a, b) => a.id - b.id);
         const myIndex = sameTimeUsers.findIndex(x => x.id === currentUser.id);
-        
+
         const targetTime = myCheckInTime + 5 + (myIndex * 2);
-        
+
         if (currentSimTime >= targetTime && activePushNotification?.type !== 'comida') {
             setActivePushNotification({
                type: 'comida',
@@ -1574,10 +1574,10 @@ export function useClockEngine(overrideUser?: any) {
   // Push Notification: Apertura de Emergencia por Relevo de Llaves
   useEffect(() => {
     if (!isOpeningPremium || storeStatus !== 'closed' || !openingStatus) return;
-    
+
     const currentRespId = Number(openingStatus.current_responsible_employee_id);
     const myId = Number(currentUser?.id);
-    
+
     if (currentRespId === myId && (openingStatus.status === 'transferred' || openingStatus.status === 'active_window')) {
       if (activePushNotification?.type !== 'apertura_transferida') {
         setActivePushNotification({
@@ -1597,11 +1597,11 @@ export function useClockEngine(overrideUser?: any) {
   useEffect(() => {
     if (storeStatus !== 'open') return;
     const storeState = useTaskStore.getState();
-    
+
     // Buscar rutinas asignadas al puesto del usuario
     const myRoleRoutines = storeState.routines.filter(r => r.targetRoleId === currentUser.job_role_id);
-    const routineAssignments = storeState.assignments.filter(a => 
-      a.userId === currentUser.id && 
+    const routineAssignments = storeState.assignments.filter(a =>
+      a.userId === currentUser.id &&
       a.assignedFromRoutineId !== undefined &&
       myRoleRoutines.some(r => r.id === a.assignedFromRoutineId)
     );
@@ -1733,30 +1733,30 @@ export function useClockEngine(overrideUser?: any) {
     if (storeStatus !== 'open') return;
     const storeState = useTaskStore.getState();
     const myAssignment = storeState.assignments.find(a => a.userId === currentUser.id && a.status === 'in_progress');
-    
+
     if (myAssignment) {
       const myTask = storeState.tasks.find(t => t.id === myAssignment.taskId);
       if (myTask) {
         const isDelayed = myAssignment.expectedEndTimeMins && currentSimTime >= myAssignment.expectedEndTimeMins;
-        
+
         if (!isDelayed) {
           const elapsed = currentSimTime - (myAssignment.startedAtMins ?? currentSimTime) + (myAssignment.accumulatedMins || 0);
           const remaining = myTask.estimatedMins - elapsed;
           const threshold = Math.ceil(myTask.estimatedMins * 0.20);
-          
+
           if (remaining <= threshold && remaining > 0 && !myAssignment.warned80Percent) {
             // Marcar como advertido localmente en store
-            const updated = storeState.assignments.map(asg => 
+            const updated = storeState.assignments.map(asg =>
               asg.id === myAssignment.id ? { ...asg, warned80Percent: true } : asg
             );
             useTaskStore.setState({ assignments: updated });
-            
+
             // Alarmas
             playAlarm('alerta_tiempo');
             if (navigator.vibrate) {
               navigator.vibrate([100, 50, 100]);
             }
-            
+
             setActivePushNotification({
               type: 'advertencia_tiempo',
               text: `⚠️ ¡Tiempo límite cerca! Tarea "${myTask.title}" al 80% de avance. Quedan ${remaining} min.`,
@@ -1779,7 +1779,7 @@ export function useClockEngine(overrideUser?: any) {
     if (storeStatus !== 'closed') return;
     const shiftStartMins = parseTimeToMins((shiftConfigs[currentUser?.id]?.start || '09:00'));
     // const clockState = globalClockStates[currentUser.id];
-    
+
     if (clockState === 'inactive') {
       const limitMins = shiftStartMins - (clockOpConfig.arrivalWindowMins ?? 30);
       if (currentSimTime >= limitMins && !playedAlarms.ya_llegue) {
@@ -1787,7 +1787,7 @@ export function useClockEngine(overrideUser?: any) {
         setPlayedAlarms(prev => ({...prev, ya_llegue: true}));
       }
     }
-    
+
     if (clockState === 'waiting_room') {
       if (currentSimTime >= shiftStartMins && !playedAlarms.tienda_cerrada) {
         playAlarm('tienda_cerrada');
@@ -1805,7 +1805,7 @@ export function useClockEngine(overrideUser?: any) {
            setAbsentUsers(prev => ({...prev, [activeEncargado.id]: true}));
            const log = { id: Date.now(), userId: activeEncargado.id, userName: activeEncargado.name, type: 'absent' as const, reason: 'SISTEMA: Failsafe Automático (Sin respuesta a los 10 mins)', time: formattedTime };
            setContingencyLogs(prev => [log, ...prev]);
-           
+
            let nextEncargadoId = null;
            const hierarchy = globalUsers.filter(u => u.esAperturador).sort((a,b) => (a.jerarquiaLlaves ?? 0) - (b.jerarquiaLlaves ?? 0)).map(u => u.id);
            for(let id of hierarchy) {
@@ -1884,7 +1884,7 @@ export function useClockEngine(overrideUser?: any) {
   // Real-time alarm and reminder scheduler
   useEffect(() => {
     if (!currentUser?.id) return;
-    
+
     const shiftStartStr = shiftConfigs[currentUser.id]?.start || '09:00';
     const shiftStartMins = parseTimeToMins(shiftStartStr);
 
@@ -1953,7 +1953,7 @@ export function useClockEngine(overrideUser?: any) {
     if (!currentUser?.id) return;
     const userAssignments = assignments.filter((a: any) => a.userId === currentUser.id);
     const activeIds = userAssignments.map(a => a.id);
-    
+
     // Check if there is any new assignment ID that wasn't in prevAssignmentsRef
     if (prevAssignmentsRef.current.length > 0) {
       const hasNew = activeIds.some(id => !prevAssignmentsRef.current.includes(id));
@@ -1972,7 +1972,7 @@ export function useClockEngine(overrideUser?: any) {
       [currentDay]: { arrivalTimes, storeOpenLog, storeStatus }
     }));
     setCurrentDay(newDay);
-    
+
     // Resetear el simulador
     setStoreStatus('closed');
     const adminUser = globalUsers.find(u => u.system_role === 'admin' || u.role?.toLowerCase()?.includes('admin') || u.role?.toLowerCase()?.includes('gerente'));
@@ -2051,7 +2051,7 @@ export function useClockEngine(overrideUser?: any) {
       showCustomAlert("Por favor, escribe el motivo de tu contingencia.");
       return;
     }
-    
+
     // 1. Try sending to backend, but catch error so local simulation keeps working
     try {
       await axiosInstance.post('/sync/contingency', {
@@ -2073,13 +2073,13 @@ export function useClockEngine(overrideUser?: any) {
       setLateUsers(prev => ({ ...prev, [currentUser.id]: true }));
     }
 
-    const log = { 
-      id: Date.now(), 
-      userId: currentUser.id, 
-      userName: currentUser.name, 
-      type: type === 'absent' ? ('absent' as const) : ('late' as const), 
-      reason: `REPORTE: ${absenceReason}${etaTime ? ` (ETA: ${etaTime})` : ''}`, 
-      time: formattedTime 
+    const log = {
+      id: Date.now(),
+      userId: currentUser.id,
+      userName: currentUser.name,
+      type: type === 'absent' ? ('absent' as const) : ('late' as const),
+      reason: `REPORTE: ${absenceReason}${etaTime ? ` (ETA: ${etaTime})` : ''}`,
+      time: formattedTime
     };
     setContingencyLogs(prev => [log, ...prev]);
     updateClockState(currentUser.id, 'contingency');
@@ -2103,7 +2103,7 @@ export function useClockEngine(overrideUser?: any) {
          const isSelf = Number(id) === Number(currentUser.id);
          const isCandidateAbsent = absentUsers[id] || (isSelf && type === 'absent');
          const isCandidateRestDay = (shiftConfigs[id]?.restDay || '') === currentDay;
-         
+
          if (!isSelf && !isCandidateAbsent && !isCandidateRestDay) {
             nextEncargadoId = id;
             break;
@@ -2139,7 +2139,7 @@ export function useClockEngine(overrideUser?: any) {
     } else {
        showCustomAlert(`✅ [${formattedTime}] Contingencia registrada con éxito y notificada al gerente.`);
     }
-    
+
     window.dispatchEvent(new Event('db_sync_updated'));
     setShowAbsenceModal(false);
     setAbsenceReason("");
@@ -2167,13 +2167,13 @@ export function useClockEngine(overrideUser?: any) {
       return;
     }
     if (conAmnistia) setAmnestyActive(true);
-    
+
     const empleadosEnPuerta = globalUsers.filter(u => u.id !== currentUser.id && (globalClockStates[u.id] === 'waiting_room' || globalClockStates[u.id] === 'waiting')).map((u) => {
       const arrTime = globalArrivalTimes[u.id] || 0;
       const shiftStartMins = parseTimeToMins(shiftConfigs[u.id]?.start || '09:00');
       const toleranceEndMins = shiftStartMins + resolveTolerance(timeBankConfigs.maxLateMinsAllowed);
-      const isOnTime = arrTime <= toleranceEndMins; 
-      
+      const isOnTime = arrTime <= toleranceEndMins;
+
       const arrH = Math.floor(arrTime / 60);
       const arrM = arrTime % 60;
       const arrTimeFormatted = `${arrH.toString().padStart(2, '0')}:${arrM.toString().padStart(2, '0')}`;
@@ -2187,7 +2187,7 @@ export function useClockEngine(overrideUser?: any) {
         toleranceEndMins
       };
     });
-    
+
     setPaseListaEmployees(empleadosEnPuerta);
     setShowAmnestyModal(false);
     setShowPaseListaModal(true);
@@ -2198,21 +2198,21 @@ export function useClockEngine(overrideUser?: any) {
     setStoreStatus('open');
     setStoreOpenSimTime(currentSimTime);
     setShowAmnestyModal(false);
-    
+
     useAppStore.getState().addMatrixEvent(
-       'Apertura desde el Celular', 
-       `La sucursal fue abierta físicamente por el administrador/encargado (${currentUser?.name}) deslizando el switch desde su dispositivo.`, 
-       'success', 
+       'Apertura desde el Celular',
+       `La sucursal fue abierta físicamente por el administrador/encargado (${currentUser?.name}) deslizando el switch desde su dispositivo.`,
+       'success',
        currentUser?.id
     );
-    
+
     // NOTA: Eliminamos el 'return' prematuro del modo Sandbox aquí
     // ya que syncToDB() se encarga de detener la petición a la BD pero SI cambia los estados.
-    
+
     try {
       const typeStr = currentSimTime < 480 ? 'forzosa' : 'open';
       const todayStr = new Date().toLocaleDateString('sv-SE');
-      
+
       await axiosInstance.post('/sync/store_log', {
           user_id: currentUser.id,
           date: todayStr,
@@ -2249,7 +2249,7 @@ export function useClockEngine(overrideUser?: any) {
     setShowPaseListaModal(false);
     let registrados = 0;
     const todayStr = new Date().toLocaleDateString('sv-SE');
-    
+
     try {
       for (const emp of paseListaEmployees) {
           if (emp.selectedStatus === 'presente') {
@@ -2304,17 +2304,17 @@ export function useClockEngine(overrideUser?: any) {
 
   const handleKioscoAdd = () => {
     if(!kioscoInput) return;
-    
+
     // Asumimos horario default para kiosco.
     // Fase 1 (2026-07-26): antes la tolerancia estaba escrita a mano como `+ 10` aquí,
     // distinta a la de los otros puntos del archivo. Ahora sale de la única fuente.
     const shiftStartMins = parseTimeToMins('08:00');
     const toleranceEndMins = shiftStartMins + resolveTolerance(timeBankConfigs.maxLateMinsAllowed);
 
-    const newEmp = { 
-      id: Date.now(), 
-      name: kioscoInput + " [Sin Dispositivo]", 
-      role: "Agregado Manual", 
+    const newEmp = {
+      id: Date.now(),
+      name: kioscoInput + " [Sin Dispositivo]",
+      role: "Agregado Manual",
       selected: true,
       onTime: currentSimTime <= toleranceEndMins,
       statusLabel: `Añadido ${formattedTime}`,
@@ -2361,7 +2361,7 @@ export function useClockEngine(overrideUser?: any) {
           const remaining = await offlineDb.getPunches();
           setSyncQueue(remaining);
           showCustomAlert(`📡 Fichaje guardado localmente en cola offline IndexedDB (Sin Internet).`);
-          
+
           let newState = 'active';
           if (type === 'waiting') newState = 'waiting';
           else if (type === 'check_in') newState = 'active';
@@ -2376,7 +2376,7 @@ export function useClockEngine(overrideUser?: any) {
           else if (type === 'check_out') newState = 'finished'; // BUG FIX: 'inactive' causaba que el dial mostrara 'Registrar Entrada' post checkout
           else if (type === 'contingency') newState = 'contingency';
           else if (type === 'absent') newState = 'absent';
-          
+
           if (currentUser?.id) {
              updateClockState(currentUser.id, newState);
           }
@@ -2390,7 +2390,7 @@ export function useClockEngine(overrideUser?: any) {
              'info',
              currentUser.id
           );
-          
+
           let newState = 'active';
           if (type === 'waiting') newState = 'waiting';
           else if (type === 'check_in') newState = 'active';
@@ -2503,7 +2503,7 @@ export function useClockEngine(overrideUser?: any) {
 
     const shiftStartMins = parseTimeToMins((shiftConfigs[currentUser?.id]?.start || '09:00'));
     const toleranceEndMins = shiftStartMins + resolveTolerance(timeBankConfigs.maxLateMinsAllowed);
-  
+
 
 
     const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
@@ -2536,14 +2536,14 @@ export function useClockEngine(overrideUser?: any) {
           return;
         }
       }
-      
+
       if (clockState === 'inactive') {
         await syncToDB('waiting');
         showCustomAlert("En perímetro. Esperando apertura de tienda...");
       }
     } else {
       const actionText = btnProps.text;
-      
+
       if (actionText === 'Registrar Entrada' || actionText === 'Registrar Entrada Manual' || actionText === 'Fichar Entrada') {
         const res = await syncToDB('check_in');
         if (res && res.entry && res.entry.late_type) {
@@ -2727,7 +2727,7 @@ export function useClockEngine(overrideUser?: any) {
   const startBreakWithSittingTask = async (taskId: number) => {
     const res = await syncToDB('break_start');
     if (res?.offline) return;
-    
+
     const assignmentId = `seat_${currentUser.id}_${Date.now()}`;
     const newTaskAssignment = {
       id: assignmentId,
@@ -2738,12 +2738,12 @@ export function useClockEngine(overrideUser?: any) {
       completedAtMins: null,
       accumulatedMins: 0
     };
-    
+
     useTaskStore.setState(state => ({
       assignments: [...state.assignments, newTaskAssignment]
     }));
     useTaskStore.getState().syncToBackend();
-    
+
     setShowBreakSeatModal(false);
     showCustomAlert('🧘 Descanso (Ley Silla) iniciado y tarea sentado asignada.');
   };
@@ -2897,7 +2897,7 @@ export function useClockEngine(overrideUser?: any) {
     const hasPendingTasks = useTaskStore.getState().assignments.some(
       (a: any) => Number(a.userId) === Number(currentUser.id) && (a.status === 'pending' || a.status === 'in_progress')
     );
-    
+
     const currentShiftEndStr = shiftConfigs[currentUser?.id]?.end || '17:00';
     const currentShiftEndMins = parseTimeToMins(currentShiftEndStr);
     const isEarly = currentSimTime < currentShiftEndMins;
@@ -3051,7 +3051,7 @@ export function useClockEngine(overrideUser?: any) {
       const typeStr = isSimulatedHoliday ? 'holiday_unlocked' : 'overtime_unlocked';
       const detailStr = isSimulatedHoliday ? 'Labor en Día Feriado (LFT Art. 75) habilitado por supervisor' : 'Horas Extras desbloqueadas por supervisor';
       const eventTitle = isSimulatedHoliday ? '📅 Labor en Feriado Habilitada' : '⏰ Horas Extras Habilitadas';
-      const eventDesc = isSimulatedHoliday 
+      const eventDesc = isSimulatedHoliday
         ? `Se autorizó a ${currentUser.name} a laborar en Día Feriado (Natalicio de Benito Juárez) mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'} (Pago Triple LFT aplicable).`
         : `Se autorizó a ${currentUser.name} a laborar en su día de descanso mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'}.`;
 
@@ -3078,7 +3078,7 @@ export function useClockEngine(overrideUser?: any) {
       setSupervisorQrToken('');
       setSupervisorPin('');
       setIsOvertimeValidation(false);
-      
+
       showCustomAlert(isSimulatedHoliday ? '📅 Labor en Día Feriado autorizada. Ya puedes registrar tu entrada.' : '⏰ Horas Extras autorizadas por supervisor. Ya puedes registrar tu entrada.');
       return;
     }
@@ -3139,7 +3139,7 @@ export function useClockEngine(overrideUser?: any) {
     setPendingTasksBlocker(false);
     setSupervisorQrToken('');
     setSupervisorPin('');
-    
+
     const wasEarly = isEarlyDepartureValidation;
     setIsEarlyDepartureValidation(false);
 
@@ -3173,7 +3173,7 @@ export function useClockEngine(overrideUser?: any) {
       return;
     }
     const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
-    
+
     if (isPro) {
       setIsEarlyDepartureValidation(true);
       setSupervisorPin('');
@@ -3186,7 +3186,7 @@ export function useClockEngine(overrideUser?: any) {
 
   const submitEvaluation = () => {
     setShowEvalModal(false);
-    setRequireEvaluation(false); 
+    setRequireEvaluation(false);
     showCustomAlert(`⭐ Evaluación enviada.`);
     processFinalClockOut();
   };
@@ -3202,7 +3202,7 @@ export function useClockEngine(overrideUser?: any) {
     // FASE 1: Delegación del Día Previo
     const nextDay = DIAS_SEMANA[(DIAS_SEMANA.indexOf(currentDay) + 1) % 7];
     const userRestDay = shiftConfigs[currentUser?.id]?.restDay;
-    
+
     // Si el usuario actual es el encargado activo, y mañana es su descanso...
     if (currentUser.id === activeEncargadoId && userRestDay === nextDay && !delegatedTo) {
       setShowKeyDelegationModal(true);
@@ -3232,7 +3232,7 @@ export function useClockEngine(overrideUser?: any) {
       showCustomAlert("Por favor llena todos los campos del reporte.");
       return;
     }
-    
+
     if (useAppStore.getState().isSandboxMode) {
        useAppStore.getState().addMatrixEvent(
           `[SANDBOX] Reporte Simulado`,
@@ -3244,7 +3244,7 @@ export function useClockEngine(overrideUser?: any) {
        showCustomAlert("✅ Tu reporte anónimo ha sido enviado (Sandbox).");
        return;
     }
-    
+
     try {
         const targetName = globalUsers.find(u => u.id === parseInt(reportForm.targetId))?.name || 'Desconocido';
         await axiosInstance.post('/sync/audit_log', {
@@ -3254,9 +3254,9 @@ export function useClockEngine(overrideUser?: any) {
                reason: reportForm.details,
                details: `Denuncia anónima hacia: ${targetName}`
         });
-        
+
         window.dispatchEvent(new Event('db_sync_updated'));
-        
+
         setShowReportModal(false);
         setReportForm({ targetId: '', type: '', details: '' });
         showCustomAlert("✅ Tu reporte anónimo ha sido enviado a la administración con éxito.");
@@ -3292,7 +3292,7 @@ export function useClockEngine(overrideUser?: any) {
       return {
         // Texto alineado a docs/Logica Dial.md (estado #2, "Texto Principal") — solo texto.
         text: 'Día Feriado',
-        bg: 'bg-indigo-50 border border-indigo-200 text-indigo-700 cursor-not-allowed font-extrabold shadow-sm',
+        bg: 'bg-navy-50 border border-border text-accent cursor-not-allowed font-extrabold shadow-sm',
         icon: '📅',
         iconKey: 'holiday',
         disabled: true,
@@ -3301,7 +3301,7 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay && !isOvertimeUnlocked[currentUser?.id];
-    if (isRestDay) return { text: 'Día Descanso', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '🌴', iconKey: 'restday', disabled: true, subtext: 'Día libre programado' };
+    if (isRestDay) return { text: 'Día Descanso', bg: 'bg-slate-300 text-text-3 cursor-not-allowed', icon: '🌴', iconKey: 'restday', disabled: true, subtext: 'Día libre programado' };
 
     const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
     const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
@@ -3344,15 +3344,15 @@ export function useClockEngine(overrideUser?: any) {
     if (!hasCheckedIn && clockState === 'inactive' && currentSimTime >= 420 && currentSimTime < shiftStartMins) {
       if (isPro) {
         const isResponsibleForOpening = Number(currentUser?.id) === Number(responsibleId);
-        
+
         if (isResponsibleForOpening) {
           const travelTime = clockOpConfig.suplente_travel_time_mins || 60;
           const managerDeadlineMins = shiftStartMins - travelTime;
-          
+
           if (currentSimTime < managerDeadlineMins && features.allow_manager_incidences !== false) {
             return {
               text: '⚠️ Reportar Falta',
-              bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)] animate-pulse',
+              bg: 'bg-warning-text hover:bg-warning-text text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)] animate-pulse',
               icon: '⚠️',
               iconKey: 'incidence_report',
               isIncidenceReport: true,
@@ -3365,7 +3365,7 @@ export function useClockEngine(overrideUser?: any) {
           if (currentSimTime < employeeDeadlineMins && features.allow_employee_incidences !== false) {
             return {
               text: '⚠️ Reportar Falta',
-              bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
+              bg: 'bg-warning-text hover:bg-warning-text text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
               icon: '⚠️',
               iconKey: 'incidence_report',
               isIncidenceReport: true,
@@ -3394,7 +3394,7 @@ export function useClockEngine(overrideUser?: any) {
             // BUG FIX: unificado con el texto exacto de la matriz maestra (docs/funcionamiento_del_dial.md, estado #7)
             // para que coincida con la comparación de actionText en handleAction().
             text: '📍 Ya llegué',
-            bg: 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-pulse',
+            bg: 'bg-success-text hover:bg-success-text text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-pulse',
             icon: '📍',
             iconKey: 'arrived',
             isProximityCheck: true,
@@ -3411,7 +3411,7 @@ export function useClockEngine(overrideUser?: any) {
           // aunque ambos comparten el flag isIncidenceReport para mantener accesible esa acción secundaria.
           return {
             text: 'En Camino',
-            bg: 'bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]',
+            bg: 'bg-warning-icon hover:bg-warning-text text-white font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]',
             icon: '📍',
             iconKey: 'in_transit',
             isIncidenceReport: true,
@@ -3494,7 +3494,7 @@ export function useClockEngine(overrideUser?: any) {
       if (!isOpeningManager && isHandoverInProgress && isUserActiveKeyholder(currentUser?.id)) {
         return {
           text: 'Llamar Suplente',
-          bg: 'bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-[0_0_20px_rgba(124,58,237,0.3)] animate-pulse',
+          bg: 'bg-accent hover:bg-accent-hover text-white font-bold shadow-[0_0_20px_rgba(124,58,237,0.3)] animate-pulse',
           icon: '📞',
           iconKey: 'call_suplente',
           isCallSuplenteMain: true,
@@ -3518,7 +3518,7 @@ export function useClockEngine(overrideUser?: any) {
             if (hasReported) {
               return {
                 text: '⏳ Esperando Apertura',
-                bg: 'bg-slate-300 text-slate-500 cursor-not-allowed',
+                bg: 'bg-slate-300 text-text-3 cursor-not-allowed',
                 icon: '⏳',
                 iconKey: 'waiting_opening',
                 disabled: true,
@@ -3527,7 +3527,7 @@ export function useClockEngine(overrideUser?: any) {
             }
             return {
               text: '🚨 Reportar Cerrado',
-              bg: 'bg-amber-500 hover:bg-amber-600 text-white font-extrabold shadow-[0_0_20px_rgba(249,115,22,0.3)] animate-pulse',
+              bg: 'bg-warning-icon hover:bg-warning-text text-white font-extrabold shadow-[0_0_20px_rgba(249,115,22,0.3)] animate-pulse',
               icon: '🚨',
               iconKey: 'report_store_closed',
               isReportStoreClosed: true,
@@ -3578,7 +3578,7 @@ export function useClockEngine(overrideUser?: any) {
       if (isKeyholderPresent) {
         return {
           text: 'Apertura Emergencia',
-          bg: 'bg-rose-600 hover:bg-rose-700 text-white font-black shadow-[0_0_25px_rgba(225,29,72,0.35)] animate-pulse',
+          bg: 'bg-danger-text hover:bg-danger-text text-white font-black shadow-[0_0_25px_rgba(225,29,72,0.35)] animate-pulse',
           icon: '⚠️',
           iconKey: 'emergency_open',
           isEmergencyOpen: true,
@@ -3591,7 +3591,7 @@ export function useClockEngine(overrideUser?: any) {
       if (Number(currentUser.id) === Number(responsibleId)) {
         return {
           text: 'Abrir Tienda',
-          bg: 'bg-violet-600 hover:bg-violet-700 text-white font-black shadow-[0_0_25px_rgba(139,92,246,0.35)] animate-pulse',
+          bg: 'bg-accent hover:bg-accent-hover text-white font-black shadow-[0_0_25px_rgba(139,92,246,0.35)] animate-pulse',
           icon: '🗝️',
           iconKey: 'open_store',
           isOpeningActive: true,
@@ -3601,7 +3601,7 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     if (Number(currentUser.id) === Number(activeEncargadoId) && storeStatus === 'closed' && sinTurnoAbierto) {
-      return { text: 'Abrir Tienda', bg: 'bg-indigo-600 hover:bg-indigo-700', icon: '🗝️', iconKey: 'open_store' };
+      return { text: 'Abrir Tienda', bg: 'bg-accent hover:bg-accent-hover', icon: '🗝️', iconKey: 'open_store' };
     }
 
     if (!isWithinPerimeter && (clockState === 'inactive' || clockState === 'waiting_room')) {
@@ -3610,7 +3610,7 @@ export function useClockEngine(overrideUser?: any) {
       if (isResponsibleForOpening) {
         return {
           text: 'Reportar Incidencia',
-          bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
+          bg: 'bg-warning-text hover:bg-warning-text text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
           icon: '⚠️',
           iconKey: 'incidence_report',
           isIncidenceReport: true,
@@ -3621,7 +3621,7 @@ export function useClockEngine(overrideUser?: any) {
 
       return {
         text: 'Reportar Incidencia',
-        bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
+        bg: 'bg-warning-text hover:bg-warning-text text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
         icon: '⚠️',
         iconKey: 'incidence_report',
         isIncidenceReport: true
@@ -3654,7 +3654,7 @@ export function useClockEngine(overrideUser?: any) {
              if (isPm && hour !== 12) hour += 12;
              if (!isPm && hour === 12) hour = 0;
              const firstSlotMins = hour * 60 + parseInt(sm);
-             
+
              if (currentSimTime < firstSlotMins - 5) {
                 return { text: 'Tomar Comida', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60', icon: '🍔', disabled: true, subtext: `Reserva programada: ${mySlots[0]}` };
              }
@@ -3663,7 +3663,7 @@ export function useClockEngine(overrideUser?: any) {
                 // Alineado a docs/Logica Dial.md estado #16b ("Apartar Turno") — antes era una
                 // frase de 4 palabras ("Reserva tu horario primero"), fuera del límite de 2-3.
                 text: 'Apartar Turno',
-                bg: 'bg-amber-600/20 text-amber-500 border border-amber-500/30 hover:bg-amber-600/30 font-bold shadow-md cursor-pointer animate-pulse',
+                bg: 'bg-warning-text/20 text-warning-text border border-warning-text/30 hover:bg-warning-text/30 font-bold shadow-md cursor-pointer animate-pulse',
                 icon: '🍔',
                 iconKey: 'meal_prompt',
                 isMealReservationAlert: true,
@@ -3686,7 +3686,7 @@ export function useClockEngine(overrideUser?: any) {
           };
         }
 
-        return { text: 'Tomar Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔', iconKey: 'meal_start', subtext: 'Haz clic para iniciar tu comida' };
+        return { text: 'Tomar Comida', bg: 'bg-warning-icon hover:bg-warning-text text-warning-text font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔', iconKey: 'meal_start', subtext: 'Haz clic para iniciar tu comida' };
       }
 
       // El descanso se OFRECE cuando la persona lleva de pie los minutos configurados por su
@@ -3696,7 +3696,7 @@ export function useClockEngine(overrideUser?: any) {
       if (isPro && tocaDescansoLeySilla && !hasTakenBreak && features.enable_ley_silla !== false) {
         return {
           text: 'Tomar Silla',
-          bg: 'bg-violet-600 hover:bg-violet-700 text-white font-extrabold shadow-[0_0_20px_rgba(147,51,234,0.3)] animate-pulse',
+          bg: 'bg-accent hover:bg-accent-hover text-white font-extrabold shadow-[0_0_20px_rgba(147,51,234,0.3)] animate-pulse',
           icon: '🧘',
           iconKey: 'break_start',
           subtext: 'Descanso Ley Silla (15 min)'
@@ -3717,7 +3717,7 @@ export function useClockEngine(overrideUser?: any) {
       if (isPro && isKeysControlUnlockedHO && isManager && !isHandoverCompleted && isHandoverWindow) {
         return {
           text: 'Entregar Turno',
-          bg: 'bg-cyan-600 hover:bg-cyan-700 text-white font-bold shadow-[0_0_20px_rgba(8,145,178,0.3)] animate-pulse',
+          bg: 'bg-accent hover:bg-accent-hover text-white font-bold shadow-[0_0_20px_rgba(8,145,178,0.3)] animate-pulse',
           icon: '🗝️',
           iconKey: 'handover',
           subtext: 'Realizar arqueo y entrega de llaves'
@@ -3745,7 +3745,7 @@ export function useClockEngine(overrideUser?: any) {
 
       return {
         text: 'Fichar Salida',
-        bg: 'bg-rose-600 hover:bg-rose-700 text-white font-black shadow-[0_0_22px_rgba(225,29,72,0.35)]',
+        bg: 'bg-danger-text hover:bg-danger-text text-white font-black shadow-[0_0_22px_rgba(225,29,72,0.35)]',
         icon: '🚪',
         iconKey: 'exit',
         subtext: 'Checklist cierre seguro (luces/caja)'
@@ -3753,16 +3753,16 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     if (clockState === 'meal') {
-      return { text: 'Terminar Comida', bg: 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)]', icon: '🏃', iconKey: 'meal_end', subtext: 'Haz clic al regresar a la sucursal' };
+      return { text: 'Terminar Comida', bg: 'bg-success-icon hover:bg-success-text text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)]', icon: '🏃', iconKey: 'meal_end', subtext: 'Haz clic al regresar a la sucursal' };
     }
     if (clockState === 'short_break') {
-      return { text: 'Terminar Descanso', bg: 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '🏃', iconKey: 'break_end', subtext: 'Haz clic al reincorporarte' };
+      return { text: 'Terminar Descanso', bg: 'bg-accent hover:bg-accent-hover text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '🏃', iconKey: 'break_end', subtext: 'Haz clic al reincorporarte' };
     }
     if (clockState === 'temp_exit') {
-      return { text: 'Fichar Reingreso', bg: 'bg-teal-500 hover:bg-teal-600 text-white font-bold shadow-[0_0_20px_rgba(20,184,166,0.35)]', icon: '🚶', iconKey: 'reingreso', subtext: 'Pase de salida temporal (Regreso est. 30m)' };
+      return { text: 'Fichar Reingreso', bg: 'bg-accent hover:bg-accent text-white font-bold shadow-[0_0_20px_rgba(20,184,166,0.35)]', icon: '🚶', iconKey: 'reingreso', subtext: 'Pase de salida temporal (Regreso est. 30m)' };
     }
     if (clockState === 'absent') {
-      return { text: 'Ausencia Registrada', bg: 'bg-rose-100 text-rose-500 cursor-not-allowed', icon: '🚷', iconKey: 'absent', disabled: true };
+      return { text: 'Ausencia Registrada', bg: 'bg-danger-bg text-danger-text cursor-not-allowed', icon: '🚷', iconKey: 'absent', disabled: true };
     }
     if (clockState === 'finished') {
       return { text: 'Fin Jornada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', iconKey: 'finished', disabled: true, subtext: 'Turno concluido hoy.' };
@@ -3894,7 +3894,7 @@ export function useClockEngine(overrideUser?: any) {
   // Polling para Chat y Llaves
   useEffect(() => {
     if (isSandboxMode) return;
-    
+
     checkPendingKeyTransfers();
 
     const interval = setInterval(() => {
@@ -3910,9 +3910,9 @@ export function useClockEngine(overrideUser?: any) {
   const btnProps = getButtonProps();
 
 
-  
 
-    
+
+
     return {
     openingSettings,
     openingStatus,

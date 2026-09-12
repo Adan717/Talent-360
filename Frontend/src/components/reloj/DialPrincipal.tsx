@@ -114,7 +114,7 @@ export default function DialPrincipal({
   const [showGpsModal, setShowGpsModal] = useState(false);
 
   const isUserKeyholder = Boolean(
-    isKeyholder || 
+    isKeyholder ||
     (currentUser?.portadorLlaves && currentUser.portadorLlaves.toLowerCase() !== 'ninguno') ||
     ['titular', 'suplente'].includes(currentUser?.portadorLlaves?.toLowerCase())
   );
@@ -130,73 +130,73 @@ export default function DialPrincipal({
   // en vez de tener que actualizar 3 switches de texto por separado (la causa original de que varios
   // estados de la Matriz de 23 Estados cayeran silenciosamente al ícono Fingerprint genérico).
   const ICON_KEY_STYLES: Record<string, { color: string; glow: string; icon: (s: number) => React.ReactNode; textColor?: string }> = {
-    blocked: { color: 'bg-white border-slate-400 text-slate-500 shadow-none', glow: 'bg-slate-400', icon: (s) => <Fingerprint size={s} className="text-slate-500 shrink-0" /> },
-    holiday: { color: 'bg-white border-indigo-400 text-indigo-600 shadow-indigo-500/10', glow: 'bg-indigo-400', icon: (s) => <Sun size={s} className="text-indigo-500 shrink-0" /> },
-    restday: { color: 'bg-white border-slate-200 text-slate-400 shadow-none hover:border-slate-300', glow: '', icon: (s) => <Sun size={s} className="text-slate-400 shrink-0" /> },
-    incidence_report: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 animate-pulse hover:border-amber-600', glow: 'bg-amber-400', icon: (s) => <AlertTriangle size={s} className="text-amber-500 animate-pulse shrink-0" /> },
-    in_transit: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 hover:border-amber-600', glow: 'bg-amber-400', icon: (s) => <MapPin size={s} className="text-amber-500 shrink-0" /> },
-    arrived: { color: 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 animate-pulse hover:border-emerald-600', glow: 'bg-emerald-400', icon: (s) => <LogIn size={s} className="text-emerald-500 animate-pulse shrink-0" /> },
-    gps_locked: { color: 'bg-white border-slate-200 text-slate-400 shadow-none', glow: '', icon: (s) => <MapPin size={s} className="text-slate-400 shrink-0" /> },
-    access_blocked: { color: 'bg-white border-rose-500 text-rose-600 shadow-rose-500/10 animate-pulse hover:border-rose-600', glow: 'bg-rose-400', icon: (s) => <MapPin size={s} className="text-rose-500 shrink-0" /> },
-    waiting_opening: { color: 'bg-white border-slate-200 text-slate-400 shadow-none', glow: '', icon: (s) => <Hourglass size={s} className="text-slate-400 shrink-0" /> },
-    report_store_closed: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 animate-pulse hover:border-amber-600', glow: 'bg-amber-400', icon: (s) => <AlertCircle size={s} className="text-amber-500 animate-pulse shrink-0" /> },
-    call_suplente: { color: 'bg-white border-violet-500 text-violet-600 shadow-violet-500/10 animate-pulse hover:border-violet-600', glow: 'bg-violet-400', icon: (s) => <Phone size={s} className="text-violet-500 animate-pulse shrink-0" /> },
+    blocked: { color: 'bg-white border-slate-400 text-text-3 shadow-none', glow: 'bg-slate-400', icon: (s) => <Fingerprint size={s} className="text-text-3 shrink-0" /> },
+    holiday: { color: 'bg-white border-navy-300 text-accent shadow-accent/10', glow: 'bg-navy-400', icon: (s) => <Sun size={s} className="text-accent shrink-0" /> },
+    restday: { color: 'bg-white border-border text-slate-400 shadow-none hover:border-slate-300', glow: '', icon: (s) => <Sun size={s} className="text-slate-400 shrink-0" /> },
+    incidence_report: { color: 'bg-white border-warning-text text-warning-text shadow-warning-text/10 animate-pulse hover:border-warning-text', glow: 'bg-warning-icon', icon: (s) => <AlertTriangle size={s} className="text-warning-text animate-pulse shrink-0" /> },
+    in_transit: { color: 'bg-white border-warning-text text-warning-text shadow-warning-text/10 hover:border-warning-text', glow: 'bg-warning-icon', icon: (s) => <MapPin size={s} className="text-warning-text shrink-0" /> },
+    arrived: { color: 'bg-white border-success-text text-success-text shadow-success-text/10 animate-pulse hover:border-success-text', glow: 'bg-success-icon', icon: (s) => <LogIn size={s} className="text-success-text animate-pulse shrink-0" /> },
+    gps_locked: { color: 'bg-white border-border text-slate-400 shadow-none', glow: '', icon: (s) => <MapPin size={s} className="text-slate-400 shrink-0" /> },
+    access_blocked: { color: 'bg-white border-danger-text text-danger-text shadow-danger-text/10 animate-pulse hover:border-danger-text', glow: 'bg-danger-icon', icon: (s) => <MapPin size={s} className="text-danger-text shrink-0" /> },
+    waiting_opening: { color: 'bg-white border-border text-slate-400 shadow-none', glow: '', icon: (s) => <Hourglass size={s} className="text-slate-400 shrink-0" /> },
+    report_store_closed: { color: 'bg-white border-warning-text text-warning-text shadow-warning-text/10 animate-pulse hover:border-warning-text', glow: 'bg-warning-icon', icon: (s) => <AlertCircle size={s} className="text-warning-text animate-pulse shrink-0" /> },
+    call_suplente: { color: 'bg-white border-accent text-accent shadow-accent/10 animate-pulse hover:border-accent', glow: 'bg-navy-400', icon: (s) => <Phone size={s} className="text-accent animate-pulse shrink-0" /> },
     open_store: {
-      color: 'bg-white border-violet-500 text-violet-600 shadow-violet-500/10 animate-pulse hover:border-violet-600',
-      glow: 'bg-violet-400',
+      color: 'bg-white border-accent text-accent shadow-accent/10 animate-pulse hover:border-accent',
+      glow: 'bg-navy-400',
       icon: (s) => (
         <span className="relative inline-flex shrink-0">
-          <Key size={s} className="text-violet-500 animate-pulse shrink-0" />
-          <Store size={Math.round(s * 0.42)} className="absolute -bottom-1 -right-1 text-violet-700 bg-white rounded-full p-0.5" />
+          <Key size={s} className="text-accent animate-pulse shrink-0" />
+          <Store size={Math.round(s * 0.42)} className="absolute -bottom-1 -right-1 text-accent bg-white rounded-full p-0.5" />
         </span>
       )
     },
-    emergency_open: { color: 'bg-white border-rose-600 text-rose-600 shadow-rose-500/15 animate-pulse hover:border-rose-700', glow: 'bg-rose-500', icon: (s) => <ShieldAlert size={s} className="text-rose-600 animate-pulse shrink-0" /> },
-    entrada: { color: 'bg-white border-rose-500 text-rose-600 shadow-rose-500/10 hover:border-rose-600 animate-pulse', glow: 'bg-rose-400', icon: (s) => <LogIn size={s} className="text-rose-600 shrink-0" />, textColor: 'text-rose-600' },
-    verifying_gps: { color: 'bg-white border-indigo-500 text-indigo-600 shadow-indigo-500/10 hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <MapPin size={s} className="text-indigo-600 animate-bounce shrink-0" />, textColor: 'text-indigo-600' },
-    verifying_selfie: { color: 'bg-white border-indigo-500 text-indigo-600 shadow-indigo-500/10 hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <Camera size={s} className="text-indigo-600 shrink-0" />, textColor: 'text-indigo-600' },
-    success_check: { color: 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 hover:border-emerald-600 shadow-lg', glow: 'bg-emerald-400 animate-pulse', icon: (s) => <CheckCircle size={s} className="text-emerald-500 animate-pulse shrink-0" />, textColor: 'text-emerald-600' },
-    meal_prompt: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 hover:border-amber-600 animate-pulse', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 animate-pulse shrink-0" />, textColor: 'text-amber-500' },
-    meal_start: { color: 'bg-white border-amber-500 text-amber-700 shadow-amber-500/10 hover:border-amber-600 animate-pulse', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 shrink-0" />, textColor: 'text-amber-500' },
-    meal_end: { color: 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 animate-pulse hover:border-emerald-600', glow: 'bg-emerald-400', icon: (s) => <Utensils size={s} className="text-emerald-500 animate-pulse shrink-0" /> },
-    break_start: { color: 'bg-white border-violet-500 text-violet-600 shadow-violet-500/10 animate-pulse hover:border-violet-600', glow: 'bg-violet-400', icon: (s) => <Armchair size={s} className="text-violet-600 animate-pulse shrink-0" />, textColor: 'text-violet-600' },
-    break_end: { color: 'bg-white border-indigo-500 text-indigo-600 shadow-indigo-500/10 animate-pulse hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <Armchair size={s} className="text-indigo-500 animate-pulse shrink-0" /> },
-    handover: { color: 'bg-white border-cyan-500 text-cyan-600 shadow-cyan-500/10 animate-pulse hover:border-cyan-600', glow: 'bg-cyan-400', icon: (s) => <Key size={s} className="text-cyan-500 animate-pulse shrink-0" /> },
-    exit: { color: 'bg-white border-rose-500 text-rose-600 shadow-rose-500/10 hover:border-rose-600 animate-pulse', glow: 'bg-rose-400', icon: (s) => <LogOut size={s} className="text-rose-600 shrink-0" />, textColor: 'text-rose-600' },
-    reingreso: { color: 'bg-white border-teal-500 text-teal-700 shadow-teal-500/10 hover:border-teal-600', glow: 'bg-teal-400', icon: (s) => <LogIn size={s} className="text-teal-500 shrink-0" /> },
-    absent: { color: 'bg-white border-rose-200 text-rose-400 shadow-none', glow: '', icon: (s) => <Ban size={s} className="text-rose-400 shrink-0" /> },
+    emergency_open: { color: 'bg-white border-danger-text text-danger-text shadow-danger-text/15 animate-pulse hover:border-danger-text', glow: 'bg-danger-icon', icon: (s) => <ShieldAlert size={s} className="text-danger-text animate-pulse shrink-0" /> },
+    entrada: { color: 'bg-white border-danger-text text-danger-text shadow-danger-text/10 hover:border-danger-text animate-pulse', glow: 'bg-danger-icon', icon: (s) => <LogIn size={s} className="text-danger-text shrink-0" />, textColor: 'text-danger-text' },
+    verifying_gps: { color: 'bg-white border-accent text-accent shadow-accent/10 hover:border-accent', glow: 'bg-navy-400', icon: (s) => <MapPin size={s} className="text-accent animate-bounce shrink-0" />, textColor: 'text-accent' },
+    verifying_selfie: { color: 'bg-white border-accent text-accent shadow-accent/10 hover:border-accent', glow: 'bg-navy-400', icon: (s) => <Camera size={s} className="text-accent shrink-0" />, textColor: 'text-accent' },
+    success_check: { color: 'bg-white border-success-text text-success-text shadow-success-text/10 hover:border-success-text shadow-lg', glow: 'bg-success-icon animate-pulse', icon: (s) => <CheckCircle size={s} className="text-success-text animate-pulse shrink-0" />, textColor: 'text-success-text' },
+    meal_prompt: { color: 'bg-white border-warning-text text-warning-text shadow-warning-text/10 hover:border-warning-text animate-pulse', glow: 'bg-warning-icon', icon: (s) => <Coffee size={s} className="text-warning-text animate-pulse shrink-0" />, textColor: 'text-warning-text' },
+    meal_start: { color: 'bg-white border-warning-text text-warning-text shadow-warning-text/10 hover:border-warning-text animate-pulse', glow: 'bg-warning-icon', icon: (s) => <Coffee size={s} className="text-warning-text shrink-0" />, textColor: 'text-warning-text' },
+    meal_end: { color: 'bg-white border-success-text text-success-text shadow-success-text/10 animate-pulse hover:border-success-text', glow: 'bg-success-icon', icon: (s) => <Utensils size={s} className="text-success-text animate-pulse shrink-0" /> },
+    break_start: { color: 'bg-white border-accent text-accent shadow-accent/10 animate-pulse hover:border-accent', glow: 'bg-navy-400', icon: (s) => <Armchair size={s} className="text-accent animate-pulse shrink-0" />, textColor: 'text-accent' },
+    break_end: { color: 'bg-white border-accent text-accent shadow-accent/10 animate-pulse hover:border-accent', glow: 'bg-navy-400', icon: (s) => <Armchair size={s} className="text-accent animate-pulse shrink-0" /> },
+    handover: { color: 'bg-white border-accent text-accent shadow-accent/10 animate-pulse hover:border-accent', glow: 'bg-navy-400', icon: (s) => <Key size={s} className="text-accent animate-pulse shrink-0" /> },
+    exit: { color: 'bg-white border-danger-text text-danger-text shadow-danger-text/10 hover:border-danger-text animate-pulse', glow: 'bg-danger-icon', icon: (s) => <LogOut size={s} className="text-danger-text shrink-0" />, textColor: 'text-danger-text' },
+    reingreso: { color: 'bg-white border-accent text-accent shadow-accent/10 hover:border-accent', glow: 'bg-navy-400', icon: (s) => <LogIn size={s} className="text-accent shrink-0" /> },
+    absent: { color: 'bg-white border-danger-text/20 text-danger-text shadow-none', glow: '', icon: (s) => <Ban size={s} className="text-danger-text shrink-0" /> },
     finished: { color: 'bg-white border-slate-300 text-slate-400 shadow-none', glow: '', icon: (s) => <CheckCircle size={s} className="text-slate-400 shrink-0" /> },
   };
 
   const getDialColorClasses = () => {
-    if (isGpsError) return 'bg-white border-rose-300 text-rose-500 shadow-none animate-pulse hover:border-rose-400';
+    if (isGpsError) return 'bg-white border-danger-text/20 text-danger-text shadow-none animate-pulse hover:border-danger-text';
     const byKey = btnProps.iconKey ? ICON_KEY_STYLES[btnProps.iconKey] : undefined;
     if (byKey) return byKey.color;
     // Fallback por texto para cualquier estado que aún no tenga iconKey asignado (no debería pasar
     // para los 23 de la matriz tras esta corrección, pero evita romper estados nuevos/experimentales).
     const text = btnProps.text || '';
-    if (text === 'Abrir Tienda') return 'bg-white border-violet-500 text-violet-600 shadow-violet-500/10 animate-pulse hover:border-violet-600';
-    if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual' || text === 'Fichar Entrada') return 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 hover:border-emerald-600';
-    return 'bg-white border-violet-400 text-violet-700 shadow-violet-500/10 hover:border-violet-500';
+    if (text === 'Abrir Tienda') return 'bg-white border-accent text-accent shadow-accent/10 animate-pulse hover:border-accent';
+    if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual' || text === 'Fichar Entrada') return 'bg-white border-success-text text-success-text shadow-success-text/10 hover:border-success-text';
+    return 'bg-white border-navy-300 text-accent shadow-accent/10 hover:border-accent';
   };
 
   const getDialGlowClasses = () => {
-    if (isGpsError) return 'bg-rose-500';
+    if (isGpsError) return 'bg-danger-icon';
     const byKey = btnProps.iconKey ? ICON_KEY_STYLES[btnProps.iconKey] : undefined;
     if (byKey) return byKey.glow || null;
-    return 'bg-violet-400';
+    return 'bg-navy-400';
   };
 
   const getDialIcon = (sizeValue: number) => {
-    if (isGpsError) return <MapPin size={sizeValue} className="text-rose-500 shrink-0 animate-bounce" />;
+    if (isGpsError) return <MapPin size={sizeValue} className="text-danger-text shrink-0 animate-bounce" />;
     const byKey = btnProps.iconKey ? ICON_KEY_STYLES[btnProps.iconKey] : undefined;
     if (byKey) return byKey.icon(sizeValue);
 
     // Fallback legacy por texto (estados sin iconKey todavía).
-    if (btnProps.isIncidenceReport) return <AlertTriangle size={sizeValue} className="text-amber-500 animate-pulse shrink-0" />;
+    if (btnProps.isIncidenceReport) return <AlertTriangle size={sizeValue} className="text-warning-text animate-pulse shrink-0" />;
     const text = btnProps.text || '';
-    if (text === 'Abrir Tienda') return <Key size={sizeValue} className="text-violet-500 animate-pulse shrink-0" />;
-    if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual' || text === 'Fichar Entrada') return <LogIn size={sizeValue} className="text-emerald-500 shrink-0" />;
+    if (text === 'Abrir Tienda') return <Key size={sizeValue} className="text-accent animate-pulse shrink-0" />;
+    if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual' || text === 'Fichar Entrada') return <LogIn size={sizeValue} className="text-success-text shrink-0" />;
 
     return <Fingerprint size={sizeValue} className="text-slate-300 shrink-0" />;
   };
@@ -268,10 +268,10 @@ export default function DialPrincipal({
     return (
       <div className={`flex flex-col items-center justify-center py-2 mt-0 relative ${isMobile ? 'flex-shrink-0 w-full my-3' : ''}`}>
         <div className="flex flex-col items-center justify-center p-8 text-center animate-pulse min-h-[220px]">
-          <div className="w-14 h-14 bg-violet-100 dark:bg-violet-950/20 rounded-full flex items-center justify-center text-violet-600 dark:text-violet-400 mb-4 shadow-sm">
-            <Hourglass size={28} className="animate-spin text-violet-600" />
+          <div className="w-14 h-14 bg-accent-soft dark:bg-brand-dark/20 rounded-full flex items-center justify-center text-accent dark:text-navy-300 mb-4 shadow-sm">
+            <Hourglass size={28} className="animate-spin text-accent" />
           </div>
-          <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Buscando señal GPS de alta precisión...</p>
+          <p className="text-xs font-bold text-text-2 dark:text-slate-400">Buscando señal GPS de alta precisión...</p>
         </div>
       </div>
     );
@@ -296,13 +296,13 @@ export default function DialPrincipal({
                 isMobile ? 'w-[185px] h-[185px]' : 'w-[200px] h-[200px]'
               } ${
                 isEffectivelyDisabled
-                  ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100' 
+                  ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100'
                   : ''
               }`}
             >
           <div className="flex flex-col items-center justify-center h-full w-full py-1.5 select-none">
             {/* UPPER ZONE: Prominent Icon */}
-            <div className={`flex-grow flex items-center justify-center mt-2.5 ${isGpsError ? 'text-rose-500' : ''}`}>
+            <div className={`flex-grow flex items-center justify-center mt-2.5 ${isGpsError ? 'text-danger-text' : ''}`}>
               {getDialIcon(size)}
             </div>
 
@@ -316,14 +316,14 @@ export default function DialPrincipal({
                 }`}
                 aria-label={`Tiempo trabajado ${workedElapsedLabel}`}
               >
-                <span className="font-black tracking-tight text-emerald-600 tabular-nums">{workedElapsedLabel}</span>
-                <span className={`font-bold uppercase tracking-wider text-emerald-500/70 ${isMobile ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1'}`}>
+                <span className="font-black tracking-tight text-success-text tabular-nums">{workedElapsedLabel}</span>
+                <span className={`font-bold uppercase tracking-wider text-success-text/70 ${isMobile ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1'}`}>
                   Tiempo trabajado
                 </span>
               </div>
             ) : (
             <div className={`flex items-baseline font-mono font-black tracking-tight mt-0.5 mb-1.5 ${
-              isGpsError ? 'text-rose-600' : byKey?.textColor || 'text-slate-800'
+              isGpsError ? 'text-danger-text' : byKey?.textColor || 'text-text-1'
             } ${isMobile ? 'text-[24px]' : 'text-3xl md:text-4xl leading-none'}`}>
               <span>
                 {(() => {
@@ -334,7 +334,7 @@ export default function DialPrincipal({
                       <>
                         {h}
                         <span className={`animate-[pulse_1s_infinite] select-none mx-0.5 font-bold ${
-                          isGpsError ? 'text-rose-400' : byKey?.textColor || 'text-indigo-500'
+                          isGpsError ? 'text-danger-text' : byKey?.textColor || 'text-accent'
                         }`}>:</span>
                         {m}
                       </>
@@ -343,19 +343,19 @@ export default function DialPrincipal({
                   return timePart;
                 })()}
               </span>
-              <span className={`font-bold ${isGpsError ? 'text-rose-400' : 'text-slate-500'} ${isMobile ? 'text-[11px] ml-1' : 'text-xs md:text-sm ml-1.5'}`}>
+              <span className={`font-bold ${isGpsError ? 'text-danger-text' : 'text-text-3'} ${isMobile ? 'text-[11px] ml-1' : 'text-xs md:text-sm ml-1.5'}`}>
                 {formattedTime.split(' ')[1] ? formattedTime.split(' ')[1].toLowerCase() : ''}
               </span>
             </div>
             )}
 
             {/* LOWER ZONE: Bottom Label */}
-            <div className={`px-2 text-center w-full min-h-[32px] flex flex-col items-center justify-center mb-1.5 ${isGpsError ? 'text-rose-600' : 'text-slate-700'} ${isMobile ? 'max-w-[155px]' : 'max-w-[170px]'}`}>
-              <span aria-live="polite" className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[11.5px] max-w-[145px] leading-[1.1]' : 'text-xs md:text-[13px]'} ${isGpsError ? 'text-rose-600 font-extrabold' : ''}`}>
+            <div className={`px-2 text-center w-full min-h-[32px] flex flex-col items-center justify-center mb-1.5 ${isGpsError ? 'text-danger-text' : 'text-text-2'} ${isMobile ? 'max-w-[155px]' : 'max-w-[170px]'}`}>
+              <span aria-live="polite" className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[11.5px] max-w-[145px] leading-[1.1]' : 'text-xs md:text-[13px]'} ${isGpsError ? 'text-danger-text font-extrabold' : ''}`}>
                 {getDialBottomLabel()}
               </span>
               {btnProps.subtext && !['entrada', 'verifying_gps', 'verifying_selfie', 'success_check', 'break_start', 'break_end', 'meal_prompt', 'meal_start', 'exit'].includes(btnProps.iconKey || '') && (
-                <span className={`text-[9px] font-extrabold mt-0.5 leading-none block select-none uppercase truncate max-w-full ${isGpsError ? 'text-rose-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                <span className={`text-[9px] font-extrabold mt-0.5 leading-none block select-none uppercase truncate max-w-full ${isGpsError ? 'text-danger-text' : 'text-text-3 dark:text-slate-400'}`}>
                   {btnProps.subtext}
                 </span>
               )}
@@ -372,9 +372,9 @@ export default function DialPrincipal({
             aria-label="Botón de Pánico / Alerta de Emergencia 🚨"
             className={`absolute -right-12 sm:-right-14 top-1/2 -translate-y-1/2 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-md border cursor-pointer z-30 hover:scale-110 ${
               isMobile ? 'w-10 h-10' : 'w-12 h-12'
-            } bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60`}
+            } bg-danger-bg dark:bg-danger-text/40 border-danger-text/20 dark:border-danger-text text-danger-text dark:text-rose-400 hover:bg-danger-bg dark:hover:bg-danger-text/60`}
           >
-            <AlertOctagon size={isMobile ? 18 : 20} className="animate-pulse text-rose-600 dark:text-rose-400" />
+            <AlertOctagon size={isMobile ? 18 : 20} className="animate-pulse text-danger-text dark:text-rose-400" />
           </button>
         )}
       </div>
@@ -386,7 +386,7 @@ export default function DialPrincipal({
           type="button"
           onClick={onGoToRequiredCourseClick}
           aria-label="Ir al curso obligatorio de Puntualidad en la Academia para desbloquear tu fichaje"
-          className="mt-3.5 py-1.5 px-4 bg-violet-50 dark:bg-violet-950/20 border border-violet-200 hover:border-violet-400 text-violet-700 dark:text-violet-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-violet-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
+          className="mt-3.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border hover:border-navy-300 text-accent dark:text-navy-300 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
         >
           🎓 Ir a la Academia
         </button>
@@ -397,9 +397,9 @@ export default function DialPrincipal({
           type="button"
           onClick={onMealSwapClick}
           aria-label="Intercambiar turno de comida con un compañero"
-          className="mt-3.5 py-1.5 px-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 hover:border-amber-400 text-amber-700 dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+          className="mt-3.5 py-1.5 px-4 bg-warning-bg dark:bg-warning-text/20 border border-warning-text/20 hover:border-warning-text text-warning-text dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-warning-bg transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
-          <Coffee size={12} className="text-amber-500" />
+          <Coffee size={12} className="text-warning-text" />
           Intercambiar Comida
         </button>
       )}
@@ -409,9 +409,9 @@ export default function DialPrincipal({
           type="button"
           onClick={onEarlyDepartureClick}
           aria-label="Registrar salida anticipada, antes del fin de tu turno"
-          className="mt-2.5 py-1.5 px-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 hover:border-rose-400 text-rose-700 dark:text-rose-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-rose-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
+          className="mt-2.5 py-1.5 px-4 bg-danger-bg dark:bg-danger-text/20 border border-danger-text/20 hover:border-danger-text text-danger-text dark:text-rose-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-danger-bg transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
         >
-          <LogOut size={12} className="text-rose-500" />
+          <LogOut size={12} className="text-danger-text" />
           Salida Anticipada
         </button>
       )}
@@ -424,9 +424,9 @@ export default function DialPrincipal({
           type="button"
           onClick={onOvertimeClick}
           aria-label="Habilitar el fichaje para laborar horas extras en tu día de descanso o feriado"
-          className="mt-3.5 py-1.5 px-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 hover:border-amber-400 text-amber-700 dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
+          className="mt-3.5 py-1.5 px-4 bg-warning-bg dark:bg-warning-text/20 border border-warning-text/20 hover:border-warning-text text-warning-text dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-warning-bg transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
         >
-          <Fingerprint size={12} className="text-amber-500 animate-pulse" />
+          <Fingerprint size={12} className="text-warning-text animate-pulse" />
           Laborar Horas Extras
         </button>
       )}
@@ -437,9 +437,9 @@ export default function DialPrincipal({
           type="button"
           onClick={onCallManagerClick}
           aria-label="Llamar por teléfono al encargado de llaves"
-          className="mt-2.5 py-1.5 px-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 text-indigo-700 dark:text-indigo-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+          className="mt-2.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border text-accent dark:text-navy-300 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
-          <Phone size={12} className="text-indigo-500" />
+          <Phone size={12} className="text-accent" />
           Llamar a Encargado de Llaves
         </button>
       )}
@@ -454,9 +454,9 @@ export default function DialPrincipal({
           type="button"
           onClick={onSendDoorNoticeClick}
           aria-label="Enviar mensaje al encargado avisando que ya estás en puerta"
-          className="mt-2.5 py-1.5 px-4 bg-sky-50 dark:bg-sky-950/20 border border-sky-200 text-sky-700 dark:text-sky-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-sky-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+          className="mt-2.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border text-accent dark:text-navy-300 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
-          <MessageSquare size={12} className="text-sky-500" />
+          <MessageSquare size={12} className="text-accent" />
           Enviar Mensaje
         </button>
       )}
@@ -470,9 +470,9 @@ export default function DialPrincipal({
           type="button"
           onClick={onCallSuplenteClick}
           aria-label="Marcar por teléfono al suplente de llaves"
-          className="mt-2.5 py-1.5 px-4 bg-violet-50 dark:bg-violet-950/20 border border-violet-200 text-violet-700 dark:text-violet-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-violet-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+          className="mt-2.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border text-accent dark:text-navy-300 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
-          <Phone size={12} className="text-violet-500" />
+          <Phone size={12} className="text-accent" />
           Marcar a Suplente
         </button>
       )}
@@ -482,39 +482,39 @@ export default function DialPrincipal({
       {/* Premium Centered GPS Instruction Modal */}
       {showGpsModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white border border-slate-200 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 text-left">
-            
+          <div className="bg-white border border-border w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 text-left">
+
             {/* Close Button */}
             <button
               onClick={() => setShowGpsModal(false)}
               aria-label="Cerrar"
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1.5 rounded-full hover:bg-slate-100 transition-all border-none cursor-pointer"
+              className="absolute top-4 right-4 text-slate-400 hover:text-text-2 p-1.5 rounded-full hover:bg-page transition-all border-none cursor-pointer"
             >
               <X size={18} />
             </button>
 
             {/* Modal Icon Header */}
-            <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 mx-auto mb-4 shadow-sm">
+            <div className="w-12 h-12 bg-danger-bg border border-danger-text/20 rounded-2xl flex items-center justify-center text-danger-text mx-auto mb-4 shadow-sm">
               <MapPin size={22} className="animate-bounce" />
             </div>
 
             {/* Modal Title */}
-            <h3 className="text-sm font-black text-slate-900 text-center tracking-tight mb-2">
+            <h3 className="text-sm font-black text-text-1 text-center tracking-tight mb-2">
               Ubicación Requerida
             </h3>
-            
+
             {/* Message */}
-            <p className="text-[10.5px] text-slate-500 text-center leading-relaxed mb-5 px-2 font-bold">
+            <p className="text-[10.5px] text-text-3 text-center leading-relaxed mb-5 px-2 font-bold">
               Para realizar tu registro, por favor activa los datos y la ubicación en la barra de ajustes de tu celular, luego presiona el botón de abajo.
             </p>
-            
+
             {/* Modal Actions */}
             <div className="flex flex-col gap-2">
               <button
                 type="button"
                 onClick={handleRetryGps}
                 aria-label="Reintentar obtención de ubicación GPS"
-                className="w-full py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-black text-[10px] uppercase tracking-wider rounded-xl shadow-md transition-all duration-300 transform active:scale-95 border-none cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 bg-gradient-to-r from-danger-icon to-danger-text hover:from-danger-text hover:to-danger-text text-white font-black text-[10px] uppercase tracking-wider rounded-xl shadow-md transition-all duration-300 transform active:scale-95 border-none cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <MapPin size={12} />
                 Reintentar Ubicación

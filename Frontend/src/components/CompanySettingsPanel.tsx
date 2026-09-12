@@ -27,7 +27,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
-  
+
   // Estado local para los formularios antes de guardar
   const [formData, setFormData] = useState<any>({});
 
@@ -347,84 +347,84 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
     }));
   };
 
-  if (!formData.leySillaConfig) return <div className="p-8 text-slate-500">Cargando configuraciones...</div>;
+  if (!formData.leySillaConfig) return <div className="p-8 text-text-3">Cargando configuraciones...</div>;
 
   return (
     <div className={`bg-white overflow-hidden flex animate-in fade-in ${
-      hideSidebar ? 'min-h-[auto] w-full' : 'rounded-2xl shadow-sm border border-slate-200 min-h-[600px]'
+      hideSidebar ? 'min-h-[auto] w-full' : 'rounded-2xl shadow-sm border border-border min-h-[600px]'
     }`}>
-      
+
       {/* Sidebar Izquierdo */}
       {!hideSidebar && (
-        <div className="w-64 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0">
+        <div className="w-64 bg-page border-r border-border flex flex-col shrink-0">
         <div className="p-6 pb-2">
-          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-            <Settings size={20} className="text-indigo-600" />
+          <h2 className="text-lg font-black text-text-1 flex items-center gap-2">
+            <Settings size={20} className="text-accent" />
             Ajustes Globales
           </h2>
         </div>
         <div className="p-4 flex-1 space-y-1 overflow-y-auto max-h-[550px] custom-scrollbar">
-          <button 
+          <button
             onClick={() => setActiveTab('general')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'general' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'general' ? 'bg-accent text-white' : 'text-text-2 hover:bg-page'}`}
           >
             <Building2 size={18} />
             Datos Generales
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('reloj')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'reloj' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'reloj' ? 'bg-accent text-white' : 'text-text-2 hover:bg-page'}`}
           >
             <Clock size={18} />
             Reloj y Ley Silla
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('reloj_operacion')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'reloj_operacion' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'reloj_operacion' ? 'bg-accent text-white' : 'text-text-2 hover:bg-page'}`}
           >
             <Settings size={18} />
             Operación del Reloj
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('control_center')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'control_center' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'control_center' ? 'bg-accent text-white' : 'text-text-2 hover:bg-page'}`}
           >
             <Settings size={18} />
             🎛️ Centro de Control (Módulos)
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('comidas')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'comidas' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'comidas' ? 'bg-accent text-white' : 'text-text-2 hover:bg-page'}`}
           >
             <Coffee size={18} />
             Módulo Comedor
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('tareas')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'tareas' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'tareas' ? 'bg-accent text-white' : 'text-text-2 hover:bg-page'}`}
           >
             <ListTodo size={18} />
             Rutinas y Tareas
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('onboarding')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'onboarding' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'onboarding' ? 'bg-accent text-white' : 'text-text-2 hover:bg-page'}`}
           >
             <Users size={18} />
             Onboarding
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('facturacion')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'facturacion' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'facturacion' ? 'bg-accent text-white' : 'text-text-2 hover:bg-page'}`}
           >
             <Receipt size={18} />
             Facturación SAT
           </button>
-          
+
           {useAppStore.getState().isFeatureUnlocked('store_opening') && (
-            <button 
+            <button
               onClick={() => setActiveTab('apertura')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'apertura' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'apertura' ? 'bg-accent text-white' : 'text-text-2 hover:bg-page'}`}
             >
               <Key size={18} />
               Apertura de Tienda
@@ -439,37 +439,37 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
         {/* Sub-navegación local para pestañas agrupadas del Reloj Checador cuando se oculta el Sidebar */}
         {hideSidebar && (activeTab === 'reloj' || activeTab === 'reloj_operacion' || activeTab === 'control_center') && (
-          <div className="flex gap-2 border-b border-slate-200 pb-4 mb-6 shrink-0">
-            <button 
+          <div className="flex gap-2 border-b border-border pb-4 mb-6 shrink-0">
+            <button
               onClick={() => setActiveTab('reloj')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-none cursor-pointer ${
-                activeTab === 'reloj' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                activeTab === 'reloj' ? 'bg-accent text-white shadow-md shadow-accent/10' : 'bg-page text-text-2 hover:bg-slate-200'
               }`}
             >
               🕒 Reloj y Ley Silla
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('reloj_operacion')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-none cursor-pointer ${
-                activeTab === 'reloj_operacion' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                activeTab === 'reloj_operacion' ? 'bg-accent text-white shadow-md shadow-accent/10' : 'bg-page text-text-2 hover:bg-slate-200'
               }`}
             >
               ⚙️ Operación del Reloj
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('control_center')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-none cursor-pointer ${
-                activeTab === 'control_center' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                activeTab === 'control_center' ? 'bg-accent text-white shadow-md shadow-accent/10' : 'bg-page text-text-2 hover:bg-slate-200'
               }`}
             >
               🎛️ Centro de Control (Módulos)
             </button>
           </div>
         )}
-        
+
         {/* Toast Notificación */}
         {saved && (
-          <div className="absolute top-4 right-8 bg-emerald-100 text-emerald-800 px-4 py-2 rounded-xl font-bold flex items-center gap-2 animate-in slide-in-from-top-2">
+          <div className="absolute top-4 right-8 bg-success-bg text-success-text px-4 py-2 rounded-xl font-bold flex items-center gap-2 animate-in slide-in-from-top-2">
             <CheckCircle2 size={18} /> Ajustes Guardados
           </div>
         )}
@@ -484,16 +484,16 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         {/* --- PESTAÑA: DATOS GENERALES --- */}
         {activeTab === 'general' && (
           <div className="max-w-2xl animate-in slide-in-from-right-4">
-            <h3 className="text-2xl font-black text-slate-800 mb-2">Datos Generales de la Empresa</h3>
-            <p className="text-slate-500 mb-8 text-sm">Configura la identidad y los datos de contacto generales de tu sucursal o establecimiento.</p>
-            
+            <h3 className="text-2xl font-black text-text-1 mb-2">Datos Generales de la Empresa</h3>
+            <p className="text-text-3 mb-8 text-sm">Configura la identidad y los datos de contacto generales de tu sucursal o establecimiento.</p>
+
             <div className="space-y-6">
               {/* Nombre Comercial */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-2">Nombre Comercial</h4>
-                <input 
-                  type="text" 
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 focus:outline-none focus:border-indigo-650"
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-2">Nombre Comercial</h4>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-medium text-text-1 focus:outline-none focus:border-accent"
                   value={formData.company_name}
                   onChange={(e) => setFormData((prev: any) => ({ ...prev, company_name: e.target.value }))}
                   placeholder="Ej. DecorArte 360"
@@ -501,11 +501,11 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               </div>
 
               {/* Dirección de la Tienda */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-2">Dirección de la Sucursal</h4>
-                <input 
-                  type="text" 
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 focus:outline-none focus:border-indigo-650"
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-2">Dirección de la Sucursal</h4>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-medium text-text-1 focus:outline-none focus:border-accent"
                   value={formData.company_address}
                   onChange={(e) => setFormData((prev: any) => ({ ...prev, company_address: e.target.value }))}
                   placeholder="Calle, Número, Colonia, C.P., Ciudad"
@@ -513,16 +513,16 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               </div>
 
               {/* Teléfono de la Tienda */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-2">Teléfono de Contacto</h4>
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-2">Teléfono de Contacto</h4>
                 <div className="flex border border-slate-300 rounded-xl overflow-hidden bg-white">
-                  <div className="bg-slate-100 px-3 py-2.5 text-sm text-slate-500 font-bold border-r border-slate-200 flex items-center gap-1 select-none">
+                  <div className="bg-page px-3 py-2.5 text-sm text-text-3 font-bold border-r border-border flex items-center gap-1 select-none">
                     <span>🇲🇽</span>
                     <span>+52</span>
                   </div>
-                  <input 
-                    type="text" 
-                    className="w-full px-4 py-2.5 outline-none font-medium text-slate-800 placeholder-transparent"
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2.5 outline-none font-medium text-text-1 placeholder-transparent"
                     value={formData.company_phone}
                     onChange={(e) => {
                       const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -534,9 +534,9 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               </div>
 
               {/* D3: Retención del chat de equipo */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-1.5">Retención del Chat de Equipo</h4>
-                <p className="text-xs text-slate-500 mb-4">
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-1.5">Retención del Chat de Equipo</h4>
+                <p className="text-xs text-text-3 mb-4">
                   Los mensajes del canal del equipo se borran automáticamente después de estos días
                   (máximo 30). Los privados, los avisos de megáfono y los conservados con 📌 no se borran.
                 </p>
@@ -545,39 +545,39 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     type="number"
                     min={1}
                     max={30}
-                    className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold text-slate-700 focus:outline-none focus:border-indigo-650"
+                    className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold text-text-2 focus:outline-none focus:border-accent"
                     value={formData.chatRetentionDays}
                     onChange={(e) => setFormData((prev: any) => ({ ...prev, chatRetentionDays: e.target.value }))}
                   />
-                  <span className="text-sm font-bold text-slate-600">días</span>
+                  <span className="text-sm font-bold text-text-2">días</span>
                 </div>
               </div>
 
               {/* Horario de la Tienda */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-4">Horario de Operación (Tienda)</h4>
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-4">Horario de Operación (Tienda)</h4>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1.5">Hora de Apertura</label>
-                    <input 
-                      type="time" 
-                      className="w-full px-4 py-2 border border-slate-300 rounded-xl font-bold text-slate-700 focus:outline-none focus:border-indigo-650"
+                    <label className="text-xs font-bold text-text-3 uppercase block mb-1.5">Hora de Apertura</label>
+                    <input
+                      type="time"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-xl font-bold text-text-2 focus:outline-none focus:border-accent"
                       value={formData.storeSchedule?.openTime || '08:00'}
-                      onChange={(e) => setFormData((prev: any) => ({ 
-                        ...prev, 
-                        storeSchedule: { ...(prev.storeSchedule || { openTime: '08:00', closeTime: '18:00' }), openTime: e.target.value } 
+                      onChange={(e) => setFormData((prev: any) => ({
+                        ...prev,
+                        storeSchedule: { ...(prev.storeSchedule || { openTime: '08:00', closeTime: '18:00' }), openTime: e.target.value }
                       }))}
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1.5">Hora de Cierre</label>
-                    <input 
-                      type="time" 
-                      className="w-full px-4 py-2 border border-slate-300 rounded-xl font-bold text-slate-700 focus:outline-none focus:border-indigo-650"
+                    <label className="text-xs font-bold text-text-3 uppercase block mb-1.5">Hora de Cierre</label>
+                    <input
+                      type="time"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-xl font-bold text-text-2 focus:outline-none focus:border-accent"
                       value={formData.storeSchedule?.closeTime || '18:00'}
-                      onChange={(e) => setFormData((prev: any) => ({ 
-                        ...prev, 
-                        storeSchedule: { ...(prev.storeSchedule || { openTime: '08:00', closeTime: '18:00' }), closeTime: e.target.value } 
+                      onChange={(e) => setFormData((prev: any) => ({
+                        ...prev,
+                        storeSchedule: { ...(prev.storeSchedule || { openTime: '08:00', closeTime: '18:00' }), closeTime: e.target.value }
                       }))}
                     />
                   </div>
@@ -585,10 +585,10 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               </div>
             </div>
 
-            <button 
-              onClick={() => handleSave()} 
+            <button
+              onClick={() => handleSave()}
               disabled={isSaving}
-              className="mt-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-extrabold flex items-center gap-2 transition-colors shadow-lg shadow-indigo-600/10 cursor-pointer"
+              className="mt-8 bg-accent hover:bg-accent-hover disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-extrabold flex items-center gap-2 transition-colors shadow-lg shadow-accent/10 cursor-pointer"
             >
               <Save size={18} /> {isSaving ? 'Guardando...' : 'Guardar Ajustes Generales'}
             </button>
@@ -598,33 +598,33 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         {/* --- PESTAÑA: RELOJ Y LEY SILLA --- */}
         {activeTab === 'reloj' && (
           <div className="max-w-2xl animate-in slide-in-from-right-4">
-            <h3 className="text-2xl font-black text-slate-800 mb-2">Reloj y Ley Silla</h3>
-            <p className="text-slate-500 mb-8 text-sm">Configura las tolerancias de tiempo y los descansos obligatorios por jornada.</p>
-            
+            <h3 className="text-2xl font-black text-text-1 mb-2">Reloj y Ley Silla</h3>
+            <p className="text-text-3 mb-8 text-sm">Configura las tolerancias de tiempo y los descansos obligatorios por jornada.</p>
+
             <div className="space-y-6">
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-4">Tolerancia de Retardos</h4>
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-4">Tolerancia de Retardos</h4>
                 <div className="flex items-center gap-4">
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold"
                     value={formData.timeBankConfigs.maxLateMinsAllowed}
                     onChange={(e) => handleNestedChange('timeBankConfigs', 'maxLateMinsAllowed', parseInt(e.target.value))}
                   />
-                  <span className="text-slate-600">Minutos de gracia antes de marcar retardo.</span>
+                  <span className="text-text-2">Minutos de gracia antes de marcar retardo.</span>
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-1 flex items-center gap-2">
-                  <GraduationCap size={18} className="text-indigo-600" />
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-1 flex items-center gap-2">
+                  <GraduationCap size={18} className="text-accent" />
                   Curso de Puntualidad Obligatorio
                 </h4>
-                <p className="text-xs text-slate-500 mb-4">
+                <p className="text-xs text-text-3 mb-4">
                   Al acumular 3 retardos, el fichaje del colaborador se bloquea hasta que complete este curso en la Academia (estado "🔒 Fichaje Bloqueado" del Reloj Checador).
                 </p>
                 <select
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-slate-700 bg-white focus:outline-none focus:border-indigo-650"
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-text-2 bg-white focus:outline-none focus:border-accent"
                   value={formData.punctuality_course_id ?? ''}
                   onChange={(e) => setFormData((prev: any) => ({
                     ...prev,
@@ -637,77 +637,77 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   ))}
                 </select>
                 {academyCourses.length === 0 && (
-                  <p className="text-[10px] text-amber-600 mt-2">
+                  <p className="text-[10px] text-warning-text mt-2">
                     No hay cursos creados todavía en la Academia. Crea uno primero en la pestaña "Academia".
                   </p>
                 )}
               </div>
 
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+              <div className="bg-page p-6 rounded-2xl border border-border">
                 <SelectorZonaHoraria
                   value={formData.timezone || 'America/Mexico_City'}
                   onChange={(zona) => setFormData((prev: any) => ({ ...prev, timezone: zona }))}
-                  selectClassName="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-slate-700 bg-white focus:outline-none focus:border-indigo-650"
-                  labelClassName="block font-bold text-slate-800 mb-4"
-                  helpClassName="text-xs text-slate-500 mt-2"
+                  selectClassName="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-text-2 bg-white focus:outline-none focus:border-accent"
+                  labelClassName="block font-bold text-text-1 mb-4"
+                  helpClassName="text-xs text-text-3 mt-2"
                 />
               </div>
 
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-4">Jornada de la Sucursal (Horario Oficial)</h4>
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-4">Jornada de la Sucursal (Horario Oficial)</h4>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1.5">Hora de Apertura</label>
-                    <input 
-                      type="time" 
-                      className="w-full px-4 py-2 border border-slate-300 rounded-xl font-bold text-slate-700 focus:outline-none focus:border-indigo-650 bg-white"
+                    <label className="text-xs font-bold text-text-3 uppercase block mb-1.5">Hora de Apertura</label>
+                    <input
+                      type="time"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-xl font-bold text-text-2 focus:outline-none focus:border-accent bg-white"
                       value={formData.storeSchedule?.openTime || '08:00'}
-                      onChange={(e) => setFormData((prev: any) => ({ 
-                        ...prev, 
-                        storeSchedule: { ...(prev.storeSchedule || { openTime: '08:00', closeTime: '18:00' }), openTime: e.target.value } 
+                      onChange={(e) => setFormData((prev: any) => ({
+                        ...prev,
+                        storeSchedule: { ...(prev.storeSchedule || { openTime: '08:00', closeTime: '18:00' }), openTime: e.target.value }
                       }))}
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1.5">Hora de Cierre</label>
-                    <input 
-                      type="time" 
-                      className="w-full px-4 py-2 border border-slate-300 rounded-xl font-bold text-slate-700 focus:outline-none focus:border-indigo-650 bg-white"
+                    <label className="text-xs font-bold text-text-3 uppercase block mb-1.5">Hora de Cierre</label>
+                    <input
+                      type="time"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-xl font-bold text-text-2 focus:outline-none focus:border-accent bg-white"
                       value={formData.storeSchedule?.closeTime || '18:00'}
-                      onChange={(e) => setFormData((prev: any) => ({ 
-                        ...prev, 
-                        storeSchedule: { ...(prev.storeSchedule || { openTime: '08:00', closeTime: '18:00' }), closeTime: e.target.value } 
+                      onChange={(e) => setFormData((prev: any) => ({
+                        ...prev,
+                        storeSchedule: { ...(prev.storeSchedule || { openTime: '08:00', closeTime: '18:00' }), closeTime: e.target.value }
                       }))}
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+              <div className="bg-navy-50 p-6 rounded-2xl border border-border">
                 <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-bold text-indigo-900">Aplicación de Ley Silla</h4>
+                  <h4 className="font-bold text-brand-dark">Aplicación de Ley Silla</h4>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" checked={formData.leySillaConfig.enabled} onChange={(e) => handleNestedChange('leySillaConfig', 'enabled', e.target.checked)} />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
                   </label>
                 </div>
-                
+
                 {formData.leySillaConfig.enabled && (
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <div>
-                      <label className="text-xs font-bold text-indigo-800 uppercase">Minutos Continuos</label>
-                      <input type="number" className="w-full mt-1 px-4 py-2 border border-indigo-200 rounded-xl bg-white" value={formData.leySillaConfig.consecutiveMinutes} onChange={(e) => handleNestedChange('leySillaConfig', 'consecutiveMinutes', parseInt(e.target.value))} />
+                      <label className="text-xs font-bold text-navy-800 uppercase">Minutos Continuos</label>
+                      <input type="number" className="w-full mt-1 px-4 py-2 border border-border rounded-xl bg-white" value={formData.leySillaConfig.consecutiveMinutes} onChange={(e) => handleNestedChange('leySillaConfig', 'consecutiveMinutes', parseInt(e.target.value))} />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-indigo-800 uppercase">Minutos de Descanso</label>
-                      <input type="number" className="w-full mt-1 px-4 py-2 border border-indigo-200 rounded-xl bg-white" value={formData.leySillaConfig.breakMinutes} onChange={(e) => handleNestedChange('leySillaConfig', 'breakMinutes', parseInt(e.target.value))} />
+                      <label className="text-xs font-bold text-navy-800 uppercase">Minutos de Descanso</label>
+                      <input type="number" className="w-full mt-1 px-4 py-2 border border-border rounded-xl bg-white" value={formData.leySillaConfig.breakMinutes} onChange={(e) => handleNestedChange('leySillaConfig', 'breakMinutes', parseInt(e.target.value))} />
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            <button onClick={() => { handleSave('timeBankConfigs'); handleSave('leySillaConfig'); handleSave('general'); }} className="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors border-none cursor-pointer">
+            <button onClick={() => { handleSave('timeBankConfigs'); handleSave('leySillaConfig'); handleSave('general'); }} className="mt-8 bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors border-none cursor-pointer">
               <Save size={18} /> Guardar Ajustes de Reloj
             </button>
           </div>
@@ -716,39 +716,39 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         {/* --- PESTAÑA: COMIDAS --- */}
         {activeTab === 'comidas' && (
           <div className="max-w-2xl animate-in slide-in-from-right-4">
-            <h3 className="text-2xl font-black text-slate-800 mb-2">Módulo de Comedor</h3>
-            <p className="text-slate-500 mb-8 text-sm">Reglas y restricciones para el área de comedor o descansos largos.</p>
-            
+            <h3 className="text-2xl font-black text-text-1 mb-2">Módulo de Comedor</h3>
+            <p className="text-text-3 mb-8 text-sm">Reglas y restricciones para el área de comedor o descansos largos.</p>
+
             <div className="space-y-6">
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-4">Capacidad y Límite</h4>
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-4">Capacidad y Límite</h4>
                 <div className="flex items-center gap-4">
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold"
                     value={formData.mealSettings.maxChairs}
                     onChange={(e) => handleNestedChange('mealSettings', 'maxChairs', parseInt(e.target.value))}
                   />
-                  <span className="text-slate-600">Sillas máximas simultáneas.</span>
+                  <span className="text-text-2">Sillas máximas simultáneas.</span>
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+              <div className="bg-page p-6 rounded-2xl border border-border">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h4 className="font-bold text-slate-800">Restricción de Puestos Múltiples</h4>
-                    <p className="text-sm text-slate-500 mt-1">Impedir que dos empleados del mismo puesto tomen comida a la misma hora.</p>
+                    <h4 className="font-bold text-text-1">Restricción de Puestos Múltiples</h4>
+                    <p className="text-sm text-text-3 mt-1">Impedir que dos empleados del mismo puesto tomen comida a la misma hora.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" checked={formData.mealSettings.preventRoleOverlap} onChange={(e) => handleNestedChange('mealSettings', 'preventRoleOverlap', e.target.checked)} />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success-icon"></div>
                   </label>
                 </div>
               </div>
 
             </div>
 
-            <button onClick={() => handleSave('mealSettings')} className="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors">
+            <button onClick={() => handleSave('mealSettings')} className="mt-8 bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors">
               <Save size={18} /> Guardar Ajustes de Comida
             </button>
           </div>
@@ -757,21 +757,21 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         {/* --- PESTAÑA: ONBOARDING --- */}
         {activeTab === 'onboarding' && (
           <div className="max-w-2xl animate-in slide-in-from-right-4">
-            <h3 className="text-2xl font-black text-slate-800 mb-2">Mensaje de Onboarding</h3>
-            <p className="text-slate-500 mb-8 text-sm">El texto que ven tus empleados al unirse a la plataforma.</p>
-            
+            <h3 className="text-2xl font-black text-text-1 mb-2">Mensaje de Onboarding</h3>
+            <p className="text-text-3 mb-8 text-sm">El texto que ven tus empleados al unirse a la plataforma.</p>
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Título</label>
+                <label className="block text-sm font-bold text-text-2 mb-1">Título</label>
                 <input type="text" className="w-full px-4 py-2 border border-slate-300 rounded-xl" value={formData.onboarding.welcomeTitle} onChange={(e) => handleNestedChange('onboarding', 'welcomeTitle', e.target.value)} />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Mensaje Principal</label>
+                <label className="block text-sm font-bold text-text-2 mb-1">Mensaje Principal</label>
                 <textarea rows={4} className="w-full px-4 py-2 border border-slate-300 rounded-xl" value={formData.onboarding.welcomeMessage} onChange={(e) => handleNestedChange('onboarding', 'welcomeMessage', e.target.value)}></textarea>
               </div>
             </div>
 
-            <button onClick={() => handleSave('onboarding')} className="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors">
+            <button onClick={() => handleSave('onboarding')} className="mt-8 bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors">
               <Save size={18} /> Guardar Mensaje
             </button>
           </div>
@@ -780,33 +780,33 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         {/* --- PESTAÑA: TAREAS --- */}
         {activeTab === 'tareas' && (
           <div className="max-w-2xl animate-in slide-in-from-right-4">
-            <h3 className="text-2xl font-black text-slate-800 mb-2">Rutinas y Asignaciones</h3>
-            <p className="text-slate-500 mb-8 text-sm">Configura la asignación automática, las validaciones de supervisores y las reglas de auditoría para las tareas.</p>
-            
+            <h3 className="text-2xl font-black text-text-1 mb-2">Rutinas y Asignaciones</h3>
+            <p className="text-text-3 mb-8 text-sm">Configura la asignación automática, las validaciones de supervisores y las reglas de auditoría para las tareas.</p>
+
             <div className="space-y-6">
-              <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+              <div className="bg-navy-50 p-6 rounded-2xl border border-border">
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <h4 className="font-bold text-indigo-900">Validación por Supervisor Inmediato</h4>
-                    <p className="text-xs text-indigo-700 mt-1">Requerir que las tareas hechas por subordinados sean aprobadas por su jefe directo.</p>
+                    <h4 className="font-bold text-brand-dark">Validación por Supervisor Inmediato</h4>
+                    <p className="text-xs text-accent mt-1">Requerir que las tareas hechas por subordinados sean aprobadas por su jefe directo.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={formData.tasksConfig?.requireSupervisorValidation || false} 
-                      onChange={(e) => handleNestedChange('tasksConfig', 'requireSupervisorValidation', e.target.checked)} 
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={formData.tasksConfig?.requireSupervisorValidation || false}
+                      onChange={(e) => handleNestedChange('tasksConfig', 'requireSupervisorValidation', e.target.checked)}
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
                   </label>
                 </div>
 
                 {formData.tasksConfig?.requireSupervisorValidation && (
-                  <div className="space-y-4 mt-6 pt-4 border-t border-indigo-200/50">
+                  <div className="space-y-4 mt-6 pt-4 border-t border-border/50">
                     <div>
-                      <label className="text-xs font-bold text-indigo-800 uppercase block mb-2">Umbral de Validación</label>
-                      <select 
-                        className="w-full px-4 py-2 border border-indigo-200 rounded-xl bg-white text-slate-700 font-medium focus:outline-none"
+                      <label className="text-xs font-bold text-navy-800 uppercase block mb-2">Umbral de Validación</label>
+                      <select
+                        className="w-full px-4 py-2 border border-border rounded-xl bg-white text-text-2 font-medium focus:outline-none"
                         value={formData.tasksConfig?.validationThreshold || 'all_tasks'}
                         onChange={(e) => handleNestedChange('tasksConfig', 'validationThreshold', e.target.value)}
                       >
@@ -821,7 +821,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               </div>
             </div>
 
-            <button onClick={() => handleSave('tasksConfig')} className="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors">
+            <button onClick={() => handleSave('tasksConfig')} className="mt-8 bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors">
               <Save size={18} /> Guardar Ajustes de Tareas
             </button>
           </div>
@@ -830,35 +830,35 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         {/* --- PESTAÑA: APERTURA DE TIENDA --- */}
         {activeTab === 'apertura' && (
           <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+            <div className="flex justify-between items-center pb-4 border-b border-border">
               <div className="text-left">
-                <h3 className="text-lg font-black text-slate-800">Apertura de Tienda</h3>
-                <p className="text-xs text-slate-500 mt-1">Configura las jerarquías de responsables, tolerancias y ventanas de apertura de la sucursal.</p>
+                <h3 className="text-lg font-black text-text-1">Apertura de Tienda</h3>
+                <p className="text-xs text-text-3 mt-1">Configura las jerarquías de responsables, tolerancias y ventanas de apertura de la sucursal.</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
               {/* Columna Izquierda: Ajustes de Apertura */}
-              <div className="xl:col-span-5 bg-slate-50/50 p-6 rounded-2xl border border-slate-200/80 flex flex-col gap-4.5">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                  <span className="font-bold text-sm text-slate-800 flex items-center gap-2">⚙️ Parámetros de Operación</span>
+              <div className="xl:col-span-5 bg-page/50 p-6 rounded-2xl border border-border/80 flex flex-col gap-4.5">
+                <div className="flex items-center justify-between pb-3 border-b border-border">
+                  <span className="font-bold text-sm text-text-1 flex items-center gap-2">⚙️ Parámetros de Operación</span>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
                       checked={openingSettings.is_enabled}
-                      onChange={(e) => setOpeningSettings({ ...openingSettings, is_enabled: e.target.checked })} 
+                      onChange={(e) => setOpeningSettings({ ...openingSettings, is_enabled: e.target.checked })}
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
                   </label>
                 </div>
 
                 <div className="flex flex-col gap-4 text-left">
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Ventana Previa Apertura (Minutos)</label>
-                    <input 
+                    <label className="block text-xs font-bold text-text-2 mb-1.5">Ventana Previa Apertura (Minutos)</label>
+                    <input
                       type="number"
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800"
+                      className="w-full bg-white border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-medium text-text-1"
                       value={openingSettings.pre_opening_window_minutes}
                       onChange={(e) => setOpeningSettings({ ...openingSettings, pre_opening_window_minutes: parseInt(e.target.value) })}
                     />
@@ -866,10 +866,10 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Ventana para Ausencia / Retardo (Minutos)</label>
-                    <input 
+                    <label className="block text-xs font-bold text-text-2 mb-1.5">Ventana para Ausencia / Retardo (Minutos)</label>
+                    <input
                       type="number"
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800"
+                      className="w-full bg-white border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-medium text-text-1"
                       value={openingSettings.absence_late_report_window_minutes}
                       onChange={(e) => setOpeningSettings({ ...openingSettings, absence_late_report_window_minutes: parseInt(e.target.value) })}
                     />
@@ -877,10 +877,10 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Margen de Entrada Anticipada (Minutos)</label>
-                    <input 
+                    <label className="block text-xs font-bold text-text-2 mb-1.5">Margen de Entrada Anticipada (Minutos)</label>
+                    <input
                       type="number"
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800"
+                      className="w-full bg-white border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-medium text-text-1"
                       value={openingSettings.early_clock_in_allowed_minutes}
                       onChange={(e) => setOpeningSettings({ ...openingSettings, early_clock_in_allowed_minutes: parseInt(e.target.value) })}
                     />
@@ -891,132 +891,132 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <h5 className="font-semibold text-xs text-slate-700">Cesión Jerárquica Automática</h5>
+                      <h5 className="font-semibold text-xs text-text-2">Cesión Jerárquica Automática</h5>
                       <p className="text-[10px] text-slate-400">Transferir automáticamente al suplente si el responsable actual no responde en la ventana.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
                         checked={openingSettings.allow_automatic_handoff}
-                        onChange={(e) => setOpeningSettings({ ...openingSettings, allow_automatic_handoff: e.target.checked })} 
+                        onChange={(e) => setOpeningSettings({ ...openingSettings, allow_automatic_handoff: e.target.checked })}
                       />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                     </label>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <h5 className="font-semibold text-xs text-slate-700">Permitir Reportes de Tienda Cerrada</h5>
+                      <h5 className="font-semibold text-xs text-text-2">Permitir Reportes de Tienda Cerrada</h5>
                       <p className="text-[10px] text-slate-400">Permite a los colaboradores notificar que la sucursal sigue cerrada para aplicar amnistía.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
                         checked={openingSettings.allow_store_closed_report}
-                        onChange={(e) => setOpeningSettings({ ...openingSettings, allow_store_closed_report: e.target.checked })} 
+                        onChange={(e) => setOpeningSettings({ ...openingSettings, allow_store_closed_report: e.target.checked })}
                       />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                     </label>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <h5 className="font-semibold text-xs text-slate-700">Checklist de Apertura Obligatorio</h5>
+                      <h5 className="font-semibold text-xs text-text-2">Checklist de Apertura Obligatorio</h5>
                       <p className="text-[10px] text-slate-400">Asigna y requiere completar rutinas críticas al abrir la sucursal.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
                         checked={openingSettings.require_opening_checklist}
-                        onChange={(e) => setOpeningSettings({ ...openingSettings, require_opening_checklist: e.target.checked })} 
+                        onChange={(e) => setOpeningSettings({ ...openingSettings, require_opening_checklist: e.target.checked })}
                       />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                     </label>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <h5 className="font-semibold text-xs text-slate-700">Pase de Lista de Apertura Obligatorio</h5>
+                      <h5 className="font-semibold text-xs text-text-2">Pase de Lista de Apertura Obligatorio</h5>
                       <p className="text-[10px] text-slate-400">Habilita y exige pase de lista rápido para los colaboradores del primer turno.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
                         checked={openingSettings.require_opening_roll_call}
-                        onChange={(e) => setOpeningSettings({ ...openingSettings, require_opening_roll_call: e.target.checked })} 
+                        onChange={(e) => setOpeningSettings({ ...openingSettings, require_opening_roll_call: e.target.checked })}
                       />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                     </label>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <h5 className="font-semibold text-xs text-slate-700">🔔 Notificaciones Flotantes del Reloj</h5>
+                      <h5 className="font-semibold text-xs text-text-2">🔔 Notificaciones Flotantes del Reloj</h5>
                       <p className="text-[10px] text-slate-400">Muestra avisos emergentes (toasts) de pase de lista, aperturas GPS y recordatorios de turno.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
                         checked={openingSettings.allow_floating_push_notifications ?? true}
-                        onChange={(e) => setOpeningSettings({ ...openingSettings, allow_floating_push_notifications: e.target.checked })} 
+                        onChange={(e) => setOpeningSettings({ ...openingSettings, allow_floating_push_notifications: e.target.checked })}
                       />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                     </label>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <h5 className="font-semibold text-xs text-slate-700">Delegación de Llaves Obligatoria</h5>
+                      <h5 className="font-semibold text-xs text-text-2">Delegación de Llaves Obligatoria</h5>
                       <p className="text-[10px] text-slate-400">Exigir al encargado ceder las llaves a un relevo si el día siguiente es su descanso.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
                         checked={openingSettings.require_key_delegation_on_rest ?? true}
-                        onChange={(e) => setOpeningSettings({ ...openingSettings, require_key_delegation_on_rest: e.target.checked })} 
+                        onChange={(e) => setOpeningSettings({ ...openingSettings, require_key_delegation_on_rest: e.target.checked })}
                       />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                     </label>
                   </div>
                 </div>
 
-                <button onClick={handleSaveSettings} className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border-none cursor-pointer">
+                <button onClick={handleSaveSettings} className="mt-4 bg-accent hover:bg-accent-hover text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border-none cursor-pointer">
                   <Save size={16} /> Guardar Ajustes
                 </button>
               </div>
 
               {/* Columna Derecha: Jerarquía de Encargados */}
-              <div className="xl:col-span-7 bg-white border border-slate-200 p-6 rounded-2xl flex flex-col gap-5 text-left">
+              <div className="xl:col-span-7 bg-white border border-border p-6 rounded-2xl flex flex-col gap-5 text-left">
                 <div>
-                  <h4 className="font-bold text-sm text-slate-800 mb-1">🔑 Jerarquía de Encargados de Sucursal</h4>
-                  <p className="text-xs text-slate-500">Determina el orden en que se asigna la apertura de tienda y se ceden las llaves.</p>
+                  <h4 className="font-bold text-sm text-text-1 mb-1">🔑 Jerarquía de Encargados de Sucursal</h4>
+                  <p className="text-xs text-text-3">Determina el orden en que se asigna la apertura de tienda y se ceden las llaves.</p>
                 </div>
 
                 {/* Lista de Responsables */}
                 <div className="space-y-3.5 max-h-[380px] overflow-y-auto pr-1">
                   {assignments.map((ass, index) => (
-                    <div key={ass.id} className="flex items-center justify-between p-4 rounded-2xl border border-slate-150 bg-slate-50/20 hover:bg-slate-50/50 transition-colors">
+                    <div key={ass.id} className="flex items-center justify-between p-4 rounded-2xl border border-border bg-page/20 hover:bg-page/50 transition-colors">
                       <div className="flex items-center gap-3">
                         {/* Indicador de Prioridad con Flechas */}
-                        <div className="flex flex-col items-center justify-center gap-0.5 bg-slate-100 px-2 py-1.5 rounded-xl shrink-0">
-                          <button 
+                        <div className="flex flex-col items-center justify-center gap-0.5 bg-page px-2 py-1.5 rounded-xl shrink-0">
+                          <button
                             disabled={index === 0}
                             onClick={() => handleMovePriority(index, 'up')}
-                            className="p-0.5 text-slate-500 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-500 border-none bg-transparent cursor-pointer"
+                            className="p-0.5 text-text-3 hover:text-accent disabled:opacity-30 disabled:hover:text-text-3 border-none bg-transparent cursor-pointer"
                           >
                             <ArrowUp size={14} strokeWidth={2.5} />
                           </button>
-                          <span className="text-xs font-black text-slate-800">{index + 1}°</span>
-                          <button 
+                          <span className="text-xs font-black text-text-1">{index + 1}°</span>
+                          <button
                             disabled={index === assignments.length - 1}
                             onClick={() => handleMovePriority(index, 'down')}
-                            className="p-0.5 text-slate-500 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-500 border-none bg-transparent cursor-pointer"
+                            className="p-0.5 text-text-3 hover:text-accent disabled:opacity-30 disabled:hover:text-text-3 border-none bg-transparent cursor-pointer"
                           >
                             <ArrowDown size={14} strokeWidth={2.5} />
                           </button>
@@ -1024,7 +1024,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                         {/* Nombre y Cargo */}
                         <div>
-                          <p className="font-bold text-sm text-slate-800 leading-tight">{ass.employee?.name || 'Cargando...'}</p>
+                          <p className="font-bold text-sm text-text-1 leading-tight">{ass.employee?.name || 'Cargando...'}</p>
                           {/* H19: `employee.role` NO existe en `employees` (el puesto vive en
                               `job_role_id`). El backend pedía esa columna en el eager-load y
                               devolvía 500 al asignar un portador de llaves; ahora manda el puesto
@@ -1037,27 +1037,27 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       <div className="flex items-center gap-5">
                         <div className="flex flex-col items-center">
                           <span className="text-[9px] text-slate-400 font-extrabold uppercase mb-1">Llaves</span>
-                          <input 
+                          <input
                             type="checkbox"
                             checked={ass.has_keys}
                             onChange={() => handleToggleAssignmentField(ass.id, 'has_keys')}
-                            className="rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            className="rounded text-accent focus-visible:ring-focus-ring cursor-pointer"
                           />
                         </div>
 
                         <div className="flex flex-col items-center">
                           <span className="text-[9px] text-slate-400 font-extrabold uppercase mb-1">Activo</span>
-                          <input 
+                          <input
                             type="checkbox"
                             checked={ass.is_active}
                             onChange={() => handleToggleAssignmentField(ass.id, 'is_active')}
-                            className="rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            className="rounded text-accent focus-visible:ring-focus-ring cursor-pointer"
                           />
                         </div>
 
-                        <button 
+                        <button
                           onClick={() => handleDeleteAssignment(ass.id)}
-                          className="p-2 text-rose-500 hover:text-rose-700 bg-rose-50/55 hover:bg-rose-50 rounded-xl transition-colors border-none cursor-pointer"
+                          className="p-2 text-danger-text hover:text-danger-text bg-danger-bg/55 hover:bg-danger-bg rounded-xl transition-colors border-none cursor-pointer"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -1066,18 +1066,18 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   ))}
 
                   {assignments.length === 0 && (
-                    <div className="text-center p-8 bg-slate-50 rounded-2xl text-slate-400 text-xs italic font-medium border border-dashed border-slate-200">
+                    <div className="text-center p-8 bg-page rounded-2xl text-slate-400 text-xs italic font-medium border border-dashed border-border">
                       No hay encargados registrados en la jerarquía. Agrega uno abajo.
                     </div>
                   )}
                 </div>
 
                 {/* Agregar Nuevo Encargado */}
-                <div className="pt-4 border-t border-slate-100 flex items-center gap-3">
-                  <select 
+                <div className="pt-4 border-t border-border flex items-center gap-3">
+                  <select
                     value={selectedUserForAss}
                     onChange={(e) => setSelectedUserForAss(e.target.value)}
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 cursor-pointer"
+                    className="flex-1 bg-page border border-border rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-bold text-text-2 cursor-pointer"
                   >
                     <option value="">-- Selecciona Colaborador --</option>
                     {globalUsers
@@ -1091,17 +1091,17 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       ))}
                   </select>
 
-                  <button 
+                  <button
                     onClick={handleAddAssignment}
                     disabled={!selectedUserForAss}
-                    className="bg-indigo-600 hover:bg-indigo-750 text-white font-extrabold px-4.5 py-3 rounded-xl flex items-center gap-1.5 transition-all disabled:opacity-40 disabled:hover:bg-indigo-600 border-none cursor-pointer select-none"
+                    className="bg-accent hover:bg-accent-hover text-white font-extrabold px-4.5 py-3 rounded-xl flex items-center gap-1.5 transition-all disabled:opacity-40 disabled:hover:bg-accent border-none cursor-pointer select-none"
                   >
                     <Plus size={16} strokeWidth={2.5} />
                     <span>Agregar</span>
                   </button>
                 </div>
                 {assignmentError && (
-                  <p className="mt-2 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+                  <p className="mt-2 text-xs font-bold text-danger-text bg-danger-bg border border-danger-text/20 rounded-xl px-3 py-2">
                     {assignmentError}
                   </p>
                 )}
@@ -1134,22 +1134,22 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
           <div className="max-w-2xl animate-in slide-in-from-right-4">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-2xl font-black text-slate-800">Facturación SAT</h3>
-                <p className="text-slate-500 text-sm">Estado del timbrado de esta instancia.</p>
+                <h3 className="text-2xl font-black text-text-1">Facturación SAT</h3>
+                <p className="text-text-3 text-sm">Estado del timbrado de esta instancia.</p>
               </div>
             </div>
 
             <div className="space-y-6">
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-3">Ambiente de Operación SAT</h4>
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-3">Ambiente de Operación SAT</h4>
                 {estadoTimbrado === null ? (
-                  <p className="text-sm text-slate-500">Consultando al servidor…</p>
+                  <p className="text-sm text-text-3">Consultando al servidor…</p>
                 ) : !estadoTimbrado.configurado ? (
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 shrink-0 w-3 h-3 rounded-full bg-slate-400"></span>
                     <div>
-                      <p className="font-black text-slate-800">Sin llave del PAC</p>
-                      <p className="text-sm text-slate-500 mt-1">
+                      <p className="font-black text-text-1">Sin llave del PAC</p>
+                      <p className="text-sm text-text-3 mt-1">
                         No se puede timbrar todavía. El resto de la nómina (calcular, firmar y
                         autorizar) funciona igual; lo único que falta es el sello fiscal.
                       </p>
@@ -1157,10 +1157,10 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   </div>
                 ) : estadoTimbrado.ambiente === 'produccion' ? (
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 shrink-0 w-3 h-3 rounded-full bg-emerald-500"></span>
+                    <span className="mt-0.5 shrink-0 w-3 h-3 rounded-full bg-success-icon"></span>
                     <div>
-                      <p className="font-black text-emerald-700">Producción fiscal — los timbres son REALES</p>
-                      <p className="text-sm text-slate-500 mt-1">
+                      <p className="font-black text-success-text">Producción fiscal — los timbres son REALES</p>
+                      <p className="text-sm text-text-3 mt-1">
                         Lo que se timbre desde "Nómina CFDI 4.0" queda ante el SAT y sólo se
                         deshace cancelando.
                       </p>
@@ -1168,30 +1168,30 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   </div>
                 ) : (
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 shrink-0 w-3 h-3 rounded-full bg-amber-500"></span>
+                    <span className="mt-0.5 shrink-0 w-3 h-3 rounded-full bg-warning-icon"></span>
                     <div>
-                      <p className="font-black text-amber-700">Pruebas (sandbox)</p>
-                      <p className="text-sm text-slate-500 mt-1">
+                      <p className="font-black text-warning-text">Pruebas (sandbox)</p>
+                      <p className="text-sm text-text-3 mt-1">
                         Los timbres NO tienen validez fiscal: sirven para ensayar el flujo completo.
                       </p>
                     </div>
                   </div>
                 )}
-                <p className="text-xs text-slate-400 mt-4 leading-relaxed border-t border-slate-200 pt-3">
+                <p className="text-xs text-slate-400 mt-4 leading-relaxed border-t border-border pt-3">
                   El ambiente no se elige por empresa: lo decide la llave del PAC que tenga el
                   servidor ({'{'}<code className="font-mono">FACTURAPI_KEY</code>{'}'} en su <code className="font-mono">.env</code>).
                   Cambiarla es tarea de quien administra el servidor.
                 </p>
               </div>
 
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-2">Cómo se timbra</h4>
-                <p className="text-sm text-slate-600 leading-relaxed">
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-2">Cómo se timbra</h4>
+                <p className="text-sm text-text-2 leading-relaxed">
                   El timbrado es <strong>manual y por recibo</strong>, desde el módulo
                   "Nómina CFDI 4.0", y sólo sobre nóminas ya <strong>autorizadas</strong>. No hay
                   timbrado automático al cerrar el periodo.
                 </p>
-                <p className="text-sm text-slate-600 leading-relaxed mt-3">
+                <p className="text-sm text-text-2 leading-relaxed mt-3">
                   Los datos fiscales de la empresa (RFC, razón social, régimen) y los sellos
                   digitales <strong>CSD</strong> también se capturan en ese módulo, no aquí.
                 </p>
@@ -1203,72 +1203,72 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         {/* --- PESTAÑA: OPERACIÓN DEL RELOJ --- */}
         {activeTab === 'reloj_operacion' && (
           <div className="max-w-2xl animate-in slide-in-from-right-4">
-            <h3 className="text-2xl font-black text-slate-800 mb-2">Operación del Reloj</h3>
-            <p className="text-slate-500 mb-8 text-sm">Gestiona los parámetros de las acciones y tiempos operativos del Reloj Checador.</p>
+            <h3 className="text-2xl font-black text-text-1 mb-2">Operación del Reloj</h3>
+            <p className="text-text-3 mb-8 text-sm">Gestiona los parámetros de las acciones y tiempos operativos del Reloj Checador.</p>
 
             <div className="space-y-6">
               {/* Ventana de Arribo Anticipado */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-1">Ventana de Arribo Anticipado ("Ya Llegué")</h4>
-                <p className="text-xs text-slate-500 mb-3">Minutos antes del turno en que un colaborador puede registrar su llegada física en el perímetro.</p>
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-1">Ventana de Arribo Anticipado ("Ya Llegué")</h4>
+                <p className="text-xs text-text-3 mb-3">Minutos antes del turno en que un colaborador puede registrar su llegada física en el perímetro.</p>
                 <div className="flex items-center gap-4">
-                  <input 
-                    type="number" 
-                    min="5" 
+                  <input
+                    type="number"
+                    min="5"
                     max="120"
-                    className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold bg-white text-slate-800 focus:outline-none focus:border-indigo-650"
+                    className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold bg-white text-text-1 focus:outline-none focus:border-accent"
                     value={formData.clockOpConfig?.arrivalWindowMins || 30}
                     onChange={(e) => handleNestedChange('clockOpConfig', 'arrivalWindowMins', parseInt(e.target.value))}
                   />
-                  <span className="text-sm text-slate-650 font-bold">Minutos de anticipación permitidos.</span>
+                  <span className="text-sm text-text-2 font-bold">Minutos de anticipación permitidos.</span>
                 </div>
               </div>
 
               {/* Tiempo Reporte Tienda Cerrada */}
 
               {/* Ventana de Habilitación Previa del Reloj */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-1">Ventana de Acceso Previo al Reloj (Minutos)</h4>
-                <p className="text-xs text-slate-500 mb-3">Minutos antes de la hora oficial de apertura de la tienda en que se habilitará el Reloj Checador para registrar asistencia e incidencias.</p>
+              <div className="bg-page p-6 rounded-2xl border border-border">
+                <h4 className="font-bold text-text-1 mb-1">Ventana de Acceso Previo al Reloj (Minutos)</h4>
+                <p className="text-xs text-text-3 mb-3">Minutos antes de la hora oficial de apertura de la tienda en que se habilitará el Reloj Checador para registrar asistencia e incidencias.</p>
                 <div className="flex items-center gap-4">
-                  <input 
-                    type="number" 
-                    min="0" 
+                  <input
+                    type="number"
+                    min="0"
                     max="180"
-                    className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold bg-white text-slate-800 focus:outline-none focus:border-indigo-650"
+                    className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold bg-white text-text-1 focus:outline-none focus:border-accent"
                     value={formData.clockOpConfig?.preOpeningAccessMins ?? 60}
                     onChange={(e) => handleNestedChange('clockOpConfig', 'preOpeningAccessMins', parseInt(e.target.value) || 0)}
                   />
-                  <span className="text-sm text-slate-650 font-bold">Minutos previos permitidos.</span>
+                  <span className="text-sm text-text-2 font-bold">Minutos previos permitidos.</span>
                 </div>
               </div>
 
                 {/* Ajustes modularizados y premium */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-6">
-                <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2">🔒 Configuración de Red Wi-Fi e IP Lock (Básico / Gratis)</h4>
-                
+              <div className="bg-page p-6 rounded-2xl border border-border space-y-6">
+                <h4 className="font-extrabold text-text-1 text-sm border-b pb-2">🔒 Configuración de Red Wi-Fi e IP Lock (Básico / Gratis)</h4>
+
                 <div className="flex justify-between items-center">
                   <div>
-                    <h5 className="font-bold text-slate-700 text-xs">Bloqueo por IP (IP Lock)</h5>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Exigir que los colaboradores estén conectados al Wi-Fi de la tienda (IP coincidente) para fichar.</p>
+                    <h5 className="font-bold text-text-2 text-xs">Bloqueo por IP (IP Lock)</h5>
+                    <p className="text-[10px] text-text-3 mt-0.5">Exigir que los colaboradores estén conectados al Wi-Fi de la tienda (IP coincidente) para fichar.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={formData.clockOpConfig?.ip_lock_enabled ?? false} 
-                      onChange={(e) => handleNestedChange('clockOpConfig', 'ip_lock_enabled', e.target.checked)} 
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={formData.clockOpConfig?.ip_lock_enabled ?? false}
+                      onChange={(e) => handleNestedChange('clockOpConfig', 'ip_lock_enabled', e.target.checked)}
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
                   </label>
                 </div>
 
                 {formData.clockOpConfig?.ip_lock_enabled && (
                   <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
-                    <label className="text-[10px] font-black text-slate-550 uppercase tracking-wider block text-left">Dirección IP de la Red Wi-Fi Autorizada</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-bold bg-white text-slate-800 focus:outline-none focus:border-indigo-650 text-xs"
+                    <label className="text-[10px] font-black text-text-3 uppercase tracking-wider block text-left">Dirección IP de la Red Wi-Fi Autorizada</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-bold bg-white text-text-1 focus:outline-none focus:border-accent text-xs"
                       placeholder="Ej. 192.168.1.254 o IP pública"
                       value={formData.clockOpConfig?.store_ip_address || ''}
                       onChange={(e) => handleNestedChange('clockOpConfig', 'store_ip_address', e.target.value)}
@@ -1278,9 +1278,9 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                 <div className="h-[1px] bg-slate-200"></div>
 
-                <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2 flex items-center justify-between">
+                <h4 className="font-extrabold text-text-1 text-sm border-b pb-2 flex items-center justify-between">
                   <span>⭐️ Controles y Componentes del Reloj (Modular Pro)</span>
-                  <span className="text-[10px] bg-indigo-100 text-indigo-750 px-2 py-0.5 rounded-full font-black uppercase">Plan Pro</span>
+                  <span className="text-[10px] bg-accent-soft text-accent px-2 py-0.5 rounded-full font-black uppercase">Plan Pro</span>
                 </h4>
 
                 <div className="space-y-4">
@@ -1288,21 +1288,21 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-xs">Tiempo de Traslado del Suplente</h5>
-                        <p className="text-[10px] text-slate-505 mt-0.5">Margen de anticipación límite en minutos para alertar/delegar al suplente.</p>
+                        <h5 className="font-bold text-text-2 text-xs">Tiempo de Traslado del Suplente</h5>
+                        <p className="text-[10px] text-text-3 mt-0.5">Margen de anticipación límite en minutos para alertar/delegar al suplente.</p>
                       </div>
-                      <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
+                      <span className="text-xs font-black text-accent bg-navy-50 px-2 py-1 rounded-lg">
                         {formData.clockOpConfig?.suplente_travel_time_mins || 60} minutos
                       </span>
                     </div>
-                    <input 
-                      type="range" 
-                      min="10" 
-                      max="120" 
+                    <input
+                      type="range"
+                      min="10"
+                      max="120"
                       step="5"
-                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                      value={formData.clockOpConfig?.suplente_travel_time_mins || 60} 
-                      onChange={(e) => handleNestedChange('clockOpConfig', 'suplente_travel_time_mins', parseInt(e.target.value))} 
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-focus-ring"
+                      value={formData.clockOpConfig?.suplente_travel_time_mins || 60}
+                      onChange={(e) => handleNestedChange('clockOpConfig', 'suplente_travel_time_mins', parseInt(e.target.value))}
                     />
                   </div>
 
@@ -1310,89 +1310,89 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Switch 1: allow_employee_incidences */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Incidencias Colaborador</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Incidencias Colaborador</h5>
                         <p className="text-[9px] text-slate-400">Reporte de retardo a las 7:00 AM</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.clockOpConfig?.enabledDialerFeatures?.allow_employee_incidences ?? true} 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.allow_employee_incidences ?? true}
                           onChange={(e) => {
                             const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
                             handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, allow_employee_incidences: e.target.checked });
-                          }} 
+                          }}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* Switch 2: allow_manager_incidences */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Incidencias Encargado</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Incidencias Encargado</h5>
                         <p className="text-[9px] text-slate-400">Límite dinámico suplente</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.clockOpConfig?.enabledDialerFeatures?.allow_manager_incidences ?? true} 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.allow_manager_incidences ?? true}
                           onChange={(e) => {
                             const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
                             handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, allow_manager_incidences: e.target.checked });
-                          }} 
+                          }}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* Switch 3: enable_proximity_check */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Ya estoy aquí (Cercanía)</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Ya estoy aquí (Cercanía)</h5>
                         <p className="text-[9px] text-slate-400">Marcaje de cercanía 8:15-8:30</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_proximity_check ?? true} 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_proximity_check ?? true}
                           onChange={(e) => {
                             const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
                             handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_proximity_check: e.target.checked });
-                          }} 
+                          }}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* Switch 4: allow_store_closed_report */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Reportar Tienda Cerrada</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Reportar Tienda Cerrada</h5>
                         <p className="text-[9px] text-slate-400">Reporte preventivo en apertura tardía</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.clockOpConfig?.enabledDialerFeatures?.allow_store_closed_report ?? true} 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.allow_store_closed_report ?? true}
                           onChange={(e) => {
                             const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
                             handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, allow_store_closed_report: e.target.checked });
-                          }} 
+                          }}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* Switch §22: require_pase_lista_rating */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Calificar Pase de Lista</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Calificar Pase de Lista</h5>
                         <p className="text-[9px] text-slate-400">Estrellas: Presentación / Imagen / Energía</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
@@ -1402,14 +1402,14 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                           checked={formData.clockOpConfig?.require_pase_lista_rating ?? false}
                           onChange={(e) => handleNestedChange('clockOpConfig', 'require_pase_lista_rating', e.target.checked)}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* Switch §23: require_meal_photo_evidence */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Foto de Comedor (Comida)</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Foto de Comedor (Comida)</h5>
                         <p className="text-[9px] text-slate-400">Evidencia al iniciar y terminar la comida</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
@@ -1419,14 +1419,14 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                           checked={formData.clockOpConfig?.require_meal_photo_evidence ?? false}
                           onChange={(e) => handleNestedChange('clockOpConfig', 'require_meal_photo_evidence', e.target.checked)}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* §25: Ley Silla con aprobación de supervisor + aforo */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Silla con Aprobación</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Silla con Aprobación</h5>
                         <p className="text-[9px] text-slate-400">Requiere que el supervisor autorice el descanso</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
@@ -1436,13 +1436,13 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                           checked={formData.clockOpConfig?.require_silla_approval ?? false}
                           onChange={(e) => handleNestedChange('clockOpConfig', 'require_silla_approval', e.target.checked)}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* §25: aforo máximo de sillas simultáneas */}
-                    <div className="bg-white p-3 rounded-xl border border-slate-100">
-                      <h5 className="font-bold text-slate-700 text-[11px] mb-1">Aforo de Sillas</h5>
+                    <div className="bg-white p-3 rounded-xl border border-border">
+                      <h5 className="font-bold text-text-2 text-[11px] mb-1">Aforo de Sillas</h5>
                       <p className="text-[9px] text-slate-400 mb-2">Máximo de colaboradores sentados a la vez (Ley Silla)</p>
                       <input
                         type="number"
@@ -1450,19 +1450,19 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                         max={50}
                         value={formData.clockOpConfig?.sillas_maximas_simultaneas ?? 1}
                         onChange={(e) => handleNestedChange('clockOpConfig', 'sillas_maximas_simultaneas', parseInt(e.target.value) || 1)}
-                        className="w-24 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 outline-none"
+                        className="w-24 text-[11px] font-bold text-text-2 bg-page border border-border rounded-lg px-2 py-1.5 outline-none"
                       />
                     </div>
 
                     {/* §24: Modo de reserva de comida (libre vs cola secuencial) */}
-                    <div className="bg-white p-3 rounded-xl border border-slate-100">
-                      <h5 className="font-bold text-slate-700 text-[11px] mb-1">Reserva de Comida</h5>
+                    <div className="bg-white p-3 rounded-xl border border-border">
+                      <h5 className="font-bold text-text-2 text-[11px] mb-1">Reserva de Comida</h5>
                       <p className="text-[9px] text-slate-400 mb-2">Libre = cualquiera aparta cualquier horario. Cola = por turnos, uno a uno.</p>
                       <div className="flex gap-2">
                         <select
                           value={formData.clockOpConfig?.meal_reservation_mode || 'free'}
                           onChange={(e) => handleNestedChange('clockOpConfig', 'meal_reservation_mode', e.target.value)}
-                          className="flex-1 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 outline-none"
+                          className="flex-1 text-[11px] font-bold text-text-2 bg-page border border-border rounded-lg px-2 py-1.5 outline-none"
                         >
                           <option value="free">Selección libre</option>
                           <option value="queue">Cola secuencial (Apartar Turno)</option>
@@ -1471,7 +1471,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                           <select
                             value={formData.clockOpConfig?.meal_queue_order || 'arrival'}
                             onChange={(e) => handleNestedChange('clockOpConfig', 'meal_queue_order', e.target.value)}
-                            className="flex-1 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 outline-none"
+                            className="flex-1 text-[11px] font-bold text-text-2 bg-page border border-border rounded-lg px-2 py-1.5 outline-none"
                           >
                             <option value="arrival">Orden: por llegada</option>
                             <option value="random">Orden: aleatorio</option>
@@ -1481,122 +1481,122 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     </div>
 
                     {/* Switch 5: revalidate_gps_on_punch */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Re-validar GPS al Marcar</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Re-validar GPS al Marcar</h5>
                         <p className="text-[9px] text-slate-400">Exigir geocerca en entrada/salida final</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.clockOpConfig?.enabledDialerFeatures?.revalidate_gps_on_punch ?? true} 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.revalidate_gps_on_punch ?? true}
                           onChange={(e) => {
                             const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
                             handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, revalidate_gps_on_punch: e.target.checked });
-                          }} 
+                          }}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* Switch 6: enable_meal_slots */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Slots de Almuerzo</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Slots de Almuerzo</h5>
                         <p className="text-[9px] text-slate-400">Reservación y control de horarios</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_meal_slots ?? true} 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_meal_slots ?? true}
                           onChange={(e) => {
                             const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
                             handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_meal_slots: e.target.checked });
-                          }} 
+                          }}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* Switch 7: enable_ley_silla */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Descanso Ley Silla</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Descanso Ley Silla</h5>
                         <p className="text-[9px] text-slate-400">Desencadenar descanso tras comida</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_ley_silla ?? true} 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_ley_silla ?? true}
                           onChange={(e) => {
                             const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
                             handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_ley_silla: e.target.checked });
-                          }} 
+                          }}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* Switch 8: enable_early_departure */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Salida Anticipada</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Salida Anticipada</h5>
                         <p className="text-[9px] text-slate-400">Botón secundario de salida bajo dial</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_early_departure ?? true} 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_early_departure ?? true}
                           onChange={(e) => {
                             const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
                             handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_early_departure: e.target.checked });
-                          }} 
+                          }}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* Switch 9: enable_panic_button */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Botón de Pánico</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Botón de Pánico</h5>
                         <p className="text-[9px] text-slate-400">Llamada y alerta de emergencia</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_panic_button ?? true} 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_panic_button ?? true}
                           onChange={(e) => {
                             const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
                             handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_panic_button: e.target.checked });
-                          }} 
+                          }}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
 
                     {/* Switch 10: enable_temp_exit */}
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
-                        <h5 className="font-bold text-slate-700 text-[11px]">Salidas Temporales</h5>
+                        <h5 className="font-bold text-text-2 text-[11px]">Salidas Temporales</h5>
                         <p className="text-[9px] text-slate-400">Registrar reingresos intermedios</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_temp_exit ?? true} 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_temp_exit ?? true}
                           onChange={(e) => {
                             const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
                             handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_temp_exit: e.target.checked });
-                          }} 
+                          }}
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                       </label>
                     </div>
                   </div>
@@ -1604,10 +1604,10 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               </div>
 
               {/* Master Preset Selector: Modo Fichaje Rápido (Sin GPS) vs Modo GPS Perimetral */}
-              <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white p-5 rounded-3xl shadow-xl space-y-3 border border-indigo-700/50">
+              <div className="bg-gradient-to-br from-brand-dark via-slate-900 to-slate-950 text-white p-5 rounded-3xl shadow-xl space-y-3 border border-accent/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="bg-amber-400 text-slate-950 p-2 rounded-2xl font-black text-sm shadow-md">
+                    <div className="bg-warning-icon text-text-1 p-2 rounded-2xl font-black text-sm shadow-md">
                       ⚡
                     </div>
                     <div>
@@ -1640,16 +1640,16 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     }}
                     className={`p-4 rounded-2xl border text-left transition-all flex flex-col gap-1 cursor-pointer ${
                       formData.clockOpConfig?.gpsValidationEnabled === false
-                        ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-lg ring-2 ring-emerald-400/50'
+                        ? 'bg-success-icon/20 border-success-text text-white shadow-lg ring-2 ring-success-text/50'
                         : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-black text-xs text-emerald-400 flex items-center gap-1.5">
+                      <span className="font-black text-xs text-success-text flex items-center gap-1.5">
                         ⚡ Modo Fichaje Rápido (Sin GPS)
                       </span>
                       {formData.clockOpConfig?.gpsValidationEnabled === false && (
-                        <span className="bg-emerald-500 text-slate-950 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
+                        <span className="bg-success-icon text-text-1 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
                       )}
                     </div>
                     <p className="text-[10.5px] text-slate-300 leading-snug">
@@ -1679,16 +1679,16 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     }}
                     className={`p-4 rounded-2xl border text-left transition-all flex flex-col gap-1 cursor-pointer ${
                       formData.clockOpConfig?.gpsValidationEnabled !== false
-                        ? 'bg-indigo-500/20 border-indigo-400 text-white shadow-lg ring-2 ring-indigo-400/50'
+                        ? 'bg-accent/20 border-navy-300 text-white shadow-lg ring-2 ring-focus-ring/50'
                         : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-black text-xs text-indigo-300 flex items-center gap-1.5">
+                      <span className="font-black text-xs text-navy-100 flex items-center gap-1.5">
                         📍 Modo GPS Perimetral (Sucursal)
                       </span>
                       {formData.clockOpConfig?.gpsValidationEnabled !== false && (
-                        <span className="bg-indigo-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
+                        <span className="bg-accent text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
                       )}
                     </div>
                     <p className="text-[10.5px] text-slate-300 leading-snug">
@@ -1699,21 +1699,21 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               </div>
 
               {/* Toggles booleanos */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
+              <div className="bg-page p-6 rounded-2xl border border-border space-y-4">
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <h4 className="font-bold text-slate-800">Validación de GPS Obligatoria</h4>
-                    <p className="text-xs text-slate-500 mt-1">Requerir que los colaboradores estén dentro del perímetro de la sucursal para poder registrar su asistencia.</p>
+                    <h4 className="font-bold text-text-1">Validación de GPS Obligatoria</h4>
+                    <p className="text-xs text-text-3 mt-1">Requerir que los colaboradores estén dentro del perímetro de la sucursal para poder registrar su asistencia.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={formData.clockOpConfig?.gpsValidationEnabled ?? true} 
-                      onChange={(e) => handleNestedChange('clockOpConfig', 'gpsValidationEnabled', e.target.checked)} 
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={formData.clockOpConfig?.gpsValidationEnabled ?? true}
+                      onChange={(e) => handleNestedChange('clockOpConfig', 'gpsValidationEnabled', e.target.checked)}
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-650"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-hover"></div>
                   </label>
                 </div>
 
@@ -1721,14 +1721,14 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <h4 className="font-bold text-slate-800">Distancia Máxima de Alerta GPS (Metros)</h4>
-                    <p className="text-xs text-slate-505 mt-1">Radio máximo permitido en metros antes de alertar al supervisor en salidas temporales.</p>
+                    <h4 className="font-bold text-text-1">Distancia Máxima de Alerta GPS (Metros)</h4>
+                    <p className="text-xs text-text-3 mt-1">Radio máximo permitido en metros antes de alertar al supervisor en salidas temporales.</p>
                   </div>
-                  <input 
-                    type="number" 
-                    className="w-24 p-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" 
-                    value={formData.clockOpConfig?.gpsAlertRangeMeters ?? 100} 
-                    onChange={(e) => handleNestedChange('clockOpConfig', 'gpsAlertRangeMeters', parseInt(e.target.value) || 0)} 
+                  <input
+                    type="number"
+                    className="w-24 p-2 border border-border rounded-lg text-sm font-bold text-text-1 focus:outline-none focus:ring-2 focus-visible:ring-focus-ring"
+                    value={formData.clockOpConfig?.gpsAlertRangeMeters ?? 100}
+                    onChange={(e) => handleNestedChange('clockOpConfig', 'gpsAlertRangeMeters', parseInt(e.target.value) || 0)}
                   />
                 </div>
 
@@ -1736,23 +1736,23 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <h4 className="font-bold text-slate-800">Permitir Fichajes Manuales</h4>
-                    <p className="text-xs text-slate-500 mt-1">Habilitar botones de Entrada/Salida manuales sin validación de geolocalización GPS.</p>
+                    <h4 className="font-bold text-text-1">Permitir Fichajes Manuales</h4>
+                    <p className="text-xs text-text-3 mt-1">Habilitar botones de Entrada/Salida manuales sin validación de geolocalización GPS.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={formData.clockOpConfig?.allowManualCheckIn ?? false} 
-                      onChange={(e) => handleNestedChange('clockOpConfig', 'allowManualCheckIn', e.target.checked)} 
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={formData.clockOpConfig?.allowManualCheckIn ?? false}
+                      onChange={(e) => handleNestedChange('clockOpConfig', 'allowManualCheckIn', e.target.checked)}
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-650"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-hover"></div>
                   </label>
                 </div>
               </div>
             </div>
 
-            <button onClick={() => handleSave('clockOpConfig')} className="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors border-none cursor-pointer">
+            <button onClick={() => handleSave('clockOpConfig')} className="mt-8 bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors border-none cursor-pointer">
               <Save size={18} /> Guardar Ajustes Operativos
             </button>
           </div>

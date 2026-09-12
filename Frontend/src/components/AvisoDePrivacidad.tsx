@@ -40,12 +40,12 @@ export const EnlaceAlAviso: React.FC<{ className?: string; children?: React.Reac
  */
 export const NotaDeDatos: React.FC<{ texto: string; className?: string }> = ({ texto, className = '' }) => (
   <p
-    className={`flex items-start gap-1.5 text-[10px] leading-snug text-slate-500 ${className}`}
+    className={`flex items-start gap-1.5 text-[10px] leading-snug text-text-3 ${className}`}
     data-testid="nota-de-datos"
   >
     <ShieldCheck className="w-3 h-3 shrink-0 mt-[1px] text-slate-400" />
     <span>
-      {texto} <EnlaceAlAviso className="text-indigo-600">Ver el Aviso de Privacidad</EnlaceAlAviso>
+      {texto} <EnlaceAlAviso className="text-accent">Ver el Aviso de Privacidad</EnlaceAlAviso>
     </span>
   </p>
 );

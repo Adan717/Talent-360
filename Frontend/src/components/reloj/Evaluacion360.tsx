@@ -6,7 +6,7 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
   const [peers, setPeers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPeer, setSelectedPeer] = useState<any | null>(null);
-  
+
   // Form states
   const [teamworkScore, setTeamworkScore] = useState<number>(5);
   const [attitudeScore, setAttitudeScore] = useState<number>(5);
@@ -85,14 +85,14 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
   if (step === 1) {
     return (
       <div className="bg-slate-900 rounded-3xl p-8 border border-white/10 text-white min-h-[500px] flex flex-col shadow-2xl relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/40 to-slate-900 z-0"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-dark/40 to-slate-900 z-0"></div>
         <div className="relative z-10 flex justify-between items-center mb-8">
           <div>
-            <h2 className="text-3xl font-extrabold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">Evaluación 360°</h2>
+            <h2 className="text-3xl font-extrabold bg-gradient-to-r from-success-icon to-navy-400 bg-clip-text text-transparent">Evaluación 360°</h2>
             <p className="text-slate-400 mt-1">Califica el desempeño de tus compañeros (100% Confidencial)</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={cargarMisResultados} className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 px-4 py-2.5 rounded-xl font-bold transition-all border border-emerald-400/30">
+            <button onClick={cargarMisResultados} className="bg-success-icon/20 hover:bg-success-icon/30 text-success-text px-4 py-2.5 rounded-xl font-bold transition-all border border-success-text/30">
               Mis resultados
             </button>
             <button onClick={onBack} className="bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-xl font-bold transition-all backdrop-blur-sm border border-white/10">
@@ -102,13 +102,13 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
         </div>
 
         {verResultados && (
-          <div className="relative z-10 max-w-2xl mx-auto w-full mb-4 p-5 rounded-2xl bg-white/5 border border-emerald-400/20 text-sm" role="region" aria-label="Mis resultados 360">
+          <div className="relative z-10 max-w-2xl mx-auto w-full mb-4 p-5 rounded-2xl bg-white/5 border border-success-text/20 text-sm" role="region" aria-label="Mis resultados 360">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-extrabold text-emerald-300">Mis resultados del ciclo {resultados?.cycle_month || ''}</h3>
+              <h3 className="font-extrabold text-success-text">Mis resultados del ciclo {resultados?.cycle_month || ''}</h3>
               <button onClick={() => setVerResultados(false)} className="text-slate-400 hover:text-white text-xs">Ocultar</button>
             </div>
             {cargandoResultados && <p className="text-slate-400">Cargando...</p>}
-            {errorResultados && <p className="text-rose-300">{errorResultados}</p>}
+            {errorResultados && <p className="text-danger-text">{errorResultados}</p>}
             {!cargandoResultados && !errorResultados && resultados && resultados.evaluations_count === 0 && (
               <p className="text-slate-300">{resultados.message || 'Aún no tienes evaluaciones en este ciclo.'}</p>
             )}
@@ -125,7 +125,7 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
                   ].map(([etiqueta, valor]) => (
                     <div key={String(etiqueta)} className="bg-white/5 rounded-xl p-3 border border-white/10">
                       <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{etiqueta}</div>
-                      <div className="text-2xl font-extrabold text-emerald-300">{valor ?? '—'}</div>
+                      <div className="text-2xl font-extrabold text-success-text">{valor ?? '—'}</div>
                     </div>
                   ))}
                 </div>
@@ -145,7 +145,7 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
         <div className="relative z-10 space-y-4 max-w-2xl mx-auto w-full mt-8 flex-1 flex flex-col">
           {loading ? (
             <div className="flex-1 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-success-text"></div>
             </div>
           ) : peers.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-400 py-12">
@@ -157,16 +157,16 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
               <p className="text-center text-slate-300 mb-6">Selecciona al compañero que deseas evaluar al cierre de este turno:</p>
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                 {peers.map(peer => (
-                  <button 
+                  <button
                     key={peer.id}
                     onClick={() => handleSelectPeer(peer)}
-                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/50 p-4 rounded-2xl flex items-center justify-between transition-all group text-left"
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-success-text/50 p-4 rounded-2xl flex items-center justify-between transition-all group text-left"
                   >
                     <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-xl">👤</div>
+                      <div className="w-12 h-12 rounded-full bg-success-icon/20 flex items-center justify-center text-xl">👤</div>
                       <span className="font-bold text-lg">{peer.name}</span>
                     </div>
-                    <span className="text-slate-500 group-hover:text-emerald-400 transition-colors">Evaluar &rarr;</span>
+                    <span className="text-text-3 group-hover:text-success-text transition-colors">Evaluar &rarr;</span>
                   </button>
                 ))}
               </div>
@@ -181,7 +181,7 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
     <div className="bg-slate-900 rounded-3xl p-8 border border-white/10 text-white min-h-[500px] flex flex-col shadow-2xl relative overflow-hidden">
       <div className="relative z-10 flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-3xl font-extrabold">Evaluando a <span className="text-emerald-400">{selectedPeer?.name.split(' (')[0]}</span></h2>
+          <h2 className="text-3xl font-extrabold">Evaluando a <span className="text-success-text">{selectedPeer?.name.split(' (')[0]}</span></h2>
         </div>
         <button onClick={() => setStep(1)} className="text-slate-400 hover:text-white transition-colors">
           Cancelar
@@ -194,11 +194,11 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
             <label className="block text-slate-300 font-bold mb-3">1. ¿Cómo calificarías su Trabajo en Equipo hoy?</label>
             <div className="flex space-x-4 justify-center">
               {[1, 2, 3, 4, 5].map(star => (
-                <button 
-                  type="button" 
-                  key={star} 
+                <button
+                  type="button"
+                  key={star}
                   onClick={() => setTeamworkScore(star)}
-                  className={`text-4xl transition-colors ${star <= teamworkScore ? 'text-yellow-400' : 'text-slate-600'}`}
+                  className={`text-4xl transition-colors ${star <= teamworkScore ? 'text-warning-text' : 'text-text-2'}`}
                 >
                   ★
                 </button>
@@ -215,7 +215,7 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
                 { emoji: '🙂', score: 4, label: 'Buena' },
                 { emoji: '🤩', score: 5, label: 'Excelente' }
               ].map(opt => (
-                <button 
+                <button
                   type="button"
                   key={opt.score}
                   onClick={() => setAttitudeScore(opt.score)}
@@ -232,11 +232,11 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
             <label className="block text-slate-300 font-bold mb-2">3. Desempeño General del Turno</label>
             <div className="flex space-x-4 justify-center">
               {[1, 2, 3, 4, 5].map(star => (
-                <button 
-                  type="button" 
-                  key={star} 
+                <button
+                  type="button"
+                  key={star}
                   onClick={() => setPerformanceScore(star)}
-                  className={`text-3xl transition-colors ${star <= performanceScore ? 'text-emerald-400' : 'text-slate-600'}`}
+                  className={`text-3xl transition-colors ${star <= performanceScore ? 'text-success-text' : 'text-text-2'}`}
                 >
                   ★
                 </button>
@@ -246,21 +246,21 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
 
           <div>
             <label className="block text-slate-300 font-bold mb-2">4. Comentarios Adicionales (Confidencial)</label>
-            <textarea 
-              value={comments} 
-              onChange={e => setComments(e.target.value)} 
-              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500 text-sm" 
-              placeholder="Escribe comentarios u observaciones sobre su desempeño en el turno..." 
-              rows={3} 
+            <textarea
+              value={comments}
+              onChange={e => setComments(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-success-text text-sm"
+              placeholder="Escribe comentarios u observaciones sobre su desempeño en el turno..."
+              rows={3}
             />
           </div>
         </div>
 
         <div className="pt-6 flex justify-center">
-          <button 
+          <button
             type="submit"
             disabled={submitting}
-            className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] w-full max-w-xs"
+            className="bg-success-text hover:bg-success-icon disabled:bg-success-text text-white px-8 py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] w-full max-w-xs"
           >
             {submitting ? 'Enviando...' : 'Enviar Evaluación'}
           </button>

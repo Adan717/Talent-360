@@ -36,9 +36,9 @@ describe('BannerDeCobranza', () => {
 
   it('el aviso dentro de la gracia es ámbar y el apagón es rojo', () => {
     const { rerender } = render(<BannerDeCobranza aviso={aviso()} />);
-    expect(screen.getByTestId('banner-de-cobranza').className).toContain('amber');
+    expect(screen.getByTestId('banner-de-cobranza')).toHaveClass('bg-warning-bg', 'text-warning-text');
 
     rerender(<BannerDeCobranza aviso={aviso({ tono: 'apagon', dias_restantes: 0 })} />);
-    expect(screen.getByTestId('banner-de-cobranza').className).toContain('red');
+    expect(screen.getByTestId('banner-de-cobranza')).toHaveClass('bg-danger-bg', 'text-danger-text');
   });
 });

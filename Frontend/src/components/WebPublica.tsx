@@ -29,7 +29,7 @@ interface PublicVacancy {
 
 function splitSchedule(scheduleText: string): { days: string; hours: string } {
   if (!scheduleText) return { days: '', hours: '' };
-  
+
   // Try to find where the time part starts.
   // Time parts usually start with a digit, or 'de ' followed by a digit, or just 'de'/'desde'
   // Let's find the index of the first number in the string
@@ -39,7 +39,7 @@ function splitSchedule(scheduleText: string): { days: string; hours: string } {
     const hours = scheduleText.substring(match.index).trim();
     return { days, hours };
   }
-  
+
   // Fallback: if no digit, return it as days
   return { days: scheduleText, hours: '' };
 }
@@ -58,7 +58,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
   const [searchParams] = useSearchParams();
   const { slug: routeSlug } = useParams();
   const currentUser = useAppStore(state => state.currentUser);
-  
+
   const activeSlug = routeSlug || currentUser?.tenant?.public_slug || currentUser?.tenant?.subdomain || 'default';
   // En el portal público NO hay sesión, así que aquí no se puede saber de qué empresa es la bolsa:
   // la dirección (`slug`) es el único dato fiable, y el servidor resuelve la empresa a partir de
@@ -76,7 +76,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
   // casilla ninguna y sin enseñarle el aviso. El servidor ahora la exige (`acepta_aviso`).
   const [aceptaAviso, setAceptaAviso] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
-  
+
   const [tenant, setTenant] = useState<any>({
     name: 'Talent360',
     logo_url: '',
@@ -195,17 +195,17 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
   }, [activeSlug, searchParams, previewTenant, previewVacancies]);
 
   if (loading) {
-    return <div className="min-h-[400px] flex items-center justify-center font-bold text-slate-500">Cargando Bolsa de Trabajo...</div>;
+    return <div className="min-h-[400px] flex items-center justify-center font-bold text-text-3">Cargando Bolsa de Trabajo...</div>;
   }
 
   if (!tenant.public_portal_enabled && !previewTenant) {
     return (
-      <div className="w-full min-h-[500px] flex flex-col items-center justify-center bg-slate-50 p-8 text-center rounded-3xl border border-slate-200">
-        <div className="w-20 h-20 bg-slate-100 text-slate-400 rounded-3xl flex items-center justify-center mb-6 border border-slate-200 shadow-sm animate-pulse">
+      <div className="w-full min-h-[500px] flex flex-col items-center justify-center bg-page p-8 text-center rounded-3xl border border-border">
+        <div className="w-20 h-20 bg-page text-slate-400 rounded-3xl flex items-center justify-center mb-6 border border-border shadow-sm animate-pulse">
           <Briefcase size={36} />
         </div>
-        <h2 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">Portal no disponible</h2>
-        <p className="text-slate-500 max-w-md leading-relaxed text-sm font-medium">
+        <h2 className="text-3xl font-black text-text-1 mb-2 tracking-tight">Portal no disponible</h2>
+        <p className="text-text-3 max-w-md leading-relaxed text-sm font-medium">
           El portal público de vacantes de esta organización no está activo en este momento. Por favor, vuelve a intentarlo más tarde o ponte en contacto con Recursos Humanos.
         </p>
       </div>
@@ -218,7 +218,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
   const headerBgUrl = customSettings.header_bg_url || "";
 
   return (
-    <div className="w-full min-h-[calc(100vh-100px)] bg-slate-50 font-sans">
+    <div className="w-full min-h-[calc(100vh-100px)] bg-page font-sans">
       <style dangerouslySetInnerHTML={{__html: `
         :root {
           --brand-color: ${tenant.brand_color || '#3b82f6'};
@@ -254,35 +254,35 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
       `}} />
 
       {/* Hero Section */}
-      <div 
-        className="relative overflow-hidden bg-white text-slate-900 rounded-3xl p-12 text-center shadow-sm border border-slate-200 mb-12 bg-cover bg-center"
-        style={{ 
+      <div
+        className="relative overflow-hidden bg-white text-text-1 rounded-3xl p-12 text-center shadow-sm border border-border mb-12 bg-cover bg-center"
+        style={{
           backgroundImage: headerBgUrl ? `url(${headerBgUrl})` : undefined,
         }}
       >
         {headerBgUrl && <div className="absolute inset-0 bg-slate-950/60 z-0"></div>}
         <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: tenant.brand_color || '#3b82f6', zIndex: 10 }}></div>
-        <div className={`relative z-10 max-w-2xl mx-auto flex flex-col items-center ${headerBgUrl ? 'text-white' : 'text-slate-900'}`}>
+        <div className={`relative z-10 max-w-2xl mx-auto flex flex-col items-center ${headerBgUrl ? 'text-white' : 'text-text-1'}`}>
           {/* Contenedor de Logo o Iniciales */}
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-slate-150 overflow-hidden bg-white">
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-border overflow-hidden bg-white">
             {tenant.logo_url ? (
-              <img 
-                src={tenant.logo_url} 
-                alt={tenant.name} 
-                className="w-full h-full object-contain p-2" 
-                onError={(e) => { 
+              <img
+                src={tenant.logo_url}
+                alt={tenant.name}
+                className="w-full h-full object-contain p-2"
+                onError={(e) => {
                   (e.target as any).style.display = 'none';
                   const parent = (e.target as any).parentElement;
                   if (parent) {
                     const fallback = parent.querySelector('.logo-fallback');
                     if (fallback) fallback.style.display = 'flex';
                   }
-                }} 
+                }}
               />
             ) : null}
-            <div 
-              className="logo-fallback w-full h-full flex items-center justify-center text-white font-black text-2xl" 
-              style={{ 
+            <div
+              className="logo-fallback w-full h-full flex items-center justify-center text-white font-black text-2xl"
+              style={{
                 backgroundColor: tenant.brand_color || '#3b82f6',
                 display: tenant.logo_url ? 'none' : 'flex'
               }}
@@ -291,13 +291,13 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
             </div>
           </div>
 
-          <h1 className={`text-4xl md:text-5xl font-black mb-4 tracking-tight ${headerBgUrl ? 'text-white' : 'text-slate-900'}`}>
+          <h1 className={`text-4xl md:text-5xl font-black mb-4 tracking-tight ${headerBgUrl ? 'text-white' : 'text-text-1'}`}>
             {headerTitle}
           </h1>
-          <p className={`text-lg mb-8 font-medium ${headerBgUrl ? 'text-slate-200' : 'text-slate-500'}`}>
+          <p className={`text-lg mb-8 font-medium ${headerBgUrl ? 'text-slate-200' : 'text-text-3'}`}>
             {headerSubtitle}
           </p>
-          <button 
+          <button
             className="btn-brand text-white px-8 py-3 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2"
             onClick={() => {
               const el = document.getElementById('vacancies-grid');
@@ -314,35 +314,35 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
         {vacancies.map(vacancy => {
           const isActive = vacancy.is_active === 1 || vacancy.is_active === true;
           const { days, hours } = splitSchedule(vacancy.schedule);
-          
+
           return (
-          <div 
-            key={vacancy.id} 
+          <div
+            key={vacancy.id}
             onClick={() => {
               setSelectedVacancy(vacancy);
               setShowDetailModal(true);
             }}
-            className={`group relative bg-white border rounded-3xl overflow-hidden shadow-sm transition-all flex flex-col h-full ${isActive ? 'border-slate-200 hover:shadow-md group-hover-border-brand cursor-pointer hover:-translate-y-1' : 'border-slate-150 opacity-85 hover:shadow-md cursor-pointer'}`}
+            className={`group relative bg-white border rounded-3xl overflow-hidden shadow-sm transition-all flex flex-col h-full ${isActive ? 'border-border hover:shadow-md group-hover-border-brand cursor-pointer hover:-translate-y-1' : 'border-border opacity-85 hover:shadow-md cursor-pointer'}`}
           >
             <div className={`absolute top-0 left-0 w-full h-1 z-10 transition-colors ${isActive ? 'bg-brand-hover-target' : 'bg-slate-300'}`}></div>
-            
+
             {/* Imagen Alusiva Limpia y Clara */}
-            <div className="h-48 w-full relative overflow-hidden bg-slate-100">
-              <img 
-                src={vacancy.image_url} 
-                alt={vacancy.title} 
-                className={`w-full h-full object-cover transition-transform duration-700 ${isActive ? 'group-hover:scale-105' : ''}`} 
+            <div className="h-48 w-full relative overflow-hidden bg-page">
+              <img
+                src={vacancy.image_url}
+                alt={vacancy.title}
+                className={`w-full h-full object-cover transition-transform duration-700 ${isActive ? 'group-hover:scale-105' : ''}`}
               />
-              
+
               {/* Badges de Modalidad y Disponibilidad (Esquina Superior Izquierda/Derecha) */}
               <div className="absolute top-3 left-3 flex gap-2">
-                <span className="inline-block bg-white/95 backdrop-blur-sm text-slate-800 text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm border border-white/20">
+                <span className="inline-block bg-white/95 backdrop-blur-sm text-text-1 text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm border border-white/20">
                   {vacancy.work_type}
                 </span>
               </div>
               {!isActive && (
                 <div className="absolute top-3 right-3">
-                  <span className="inline-block bg-rose-600/90 text-white text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm backdrop-blur-sm">
+                  <span className="inline-block bg-danger-text/90 text-white text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm backdrop-blur-sm">
                     Pausada / Ocupada
                   </span>
                 </div>
@@ -351,43 +351,43 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
 
             <div className="p-6 flex-grow flex flex-col bg-white text-left">
               {/* Título en tipografía oscura de alto contraste */}
-              <h3 className="text-lg md:text-xl font-bold text-slate-800 tracking-tight leading-snug mb-3 group-hover-text-brand transition-colors text-left">
+              <h3 className="text-lg md:text-xl font-bold text-text-1 tracking-tight leading-snug mb-3 group-hover-text-brand transition-colors text-left">
                 {vacancy.title}
               </h3>
-              
+
               {/* Horario y Sueldo en Filas Independientes (Gris y Verde suave) */}
-              <div className="flex flex-col gap-1.5 mb-4 text-[11px] font-bold text-slate-500 text-left">
+              <div className="flex flex-col gap-1.5 mb-4 text-[11px] font-bold text-text-3 text-left">
                 {days && (
-                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-2.5 py-1.5 rounded-lg w-fit text-left">
-                    <CalendarDays className="text-brand shrink-0" size={13} /> 
+                  <div className="flex items-center gap-1.5 bg-page border border-border px-2.5 py-1.5 rounded-lg w-fit text-left">
+                    <CalendarDays className="text-brand shrink-0" size={13} />
                     <span className="truncate max-w-[220px]">{days}</span>
                   </div>
                 )}
                 {hours && (
-                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-2.5 py-1.5 rounded-lg w-fit text-left">
-                    <CalendarDays className="text-brand shrink-0" size={13} /> 
+                  <div className="flex items-center gap-1.5 bg-page border border-border px-2.5 py-1.5 rounded-lg w-fit text-left">
+                    <CalendarDays className="text-brand shrink-0" size={13} />
                     <span className="truncate max-w-[220px]">{hours}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 rounded-lg w-fit text-left">
-                  <CircleDollarSign className="text-emerald-600 shrink-0" size={13} /> 
-                  <span className="text-emerald-700 font-extrabold">{vacancy.salary_range}</span>
+                <div className="flex items-center gap-1.5 bg-success-bg border border-success-text/20 px-2.5 py-1.5 rounded-lg w-fit text-left">
+                  <CircleDollarSign className="text-success-text shrink-0" size={13} />
+                  <span className="text-success-text font-extrabold">{vacancy.salary_range}</span>
                 </div>
               </div>
 
-              <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow text-left">
-                {vacancy.description && vacancy.description.length > 110 
-                  ? vacancy.description.substring(0, 110) + '...' 
+              <p className="text-text-3 text-sm leading-relaxed mb-6 flex-grow text-left">
+                {vacancy.description && vacancy.description.length > 110
+                  ? vacancy.description.substring(0, 110) + '...'
                   : vacancy.description}
               </p>
-              
-              <button 
+
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedVacancy(vacancy);
                   setShowDetailModal(true);
                 }}
-                className="w-full bg-slate-50 hover:bg-brand-light hover:text-brand text-slate-700 border border-slate-200 hover:border-brand-light py-3 rounded-xl font-bold text-sm transition-all flex justify-center items-center gap-2 mt-auto"
+                className="w-full bg-page hover:bg-brand-light hover:text-brand text-text-2 border border-border hover:border-brand-light py-3 rounded-xl font-bold text-sm transition-all flex justify-center items-center gap-2 mt-auto"
               >
                 <span>Ver Detalles</span>
                 <ArrowRight size={16} />
@@ -414,7 +414,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
               </div>
               <span className="text-white font-black text-lg tracking-tight">{tenant.name}</span>
             </div>
-            <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
+            <p className="text-xs text-text-3 max-w-xs leading-relaxed">
               Descubre grandes oportunidades y únete a un equipo excepcional enfocado en el crecimiento profesional y personal.
             </p>
           </div>
@@ -436,7 +436,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                 </div>
               )}
               {!customSettings.contact_email && !customSettings.contact_phone && (
-                <p className="text-slate-500 italic">No se ha especificado información de contacto.</p>
+                <p className="text-text-3 italic">No se ha especificado información de contacto.</p>
               )}
             </div>
           </div>
@@ -461,79 +461,79 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                 </a>
               )}
               {!customSettings.social_facebook && !customSettings.social_instagram && !customSettings.social_linkedin && (
-                <p className="text-slate-500 italic text-xs">Síguenos en nuestras plataformas oficiales.</p>
+                <p className="text-text-3 italic text-xs">Síguenos en nuestras plataformas oficiales.</p>
               )}
             </div>
           </div>
         </div>
 
         {/* Línea inferior de copyright */}
-        <div className="max-w-6xl mx-auto border-t border-slate-800/80 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-slate-500">
+        <div className="max-w-6xl mx-auto border-t border-slate-800/80 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-text-3">
           <span>{customSettings.footer_text || `© ${new Date().getFullYear()} ${tenant.name}. Todos los derechos reservados.`}</span>
           <div className="flex items-center gap-3">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }}
               className="hover:text-slate-300 transition underline cursor-pointer"
             >
               Aviso de Privacidad
             </button>
             <span>•</span>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }}
               className="hover:text-slate-300 transition underline cursor-pointer"
             >
               Términos
             </button>
           </div>
-          <span className="flex items-center gap-1 font-semibold">Desarrollado con <span className="text-rose-500">♥</span> por <span className="text-white">Talent360</span></span>
+          <span className="flex items-center gap-1 font-semibold">Desarrollado con <span className="text-danger-text">♥</span> por <span className="text-white">Talent360</span></span>
         </div>
       </footer>
 
       {/* Modal Legal */}
-      <LegalModal 
-        isOpen={isLegalModalOpen} 
-        onClose={() => setIsLegalModalOpen(false)} 
-        defaultTab={legalModalTab} 
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+        defaultTab={legalModalTab}
       />
 
       {/* Modal de Detalles de Vacante */}
       {showDetailModal && selectedVacancy && (() => {
         const isActive = selectedVacancy.is_active === 1 || selectedVacancy.is_active === true;
         const { days, hours } = splitSchedule(selectedVacancy.schedule);
-        
+
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-sm animate-fade-in overflow-y-auto">
             <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl relative my-8 animate-slide-up flex flex-col max-h-[90vh]">
               {/* Botón Cerrar Flotante */}
-              <button 
+              <button
                 onClick={() => {
                   setShowDetailModal(false);
                   setSelectedVacancy(null);
                 }}
-                className="absolute top-4 right-4 z-20 text-slate-400 hover:text-slate-700 bg-white/80 hover:bg-white p-2.5 rounded-full backdrop-blur-md transition-all shadow-md"
+                className="absolute top-4 right-4 z-20 text-slate-400 hover:text-text-2 bg-white/80 hover:bg-white p-2.5 rounded-full backdrop-blur-md transition-all shadow-md"
               >
                 <X size={20} />
               </button>
 
               {/* Encabezado con Imagen Limpia */}
-              <div className="h-52 w-full relative overflow-hidden bg-slate-100 shrink-0">
-                <img 
-                  src={selectedVacancy.image_url} 
-                  alt={selectedVacancy.title} 
-                  className="w-full h-full object-cover opacity-100" 
+              <div className="h-52 w-full relative overflow-hidden bg-page shrink-0">
+                <img
+                  src={selectedVacancy.image_url}
+                  alt={selectedVacancy.title}
+                  className="w-full h-full object-cover opacity-100"
                 />
-                
+
                 {/* Badges de Modalidad y Disponibilidad */}
                 <div className="absolute top-3 left-3 flex gap-2">
-                  <span className="inline-block bg-white/95 backdrop-blur-sm text-slate-800 text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm border border-white/20">
+                  <span className="inline-block bg-white/95 backdrop-blur-sm text-text-1 text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm border border-white/20">
                     {selectedVacancy.work_type}
                   </span>
                 </div>
                 {!isActive && (
                   <div className="absolute top-3 right-3">
-                    <span className="inline-block bg-rose-600/90 text-white text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm backdrop-blur-sm">
+                    <span className="inline-block bg-danger-text/90 text-white text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm backdrop-blur-sm">
                       Pausada / Ocupada
                     </span>
                   </div>
@@ -544,25 +544,25 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
               <div className="p-6 md:p-8 space-y-6 overflow-y-auto flex-grow text-left">
                 {/* Título en tipografía oscura de alto contraste */}
                 <div className="text-left">
-                  <h3 className="text-2xl md:text-3xl font-black text-slate-800 leading-tight tracking-tight text-left">
+                  <h3 className="text-2xl md:text-3xl font-black text-text-1 leading-tight tracking-tight text-left">
                     {selectedVacancy.title}
                   </h3>
                 </div>
                 {/* Bloque de Información General (Dos filas de horario, sueldo) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 shrink-0 text-left">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-page p-5 rounded-2xl border border-border shrink-0 text-left">
                   <div className="flex items-start gap-3">
                     <CalendarDays className="text-brand shrink-0 mt-0.5" size={18} />
                     <div className="text-left">
                       <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jornada y Horario</span>
-                      <span className="block text-sm font-bold text-slate-700 mt-0.5">{days || 'No especificado'}</span>
-                      {hours && <span className="block text-xs font-semibold text-slate-500 mt-0.5">{hours}</span>}
+                      <span className="block text-sm font-bold text-text-2 mt-0.5">{days || 'No especificado'}</span>
+                      {hours && <span className="block text-xs font-semibold text-text-3 mt-0.5">{hours}</span>}
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 border-t md:border-t-0 md:border-l border-slate-200 pt-3 md:pt-0 md:pl-4 text-left">
-                    <CircleDollarSign className="text-emerald-500 shrink-0 mt-0.5" size={18} />
+                  <div className="flex items-start gap-3 border-t md:border-t-0 md:border-l border-border pt-3 md:pt-0 md:pl-4 text-left">
+                    <CircleDollarSign className="text-success-text shrink-0 mt-0.5" size={18} />
                     <div className="text-left">
                       <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sueldo Ofrecido</span>
-                      <span className="block text-sm font-extrabold text-emerald-600 mt-0.5">{selectedVacancy.salary_range}</span>
+                      <span className="block text-sm font-extrabold text-success-text mt-0.5">{selectedVacancy.salary_range}</span>
                     </div>
                   </div>
                 </div>
@@ -570,7 +570,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                 {/* Descripción Completa */}
                 <div className="text-left">
                   <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2.5 pl-1">Descripción del Puesto</h4>
-                  <div className="bg-slate-50/50 border border-slate-100 p-5 rounded-2xl text-slate-600 text-sm leading-relaxed whitespace-pre-line text-left">
+                  <div className="bg-page/50 border border-border p-5 rounded-2xl text-text-2 text-sm leading-relaxed whitespace-pre-line text-left">
                     {selectedVacancy.description}
                   </div>
                 </div>
@@ -579,9 +579,9 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                 {Array.isArray(selectedVacancy.requirements) && selectedVacancy.requirements.length > 0 && (
                   <div className="text-left">
                     <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2.5 pl-1">Requisitos</h4>
-                    <div className="space-y-3 bg-slate-50/50 border border-slate-100 p-5 rounded-2xl text-left">
+                    <div className="space-y-3 bg-page/50 border border-border p-5 rounded-2xl text-left">
                       {selectedVacancy.requirements.map((req: string, idx: number) => (
-                        <div key={idx} className="flex items-start gap-3 text-sm text-slate-700 font-medium text-left">
+                        <div key={idx} className="flex items-start gap-3 text-sm text-text-2 font-medium text-left">
                           <CheckCircle2 className="text-brand shrink-0 mt-0.5" size={18} />
                           <span>{req}</span>
                         </div>
@@ -592,9 +592,9 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
               </div>
 
               {/* Footer con Acciones Centralizadas */}
-              <div className="p-4 sm:p-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+              <div className="p-4 sm:p-6 bg-page border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
                 {isActive ? (
-                  <button 
+                  <button
                     onClick={() => {
                       handlePostularse(selectedVacancy);
                     }}
@@ -603,7 +603,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                     Postularse a esta Vacante
                   </button>
                 ) : (
-                  <button 
+                  <button
                     onClick={() => {
                       handleNotificarme(selectedVacancy);
                     }}
@@ -612,22 +612,22 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                     Notificarme Disponibilidad
                   </button>
                 )}
-                
+
                 <div className="flex gap-2 w-full sm:w-auto">
-                  <button 
+                  <button
                     onClick={() => handleShare(selectedVacancy)}
-                    className="flex-1 sm:flex-initial bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-100 text-slate-600 p-3.5 rounded-xl transition-all shadow-sm flex justify-center items-center"
+                    className="flex-1 sm:flex-initial bg-white border border-border hover:border-slate-300 hover:bg-page text-text-2 p-3.5 rounded-xl transition-all shadow-sm flex justify-center items-center"
                     title="Compartir"
                   >
                     <Share2 size={20} />
                   </button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => {
                       setShowDetailModal(false);
                       setSelectedVacancy(null);
                     }}
-                    className="flex-1 sm:flex-initial bg-white border border-slate-200 hover:bg-slate-100 text-slate-650 px-5 py-3.5 rounded-xl font-bold text-sm transition-all"
+                    className="flex-1 sm:flex-initial bg-white border border-border hover:bg-page text-text-2 px-5 py-3.5 rounded-xl font-bold text-sm transition-all"
                   >
                     Cerrar
                   </button>
@@ -644,40 +644,40 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
           <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative animate-slide-up">
             <div className="p-8">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-black text-slate-900">Compartir Vacante</h3>
-                <button 
+                <h3 className="text-2xl font-black text-text-1">Compartir Vacante</h3>
+                <button
                   onClick={() => setShareVacancy(null)}
-                  className="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-all"
+                  className="text-slate-400 hover:text-text-2 p-1.5 rounded-full hover:bg-page transition-all"
                 >
                   <X size={20} />
                 </button>
               </div>
-              
-              <p className="text-sm text-slate-500 mb-6">
-                Comparte la vacante para <strong className="text-blue-600">{shareVacancy.title}</strong> con tus amigos o en redes sociales.
+
+              <p className="text-sm text-text-3 mb-6">
+                Comparte la vacante para <strong className="text-accent">{shareVacancy.title}</strong> con tus amigos o en redes sociales.
               </p>
 
               {/* Botones de Redes Sociales */}
               <div className="space-y-3 mb-6">
                 {/* WhatsApp */}
-                <button 
+                <button
                   onClick={() => {
                     const shareUrl = `${window.location.origin}${window.location.pathname}?vacancy_id=${shareVacancy.id}`;
                     const text = `¡Hola! Te comparto esta vacante de empleo: ${shareVacancy.title}. Puedes postularte aquí: ${shareUrl}`;
                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
                   }}
-                  className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 shadow-sm shadow-emerald-500/10"
+                  className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 shadow-sm shadow-success-text/10"
                 >
                   <Send size={18} /> Compartir en WhatsApp
                 </button>
 
                 {/* Facebook */}
-                <button 
+                <button
                   onClick={() => {
                     const shareUrl = `${window.location.origin}${window.location.pathname}?vacancy_id=${shareVacancy.id}`;
                     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
                   }}
-                  className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 shadow-sm shadow-blue-500/10"
+                  className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 shadow-sm shadow-accent/10"
                 >
                   <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -687,18 +687,18 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
               </div>
 
               {/* Input con enlace para copiar */}
-              <div className="relative bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-2 mb-4">
-                <span className="text-xs font-semibold text-slate-600 truncate flex-grow">
+              <div className="relative bg-page border border-border rounded-xl p-3 flex items-center justify-between gap-2 mb-4">
+                <span className="text-xs font-semibold text-text-2 truncate flex-grow">
                   {`${window.location.origin}${window.location.pathname}?vacancy_id=${shareVacancy.id}`}
                 </span>
-                <button 
+                <button
                   onClick={() => {
                     const shareUrl = `${window.location.origin}${window.location.pathname}?vacancy_id=${shareVacancy.id}`;
                     navigator.clipboard.writeText(shareUrl);
                     setCopiedLink(true);
                     setTimeout(() => setCopiedLink(false), 2000);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${copiedLink ? 'bg-emerald-500 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${copiedLink ? 'bg-success-icon text-white' : 'bg-slate-200 hover:bg-slate-300 text-text-2'}`}
                 >
                   {copiedLink ? (
                     <>
@@ -712,7 +712,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                 </button>
               </div>
             </div>
-            <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+            <div className="h-1.5 w-full bg-gradient-to-r from-accent to-accent"></div>
           </div>
         </div>
       )}
@@ -733,50 +733,50 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
             {(
               <div className="p-8">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-black text-slate-900">Postulación</h3>
+                  <h3 className="text-2xl font-black text-text-1">Postulación</h3>
                   <button
                     onClick={() => setShowSocialAuthModal(false)}
-                    className="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-all"
+                    className="text-slate-400 hover:text-text-2 p-1.5 rounded-full hover:bg-page transition-all"
                   >
                     <X size={20} />
                   </button>
                 </div>
 
-                <p className="text-sm text-slate-500 mb-6">
-                  Déjanos tus datos para postularte a <strong className="text-blue-600">{selectedVacancy.title}</strong>:
+                <p className="text-sm text-text-3 mb-6">
+                  Déjanos tus datos para postularte a <strong className="text-accent">{selectedVacancy.title}</strong>:
                 </p>
 
                 <div className="space-y-4 mb-6">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre Completo</label>
-                    <input 
-                      type="text" 
-                      value={candidateForm.name} 
-                      onChange={e => setCandidateForm({ ...candidateForm, name: e.target.value })} 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" 
+                    <label className="block text-xs font-bold text-text-3 uppercase mb-1">Nombre Completo</label>
+                    <input
+                      type="text"
+                      value={candidateForm.name}
+                      onChange={e => setCandidateForm({ ...candidateForm, name: e.target.value })}
+                      className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-semibold text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Correo Electrónico</label>
-                    <input 
-                      type="email" 
-                      value={candidateForm.email} 
-                      onChange={e => setCandidateForm({ ...candidateForm, email: e.target.value })} 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" 
+                    <label className="block text-xs font-bold text-text-3 uppercase mb-1">Correo Electrónico</label>
+                    <input
+                      type="email"
+                      value={candidateForm.email}
+                      onChange={e => setCandidateForm({ ...candidateForm, email: e.target.value })}
+                      className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-semibold text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono de Contacto</label>
-                    <input 
-                      type="tel" 
-                      value={candidateForm.phone} 
-                      onChange={e => setCandidateForm({ ...candidateForm, phone: e.target.value })} 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" 
+                    <label className="block text-xs font-bold text-text-3 uppercase mb-1">Teléfono de Contacto</label>
+                    <input
+                      type="tel"
+                      value={candidateForm.phone}
+                      onChange={e => setCandidateForm({ ...candidateForm, phone: e.target.value })}
+                      className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-semibold text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent transition-all"
                     />
                   </div>
                 </div>
 
-                <button 
+                <button
                   onClick={() => {
                     if (!candidateForm.name.trim() || !candidateForm.email.trim() || !candidateForm.phone.trim()) {
                       alert("Por favor, completa todos los campos.");
@@ -785,13 +785,13 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                     setShowSocialAuthModal(false);
                     setShowInduction(true);
                   }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2"
+                  className="w-full bg-accent hover:bg-accent-hover text-white py-3.5 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2"
                 >
                   Revisar y enviar <ArrowRight size={16} />
                 </button>
               </div>
             )}
-            <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+            <div className="h-1.5 w-full bg-gradient-to-r from-accent to-accent"></div>
           </div>
         </div>
       )}
@@ -802,13 +802,13 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
           <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative animate-slide-up">
             <div className="p-8">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-black text-slate-900">Activar Alerta</h3>
-                <button 
+                <h3 className="text-2xl font-black text-text-1">Activar Alerta</h3>
+                <button
                   onClick={() => {
                     setAlertVacancy(null);
                     setAlertSuccess(false);
                   }}
-                  className="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-all"
+                  className="text-slate-400 hover:text-text-2 p-1.5 rounded-full hover:bg-page transition-all"
                 >
                   <X size={20} />
                 </button>
@@ -818,50 +818,50 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                   de SOLO ESCRITURA y nadie la leía jamás. Ahora Recursos Humanos sí ve la lista
                   en su panel, así que el texto promete lo que de verdad va a pasar: que la
                   empresa te contacte. El correo automático es una función aparte. */}
-              <p className="text-sm text-slate-500 mb-6">
-                Guardaremos tu correo y Recursos Humanos de <strong className="text-blue-600">{tenant.name}</strong> podrá contactarte cuando la posición de <strong className="text-blue-600">{alertVacancy.title}</strong> vuelva a abrirse.
+              <p className="text-sm text-text-3 mb-6">
+                Guardaremos tu correo y Recursos Humanos de <strong className="text-accent">{tenant.name}</strong> podrá contactarte cuando la posición de <strong className="text-accent">{alertVacancy.title}</strong> vuelva a abrirse.
               </p>
 
               {alertSuccess ? (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-emerald-800 text-center mb-4">
-                  <CheckCircle2 className="mx-auto text-emerald-500 mb-3" size={40} />
+                <div className="bg-success-bg border border-success-text/20 rounded-2xl p-6 text-success-text text-center mb-4">
+                  <CheckCircle2 className="mx-auto text-success-text mb-3" size={40} />
                   <p className="font-bold text-lg mb-1">Registramos tu interés</p>
                   <p className="text-sm font-medium">Recursos Humanos ya tiene tu correo en su lista de interesados para esta posición.</p>
                 </div>
               ) : (
                 <form onSubmit={handleAlertSubmit} className="space-y-4 mb-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Correo Electrónico</label>
-                    <input 
-                      type="email" 
+                    <label className="block text-xs font-bold text-text-3 uppercase mb-1.5 ml-1">Correo Electrónico</label>
+                    <input
+                      type="email"
                       required
-                      value={alertForm.email} 
-                      onChange={e => setAlertForm({ ...alertForm, email: e.target.value })} 
+                      value={alertForm.email}
+                      onChange={e => setAlertForm({ ...alertForm, email: e.target.value })}
                       placeholder="tu-correo@ejemplo.com"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" 
+                      className="w-full bg-page border border-border rounded-xl px-4 py-3 font-semibold text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent transition-all"
                     />
                   </div>
-                  <button 
+                  <button
                     type="submit"
                     disabled={submittingAlert}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                    className="w-full bg-accent hover:bg-accent-hover text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed"
                   >
                     {submittingAlert ? 'Activando...' : 'Activar Alerta de Vacante'}
                   </button>
                 </form>
               )}
 
-              <button 
+              <button
                 onClick={() => {
                   setAlertVacancy(null);
                   setAlertSuccess(false);
                 }}
-                className="w-full text-center text-slate-500 font-bold hover:text-slate-700 transition-colors text-sm mt-2"
+                className="w-full text-center text-text-3 font-bold hover:text-text-2 transition-colors text-sm mt-2"
               >
                 Cerrar
               </button>
             </div>
-            <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+            <div className="h-1.5 w-full bg-gradient-to-r from-accent to-accent"></div>
           </div>
         </div>
       )}
@@ -877,35 +877,35 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                 descartaba en silencio: el servidor nunca la guardó. Ahora es lo que de verdad
                 es: el paso de revisar y enviar. La inducción real vive en la Academia. */}
             <div className="p-4 sm:p-8">
-              <h2 className="text-3xl font-extrabold text-slate-800 mb-2">Revisa y envía tu postulación</h2>
-              <p className="text-slate-500 text-lg mb-8">
+              <h2 className="text-3xl font-extrabold text-text-1 mb-2">Revisa y envía tu postulación</h2>
+              <p className="text-text-3 text-lg mb-8">
                 Estos son los datos que llegarán a Recursos Humanos de {tenant.name} para la vacante
-                de <span className="font-bold text-slate-700">{selectedVacancy?.title}</span>.
+                de <span className="font-bold text-text-2">{selectedVacancy?.title}</span>.
               </p>
 
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 mb-8 space-y-2 text-sm">
-                <div><span className="font-bold text-slate-500 uppercase text-xs block">Nombre</span>{candidateForm.name}</div>
-                <div><span className="font-bold text-slate-500 uppercase text-xs block">Correo</span>{candidateForm.email}</div>
+              <div className="bg-page rounded-2xl p-6 border border-border mb-8 space-y-2 text-sm">
+                <div><span className="font-bold text-text-3 uppercase text-xs block">Nombre</span>{candidateForm.name}</div>
+                <div><span className="font-bold text-text-3 uppercase text-xs block">Correo</span>{candidateForm.email}</div>
                 {candidateForm.phone && (
-                  <div><span className="font-bold text-slate-500 uppercase text-xs block">Teléfono</span>{candidateForm.phone}</div>
+                  <div><span className="font-bold text-text-3 uppercase text-xs block">Teléfono</span>{candidateForm.phone}</div>
                 )}
               </div>
 
               {/* Consentimiento del titular. Arranca DESMARCADA: una casilla premarcada no
                   acredita nada ante la LFPDPPP (misma lección que el alta de empresa). */}
-              <label className="flex items-start gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 cursor-pointer">
+              <label className="flex items-start gap-3 bg-page border border-border rounded-2xl p-4 mb-6 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={aceptaAviso}
                   onChange={e => setAceptaAviso(e.target.checked)}
-                  className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  className="mt-0.5 rounded text-success-text focus-visible:ring-success-text cursor-pointer"
                 />
-                <span className="text-xs text-slate-600 leading-snug font-medium">
+                <span className="text-xs text-text-2 leading-snug font-medium">
                   Acepto que {tenant.name} trate mis datos personales para este proceso de reclutamiento, conforme al{' '}
                   <button
                     type="button"
                     onClick={e => { e.preventDefault(); setLegalModalTab('privacy'); setIsLegalModalOpen(true); }}
-                    className="text-emerald-700 font-bold hover:underline"
+                    className="text-success-text font-bold hover:underline"
                   >
                     Aviso de Privacidad
                   </button>.
@@ -915,7 +915,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
               <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-4">
                 <button
                   onClick={() => { setShowInduction(false); setShowSocialAuthModal(true); }}
-                  className="text-slate-500 font-bold hover:text-slate-700 transition-colors py-2 text-center"
+                  className="text-text-3 font-bold hover:text-text-2 transition-colors py-2 text-center"
                   type="button"
                 >
                   Corregir mis datos
@@ -949,7 +949,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                 </button>
               </div>
             </div>
-            <div className="h-2 w-full bg-gradient-to-r from-emerald-400 to-teal-400"></div>
+            <div className="h-2 w-full bg-gradient-to-r from-success-icon to-navy-400"></div>
           </div>
         </div>
       )}
@@ -980,9 +980,9 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                   >
                      <Building2 size={24} />
                   </div>
-                  <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Bienvenido a {tenant.name}</h2>
+                  <h2 className="text-3xl font-black text-text-1 mb-4 tracking-tight">Bienvenido a {tenant.name}</h2>
                   {tenant.custom_settings?.header_subtitle && (
-                    <p className="text-slate-500 mb-8 text-lg leading-relaxed">
+                    <p className="text-text-3 mb-8 text-lg leading-relaxed">
                        {tenant.custom_settings.header_subtitle}
                     </p>
                   )}

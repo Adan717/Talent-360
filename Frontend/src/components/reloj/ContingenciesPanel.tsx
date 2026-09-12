@@ -104,14 +104,14 @@ export const ContingenciesPanel = () => {
                 <button
                   onClick={() => resolve(r.id, 'approved')}
                   disabled={resolvingId === r.id}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-success-icon hover:bg-success-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                   ✓ Aprobar (pago 100%)
                 </button>
                 <button
                   onClick={() => resolve(r.id, 'rejected')}
                   disabled={resolvingId === r.id}
-                  className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                   ✕ Rechazar
                 </button>

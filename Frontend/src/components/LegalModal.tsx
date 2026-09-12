@@ -25,12 +25,12 @@ export const LEGAL_TABS: { id: LegalDocType; label: string; Icono: React.Element
  */
 export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
   <div className="space-y-6 text-slate-300 text-xs leading-relaxed font-sans">
-          
+
           {/* TAB 1: AVISO DE PRIVACIDAD INTEGRAL COMPLETO (8 PUNTOS) */}
           {tab === 'privacy' && (
             <div className="space-y-6">
-              <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 flex items-start gap-3">
-                <Lock className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+              <div className="bg-brand-dark/40 border border-accent/30 rounded-2xl p-4 flex items-start gap-3">
+                <Lock className="w-5 h-5 text-navy-300 shrink-0 mt-0.5" />
                 <div className="text-slate-200 text-xs">
                   <h4 className="font-extrabold text-white text-sm mb-1">Aviso de Privacidad Integral Completo conforme a la LFPDPPP (México)</h4>
                   <p className="text-slate-300 text-xs leading-relaxed">
@@ -42,10 +42,10 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 1 */}
               <section className="space-y-2">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-indigo-400" /> 1. Identidad y Rol del Responsable
+                  <Building2 className="w-4 h-4 text-navy-300" /> 1. Identidad y Rol del Responsable
                 </h4>
                 <p>
-                  <strong>TALENT360</strong> (en lo sucesivo "LA PLATAFORMA"), accesible desde el portal web <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded font-mono text-[11px]">https://talent360.com.mx</code>, opera bajo un modelo de Software como Servicio (SaaS) B2B:
+                  <strong>TALENT360</strong> (en lo sucesivo "LA PLATAFORMA"), accesible desde el portal web <code className="bg-slate-800 text-navy-100 px-1.5 py-0.5 rounded font-mono text-[11px]">https://talent360.com.mx</code>, opera bajo un modelo de Software como Servicio (SaaS) B2B:
                 </p>
                 <ul className="list-disc pl-5 space-y-1.5 text-slate-300">
                   <li><strong>Respecto a los datos de la Empresa Suscriptora (Cliente):</strong> Talent360 actúa como <strong>RESPONSABLE</strong> del tratamiento de los datos de contacto, fiscales y de facturación del representante legal y administradores.</li>
@@ -56,23 +56,23 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 2 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Database className="w-4 h-4 text-indigo-400" /> 2. Datos Personales Recabados
+                  <Database className="w-4 h-4 text-navy-300" /> 2. Datos Personales Recabados
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="bg-slate-850 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                    <h5 className="font-bold text-indigo-300 text-xs">A. Datos de la Empresa y Administradores</h5>
+                    <h5 className="font-bold text-navy-100 text-xs">A. Datos de la Empresa y Administradores</h5>
                     <p className="text-[11px] text-slate-400">Razón Social, RFC, Domicilio Fiscal, Nombre del Representante Legal, Correo Electrónico, Teléfono y Datos Financieros de Tarjeta (procesados de manera encriptada por Stripe).</p>
                   </div>
                   <div className="bg-slate-850 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                    <h5 className="font-bold text-indigo-300 text-xs">B. Datos Identificativos y Laborales de Colaboradores</h5>
+                    <h5 className="font-bold text-navy-100 text-xs">B. Datos Identificativos y Laborales de Colaboradores</h5>
                     <p className="text-[11px] text-slate-400">Nombre completo, CURP, RFC, Número de Seguro Social (NSS), Puesto, Sucursal/Tienda, Horario Laboral, Salario Base, Fecha de Ingreso y Estructura Jerárquica.</p>
                   </div>
                   <div className="bg-slate-850 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                    <h5 className="font-bold text-amber-300 text-xs">C. Evidencia Fotográfica y Geolocalización (Datos Sensibles)</h5>
+                    <h5 className="font-bold text-warning-text text-xs">C. Evidencia Fotográfica y Geolocalización (Datos Sensibles)</h5>
                     <p className="text-[11px] text-slate-400">Fotografías tomadas desde la cámara del dispositivo al registrar el inicio y el fin de la comida, IP y coordenadas GPS. Utilizadas únicamente como evidencia fotográfica de presencia e integridad operativa.</p>
                   </div>
                   <div className="bg-slate-850 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                    <h5 className="font-bold text-indigo-300 text-xs">D. Datos de Capacitación y Evaluación</h5>
+                    <h5 className="font-bold text-navy-100 text-xs">D. Datos de Capacitación y Evaluación</h5>
                     <p className="text-[11px] text-slate-400">Progreso de lectura, resultados de exámenes, intentos registrados y certificaciones emitidas dentro de la Academia Talent360.</p>
                   </div>
                 </div>
@@ -81,7 +81,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 3 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Cpu className="w-4 h-4 text-indigo-400" /> 3. Finalidades del Tratamiento de los Datos
+                  <Cpu className="w-4 h-4 text-navy-300" /> 3. Finalidades del Tratamiento de los Datos
                 </h4>
                 <div className="space-y-2">
                   <h5 className="font-bold text-white text-xs">Finalidades Primarias (Necesarias para la prestación del servicio):</h5>
@@ -104,14 +104,14 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 4 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-indigo-400" /> 4. Tratamiento de Evidencia Fotográfica y Datos Biométricos
+                  <Lock className="w-4 h-4 text-navy-300" /> 4. Tratamiento de Evidencia Fotográfica y Datos Biométricos
                 </h4>
                 <p>
                   En caso de que el fichaje requiera fotografía desde la PWA del reloj checador o el dialer de apertura:
                 </p>
                 <ul className="list-disc pl-5 space-y-1 text-slate-300">
                   <li>La fotografía se captura con el único propósito de acreditar el uso efectivo del periodo de comida.</li>
-                  <li>Las imágenes se almacenan en el <strong>almacenamiento privado del servidor</strong> (no en una carpeta pública), accesibles únicamente mediante una petición autenticada y con aislamiento por inquilino (<code className="bg-slate-800 text-indigo-300 px-1 py-0.5 rounded font-mono text-[10px]">TenantScope</code>). <strong>No se cifran en reposo</strong>; la protección es de acceso, no criptográfica. Se depuran automáticamente a los 90 días.</li>
+                  <li>Las imágenes se almacenan en el <strong>almacenamiento privado del servidor</strong> (no en una carpeta pública), accesibles únicamente mediante una petición autenticada y con aislamiento por inquilino (<code className="bg-slate-800 text-navy-100 px-1 py-0.5 rounded font-mono text-[10px]">TenantScope</code>). <strong>No se cifran en reposo</strong>; la protección es de acceso, no criptográfica. Se depuran automáticamente a los 90 días.</li>
                   <li>No se venderán, comercializarán ni compartirán estas imágenes con ningún tercero bajo ninguna circunstancia.</li>
                 </ul>
               </section>
@@ -119,7 +119,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 5 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-indigo-400" /> 5. Transferencia de Datos Personales
+                  <Globe className="w-4 h-4 text-navy-300" /> 5. Transferencia de Datos Personales
                 </h4>
                 <p>
                   Talent360 no transfiere datos personales a terceros sin su consentimiento, salvo las excepciones previstas en el Artículo 37 de la LFPDPPP, limitándose estrictamente a los siguientes proveedores de infraestructura (Encargados de infraestructura):
@@ -136,7 +136,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 6 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-indigo-400" /> 6. Mecanismo para Ejercer los Derechos ARCO y Revocación del Consentimiento
+                  <UserCheck className="w-4 h-4 text-navy-300" /> 6. Mecanismo para Ejercer los Derechos ARCO y Revocación del Consentimiento
                 </h4>
                 <p>
                   Usted o sus colaboradores tienen derecho a conocer qué datos personales tenemos, para qué los utilizamos y las condiciones del uso que les damos (<strong>Acceso</strong>); solicitar la corrección de su información (<strong>Rectificación</strong>); que la eliminemos de nuestras bases de datos (<strong>Cancelación</strong>); u oponerse al uso de sus datos para fines específicos (<strong>Oposición</strong>).
@@ -144,7 +144,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                 <p>
                   Para ejercer sus <strong>Derechos ARCO</strong>, deberá enviar una solicitud al correo electrónico oficial:
                 </p>
-                <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center font-mono text-indigo-400 font-bold text-xs">
+                <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center font-mono text-navy-300 font-bold text-xs">
                   📧 privacidad@talent360.com.mx
                 </div>
                 <p className="text-[11px] text-slate-400">
@@ -155,10 +155,10 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 7 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <RefreshCcw className="w-4 h-4 text-indigo-400" /> 7. Uso de Cookies y Almacenamiento Local (LocalStorage)
+                  <RefreshCcw className="w-4 h-4 text-navy-300" /> 7. Uso de Cookies y Almacenamiento Local (LocalStorage)
                 </h4>
                 <p>
-                  Talent360 utiliza cookies HttpOnly de sesión y tecnología de almacenamiento local en el navegador (<code className="bg-slate-800 text-indigo-300 px-1 py-0.5 rounded font-mono text-[10px]">LocalStorage / IndexedDB</code>) para:
+                  Talent360 utiliza cookies HttpOnly de sesión y tecnología de almacenamiento local en el navegador (<code className="bg-slate-800 text-navy-100 px-1 py-0.5 rounded font-mono text-[10px]">LocalStorage / IndexedDB</code>) para:
                 </p>
                 <ul className="list-disc pl-5 space-y-1 text-slate-300">
                   <li>Mantener la sesión autenticada de manera segura (Laravel Sanctum).</li>
@@ -169,10 +169,10 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 8 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Scale className="w-4 h-4 text-indigo-400" /> 8. Cambios al Aviso de Privacidad
+                  <Scale className="w-4 h-4 text-navy-300" /> 8. Cambios al Aviso de Privacidad
                 </h4>
                 <p>
-                  Talent360 se reserva el derecho de efectuar en cualquier momento modificaciones o actualizaciones al presente Aviso de Privacidad. Dichas modificaciones estarán disponibles en el portal web <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded font-mono text-[11px]">https://talent360.com.mx/privacidad</code> y/o mediante notificación dentro del panel de administración del sistema.
+                  Talent360 se reserva el derecho de efectuar en cualquier momento modificaciones o actualizaciones al presente Aviso de Privacidad. Dichas modificaciones estarán disponibles en el portal web <code className="bg-slate-800 text-navy-100 px-1.5 py-0.5 rounded font-mono text-[11px]">https://talent360.com.mx/privacidad</code> y/o mediante notificación dentro del panel de administración del sistema.
                 </p>
               </section>
             </div>
@@ -181,8 +181,8 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
           {/* TAB 2: TÉRMINOS Y CONDICIONES (7 PUNTOS TOS & SLA B2B COMPLETO) */}
           {tab === 'terms' && (
             <div className="space-y-6">
-              <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 flex items-start gap-3">
-                <FileText className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+              <div className="bg-brand-dark/40 border border-accent/30 rounded-2xl p-4 flex items-start gap-3">
+                <FileText className="w-5 h-5 text-navy-300 shrink-0 mt-0.5" />
                 <div className="text-slate-200 text-xs">
                   <h4 className="font-extrabold text-white text-sm mb-1">Términos y Condiciones del Servicio (TOS) & SLA B2B (7 Puntos Completos)</h4>
                   <p className="text-slate-300 text-xs leading-relaxed">
@@ -194,7 +194,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 1 */}
               <section className="space-y-2">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <KeyRound className="w-4 h-4 text-indigo-400" /> 1. Objeto de la Licencia
+                  <KeyRound className="w-4 h-4 text-navy-300" /> 1. Objeto de la Licencia
                 </h4>
                 <p>
                   Talent360 otorga al Cliente una licencia de uso <strong>no exclusiva, revocable, limitada, no transferible y de suscripción periódica</strong> para acceder y utilizar la plataforma SaaS de administración de recursos humanos, control de asistencia, pre-nómina e incidencias, reclutamiento y operaciones corporativas durante el periodo contratado.
@@ -204,7 +204,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 2 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-indigo-400" /> 2. Relación y Roles de Protección de Datos (Encargado vs Responsable)
+                  <UserCheck className="w-4 h-4 text-navy-300" /> 2. Relación y Roles de Protección de Datos (Encargado vs Responsable)
                 </h4>
                 <ul className="list-disc pl-5 space-y-1.5 text-slate-300">
                   <li>El Cliente reconoce que es el único <strong>Responsable</strong> respecto al tratamiento de los datos personales y evidencias fotográficas de sus empleados ingresados a la plataforma.</li>
@@ -216,7 +216,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 3 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-indigo-400" /> 3. Planes, Pagos y Facturación
+                  <CreditCard className="w-4 h-4 text-navy-300" /> 3. Planes, Pagos y Facturación
                 </h4>
                 <div className="space-y-2">
                   <ul className="list-disc pl-5 space-y-1 text-slate-300">
@@ -231,10 +231,10 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 4 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400" /> 4. Acuerdo de Nivel de Servicio (SLA) y Disponibilidad
+                  <CheckCircle2 className="w-4 h-4 text-navy-300" /> 4. Acuerdo de Nivel de Servicio (SLA) y Disponibilidad
                 </h4>
                 <div className="bg-slate-850 p-4 rounded-2xl border border-slate-800 space-y-2">
-                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+                  <div className="flex items-center gap-2 text-success-text font-bold text-xs">
                     <CheckCircle2 className="w-4 h-4" /> Disponibilidad: Talent360 opera bajo mejores esfuerzos, sin comprometer un porcentaje específico de disponibilidad.
                   </div>
                   <p className="text-slate-400 text-[11px] leading-relaxed">
@@ -249,18 +249,18 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 5 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-indigo-400" /> 5. Propiedad Intelectual
+                  <ShieldCheck className="w-4 h-4 text-navy-300" /> 5. Propiedad Intelectual
                 </h4>
                 <ul className="list-disc pl-5 space-y-1.5 text-slate-300">
                   <li><strong>Propiedad de la Plataforma:</strong> Talent360, su código fuente (Laravel/React), arquitectura, bases de datos, marcas, logotipos, interfaces, algoritmos y diseño son propiedad exclusiva de Talent360.</li>
-                  <li><strong>Propiedad de los Datos del Cliente:</strong> El Cliente mantendrá en todo momento la titularidad exclusiva sobre la información, expedientes de empleados, reportes de asistencia y documentos cargados en su bóveda privada (<code className="bg-slate-800 text-indigo-300 px-1 py-0.5 rounded font-mono text-[10px]">Vault</code>).</li>
+                  <li><strong>Propiedad de los Datos del Cliente:</strong> El Cliente mantendrá en todo momento la titularidad exclusiva sobre la información, expedientes de empleados, reportes de asistencia y documentos cargados en su bóveda privada (<code className="bg-slate-800 text-navy-100 px-1 py-0.5 rounded font-mono text-[10px]">Vault</code>).</li>
                 </ul>
               </section>
 
               {/* Punto 6 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <RefreshCcw className="w-4 h-4 text-indigo-400" /> 6. Cancelación y Terminación de la Cuenta
+                  <RefreshCcw className="w-4 h-4 text-navy-300" /> 6. Cancelación y Terminación de la Cuenta
                 </h4>
                 <ul className="list-disc pl-5 space-y-1 text-slate-300">
                   <li>El Cliente podrá solicitar la cancelación de su suscripción en cualquier momento escribiendo a <strong>soporte@talent360.com.mx</strong>.</li>
@@ -272,7 +272,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 7 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Scale className="w-4 h-4 text-indigo-400" /> 7. Limitación de Responsabilidad y Ley Aplicable
+                  <Scale className="w-4 h-4 text-navy-300" /> 7. Limitación de Responsabilidad y Ley Aplicable
                 </h4>
                 <ul className="list-disc pl-5 space-y-1.5 text-slate-300">
                   <li>Talent360 no será responsable de multas, sanciones laborales o discrepancias legales derivadas del mal uso que el Cliente dé a las herramientas de pre-nómina, las cuales constituyen un asistente operativo y no sustituyen el asesoramiento laboral formal.</li>
@@ -286,8 +286,8 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
           {/* TAB 3: DERECHOS ARCO & PROTOCOLO BIOMÉTRICO */}
           {tab === 'arco' && (
             <div className="space-y-6">
-              <div className="bg-amber-950/30 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div className="bg-warning-text/30 border border-warning-text/30 rounded-2xl p-4 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-warning-text shrink-0 mt-0.5" />
                 <div className="text-slate-200 text-xs">
                   <h4 className="font-extrabold text-white text-sm mb-1">Mecanismos para Ejercer Derechos ARCO & Protocolo Biométrico</h4>
                   <p className="text-slate-300 text-xs leading-relaxed">
@@ -301,7 +301,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                 <p>
                   Cualquier colaborador o representante puede solicitar el ejercicio de sus derechos enviando un correo electrónico con el asunto <strong>"Solicitud ARCO - Talent360"</strong> a:
                 </p>
-                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center font-mono text-indigo-400 font-bold text-sm">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center font-mono text-navy-300 font-bold text-sm">
                   📧 privacidad@talent360.com.mx
                 </div>
                 <div className="space-y-1 text-slate-300">
@@ -348,21 +348,21 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto animate-in fade-in duration-200">
       <div className="bg-slate-900 border border-slate-700/80 w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh] text-slate-100 overflow-hidden">
-        
+
         {/* Modal Header */}
         <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <div className="w-10 h-10 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center text-navy-300">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base font-black text-white flex items-center gap-2">
-                Centro de Protección Legal & Privacidad <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">LFPDPPP & TOS</span>
+                Centro de Protección Legal & Privacidad <span className="text-[10px] bg-accent/20 text-navy-100 border border-accent/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">LFPDPPP & TOS</span>
               </h2>
               <p className="text-xs text-slate-400 font-medium">Marco Legal Completo, SLA B2B y Tratamiento de Datos — Talent360</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
             title="Cerrar ventana"
@@ -379,7 +379,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
               onClick={() => setActiveTab(id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === id
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                  ? 'bg-accent text-white shadow-lg shadow-accent/20'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
               }`}
             >
@@ -396,11 +396,11 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
 
         {/* Modal Footer */}
         <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex justify-between items-center shrink-0">
-          <p className="text-[10px] text-slate-500 font-medium">Talent360 © 2026 — Plataforma Cumplimiento LFPDPPP & LFT</p>
+          <p className="text-[10px] text-text-3 font-medium">Talent360 © 2026 — Plataforma Cumplimiento LFPDPPP & LFT</p>
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-indigo-600/20 cursor-pointer"
+            className="px-6 py-2.5 bg-accent hover:bg-accent text-white font-bold text-xs rounded-xl transition shadow-lg shadow-accent/20 cursor-pointer"
           >
             Aceptar y Cerrar
           </button>

@@ -1,10 +1,10 @@
 // @ts-nocheck
 import React from 'react';
 
-export const CelularesEmpleados = ({ 
-  globalUsers, 
-  globalClockStates, 
-  simTimeMinutes, 
+export const CelularesEmpleados = ({
+  globalUsers,
+  globalClockStates,
+  simTimeMinutes,
   currentDay,
   storeStatus,
   shiftConfigs,
@@ -42,24 +42,24 @@ export const CelularesEmpleados = ({
       {validUsers.map((u: any) => {
         const config = shiftConfigs[u.id] || { start: '08:00', end: '18:00', restDay: 'Domingo' };
         const state = globalClockStates[u.id] || 'inactive';
-        
+
         let statusBadge = '';
         let statusColor = '';
         if (config.restDay === currentDay) {
           statusBadge = 'Día Descanso';
-          statusColor = 'bg-slate-300 text-slate-600';
+          statusColor = 'bg-slate-300 text-text-2';
         } else if (state === 'active') {
           statusBadge = 'En Turno';
-          statusColor = 'bg-emerald-100 text-emerald-700';
+          statusColor = 'bg-success-bg text-success-text';
         } else if (state === 'meal') {
           statusBadge = 'En Comida';
-          statusColor = 'bg-amber-100 text-amber-700';
+          statusColor = 'bg-warning-bg text-warning-text';
         } else if (state === 'waiting_room') {
           statusBadge = 'En Puerta';
-          statusColor = 'bg-blue-100 text-blue-700';
+          statusColor = 'bg-accent-soft text-accent';
         } else {
           statusBadge = 'Inactivo';
-          statusColor = 'bg-slate-100 text-slate-500';
+          statusColor = 'bg-page text-text-3';
         }
 
         return (
@@ -68,18 +68,18 @@ export const CelularesEmpleados = ({
             <div className="absolute top-0 w-full h-7 bg-transparent z-20 flex justify-center">
               <div className="w-1/3 h-5 bg-black rounded-b-xl"></div>
             </div>
-            
+
             {/* Phone Screen */}
             <div className="flex-1 bg-white flex flex-col relative pt-8">
-              
-              <div className="px-4 pb-4 border-b border-slate-100 flex items-center justify-between">
+
+              <div className="px-4 pb-4 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-xl overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-accent-soft flex items-center justify-center text-xl overflow-hidden">
                     {u.avatar ? <img src={u.avatar} alt={u.name} /> : '👤'}
                   </div>
                   <div>
-                    <p className="font-bold text-slate-800 text-sm leading-tight">{u.name}</p>
-                    <p className="text-[10px] text-slate-500">{u.role}</p>
+                    <p className="font-bold text-text-1 text-sm leading-tight">{u.name}</p>
+                    <p className="text-[10px] text-text-3">{u.role}</p>
                   </div>
                 </div>
                 <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${statusColor}`}>
@@ -88,19 +88,19 @@ export const CelularesEmpleados = ({
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 flex flex-col">
-                <div className="bg-slate-50 rounded-2xl p-4 flex flex-col items-center justify-center mb-6">
-                  <p className="text-slate-500 font-medium text-xs mb-1 uppercase tracking-widest">{currentDay}</p>
-                  <p className="text-4xl font-black text-slate-800 tracking-tighter">{formatTime(simTimeMinutes)}</p>
+                <div className="bg-page rounded-2xl p-4 flex flex-col items-center justify-center mb-6">
+                  <p className="text-text-3 font-medium text-xs mb-1 uppercase tracking-widest">{currentDay}</p>
+                  <p className="text-4xl font-black text-text-1 tracking-tighter">{formatTime(simTimeMinutes)}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-6">
-                  <div className="bg-white border border-slate-200 rounded-xl p-3 text-center">
+                  <div className="bg-white border border-border rounded-xl p-3 text-center">
                     <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Entrada</p>
-                    <p className="font-bold text-slate-700">{config.start}</p>
+                    <p className="font-bold text-text-2">{config.start}</p>
                   </div>
-                  <div className="bg-white border border-slate-200 rounded-xl p-3 text-center">
+                  <div className="bg-white border border-border rounded-xl p-3 text-center">
                     <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Salida</p>
-                    <p className="font-bold text-slate-700">{config.end}</p>
+                    <p className="font-bold text-text-2">{config.end}</p>
                   </div>
                 </div>
 
@@ -116,17 +116,17 @@ export const CelularesEmpleados = ({
                        <p className="font-bold text-slate-400">Tienda Cerrada</p>
                      </div>
                    ) : state === 'inactive' ? (
-                     <button onClick={() => onCheckIn(u.id)} className="w-full h-32 rounded-3xl bg-indigo-500 text-white font-bold text-xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform flex flex-col items-center justify-center gap-2">
+                     <button onClick={() => onCheckIn(u.id)} className="w-full h-32 rounded-3xl bg-accent text-white font-bold text-xl shadow-lg shadow-accent/30 active:scale-95 transition-transform flex flex-col items-center justify-center gap-2">
                        <span className="text-3xl">👉</span>
                        Registrar Entrada
                      </button>
                    ) : state === 'waiting_room' ? (
                      <div className="text-center p-4">
-                       <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin mx-auto mb-4"></div>
-                       <p className="font-bold text-indigo-900">Esperando Apertura...</p>
+                       <div className="w-16 h-16 border-4 border-border border-t-accent rounded-full animate-spin mx-auto mb-4"></div>
+                       <p className="font-bold text-brand-dark">Esperando Apertura...</p>
                      </div>
                    ) : (
-                     <button onClick={() => onCheckOut(u.id)} className="w-full h-16 rounded-2xl bg-rose-500 text-white font-bold text-lg shadow-lg shadow-rose-500/30 active:scale-95 transition-transform">
+                     <button onClick={() => onCheckOut(u.id)} className="w-full h-16 rounded-2xl bg-danger-icon text-white font-bold text-lg shadow-lg shadow-danger-text/30 active:scale-95 transition-transform">
                        Marcar Salida
                      </button>
                    )}

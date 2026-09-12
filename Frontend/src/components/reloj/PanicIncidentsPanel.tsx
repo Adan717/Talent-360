@@ -77,12 +77,12 @@ export const PanicIncidentsPanel = () => {
   if (incidents.length === 0) return null;
 
   return (
-    <div className="bg-rose-700 text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-rose-500/20 animate-pulse-slow">
+    <div className="bg-danger-text text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-danger-text/20 animate-pulse-slow">
       <div className="flex items-center gap-2">
         <span className="text-xl">🚨</span>
         <div>
           <p className="font-black text-xs sm:text-sm">Emergencias Activas (Botón de Pánico)</p>
-          <p className="text-[9px] sm:text-[10px] text-rose-100 opacity-90 leading-tight">
+          <p className="text-[9px] sm:text-[10px] text-danger-text opacity-90 leading-tight">
             Incidentes declarados desde el reloj que siguen sin resolver
           </p>
         </div>
@@ -91,13 +91,13 @@ export const PanicIncidentsPanel = () => {
         {incidents.map(i => (
           <div
             key={i.id}
-            className="bg-rose-800/40 border border-rose-500/30 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5"
+            className="bg-danger-text/40 border border-danger-text/30 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5"
           >
             <div className="flex flex-col text-left">
               <span className="text-xs font-black text-white">
                 {CATEGORY_LABELS[i.category] || i.category}
               </span>
-              <span className="text-[10px] text-rose-100">
+              <span className="text-[10px] text-danger-text">
                 {i.employee_name || 'Colaborador'} ·{' '}
                 {new Date(i.created_at.replace(' ', 'T')).toLocaleTimeString('es-MX', {
                   hour: '2-digit',
@@ -121,7 +121,7 @@ export const PanicIncidentsPanel = () => {
             <button
               onClick={() => resolve(i.id)}
               disabled={resolvingId === i.id}
-              className="bg-white/90 hover:bg-white text-rose-700 font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
+              className="bg-white/90 hover:bg-white text-danger-text font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
             >
               ✓ Marcar resuelto
             </button>

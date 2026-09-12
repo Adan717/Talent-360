@@ -1,5 +1,5 @@
 import React from 'react';
-import { 
+import {
   ShieldCheck,
   Crown,
   Scale,
@@ -8,21 +8,21 @@ import {
   UserCheck,
   ClipboardCheck,
   Clock,
-  Building2, 
-  Store, 
-  ShoppingBag, 
-  CreditCard, 
-  Package, 
-  Truck, 
-  UserPlus, 
-  Palette, 
-  Code, 
-  Calculator, 
-  Utensils, 
-  Wrench, 
-  Headset, 
-  Shield, 
-  GraduationCap, 
+  Building2,
+  Store,
+  ShoppingBag,
+  CreditCard,
+  Package,
+  Truck,
+  UserPlus,
+  Palette,
+  Code,
+  Calculator,
+  Utensils,
+  Wrench,
+  Headset,
+  Shield,
+  GraduationCap,
   Briefcase,
   Sparkles,
   Award,
@@ -877,7 +877,7 @@ export const MonitoCharacterBadge: React.FC<{
  */
 export function resolveJobRoleIconKey(role?: { name?: string; area?: string; icon?: string } | null): string {
   if (!role) return 'briefcase';
-  
+
   if (role.icon && role.icon !== 'auto' && role.icon.trim() !== '') {
     return role.icon.toLowerCase().trim();
   }
@@ -1016,7 +1016,7 @@ export const JobRoleIconBadge: React.FC<JobRoleIconProps> = ({
   isActive = true
 }) => {
   const key = iconKey || resolveJobRoleIconKey(role);
-  
+
   // Buscar nivel de mando en la Matriz Maestra si no viene explícito
   const matchedItem = JOB_ROLE_PROFESSIONS_MATRIX.find(p => p.key === key);
   const nivel = role?.nivel_mando ?? matchedItem?.nivel_mando ?? (
@@ -1027,18 +1027,18 @@ export const JobRoleIconBadge: React.FC<JobRoleIconProps> = ({
 
   // Colores vivos por Jerarquía de Mando
   const hierarchyColors: Record<number, { text: string; levelBadge: string }> = {
-    1: { text: 'text-amber-600', levelBadge: 'N1 - Dirección General' },
-    2: { text: 'text-indigo-600', levelBadge: 'N2 - Supervisión / Jefatura' },
-    3: { text: 'text-sky-600', levelBadge: 'N3 - Especialista / Piso' },
-    4: { text: 'text-slate-600', levelBadge: 'N4 - Auxiliar Operativo' },
-    5: { text: 'text-slate-500', levelBadge: 'N5 - Apoyo Eventual' },
+    1: { text: 'text-warning-text', levelBadge: 'N1 - Dirección General' },
+    2: { text: 'text-accent', levelBadge: 'N2 - Supervisión / Jefatura' },
+    3: { text: 'text-accent', levelBadge: 'N3 - Especialista / Piso' },
+    4: { text: 'text-text-2', levelBadge: 'N4 - Auxiliar Operativo' },
+    5: { text: 'text-text-3', levelBadge: 'N5 - Apoyo Eventual' },
   };
 
   const levelStyle = hierarchyColors[nivel] || hierarchyColors[4];
   const activeText = isActive ? levelStyle.text : 'text-slate-400';
 
   return (
-    <div 
+    <div
       className={`relative shrink-0 flex items-center justify-center p-1 ${containerClassName || ''}`}
       title={`Puesto: ${role?.name || ''} (${levelStyle.levelBadge})`}
     >
@@ -1052,7 +1052,7 @@ export const JobRoleIconBadge: React.FC<JobRoleIconProps> = ({
  */
 export function getRoleSmartDescription(rol?: { name?: string; area?: string; description?: string } | null): string {
   if (!rol) return 'Puesto funcional clave en la organización.';
-  
+
   if (rol.description && rol.description.trim() !== '' && !rol.description.toLowerCase().includes('sin descripción') && !rol.description.toLowerCase().includes('sin descripcion')) {
     return rol.description;
   }

@@ -5,7 +5,7 @@ import { useAppStore } from '../store/useAppStore';
 
 export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => void }) => {
   const [currentStep, setCurrentStep] = useState(1); // 1: Welcome Settings, 2: Import Job Roles
-  
+
   // Step 1 State
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -113,7 +113,7 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
           return;
       }
       await Promise.all(
-        selectedTemplates.map(id => 
+        selectedTemplates.map(id =>
           axiosInstance.post(`/job-role-templates/${id}/import`)
         )
       );
@@ -134,99 +134,99 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
   if (finished) {
     return (
       <div className="p-8 flex flex-col items-center justify-center text-center gap-3 animate-in fade-in">
-        <CheckCircle2 className="text-emerald-600" size={40} />
-        <h3 className="text-lg font-black text-slate-800">Configuración finalizada</h3>
-        <p className="text-sm text-slate-500">Puedes importar puestos después desde esta sección.</p>
+        <CheckCircle2 className="text-success-text" size={40} />
+        <h3 className="text-lg font-black text-text-1">Configuración finalizada</h3>
+        <p className="text-sm text-text-3">Puedes importar puestos después desde esta sección.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
       {/* Wizard Header / Steps Indicator */}
-      <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      <div className="bg-page px-6 py-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+          <div className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center font-bold text-sm">
             {currentStep}
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 text-sm">Asistente de Configuración</h3>
-            <p className="text-slate-500 text-xs font-semibold">Paso {currentStep} de 2 &bull; {currentStep === 1 ? 'Personalizar Bienvenida' : 'Estructura Organizacional'}</p>
+            <h3 className="font-bold text-text-1 text-sm">Asistente de Configuración</h3>
+            <p className="text-text-3 text-xs font-semibold">Paso {currentStep} de 2 &bull; {currentStep === 1 ? 'Personalizar Bienvenida' : 'Estructura Organizacional'}</p>
           </div>
         </div>
         <div className="flex gap-1">
-          <div className={`h-1.5 w-6 rounded-full transition-all ${currentStep === 1 ? 'bg-blue-600' : 'bg-slate-200'}`} />
-          <div className={`h-1.5 w-6 rounded-full transition-all ${currentStep === 2 ? 'bg-blue-600' : 'bg-slate-200'}`} />
+          <div className={`h-1.5 w-6 rounded-full transition-all ${currentStep === 1 ? 'bg-accent' : 'bg-slate-200'}`} />
+          <div className={`h-1.5 w-6 rounded-full transition-all ${currentStep === 2 ? 'bg-accent' : 'bg-slate-200'}`} />
         </div>
       </div>
 
       {currentStep === 1 && (
         <div className="p-6 pt-0 space-y-6">
           <div className="bg-white p-0">
-            <h2 className="text-xl font-black text-slate-800 mb-2">Configuración de Onboarding</h2>
-            <p className="text-sm text-slate-500 mb-6">Personaliza la experiencia de bienvenida para los nuevos empleados cuando abren la App por primera vez.</p>
+            <h2 className="text-xl font-black text-text-1 mb-2">Configuración de Onboarding</h2>
+            <p className="text-sm text-text-3 mb-6">Personaliza la experiencia de bienvenida para los nuevos empleados cuando abren la App por primera vez.</p>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
+
               {/* Formulario de Configuración */}
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1">Título de Bienvenida</label>
-                  <input 
-                    type="text" 
+                  <label className="block text-sm font-bold text-text-2 mb-1">Título de Bienvenida</label>
+                  <input
+                    type="text"
                     value={formData.welcomeTitle}
                     onChange={(e) => setFormData({...formData, welcomeTitle: e.target.value})}
-                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+                    className="w-full px-4 py-2 bg-page border border-border rounded-xl focus:ring-2 focus-visible:ring-focus-ring focus:outline-none transition-all"
                     placeholder="Ej. ¡Bienvenido a Talent 360!"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1">Mensaje de Bienvenida</label>
-                  <textarea 
+                  <label className="block text-sm font-bold text-text-2 mb-1">Mensaje de Bienvenida</label>
+                  <textarea
                     rows={4}
                     value={formData.welcomeMessage}
                     onChange={(e) => setFormData({...formData, welcomeMessage: e.target.value})}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all resize-none"
+                    className="w-full px-4 py-3 bg-page border border-border rounded-xl focus:ring-2 focus-visible:ring-focus-ring focus:outline-none transition-all resize-none"
                     placeholder="Escribe unas palabras motivadoras para los nuevos ingresos..."
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
+                    <label className="block text-sm font-bold text-text-2 mb-1 flex items-center gap-2">
                       <ImageIcon size={16} className="text-slate-400" />
                       URL de Imagen
                     </label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={formData.welcomeImageUrl}
                       onChange={(e) => setFormData({...formData, welcomeImageUrl: e.target.value})}
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all text-sm"
+                      className="w-full px-4 py-2 bg-page border border-border rounded-xl focus:ring-2 focus-visible:ring-focus-ring focus:outline-none transition-all text-sm"
                       placeholder="https://..."
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
+                    <label className="block text-sm font-bold text-text-2 mb-1 flex items-center gap-2">
                       <Video size={16} className="text-slate-400" />
                       URL de Video
                     </label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={formData.welcomeVideoUrl}
                       onChange={(e) => setFormData({...formData, welcomeVideoUrl: e.target.value})}
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all text-sm"
+                      className="w-full px-4 py-2 bg-page border border-border rounded-xl focus:ring-2 focus-visible:ring-focus-ring focus:outline-none transition-all text-sm"
                       placeholder="YouTube / Vimeo URL"
                     />
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <button 
+                <div className="pt-4 border-t border-border flex items-center justify-between">
+                  <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="bg-accent hover:bg-accent-hover text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {isSaving ? (
                       <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -237,7 +237,7 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
                   </button>
 
                   {saved && (
-                    <span className="text-emerald-600 text-sm font-bold flex items-center gap-1 animate-in fade-in">
+                    <span className="text-success-text text-sm font-bold flex items-center gap-1 animate-in fade-in">
                       <CheckCircle2 size={16} /> Guardado con éxito
                     </span>
                   )}
@@ -245,20 +245,20 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
               </div>
 
               {/* Vista Previa del Celular */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 flex flex-col items-center justify-center">
-                <h3 className="text-sm font-bold text-slate-500 mb-4 uppercase tracking-widest text-xs">Vista Previa Móvil</h3>
-                
+              <div className="bg-page p-6 rounded-2xl border border-border flex flex-col items-center justify-center">
+                <h3 className="text-sm font-bold text-text-3 mb-4 uppercase tracking-widest text-xs">Vista Previa Móvil</h3>
+
                 <div className="w-[280px] h-[520px] bg-white rounded-[2.5rem] border-[8px] border-slate-900 shadow-xl overflow-hidden relative flex flex-col scale-95 origin-center">
                   {/* Notch */}
                   <div className="absolute top-0 inset-x-0 h-4 bg-slate-900 rounded-b-xl w-28 mx-auto z-10" />
-                  
+
                   {/* Contenido Preview */}
                   <div className="flex-1 overflow-y-auto p-5 flex flex-col pt-10">
                     <div className="text-center mb-5">
-                      <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+                      <div className="w-12 h-12 bg-accent-soft text-accent rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm">
                         <span className="text-xl font-black">T</span>
                       </div>
-                      <h1 className="text-lg font-black text-slate-800 leading-tight">{formData.welcomeTitle || 'Título de Bienvenida'}</h1>
+                      <h1 className="text-lg font-black text-text-1 leading-tight">{formData.welcomeTitle || 'Título de Bienvenida'}</h1>
                     </div>
 
                     {formData.welcomeVideoUrl ? (
@@ -271,14 +271,14 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
                       </div>
                     ) : null}
 
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center mb-auto">
-                      <p className="text-xs text-slate-600 leading-relaxed">
+                    <div className="bg-page p-4 rounded-xl border border-border text-center mb-auto">
+                      <p className="text-xs text-text-2 leading-relaxed">
                         {formData.welcomeMessage || 'El mensaje de bienvenida aparecerá aquí...'}
                       </p>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100">
-                      <button className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold shadow-sm opacity-50 cursor-default text-xs">
+                    <div className="mt-4 pt-3 border-t border-border">
+                      <button className="w-full bg-accent text-white py-2.5 rounded-xl font-bold shadow-sm opacity-50 cursor-default text-xs">
                         Comenzar
                       </button>
                     </div>
@@ -290,24 +290,24 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
           </div>
 
           {/* Enlaces de Invitación Masiva */}
-          <div className="bg-white p-6 border border-slate-200 rounded-2xl">
-             <h2 className="text-lg font-black text-slate-800 mb-2">Generar Enlaces de Invitación</h2>
-             <p className="text-sm text-slate-500 mb-6">Envía a tus empleados su PIN y enlace único para activar su App de Empleado.</p>
+          <div className="bg-white p-6 border border-border rounded-2xl">
+             <h2 className="text-lg font-black text-text-1 mb-2">Generar Enlaces de Invitación</h2>
+             <p className="text-sm text-text-3 mb-6">Envía a tus empleados su PIN y enlace único para activar su App de Empleado.</p>
 
              <div className="flex gap-4 flex-col sm:flex-row">
-                <button className="flex-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 p-4 rounded-xl flex flex-col items-center justify-center gap-2 transition-colors group">
-                   <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <MessageSquare size={20} className="text-emerald-600" />
+                <button className="flex-1 bg-success-bg hover:bg-success-bg border border-success-text/20 text-success-text p-4 rounded-xl flex flex-col items-center justify-center gap-2 transition-colors group">
+                   <div className="w-10 h-10 bg-success-bg rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <MessageSquare size={20} className="text-success-text" />
                    </div>
                    <span className="font-bold text-sm">Enviar vía WhatsApp</span>
-                   <span className="text-xs text-emerald-600 text-center px-4">Utiliza la API oficial de WhatsApp para envíos masivos.</span>
+                   <span className="text-xs text-success-text text-center px-4">Utiliza la API oficial de WhatsApp para envíos masivos.</span>
                 </button>
-                <button className="flex-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 p-4 rounded-xl flex flex-col items-center justify-center gap-2 transition-colors group">
-                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Link size={20} className="text-blue-600" />
+                <button className="flex-1 bg-navy-50 hover:bg-accent-soft border border-border text-accent p-4 rounded-xl flex flex-col items-center justify-center gap-2 transition-colors group">
+                   <div className="w-10 h-10 bg-accent-soft rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Link size={20} className="text-accent" />
                    </div>
                    <span className="font-bold text-sm">Enviar vía Email</span>
-                   <span className="text-xs text-blue-600 text-center px-4">Utiliza SendGrid para notificaciones masivas.</span>
+                   <span className="text-xs text-accent text-center px-4">Utiliza SendGrid para notificaciones masivas.</span>
                 </button>
              </div>
           </div>
@@ -317,22 +317,22 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
       {currentStep === 2 && (
         <div className="p-6 pt-0 space-y-6">
           <div>
-            <h2 className="text-xl font-black text-slate-800 mb-2 flex items-center gap-2">
-              <ClipboardList className="text-blue-600" size={24} />
+            <h2 className="text-xl font-black text-text-1 mb-2 flex items-center gap-2">
+              <ClipboardList className="text-accent" size={24} />
               Importar Estructura de Puestos
             </h2>
-            <p className="text-sm text-slate-500 mb-6">Para arrancar de inmediato, te sugerimos importar puestos del catálogo global. Así tendrás horarios, tolerancias y configuraciones listas.</p>
-            
+            <p className="text-sm text-text-3 mb-6">Para arrancar de inmediato, te sugerimos importar puestos del catálogo global. Así tendrás horarios, tolerancias y configuraciones listas.</p>
+
             {/* Industry Selector */}
-            <div className="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="mb-6 bg-page p-4 rounded-2xl border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <span className="text-sm font-bold text-slate-800 block">Tu Industria</span>
-                <span className="text-xs text-slate-500 font-semibold">Selecciona tu industria para cargar plantillas especializadas.</span>
+                <span className="text-sm font-bold text-text-1 block">Tu Industria</span>
+                <span className="text-xs text-text-3 font-semibold">Selecciona tu industria para cargar plantillas especializadas.</span>
               </div>
-              <select 
-                value={industryFilter} 
+              <select
+                value={industryFilter}
                 onChange={(e) => setIndustryFilter(e.target.value)}
-                className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                className="bg-white border border-border rounded-xl px-4 py-2.5 text-sm font-bold text-text-2 focus:outline-none focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent transition-all cursor-pointer"
               >
                 <option value="retail">Retail (Recomendado)</option>
                 <option value="oficina">Oficinas / Corporativos</option>
@@ -344,10 +344,10 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
             </div>
 
             {/* Templates List */}
-            <div className="min-h-[250px] max-h-[350px] overflow-y-auto border border-slate-200 rounded-2xl p-4 bg-slate-50/50 space-y-3 custom-scrollbar mb-8">
+            <div className="min-h-[250px] max-h-[350px] overflow-y-auto border border-border rounded-2xl p-4 bg-page/50 space-y-3 custom-scrollbar mb-8">
               {loadingTemplates ? (
                 <div className="h-40 flex items-center justify-center">
-                  <span className="w-8 h-8 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+                  <span className="w-8 h-8 border-4 border-accent/30 border-t-accent rounded-full animate-spin" />
                 </div>
               ) : templates.length === 0 ? (
                 <div className="h-40 flex flex-col items-center justify-center text-slate-400 font-bold">
@@ -358,35 +358,35 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
                   {templates.map(tpl => {
                     const isSelected = selectedTemplates.includes(tpl.id);
                     return (
-                      <div 
+                      <div
                         key={tpl.id}
                         onClick={() => toggleSelectTemplate(tpl.id)}
                         className={`p-4 border rounded-2xl cursor-pointer transition-all flex flex-col justify-between h-[150px] ${
-                          isSelected 
-                            ? 'border-blue-500 bg-blue-50/30 shadow-sm' 
-                            : 'border-slate-200 bg-white hover:border-slate-350 hover:shadow-sm'
+                          isSelected
+                            ? 'border-accent bg-navy-50/30 shadow-sm'
+                            : 'border-border bg-white hover:border-slate-350 hover:shadow-sm'
                         }`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <h4 className="font-bold text-slate-800 text-sm leading-snug">{tpl.name}</h4>
+                            <h4 className="font-bold text-text-1 text-sm leading-snug">{tpl.name}</h4>
                             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-0.5">{tpl.area}</p>
                           </div>
                           <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-                            isSelected ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300'
+                            isSelected ? 'border-accent bg-accent text-white' : 'border-slate-300'
                           }`}>
                             {isSelected && <Check size={12} strokeWidth={3} />}
                           </div>
                         </div>
 
                         <div className="space-y-1 mt-auto">
-                          <div className="flex justify-between text-[11px] text-slate-500 font-semibold">
+                          <div className="flex justify-between text-[11px] text-text-3 font-semibold">
                             <span>Horario:</span>
-                            <span className="text-slate-700 font-bold">{tpl.default_schedule_start} - {tpl.default_schedule_end}</span>
+                            <span className="text-text-2 font-bold">{tpl.default_schedule_start} - {tpl.default_schedule_end}</span>
                           </div>
-                          <div className="flex justify-between text-[11px] text-slate-500 font-semibold">
+                          <div className="flex justify-between text-[11px] text-text-3 font-semibold">
                             <span>Tolerancia / Comida:</span>
-                            <span className="text-slate-700 font-bold">{tpl.default_tolerance_mins} / {tpl.default_meal_mins}m</span>
+                            <span className="text-text-2 font-bold">{tpl.default_tolerance_mins} / {tpl.default_meal_mins}m</span>
                           </div>
                         </div>
                       </div>
@@ -397,21 +397,21 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
             </div>
 
             {/* Actions */}
-            <div className="flex gap-4 border-t border-slate-100 pt-6">
-              <button 
+            <div className="flex gap-4 border-t border-border pt-6">
+              <button
                 onClick={handleSkipOrFinish}
                 disabled={isImporting}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all disabled:opacity-50"
+                className="flex-1 bg-page hover:bg-slate-200 text-text-2 font-bold py-3 rounded-xl transition-all disabled:opacity-50"
               >
                 Saltar y Finalizar
               </button>
-              <button 
+              <button
                 onClick={handleBulkImport}
                 disabled={selectedTemplates.length === 0 || isImporting}
                 className={`flex-1 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
                   selectedTemplates.length === 0 || isImporting
                     ? 'bg-slate-300 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/20'
+                    : 'bg-accent hover:bg-accent-hover shadow-md shadow-accent/20'
                 }`}
               >
                 {isImporting ? (

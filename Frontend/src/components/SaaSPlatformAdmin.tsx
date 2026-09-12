@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Building2, Users, CreditCard, Activity, 
-  AlertOctagon, TrendingUp, DollarSign, ServerCrash, 
+import {
+  Building2, Users, CreditCard, Activity,
+  AlertOctagon, TrendingUp, DollarSign, ServerCrash,
   ArrowUpRight, ShieldAlert, ShieldCheck, GraduationCap, Loader2,
-  User, LogOut, ChevronDown, Search, Filter, Eye, Key, LogIn, Ban, 
+  User, LogOut, ChevronDown, Search, Filter, Eye, Key, LogIn, Ban,
   Info, RefreshCw, X, ShieldX, KeyRound, CheckCircle2, Settings,
   LifeBuoy, MessageSquare, Plus, Trash2, Sparkles, Monitor, Menu
 } from 'lucide-react';
@@ -43,7 +43,7 @@ const estadoDeCobranza = (t: any): InsigniaDeCobranza => {
   if (t?.billing_exempt) {
     return {
       etiqueta: 'Exenta de cobro',
-      clases: 'text-violet-700 bg-violet-50 border-violet-200',
+      clases: 'text-accent bg-navy-50 border-border',
       detalle: t?.billing_exempt_reason || 'Sin motivo anotado',
     };
   }
@@ -55,19 +55,19 @@ const estadoDeCobranza = (t: any): InsigniaDeCobranza => {
     const dias = diasDesde(corte);
     return {
       etiqueta: 'Pago vencido',
-      clases: 'text-amber-700 bg-amber-50 border-amber-200',
+      clases: 'text-warning-text bg-warning-bg border-warning-text/20',
       detalle: dias !== null ? `${dias} día(s) desde la fecha de corte` : 'Sin fecha de corte registrada',
     };
   }
 
   if (estado === 'cancelled') {
-    return { etiqueta: 'Baja', clases: 'text-rose-700 bg-rose-50 border-rose-200' };
+    return { etiqueta: 'Baja', clases: 'text-danger-text bg-danger-bg border-danger-text/20' };
   }
 
   if (estado === 'active') {
     return {
       etiqueta: '✓ Suscrito',
-      clases: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+      clases: 'text-success-text bg-success-bg border-success-text/20',
       detalle: corte ? undefined : 'Sin fecha de corte: la cobranza automática no la revisa',
     };
   }
@@ -76,11 +76,11 @@ const estadoDeCobranza = (t: any): InsigniaDeCobranza => {
   if (fin && !Number.isNaN(fin.getTime())) {
     const restan = Math.ceil((fin.getTime() - Date.now()) / 86400000);
     return restan > 0
-      ? { etiqueta: `⏳ ${restan}d prueba`, clases: 'text-amber-600 bg-amber-50 border-amber-100' }
-      : { etiqueta: 'Prueba vencida', clases: 'text-slate-600 bg-slate-100 border-slate-200' };
+      ? { etiqueta: `⏳ ${restan}d prueba`, clases: 'text-warning-text bg-warning-bg border-warning-text/20' }
+      : { etiqueta: 'Prueba vencida', clases: 'text-text-2 bg-page border-border' };
   }
 
-  return { etiqueta: 'En prueba', clases: 'text-blue-700 bg-blue-50 border-blue-200' };
+  return { etiqueta: 'En prueba', clases: 'text-accent bg-navy-50 border-border' };
 };
 
 const moduleAudits = [
@@ -183,16 +183,16 @@ const moduleAudits = [
 ];
 
 export const SaaSPlatformAdmin = () => {
-  const { 
-    systemSettings, 
-    updateSetting, 
-    saasAlerts, 
-    saasPricing, 
-    updateSaaSPricing, 
+  const {
+    systemSettings,
+    updateSetting,
+    saasAlerts,
+    saasPricing,
+    updateSaaSPricing,
     resolveSaaSAlert,
     currentUser
   } = useAppStore();
-  
+
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
 
   const isAdmin = currentUser?.system_role === 'platform_admin';
@@ -638,24 +638,24 @@ export const SaaSPlatformAdmin = () => {
   const getNichoBadge = (nicho?: string) => {
     const n = (nicho || '').toLowerCase();
     if (n.includes('retail') || n.includes('tienda') || n.includes('comercio') || n.includes('decoracion') || n.includes('boutique') || n.includes('minimarket') || n.includes('ferreteria')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md shrink-0">🛍️ Tienda / Retail</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-md shrink-0">🛍️ Tienda / Retail</span>;
     }
     if (n.includes('restaurante') || n.includes('comedor') || n.includes('cafeteria') || n.includes('comida') || n.includes('bar') || n.includes('taqueria')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md shrink-0">🍽️ Restaurante</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-md shrink-0">🍽️ Restaurante</span>;
     }
     if (n.includes('oficina') || n.includes('servicios') || n.includes('despacho') || n.includes('agencia') || n.includes('consultoria') || n.includes('inmobiliaria')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md shrink-0">🏢 Servicios</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0">🏢 Servicios</span>;
     }
     if (n.includes('taller') || n.includes('mecanico') || n.includes('manufactura') || n.includes('industrial') || n.includes('tecnico')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-md shrink-0">🔧 Taller / Industria</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0">🔧 Taller / Industria</span>;
     }
     if (n.includes('salud') || n.includes('farmacia') || n.includes('clinica') || n.includes('hospital')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md shrink-0">🩺 Salud / Clínica</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-md shrink-0">🩺 Salud / Clínica</span>;
     }
     if (n.includes('educacion') || n.includes('escuela') || n.includes('academia') || n.includes('curso')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md shrink-0">🎓 Educación</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0">🎓 Educación</span>;
     }
-    return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md shrink-0">🏬 General</span>;
+    return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-text-2 bg-page border border-border px-2 py-0.5 rounded-md shrink-0">🏬 General</span>;
   };
 
   const getCleanDbPhone = (val: string) => {
@@ -685,7 +685,7 @@ export const SaaSPlatformAdmin = () => {
         axiosInstance.get(url),
         axiosInstance.get('/platform/audits')
       ]);
-      
+
       if (statsRes.status === 'fulfilled' && statsRes.value.data) {
         setStats(statsRes.value.data);
       }
@@ -724,10 +724,10 @@ export const SaaSPlatformAdmin = () => {
   const timeMode = systemSettings?.time_mode || 'simulated';
 
   const kpis = [
-    { label: 'MRR', value: `$${stats.mrr.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600', watermarkColor: 'text-emerald-500/25', trend: '+15% este mes' },
-    { label: 'Empresas', value: stats.active_tenants.toString(), icon: Building2, color: 'text-blue-600', watermarkColor: 'text-blue-500/25', trend: `+0 en Trial` },
-    { label: 'Usuarios', value: stats.total_users.toLocaleString(), icon: Users, color: 'text-indigo-600', watermarkColor: 'text-indigo-500/25', trend: 'Crecimiento estable' },
-    { label: 'Churn', value: stats.churn_rate, icon: TrendingUp, color: 'text-rose-600', watermarkColor: 'text-rose-500/25', trend: 'Ligeramente alto' },
+    { label: 'MRR', value: `$${stats.mrr.toLocaleString()}`, icon: DollarSign, color: 'text-success-text', watermarkColor: 'text-success-text/25', trend: '+15% este mes' },
+    { label: 'Empresas', value: stats.active_tenants.toString(), icon: Building2, color: 'text-accent', watermarkColor: 'text-accent/25', trend: `+0 en Trial` },
+    { label: 'Usuarios', value: stats.total_users.toLocaleString(), icon: Users, color: 'text-accent', watermarkColor: 'text-accent/25', trend: 'Crecimiento estable' },
+    { label: 'Churn', value: stats.churn_rate, icon: TrendingUp, color: 'text-danger-text', watermarkColor: 'text-danger-text/25', trend: 'Ligeramente alto' },
   ];
 
   const handleCreateTenant = async () => {
@@ -794,12 +794,12 @@ export const SaaSPlatformAdmin = () => {
     setNewPassword('');
     setIsEditing(false);
     setEditAdminPassword('');
-    
+
     try {
       const res = await axiosInstance.get(`/platform/tenants/${id}`);
       const data = res.data;
       setTenantDetail(data);
-      
+
       // Cargar estados para la edición
       setEditTenantName(data.tenant?.name || '');
       setEditTenantPlan(data.tenant?.plan?.toLowerCase() || 'freemium');
@@ -869,11 +869,11 @@ export const SaaSPlatformAdmin = () => {
         admin_password: editAdminPassword || null,
         admin_phone: editAdminPhone || null
       });
-      
+
       alert("Datos de la empresa y del administrador actualizados con éxito.");
       setIsEditing(false);
       setEditAdminPassword('');
-      
+
       // Recargar lista global y volver a abrir los detalles actualizados
       await fetchGlobalData(searchQuery, planFilter, statusFilter);
       await handleOpenDetails(selectedTenantId);
@@ -908,7 +908,7 @@ export const SaaSPlatformAdmin = () => {
       // Si está inactivo, activar inmediatamente
       const confirmActivate = window.confirm(`¿Deseas activar la empresa "${name}" de nuevo?`);
       if (!confirmActivate) return;
-      
+
       triggerToggleStatus(id, true, null);
     }
   };
@@ -920,10 +920,10 @@ export const SaaSPlatformAdmin = () => {
         is_active: targetActive,
         suspension_reason: reason
       });
-      
+
       alert(targetActive ? "Empresa activada exitosamente." : "Empresa suspendida exitosamente.");
       setIsSuspensionModalOpen(false);
-      
+
       // Recargar lista y detalles si están abiertos
       await fetchGlobalData(searchQuery, planFilter, statusFilter);
       if (selectedTenantId === id) {
@@ -976,16 +976,16 @@ export const SaaSPlatformAdmin = () => {
     try {
       const res = await axiosInstance.post(`/platform/tenants/${id}/impersonate`);
       const { token } = res.data;
-      
+
       // Guardar token original de Super Admin
       const currentToken = localStorage.getItem('talent_auth_token');
       if (currentToken) {
         localStorage.setItem('platform_admin_token', currentToken);
       }
-      
+
       // Establecer token impersonado
       localStorage.setItem('talent_auth_token', token);
-      
+
       // Redirigir al dashboard cliente
       window.location.href = '/app';
     } catch (error: any) {
@@ -1021,7 +1021,7 @@ export const SaaSPlatformAdmin = () => {
         features: freemiumFeatures,
         global_trial_days: globalTrialDays
       });
-      
+
       updateSetting('freemium_allowed_features', freemiumFeatures);
       updateSetting('freemium_allowed_modules', freemiumModules);
       updateSetting('global_trial_days', globalTrialDays);
@@ -1083,32 +1083,32 @@ export const SaaSPlatformAdmin = () => {
   };
 
   const toggleFreemiumModule = (modId: string) => {
-    setFreemiumModules(prev => 
+    setFreemiumModules(prev =>
       prev.includes(modId) ? prev.filter(id => id !== modId) : [...prev, modId]
     );
   };
 
   const toggleFreemiumFeature = (featId: string) => {
-    setFreemiumFeatures(prev => 
+    setFreemiumFeatures(prev =>
       prev.includes(featId) ? prev.filter(id => id !== featId) : [...prev, featId]
     );
   };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
       {/* Sticky Top Bar con Menú Hamburguesa y Perfil de Usuario */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-sm flex items-center justify-between gap-4 mb-6">
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border border-border/90 rounded-2xl p-3 sm:p-4 shadow-sm flex items-center justify-between gap-4 mb-6">
         {/* Izquierda: Branding e Identificación de la Consola */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-sm shrink-0">
+          <div className="w-9 h-9 bg-accent rounded-xl flex items-center justify-center shadow-sm shrink-0">
             <span className="text-white font-black text-lg">T</span>
           </div>
           <div>
-            <h2 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
+            <h2 className="text-sm sm:text-base font-black text-text-1 leading-tight">
               {isAdmin ? 'Talent 360' : 'Página de Soporte'}
             </h2>
-            <p className="text-[11px] text-slate-500 font-bold leading-tight">
+            <p className="text-[11px] text-text-3 font-bold leading-tight">
               {isAdmin ? 'Consola de administración' : 'Soporte técnico y atención a empresas'}
             </p>
           </div>
@@ -1118,30 +1118,30 @@ export const SaaSPlatformAdmin = () => {
         <div className="flex items-center gap-3">
           {/* Menú de Hamburguesa para Navegación Global */}
           <div className="relative">
-            <button 
+            <button
               type="button"
               onClick={() => setIsNavMenuOpen(!isNavMenuOpen)}
-              className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+              className="p-2 bg-page hover:bg-slate-200 text-text-2 rounded-xl border border-border transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
               title="Menú de Navegación Global"
             >
               <Menu size={18} />
-              <span className="hidden sm:inline font-black text-slate-800">Menú</span>
+              <span className="hidden sm:inline font-black text-text-1">Menú</span>
             </button>
 
             {isNavMenuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsNavMenuOpen(false)}></div>
-                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-2.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150 space-y-1">
-                  <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-border rounded-2xl shadow-xl p-2.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150 space-y-1">
+                  <div className="px-3 py-1.5 border-b border-border mb-1">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Secciones de Plataforma</p>
                   </div>
 
                   {isAdmin && (
-                    <button 
+                    <button
                       type="button"
                       onClick={() => { setActiveTab('dashboard'); setIsNavMenuOpen(false); }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
-                        activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                        activeTab === 'dashboard' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                       }`}
                     >
                       <span className="flex items-center gap-2">📊 Dashboard Global</span>
@@ -1149,38 +1149,38 @@ export const SaaSPlatformAdmin = () => {
                   )}
 
                   {isAdmin && (
-                    <button 
+                    <button
                       type="button"
                       onClick={() => { setActiveTab('pending_registrations'); setIsNavMenuOpen(false); }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
-                        activeTab === 'pending_registrations' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                        activeTab === 'pending_registrations' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                       }`}
                     >
                       <span className="flex items-center gap-2">⏳ Registros Inconclusos</span>
                       {pendingRegistrations.length > 0 && (
-                        <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                        <span className="bg-warning-icon text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
                           {pendingRegistrations.length}
                         </span>
                       )}
                     </button>
                   )}
 
-                  <button 
+                  <button
                     type="button"
                     onClick={() => { setActiveTab('tickets'); setIsNavMenuOpen(false); }}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
-                      activeTab === 'tickets' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                      activeTab === 'tickets' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                     }`}
                   >
                     <span className="flex items-center gap-2">🎧 Soporte Técnico / Tickets</span>
                   </button>
 
                   {isAdmin && (
-                    <button 
+                    <button
                       type="button"
                       onClick={() => { setActiveTab('security_logs'); setIsNavMenuOpen(false); }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
-                        activeTab === 'security_logs' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                        activeTab === 'security_logs' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                       }`}
                     >
                       <span className="flex items-center gap-2">🛡️ Bitácora de Seguridad</span>
@@ -1188,16 +1188,16 @@ export const SaaSPlatformAdmin = () => {
                   )}
 
                   {isAdmin && (
-                    <button 
+                    <button
                       type="button"
                       onClick={() => { setActiveTab('social_promotions'); setIsNavMenuOpen(false); }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
-                        activeTab === 'social_promotions' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                        activeTab === 'social_promotions' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                       }`}
                     >
                       <span className="flex items-center gap-2">📱 Redes Sociales & Promociones</span>
                       {socialClaims.filter(c => c.status === 'pending_approval').length > 0 && (
-                        <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                        <span className="bg-accent text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
                           {socialClaims.filter(c => c.status === 'pending_approval').length}
                         </span>
                       )}
@@ -1205,11 +1205,11 @@ export const SaaSPlatformAdmin = () => {
                   )}
 
                   {isAdmin && (
-                    <button 
+                    <button
                       type="button"
                       onClick={() => { setActiveTab('billing'); setIsNavMenuOpen(false); }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
-                        activeTab === 'billing' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                        activeTab === 'billing' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                       }`}
                     >
                       <span className="flex items-center gap-2">💳 Facturación Global</span>
@@ -1222,12 +1222,12 @@ export const SaaSPlatformAdmin = () => {
 
           {/* Perfil del Usuario: Icono/Avatar arriba y abajo Nombre y Puesto */}
           <div className="relative">
-            <button 
+            <button
               type="button"
               onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-              className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-50 rounded-xl transition-all cursor-pointer border-none bg-transparent group"
+              className="flex flex-col items-center justify-center p-1.5 hover:bg-page rounded-xl transition-all cursor-pointer border-none bg-transparent group"
             >
-              <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center overflow-hidden shadow-xs mb-0.5 group-hover:scale-105 transition-transform">
+              <div className="w-8 h-8 rounded-full bg-navy-50 text-accent border border-border flex items-center justify-center overflow-hidden shadow-xs mb-0.5 group-hover:scale-105 transition-transform">
                 {currentUser?.avatar ? (
                   <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
@@ -1235,7 +1235,7 @@ export const SaaSPlatformAdmin = () => {
                 )}
               </div>
               <div className="text-center leading-tight max-w-[120px] truncate">
-                <p className="text-[11px] font-black text-slate-800 truncate">{currentUser?.name || 'Administrador'}</p>
+                <p className="text-[11px] font-black text-text-1 truncate">{currentUser?.name || 'Administrador'}</p>
                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider truncate">{currentUser?.role || 'Super Admin'}</p>
               </div>
             </button>
@@ -1243,24 +1243,24 @@ export const SaaSPlatformAdmin = () => {
             {isProfileMenuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsProfileMenuOpen(false)}></div>
-                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="border-b border-slate-100 pb-3 mb-3">
-                    <p className="text-sm font-black text-slate-800">{currentUser?.name || 'Administrador'}</p>
-                    <p className="text-xs text-slate-500 font-medium truncate">{currentUser?.email || 'admin@talent360.com.mx'}</p>
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-border rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="border-b border-border pb-3 mb-3">
+                    <p className="text-sm font-black text-text-1">{currentUser?.name || 'Administrador'}</p>
+                    <p className="text-xs text-text-3 font-medium truncate">{currentUser?.email || 'admin@talent360.com.mx'}</p>
                   </div>
-                  <div className="space-y-2.5 text-xs text-slate-600 font-semibold mb-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <div className="space-y-2.5 text-xs text-text-2 font-semibold mb-3 bg-page p-3 rounded-xl border border-border">
                     <div className="flex justify-between">
                       <span className="text-slate-400 font-medium">ID Usuario:</span>
                       <span>{currentUser?.id || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400 font-medium">Rol:</span>
-                      <span className="text-rose-600 font-bold">{currentUser?.system_role || currentUser?.role || 'platform_admin'}</span>
+                      <span className="text-danger-text font-bold">{currentUser?.system_role || currentUser?.role || 'platform_admin'}</span>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-2 text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-100 hover:border-transparent py-2.5 rounded-xl font-bold transition-all text-xs"
+                    className="w-full flex items-center justify-center gap-2 text-danger-text hover:text-white bg-danger-bg hover:bg-danger-text border border-danger-text/20 hover:border-transparent py-2.5 rounded-xl font-bold transition-all text-xs"
                   >
                     <LogOut size={14} />
                     Cerrar Sesión
@@ -1308,7 +1308,7 @@ export const SaaSPlatformAdmin = () => {
                         className="w-full text-left p-2 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition-colors block mb-1 cursor-pointer"
                       >
                         <p className="font-bold flex items-center gap-1.5 text-slate-100">
-                          <Eye size={14} className="text-indigo-400" /> Cerrar por esta sesión
+                          <Eye size={14} className="text-navy-300" /> Cerrar por esta sesión
                         </p>
                         <p className="text-[10px] text-slate-400 mt-0.5">Se volverá a mostrar al recargar.</p>
                       </button>
@@ -1321,7 +1321,7 @@ export const SaaSPlatformAdmin = () => {
                         }}
                         className="w-full text-left p-2 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition-colors block cursor-pointer"
                       >
-                        <p className="font-bold flex items-center gap-1.5 text-rose-400">
+                        <p className="font-bold flex items-center gap-1.5 text-danger-text">
                           <Ban size={14} /> No volver a mostrar
                         </p>
                         <p className="text-[10px] text-slate-400 mt-0.5">Ocultar de forma permanente.</p>
@@ -1333,7 +1333,7 @@ export const SaaSPlatformAdmin = () => {
 
               <div className="relative z-10 flex-1 pr-8">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="bg-rose-500/90 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full animate-pulse">
+                  <span className="bg-danger-icon/90 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full animate-pulse">
                     Plataforma Central
                   </span>
                   <span className="text-slate-400 text-xs font-bold">Modo Dueño del SaaS</span>
@@ -1343,28 +1343,28 @@ export const SaaSPlatformAdmin = () => {
                   Monitoreo de salud del software, facturación global e infraestructura de servidores.
                 </p>
               </div>
-              
+
               <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center gap-3 w-full md:w-auto pr-6 md:pr-0">
                 {/* Selector Modo de Tiempo Compacto */}
                 <div className="bg-slate-800/90 p-2 rounded-xl border border-slate-700 backdrop-blur-md flex items-center gap-2 flex-1 sm:flex-initial">
                   <div className="text-left px-1">
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Tiempo (DB)</span>
-                    <span className={`text-[10px] font-bold ${timeMode === 'simulated' ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                    <span className={`text-[10px] font-bold ${timeMode === 'simulated' ? 'text-navy-300' : 'text-success-text'}`}>
                       {timeMode === 'simulated' ? 'Simulado' : 'Tiempo Real'}
                     </span>
                   </div>
                   <div className="flex bg-slate-900/80 p-0.5 rounded-lg border border-slate-700/60 gap-1">
-                    <button 
+                    <button
                       type="button"
                       onClick={() => updateSetting('time_mode', 'simulated')}
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'simulated' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'simulated' ? 'bg-accent text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
                     >
                       Simulado
                     </button>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => updateSetting('time_mode', 'real')}
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'real' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'real' ? 'bg-success-text text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
                     >
                       Real
                     </button>
@@ -1372,10 +1372,10 @@ export const SaaSPlatformAdmin = () => {
                 </div>
 
                 {/* Botón Facturación Stripe Compacto */}
-                <button 
+                <button
                   type="button"
                   onClick={() => setActiveTab('billing')}
-                  className="bg-white hover:bg-slate-100 text-slate-900 px-4 py-2.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                  className="bg-white hover:bg-page text-text-1 px-4 py-2.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                 >
                   <CreditCard size={15} />
                   Facturación Stripe
@@ -1390,7 +1390,7 @@ export const SaaSPlatformAdmin = () => {
                   localStorage.removeItem('talent360_hide_global_banner');
                   setShowBanner(true);
                 }}
-                className="text-[11px] font-bold text-slate-400 hover:text-indigo-600 flex items-center gap-1.5 transition-colors bg-white hover:bg-indigo-50 border border-slate-200 px-3 py-1 rounded-xl shadow-2xs cursor-pointer"
+                className="text-[11px] font-bold text-slate-400 hover:text-accent flex items-center gap-1.5 transition-colors bg-white hover:bg-navy-50 border border-border px-3 py-1 rounded-xl shadow-2xs cursor-pointer"
               >
                 <Info size={13} />
                 Mostrar panel de información
@@ -1401,31 +1401,31 @@ export const SaaSPlatformAdmin = () => {
       {/* KPIs Financieros y de Crecimiento Compactos en una Sola Fila (1x4) con Marca de Agua Coloreada */}
       <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-5">
         {kpis.map((stat, idx) => (
-          <div 
-            key={idx} 
-            className="relative overflow-hidden bg-white p-2.5 sm:p-3.5 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between group hover:border-indigo-300 transition-all min-h-[86px] sm:min-h-[92px]"
+          <div
+            key={idx}
+            className="relative overflow-hidden bg-white p-2.5 sm:p-3.5 rounded-2xl shadow-xs border border-border/90 flex flex-col justify-between group hover:border-navy-300 transition-all min-h-[86px] sm:min-h-[92px]"
           >
             {/* Icono Grande de Fondo en Marca de Agua con Color Específico */}
-            <stat.icon 
-              size={64} 
-              className={`absolute -right-1 -bottom-1 ${stat.watermarkColor} pointer-events-none group-hover:scale-110 transition-transform duration-300`} 
+            <stat.icon
+              size={64}
+              className={`absolute -right-1 -bottom-1 ${stat.watermarkColor} pointer-events-none group-hover:scale-110 transition-transform duration-300`}
             />
 
             <div className="flex items-center justify-between relative z-10">
               <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-wider truncate">
                 {stat.label}
               </span>
-              <ArrowUpRight size={13} className="text-slate-300 group-hover:text-indigo-600 transition-colors shrink-0 hidden sm:block" />
+              <ArrowUpRight size={13} className="text-slate-300 group-hover:text-accent transition-colors shrink-0 hidden sm:block" />
             </div>
 
             <div className="relative z-10 my-0.5 sm:my-1">
-              <h3 className="text-base sm:text-xl md:text-2xl font-black text-slate-900 leading-none tracking-tight truncate">
+              <h3 className="text-base sm:text-xl md:text-2xl font-black text-text-1 leading-none tracking-tight truncate">
                 {stat.value}
               </h3>
             </div>
 
             <div className="relative z-10 flex items-center justify-between">
-              <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100/80 inline-block truncate max-w-full">
+              <span className="text-[9px] sm:text-[10px] font-bold text-text-3 bg-page px-1.5 py-0.5 rounded border border-border/80 inline-block truncate max-w-full">
                 {stat.trend}
               </span>
             </div>
@@ -1435,35 +1435,35 @@ export const SaaSPlatformAdmin = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Empresas Recientes */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-border p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-             <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                <Building2 className="text-blue-600" size={20} />
+             <h2 className="text-lg font-black text-text-1 flex items-center gap-2">
+                <Building2 className="text-accent" size={20} />
                 Clientes e Inquilinos
              </h2>
-             <button onClick={() => setIsNewTenantModalOpen(true)} className="text-sm font-bold text-blue-600 hover:bg-blue-100/50 bg-blue-50 px-4 py-2 rounded-xl transition-all self-start sm:self-auto">Simular Alta de Empresa</button>
+             <button onClick={() => setIsNewTenantModalOpen(true)} className="text-sm font-bold text-accent hover:bg-accent-soft/50 bg-navy-50 px-4 py-2 rounded-xl transition-all self-start sm:self-auto">Simular Alta de Empresa</button>
           </div>
 
           {/* Barra de Filtros y Búsqueda */}
-          <div className="flex flex-col md:flex-row gap-3 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <div className="flex flex-col md:flex-row gap-3 mb-6 bg-page p-4 rounded-2xl border border-border">
              <div className="relative flex-1">
                 <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar empresa por nombre o subdominio..." 
-                  className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all font-semibold text-slate-800 placeholder-slate-400"
+                  placeholder="Buscar empresa por nombre o subdominio..."
+                  className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-border rounded-xl focus:border-accent focus:ring-1 focus-visible:ring-focus-ring outline-none transition-all font-semibold text-text-1 placeholder-slate-400"
                 />
              </div>
              <div className="flex gap-2">
-                <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600">
+                <div className="flex items-center gap-1.5 bg-white border border-border px-3 py-1.5 rounded-xl text-xs font-bold text-text-2">
                    <Filter size={14} className="text-slate-400" />
                    <span>Plan:</span>
-                   <select 
+                   <select
                       value={planFilter}
                       onChange={(e) => setPlanFilter(e.target.value)}
-                      className="bg-transparent border-none outline-none cursor-pointer focus:ring-0 text-slate-800 font-extrabold pr-4"
+                      className="bg-transparent border-none outline-none cursor-pointer focus:ring-0 text-text-1 font-extrabold pr-4"
                    >
                       <option value="all">Todos</option>
                       <option value="freemium">Freemium</option>
@@ -1471,13 +1471,13 @@ export const SaaSPlatformAdmin = () => {
                       <option value="enterprise">Enterprise</option>
                    </select>
                 </div>
-                <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600">
+                <div className="flex items-center gap-1.5 bg-white border border-border px-3 py-1.5 rounded-xl text-xs font-bold text-text-2">
                    <Activity size={14} className="text-slate-400" />
                    <span>Estado:</span>
-                   <select 
+                   <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="bg-transparent border-none outline-none cursor-pointer focus:ring-0 text-slate-800 font-extrabold pr-4"
+                      className="bg-transparent border-none outline-none cursor-pointer focus:ring-0 text-text-1 font-extrabold pr-4"
                    >
                       <option value="all">Todos</option>
                       <option value="active">Activo</option>
@@ -1490,35 +1490,35 @@ export const SaaSPlatformAdmin = () => {
           {/* Vista Móvil (Tarjetas Responsivas) */}
           <div className="block md:hidden space-y-3">
              {isLoading ? (
-                <div className="py-8 text-center text-slate-500 font-medium"><Loader2 className="animate-spin mx-auto mb-2" /> Cargando inquilinos...</div>
+                <div className="py-8 text-center text-text-3 font-medium"><Loader2 className="animate-spin mx-auto mb-2" /> Cargando inquilinos...</div>
              ) : tenantsList.length === 0 ? (
-                <div className="py-8 text-center text-slate-500 font-medium">No se encontraron inquilinos con los filtros aplicados.</div>
+                <div className="py-8 text-center text-text-3 font-medium">No se encontraron inquilinos con los filtros aplicados.</div>
              ) : tenantsList.map((comp, idx) => (
-                <div key={idx} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-xs">
+                <div key={idx} className="bg-page border border-border rounded-2xl p-4 space-y-3 shadow-xs">
                    <div className="flex justify-between items-start">
                       <div>
-                         <h4 className="font-extrabold text-slate-900 text-sm leading-snug">{comp.name}</h4>
+                         <h4 className="font-extrabold text-text-1 text-sm leading-snug">{comp.name}</h4>
                          <div className="mt-1">{getNichoBadge(comp.nicho)}</div>
                          <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{comp.date}</span>
                       </div>
                       <div className="text-right">
                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                            comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
-                            comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
-                            'bg-slate-200 text-slate-700'
+                            comp.plan === 'PRO' ? 'bg-warning-bg text-warning-text' :
+                            comp.plan === 'Enterprise' ? 'bg-accent-soft text-accent' :
+                            'bg-slate-200 text-text-2'
                          }`}>
                             {comp.plan}
                          </span>
-                         <div className="text-[11px] font-extrabold text-slate-800 mt-1">
-                            ${comp.monthly_price ?? 0} <span className="text-[9px] text-slate-500 font-semibold">/mes</span>
+                         <div className="text-[11px] font-extrabold text-text-1 mt-1">
+                            ${comp.monthly_price ?? 0} <span className="text-[9px] text-text-3 font-semibold">/mes</span>
                          </div>
                       </div>
                    </div>
 
-                   <div className="grid grid-cols-3 gap-2 text-center text-xs bg-white p-2 rounded-xl border border-slate-200/80">
+                   <div className="grid grid-cols-3 gap-2 text-center text-xs bg-white p-2 rounded-xl border border-border/80">
                       <div>
                          <span className="text-[9px] font-black text-slate-400 block uppercase">Módulos</span>
-                         <span className="font-extrabold text-indigo-600">{comp.modules_count ?? 0} / {comp.total_modules_available ?? 12}</span>
+                         <span className="font-extrabold text-accent">{comp.modules_count ?? 0} / {comp.total_modules_available ?? 12}</span>
                       </div>
                       <div>
                          <span className="text-[9px] font-black text-slate-400 block uppercase">Usuarios</span>
@@ -1526,21 +1526,21 @@ export const SaaSPlatformAdmin = () => {
                              código —`max_users` se guarda y nadie lo revisa—, así que el panel al
                              menos tiene que poder VER quién lo rebasó. El servidor manda
                              `sobre_cupo` ya calculado contra el tope del tarifario. */}
-                         <span className={`font-extrabold ${comp.sobre_cupo ? 'text-amber-600' : 'text-slate-700'}`}>
+                         <span className={`font-extrabold ${comp.sobre_cupo ? 'text-warning-text' : 'text-text-2'}`}>
                             {comp.users} / {comp.tope_colaboradores ?? '∞'}
                             {comp.sobre_cupo && <span className="ml-1 text-[8px] uppercase" title="Rebasa el cupo de su plan. No se bloquea nada.">sobre cupo</span>}
                          </span>
                       </div>
                       <div>
                          <span className="text-[9px] font-black text-slate-400 block uppercase">Volumen DB</span>
-                         <span className="font-extrabold text-emerald-600">{comp.tx_daily_avg ?? 0} <span className="text-[8px] text-slate-400">Tx/día</span></span>
+                         <span className="font-extrabold text-success-text">{comp.tx_daily_avg ?? 0} <span className="text-[8px] text-slate-400">Tx/día</span></span>
                       </div>
                    </div>
 
-                   <div className="flex items-center justify-between text-xs border-t border-b border-slate-200/70 py-2">
+                   <div className="flex items-center justify-between text-xs border-t border-b border-border/70 py-2">
                       <span className="flex items-center gap-1.5">
-                         <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                         <span className={`font-bold ${comp.status === 'Activo' ? 'text-slate-700' : 'text-rose-600'}`}>{comp.status}</span>
+                         <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-success-icon' : 'bg-danger-icon'}`}></span>
+                         <span className={`font-bold ${comp.status === 'Activo' ? 'text-text-2' : 'text-danger-text'}`}>{comp.status}</span>
                       </span>
                       <div className="text-xs">
                          {(() => {
@@ -1561,18 +1561,18 @@ export const SaaSPlatformAdmin = () => {
                    </div>
 
                    <div className="flex items-center justify-end gap-1.5 pt-1">
-                      <button 
+                      <button
                         onClick={() => handleOpenDetails(comp.id)}
                         title="Ver Detalles y Accesos"
-                        className="p-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-colors border border-slate-200 text-xs font-bold flex items-center gap-1"
+                        className="p-2 bg-white hover:bg-page text-text-2 rounded-xl transition-colors border border-border text-xs font-bold flex items-center gap-1"
                       >
                         <Eye size={14} />
                         Detalles
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleImpersonate(comp.id)}
                         title="Iniciar Sesión como Admin"
-                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors text-xs font-bold flex items-center gap-1"
+                        className="p-2 bg-accent hover:bg-accent-hover text-white rounded-xl transition-colors text-xs font-bold flex items-center gap-1"
                       >
                         <LogIn size={14} />
                         Entrar
@@ -1586,7 +1586,7 @@ export const SaaSPlatformAdmin = () => {
           <div className="hidden md:block overflow-x-auto">
              <table className="w-full text-left text-sm">
                 <thead>
-                   <tr className="border-b border-slate-100 text-slate-500">
+                   <tr className="border-b border-border text-text-3">
                       <th className="pb-3 font-bold">Empresa</th>
                       <th className="pb-3 font-bold">Plan & Costo</th>
                       <th className="pb-3 font-bold">Módulos</th>
@@ -1596,14 +1596,14 @@ export const SaaSPlatformAdmin = () => {
                       <th className="pb-3 font-bold text-right">Acciones</th>
                    </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-border">
                    {isLoading ? (
-                      <tr><td colSpan={7} className="py-8 text-center text-slate-500 font-medium"><Loader2 className="animate-spin mx-auto mb-2" /> Cargando inquilinos...</td></tr>
+                      <tr><td colSpan={7} className="py-8 text-center text-text-3 font-medium"><Loader2 className="animate-spin mx-auto mb-2" /> Cargando inquilinos...</td></tr>
                    ) : tenantsList.length === 0 ? (
-                      <tr><td colSpan={7} className="py-8 text-center text-slate-500 font-medium">No se encontraron inquilinos con los filtros aplicados.</td></tr>
+                      <tr><td colSpan={7} className="py-8 text-center text-text-3 font-medium">No se encontraron inquilinos con los filtros aplicados.</td></tr>
                    ) : tenantsList.map((comp, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-4 font-bold text-slate-800">
+                      <tr key={idx} className="hover:bg-page/80 transition-colors">
+                          <td className="py-4 font-bold text-text-1">
                              <div className="flex items-center gap-2 flex-wrap">
                                 <span>{comp.name}</span>
                                 {getNichoBadge(comp.nicho)}
@@ -1613,45 +1613,45 @@ export const SaaSPlatformAdmin = () => {
                           <td className="py-4">
                              <div className="flex items-center gap-2">
                                 <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
-                                   comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
-                                   comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
-                                   'bg-slate-100 text-slate-600'
+                                   comp.plan === 'PRO' ? 'bg-warning-bg text-warning-text' :
+                                   comp.plan === 'Enterprise' ? 'bg-accent-soft text-accent' :
+                                   'bg-page text-text-2'
                                 }`}>
                                    {comp.plan}
                                 </span>
-                                <span className="text-xs font-black text-slate-800">
+                                <span className="text-xs font-black text-text-1">
                                    ${comp.monthly_price ?? 0} <span className="text-[9px] text-slate-400 font-medium">/mes</span>
                                 </span>
                              </div>
                           </td>
                           <td className="py-4">
-                             <span 
+                             <span
                                title={`Módulos habilitados (${comp.allowed_modules?.length || 0}): ${(comp.allowed_modules || []).join(', ')}`}
-                               className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 px-2.5 py-1 rounded-lg text-xs font-extrabold cursor-help"
+                               className="inline-flex items-center gap-1.5 bg-navy-50 border border-border text-accent px-2.5 py-1 rounded-lg text-xs font-extrabold cursor-help"
                              >
                                <span>📦</span>
                                <span>{comp.modules_count ?? 0} / {comp.total_modules_available ?? 12}</span>
                              </span>
                           </td>
-                          <td className="py-4 font-medium text-slate-600">
-                             <span className="font-bold text-slate-800">{comp.users}</span>
+                          <td className="py-4 font-medium text-text-2">
+                             <span className="font-bold text-text-1">{comp.users}</span>
                              <span className="text-[10px] text-slate-400 font-semibold"> / {comp.max_users ?? 5}</span>
                           </td>
                           <td className="py-4">
-                             <div 
+                             <div
                                title={`Total 30 días: ${comp.tx_30_days || 0} operaciones de base de datos (${comp.tx_total || 0} históricas)`}
-                               className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-700 px-2 py-0.5 rounded-lg text-xs font-extrabold cursor-help"
+                               className="inline-flex items-center gap-1 bg-success-bg border border-success-text/20 text-success-text px-2 py-0.5 rounded-lg text-xs font-extrabold cursor-help"
                              >
                                <span>⚡</span>
                                <span>{comp.tx_daily_avg ?? 0}</span>
-                               <span className="text-[9px] font-semibold text-emerald-600">Tx/día</span>
+                               <span className="text-[9px] font-semibold text-success-text">Tx/día</span>
                              </div>
                           </td>
                           <td className="py-4">
                              <div className="flex flex-col gap-0.5">
                                 <span className="flex items-center gap-1.5">
-                                   <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                                   <span className={`text-xs font-bold ${comp.status === 'Activo' ? 'text-slate-700' : 'text-rose-600'}`}>{comp.status}</span>
+                                   <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-success-icon' : 'bg-danger-icon'}`}></span>
+                                   <span className={`text-xs font-bold ${comp.status === 'Activo' ? 'text-text-2' : 'text-danger-text'}`}>{comp.status}</span>
                                 </span>
                                 {(() => {
                                    const cob = estadoDeCobranza(comp);
@@ -1678,19 +1678,19 @@ export const SaaSPlatformAdmin = () => {
                                             ? insignia
                                             : <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>}
                                          {comp.freemium_compliance_status === 'approved' ? (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full mt-1">
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-full mt-1">
                                                ✓ Evidencia Aprobada
                                             </span>
                                          ) : comp.freemium_compliance_status === 'submitted' ? (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mt-1">
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-full mt-1">
                                                ⏳ Comprobante por Revisar
                                             </span>
                                          ) : comp.freemium_compliance_status === 'rejected' ? (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full mt-1">
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-full mt-1">
                                                ⚠️ Evidencia Rechazada
                                             </span>
                                          ) : (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full mt-1">
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-full mt-1">
                                                📢 Comprobante Pendiente
                                             </span>
                                          )}
@@ -1701,45 +1701,45 @@ export const SaaSPlatformAdmin = () => {
                           </td>
                           <td className="py-4 text-right">
                              <div className="flex justify-end gap-1.5">
-                                <button 
+                                <button
                                   onClick={() => handleOpenDetails(comp.id)}
                                   title="Ver Detalles y Accesos"
-                                  className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
+                                  className="p-1.5 bg-page hover:bg-slate-200 text-text-2 rounded-lg transition-colors border border-border"
                                 >
                                   <Eye size={14} />
                                 </button>
-                                
-                                <button 
+
+                                <button
                                   onClick={() => handleImpersonate(comp.id)}
                                   title="Iniciar Sesión como Admin"
-                                  className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors border border-blue-100"
+                                  className="p-1.5 bg-navy-50 hover:bg-accent-soft text-accent rounded-lg transition-colors border border-border"
                                 >
                                   <LogIn size={14} />
                                 </button>
 
                                 {comp.id !== 1 && comp.name !== 'Talent 360' ? (
                                   <>
-                                    <button 
+                                    <button
                                       onClick={() => handleToggleStatus(comp.id, comp.name, comp.status === 'Activo')}
                                       title={comp.status === 'Activo' ? "Suspender Empresa" : "Activar Empresa"}
                                       className={`p-1.5 rounded-lg transition-colors border ${
-                                        comp.status === 'Activo' 
-                                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-100' 
-                                          : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-100'
+                                        comp.status === 'Activo'
+                                          ? 'bg-danger-bg hover:bg-danger-bg text-danger-text border-danger-text/20'
+                                          : 'bg-success-bg hover:bg-success-bg text-success-text border-success-text/20'
                                       }`}
                                     >
                                       <Ban size={14} />
                                     </button>
-                                    <button 
+                                    <button
                                       onClick={() => handleDeleteTenant(comp.id, comp.name)}
                                       title="Eliminar permanentemente"
-                                      className="p-1.5 bg-slate-50 hover:bg-rose-600 hover:text-white text-slate-400 rounded-lg transition-colors border border-slate-200 hover:border-transparent"
+                                      className="p-1.5 bg-page hover:bg-danger-text hover:text-white text-slate-400 rounded-lg transition-colors border border-border hover:border-transparent"
                                     >
                                       <X size={14} />
                                     </button>
                                   </>
                                 ) : (
-                                  <span className="text-[10px] text-slate-400 font-black italic bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg">Protegido</span>
+                                  <span className="text-[10px] text-slate-400 font-black italic bg-page border border-border px-2 py-1 rounded-lg">Protegido</span>
                                 )}
                              </div>
                           </td>
@@ -1751,18 +1751,18 @@ export const SaaSPlatformAdmin = () => {
         </div>
 
         {/* Monitoreo de Errores e Infraestructura */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
-          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2 mb-6">
-             <ServerCrash className="text-rose-600" size={20} />
+        <div className="bg-white rounded-2xl shadow-sm border border-border p-6 flex flex-col">
+          <h2 className="text-lg font-black text-text-1 flex items-center gap-2 mb-6">
+             <ServerCrash className="text-danger-text" size={20} />
              Salud del Sistema
           </h2>
-          
+
           <div className="space-y-4 flex-1">
              {saasAlerts.length === 0 ? (
-                <div className="text-center text-slate-500 py-8 text-sm font-bold">Sin alertas actuales.</div>
+                <div className="text-center text-text-3 py-8 text-sm font-bold">Sin alertas actuales.</div>
              ) : (
                 saasAlerts.map((alert, idx) => (
-                   <div key={idx} className={`p-4 rounded-xl border flex justify-between items-center gap-2 ${alert.type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                   <div key={idx} className={`p-4 rounded-xl border flex justify-between items-center gap-2 ${alert.type === 'error' ? 'bg-danger-bg border-danger-text/20 text-danger-text' : 'bg-warning-bg border-warning-text/20 text-warning-text'}`}>
                       <div className="flex items-start gap-3">
                          {alert.type === 'error' ? <ShieldAlert size={18} className="mt-0.5 shrink-0" /> : <AlertOctagon size={18} className="mt-0.5 shrink-0" />}
                          <div>
@@ -1777,42 +1777,42 @@ export const SaaSPlatformAdmin = () => {
           </div>
 
           {/* Calificación de Módulos (Auditoría del 1 al 10) */}
-          <div className="mt-6 border-t border-slate-100 pt-6">
+          <div className="mt-6 border-t border-border pt-6">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span>📊</span> Auditoría de Calidad por Módulo
               </span>
-              <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50 px-2 py-0.5 rounded-full text-[9px] font-extrabold normal-case">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="flex items-center gap-1.5 bg-success-bg text-success-text border border-success-text/50 px-2 py-0.5 rounded-full text-[9px] font-extrabold normal-case">
+                <span className="w-1.5 h-1.5 rounded-full bg-success-icon animate-pulse"></span>
                 En Tiempo Real
               </span>
             </h3>
             <div className="space-y-3.5">
               {moduleAuditsList.map((mod) => (
                 <div key={mod.id} className="group">
-                  <div className="flex justify-between items-center mb-1 text-xs font-bold text-slate-700">
-                    <span className="text-slate-800 font-extrabold">{mod.name}</span>
+                  <div className="flex justify-between items-center mb-1 text-xs font-bold text-text-2">
+                    <span className="text-text-1 font-extrabold">{mod.name}</span>
                     <div className="flex items-center gap-2">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
-                        mod.score >= 8 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                        mod.score >= 6 ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                        'bg-rose-50 text-rose-700 border border-rose-100'
+                        mod.score >= 8 ? 'bg-success-bg text-success-text border border-success-text/20' :
+                        mod.score >= 6 ? 'bg-warning-bg text-warning-text border border-warning-text/20' :
+                        'bg-danger-bg text-danger-text border border-danger-text/20'
                       }`}>{mod.score}/10</span>
-                      <button 
-                        onClick={() => setSelectedAuditModule(mod)} 
-                        className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 transition-colors"
+                      <button
+                        onClick={() => setSelectedAuditModule(mod)}
+                        className="text-[10px] font-black text-accent hover:text-navy-800 transition-colors"
                       >
                         Ver detalles
                       </button>
                     </div>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-1.5">
-                    <div 
+                  <div className="w-full bg-page rounded-full h-1.5">
+                    <div
                       className={`h-1.5 rounded-full transition-all duration-500 ${
-                        mod.score >= 8 ? 'bg-emerald-500' :
-                        mod.score >= 6 ? 'bg-amber-500' :
-                        'bg-rose-500'
-                      }`} 
+                        mod.score >= 8 ? 'bg-success-icon' :
+                        mod.score >= 6 ? 'bg-warning-icon' :
+                        'bg-danger-icon'
+                      }`}
                       style={{ width: `${mod.score * 10}%` }}
                     ></div>
                   </div>
@@ -1828,36 +1828,36 @@ export const SaaSPlatformAdmin = () => {
       </div>
 
       {/* Estado de Módulos y Add-ons (App Store / Premium) */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mt-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-border p-6 mt-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-           <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-              <Activity className="text-indigo-600" size={20} />
+           <h2 className="text-lg font-black text-text-1 flex items-center gap-2">
+              <Activity className="text-accent" size={20} />
               Adopción de Módulos y Precios
            </h2>
             <div className="flex flex-wrap gap-2.5 sm:gap-3">
-               <button 
-                  onClick={handleOpenFreemiumConfig} 
-                  className="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
+               <button
+                  onClick={handleOpenFreemiumConfig}
+                  className="text-xs font-bold text-text-2 bg-page hover:bg-slate-200 border border-border px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
                >
                   <Settings size={14} />
                   Configurar Plan Gratuito y Prueba
                </button>
-               <button 
-                  onClick={() => setIsPricingModalOpen(true)} 
-                  className="text-xs font-bold text-indigo-600 hover:bg-indigo-100/50 bg-indigo-50 border border-indigo-100 px-3.5 py-1.5 rounded-xl transition-colors"
+               <button
+                  onClick={() => setIsPricingModalOpen(true)}
+                  className="text-xs font-bold text-accent hover:bg-accent-soft/50 bg-navy-50 border border-border px-3.5 py-1.5 rounded-xl transition-colors"
                >
                   Configurar Precios
                </button>
-               <button 
-                  onClick={handleOpenBankConfig} 
-                  className="text-xs font-bold text-emerald-600 hover:bg-emerald-100/50 bg-emerald-50 border border-emerald-100 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
+               <button
+                  onClick={handleOpenBankConfig}
+                  className="text-xs font-bold text-success-text hover:bg-success-bg/50 bg-success-bg border border-success-text/20 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
                >
                   <CreditCard size={14} />
                   Configurar Cuenta Bancaria (SPEI)
                </button>
-               <button 
-                  onClick={handleOpenSimulatorConfig} 
-                  className="text-xs font-bold text-violet-600 hover:bg-violet-100/50 bg-violet-50 border border-violet-100 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
+               <button
+                  onClick={handleOpenSimulatorConfig}
+                  className="text-xs font-bold text-accent hover:bg-accent-soft/50 bg-navy-50 border border-border px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
                >
                   <Monitor size={14} />
                   Ajustes del Simulador Landing
@@ -1865,48 +1865,48 @@ export const SaaSPlatformAdmin = () => {
             </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-           
-           <div className="border border-slate-200 rounded-xl p-5 hover:border-indigo-300 transition-colors group">
+
+           <div className="border border-border rounded-xl p-5 hover:border-navy-300 transition-colors group">
               <div className="flex justify-between items-start mb-3">
-                 <span className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:scale-110 transition-transform"><Building2 size={20} /></span>
-                 <span className="text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Premium</span>
+                 <span className="p-2 bg-navy-50 text-accent rounded-lg group-hover:scale-110 transition-transform"><Building2 size={20} /></span>
+                 <span className="text-[9px] font-black uppercase tracking-widest bg-warning-bg text-warning-text px-2 py-0.5 rounded">Premium</span>
               </div>
-              <h3 className="font-bold text-slate-800 text-sm">Portal de Vacantes</h3>
-              <p className="text-xs text-slate-500 mt-1 mb-3">Atracción de talento externo y publicación de empleos.</p>
-              <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1"><div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: '35%' }}></div></div>
+              <h3 className="font-bold text-text-1 text-sm">Portal de Vacantes</h3>
+              <p className="text-xs text-text-3 mt-1 mb-3">Atracción de talento externo y publicación de empleos.</p>
+              <div className="w-full bg-page rounded-full h-1.5 mb-1"><div className="bg-accent h-1.5 rounded-full" style={{ width: '35%' }}></div></div>
               <p className="text-[10px] font-bold text-slate-400">35% de Inquilinos activos</p>
            </div>
 
-           <div className="border border-slate-200 rounded-xl p-5 hover:border-indigo-300 transition-colors group">
+           <div className="border border-border rounded-xl p-5 hover:border-navy-300 transition-colors group">
               <div className="flex justify-between items-start mb-3">
-                 <span className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:scale-110 transition-transform"><Users size={20} /></span>
-                 <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Freemium</span>
+                 <span className="p-2 bg-navy-50 text-accent rounded-lg group-hover:scale-110 transition-transform"><Users size={20} /></span>
+                 <span className="text-[9px] font-black uppercase tracking-widest bg-success-bg text-success-text px-2 py-0.5 rounded">Freemium</span>
               </div>
-              <h3 className="font-bold text-slate-800 text-sm">Rutinas y Tareas</h3>
-              <p className="text-xs text-slate-500 mt-1 mb-3">Asignación de tickets, matriz de QA y check-lists.</p>
-              <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1"><div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: '85%' }}></div></div>
+              <h3 className="font-bold text-text-1 text-sm">Rutinas y Tareas</h3>
+              <p className="text-xs text-text-3 mt-1 mb-3">Asignación de tickets, matriz de QA y check-lists.</p>
+              <div className="w-full bg-page rounded-full h-1.5 mb-1"><div className="bg-success-icon h-1.5 rounded-full" style={{ width: '85%' }}></div></div>
               <p className="text-[10px] font-bold text-slate-400">85% de Inquilinos activos</p>
            </div>
 
-           <div className="border border-slate-200 rounded-xl p-5 hover:border-indigo-300 transition-colors group">
+           <div className="border border-border rounded-xl p-5 hover:border-navy-300 transition-colors group">
               <div className="flex justify-between items-start mb-3">
-                 <span className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:scale-110 transition-transform"><TrendingUp size={20} /></span>
-                 <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Freemium</span>
+                 <span className="p-2 bg-navy-50 text-accent rounded-lg group-hover:scale-110 transition-transform"><TrendingUp size={20} /></span>
+                 <span className="text-[9px] font-black uppercase tracking-widest bg-success-bg text-success-text px-2 py-0.5 rounded">Freemium</span>
               </div>
-              <h3 className="font-bold text-slate-800 text-sm">Reportes y Analítica</h3>
-              <p className="text-xs text-slate-500 mt-1 mb-3">Tableros de Business Intelligence y exportación.</p>
-              <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1"><div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '60%' }}></div></div>
+              <h3 className="font-bold text-text-1 text-sm">Reportes y Analítica</h3>
+              <p className="text-xs text-text-3 mt-1 mb-3">Tableros de Business Intelligence y exportación.</p>
+              <div className="w-full bg-page rounded-full h-1.5 mb-1"><div className="bg-accent h-1.5 rounded-full" style={{ width: '60%' }}></div></div>
               <p className="text-[10px] font-bold text-slate-400">60% de Inquilinos activos</p>
            </div>
 
-           <div className="border border-slate-200 rounded-xl p-5 hover:border-indigo-300 transition-colors group">
+           <div className="border border-border rounded-xl p-5 hover:border-navy-300 transition-colors group">
               <div className="flex justify-between items-start mb-3">
-                 <span className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:scale-110 transition-transform"><AlertOctagon size={20} /></span>
-                 <span className="text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Premium</span>
+                 <span className="p-2 bg-navy-50 text-accent rounded-lg group-hover:scale-110 transition-transform"><AlertOctagon size={20} /></span>
+                 <span className="text-[9px] font-black uppercase tracking-widest bg-warning-bg text-warning-text px-2 py-0.5 rounded">Premium</span>
               </div>
-              <h3 className="font-bold text-slate-800 text-sm">Academia Interna</h3>
-              <p className="text-xs text-slate-500 mt-1 mb-3">Cursos interactivos, plan de carrera y evaluaciones.</p>
-              <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1"><div className="bg-amber-500 h-1.5 rounded-full" style={{ width: '20%' }}></div></div>
+              <h3 className="font-bold text-text-1 text-sm">Academia Interna</h3>
+              <p className="text-xs text-text-3 mt-1 mb-3">Cursos interactivos, plan de carrera y evaluaciones.</p>
+              <div className="w-full bg-page rounded-full h-1.5 mb-1"><div className="bg-warning-icon h-1.5 rounded-full" style={{ width: '20%' }}></div></div>
               <p className="text-[10px] font-bold text-slate-400">20% de Inquilinos activos</p>
            </div>
 
@@ -1916,22 +1916,22 @@ export const SaaSPlatformAdmin = () => {
       )}
 
       {activeTab === 'pending_registrations' && (
-        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-slate-200 shadow-sm animate-in fade-in duration-300">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-6">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-border shadow-sm animate-in fade-in duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-border pb-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="bg-amber-100 text-amber-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-amber-200/50">
+                <span className="bg-warning-bg text-warning-text text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-warning-text/50">
                   Pre-registros Huérfanos
                 </span>
-                <h2 className="text-lg sm:text-xl font-black text-slate-800">Registros Inconclusos de Plataforma</h2>
+                <h2 className="text-lg sm:text-xl font-black text-text-1">Registros Inconclusos de Plataforma</h2>
               </div>
-              <p className="text-xs sm:text-sm text-slate-500">
+              <p className="text-xs sm:text-sm text-text-3">
                 Usuarios que iniciaron el registro en Talent360 pero no completaron la creación de su empresa. Puedes contactarles para dar seguimiento comercial o eliminar el registro para liberar el correo.
               </p>
             </div>
-            <button 
+            <button
               onClick={fetchPendingRegistrations}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shrink-0 border-none cursor-pointer w-full sm:w-auto"
+              className="bg-page hover:bg-slate-200 text-text-2 font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shrink-0 border-none cursor-pointer w-full sm:w-auto"
             >
               <RefreshCw size={14} className={isPendingLoading ? 'animate-spin' : ''} />
               Actualizar Lista
@@ -1940,13 +1940,13 @@ export const SaaSPlatformAdmin = () => {
 
           {isPendingLoading ? (
             <div className="py-16 text-center text-slate-400">
-              <Loader2 className="animate-spin mx-auto mb-2 text-indigo-600" size={28} />
+              <Loader2 className="animate-spin mx-auto mb-2 text-accent" size={28} />
               <p className="text-xs font-bold">Cargando registros inconclusos...</p>
             </div>
           ) : pendingRegistrations.length === 0 ? (
-            <div className="text-center py-12 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-              <CheckCircle2 className="mx-auto text-emerald-500 mb-3" size={40} />
-              <h4 className="font-bold text-slate-700 text-sm">Sin registros inconclusos</h4>
+            <div className="text-center py-12 px-4 bg-page rounded-2xl border border-dashed border-border">
+              <CheckCircle2 className="mx-auto text-success-text mb-3" size={40} />
+              <h4 className="font-bold text-text-2 text-sm">Sin registros inconclusos</h4>
               <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                 No hay usuarios pendientes sin empresa en la plataforma. Todos los pre-registros han completado la creación de su organización.
               </p>
@@ -1956,25 +1956,25 @@ export const SaaSPlatformAdmin = () => {
               {/* Vista Móvil para Registros Inconclusos */}
               <div className="block md:hidden space-y-3">
                 {pendingRegistrations.map((u) => (
-                  <div key={u.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <div key={u.id} className="bg-page border border-border rounded-2xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-black text-slate-700 text-xs border border-slate-300">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-black text-text-2 text-xs border border-slate-300">
                           {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
                         </div>
                         <div>
-                          <p className="font-extrabold text-slate-900 text-xs">{u.name || 'Sin Nombre'}</p>
+                          <p className="font-extrabold text-text-1 text-xs">{u.name || 'Sin Nombre'}</p>
                           <span className="text-[10px] text-slate-400 font-bold uppercase">ID #{u.id}</span>
                         </div>
                       </div>
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                        u.provider === 'Google' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-200 text-slate-700'
+                        u.provider === 'Google' ? 'bg-danger-bg text-danger-text border border-danger-text/20' : 'bg-slate-200 text-text-2'
                       }`}>
                         {u.provider}
                       </span>
                     </div>
 
-                    <div className="text-xs font-bold text-indigo-600 truncate border-t border-b border-slate-200/70 py-2">
+                    <div className="text-xs font-bold text-accent truncate border-t border-b border-border/70 py-2">
                       {u.email}
                       <span className="block text-[10px] text-slate-400 font-normal mt-0.5">{u.created_at_human}</span>
                     </div>
@@ -1985,14 +1985,14 @@ export const SaaSPlatformAdmin = () => {
                           navigator.clipboard.writeText(u.email);
                           alert(`Correo ${u.email} copiado al portapapeles.`);
                         }}
-                        className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-slate-200 cursor-pointer"
+                        className="p-2 text-text-2 hover:text-accent hover:bg-navy-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-border cursor-pointer"
                         title="Copiar Correo"
                       >
                         <MessageSquare size={14} /> Contactar
                       </button>
                       <button
                         onClick={() => handleDeletePendingRegistration(u.id, u.email)}
-                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-rose-200 cursor-pointer"
+                        className="p-2 text-danger-text hover:bg-danger-bg rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-danger-text/20 cursor-pointer"
                         title="Eliminar Registro Inconcluso"
                       >
                         <Trash2 size={14} /> Eliminar
@@ -2006,7 +2006,7 @@ export const SaaSPlatformAdmin = () => {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="bg-slate-50 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200">
+                    <tr className="bg-page text-text-3 font-black uppercase tracking-wider border-b border-border">
                       <th className="p-4 rounded-l-xl">Solicitante</th>
                       <th className="p-4">Correo Electrónico</th>
                       <th className="p-4">Proveedor Auth</th>
@@ -2014,29 +2014,29 @@ export const SaaSPlatformAdmin = () => {
                       <th className="p-4 text-right rounded-r-xl">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-border">
                     {pendingRegistrations.map((u) => (
-                      <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-4 font-black text-slate-800 flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-600 border border-slate-200">
+                      <tr key={u.id} className="hover:bg-page/80 transition-colors">
+                        <td className="p-4 font-black text-text-1 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-page flex items-center justify-center font-black text-text-2 border border-border">
                             {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
                           </div>
                           <div>
-                            <p className="font-extrabold text-slate-900">{u.name || 'Sin Nombre'}</p>
+                            <p className="font-extrabold text-text-1">{u.name || 'Sin Nombre'}</p>
                             <span className="text-[10px] text-slate-400 font-bold uppercase">ID #{u.id}</span>
                           </div>
                         </td>
-                        <td className="p-4 font-bold text-indigo-600">
+                        <td className="p-4 font-bold text-accent">
                           {u.email}
                         </td>
                         <td className="p-4">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            u.provider === 'Google' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                            u.provider === 'Google' ? 'bg-danger-bg text-danger-text border border-danger-text/20' : 'bg-page text-text-2 border border-border'
                           }`}>
                             {u.provider}
                           </span>
                         </td>
-                        <td className="p-4 text-slate-500 font-medium">
+                        <td className="p-4 text-text-3 font-medium">
                           {u.created_at_human}
                         </td>
                         <td className="p-4 text-right">
@@ -2046,14 +2046,14 @@ export const SaaSPlatformAdmin = () => {
                                 navigator.clipboard.writeText(u.email);
                                 alert(`Correo ${u.email} copiado al portapapeles.`);
                               }}
-                              className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-slate-200 cursor-pointer"
+                              className="p-2 text-text-2 hover:text-accent hover:bg-navy-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-border cursor-pointer"
                               title="Copiar Correo"
                             >
                               <MessageSquare size={14} /> Contactar
                             </button>
                             <button
                               onClick={() => handleDeletePendingRegistration(u.id, u.email)}
-                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-rose-200 cursor-pointer"
+                              className="p-2 text-danger-text hover:bg-danger-bg rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-danger-text/20 cursor-pointer"
                               title="Eliminar Registro Inconcluso"
                             >
                               <Trash2 size={14} /> Eliminar
@@ -2072,23 +2072,23 @@ export const SaaSPlatformAdmin = () => {
 
       {activeTab === 'social_promotions' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          
+
           {/* Header & Grace Days Configuration */}
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="bg-blue-100 text-blue-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-blue-200">
+                <span className="bg-accent-soft text-navy-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-border">
                   Difusión Social & Promociones
                 </span>
               </div>
-              <h2 className="text-xl font-black text-slate-900">Gestión de Tiempo de Gracia y Banners</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <h2 className="text-xl font-black text-text-1">Gestión de Tiempo de Gracia y Banners</h2>
+              <p className="text-xs text-text-3 mt-0.5">
                 Configura los días otorgados por compartir en redes sociales, aprueba solicitudes de clientes y crea banners promocionales para el pie de página.
               </p>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-3 shrink-0">
-              <span className="text-xs font-bold text-slate-600">Días de Gracia por Defecto:</span>
+            <div className="p-4 bg-page rounded-2xl border border-border flex items-center gap-3 shrink-0">
+              <span className="text-xs font-bold text-text-2">Días de Gracia por Defecto:</span>
               <input
                 type="number"
                 min="1"
@@ -2106,7 +2106,7 @@ export const SaaSPlatformAdmin = () => {
                     alert("Error al guardar.");
                   }
                 }}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                className="px-3 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-sm transition-all"
               >
                 Guardar
               </button>
@@ -2114,15 +2114,15 @@ export const SaaSPlatformAdmin = () => {
           </div>
 
           {/* Solicitudes de Difusión Social (Clientes) */}
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-border shadow-sm space-y-4">
+            <div className="flex justify-between items-center pb-4 border-b border-border">
               <div>
-                <h3 className="text-base font-black text-slate-900">Solicitudes de Difusión Social</h3>
-                <p className="text-xs text-slate-500">Evidencias enviadas por clientes para desbloquear módulos gratis.</p>
+                <h3 className="text-base font-black text-text-1">Solicitudes de Difusión Social</h3>
+                <p className="text-xs text-text-3">Evidencias enviadas por clientes para desbloquear módulos gratis.</p>
               </div>
               <button
                 onClick={fetchSocialPromotionsData}
-                className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 text-xs font-bold flex items-center gap-1.5"
+                className="p-2 text-text-3 hover:text-text-1 rounded-xl hover:bg-page text-xs font-bold flex items-center gap-1.5"
               >
                 <RefreshCw size={14} className={isSocialLoading ? 'animate-spin' : ''} /> Actualizar
               </button>
@@ -2136,7 +2136,7 @@ export const SaaSPlatformAdmin = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+                    <tr className="bg-page text-text-3 font-bold uppercase text-[10px] border-b border-border">
                       <th className="p-3.5">Empresa / Tenant</th>
                       <th className="p-3.5">Módulo Solicitado</th>
                       <th className="p-3.5">Evidencia / URL</th>
@@ -2145,32 +2145,32 @@ export const SaaSPlatformAdmin = () => {
                       <th className="p-3.5 text-right">Acción</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-border">
                     {socialClaims.map((claim) => (
-                      <tr key={claim.id} className="hover:bg-slate-50/80">
-                        <td className="p-3.5 font-bold text-slate-900">
+                      <tr key={claim.id} className="hover:bg-page/80">
+                        <td className="p-3.5 font-bold text-text-1">
                           {claim.tenant?.name || `Tenant #${claim.tenant_id}`}
                         </td>
-                        <td className="p-3.5 font-extrabold text-blue-600 uppercase">
+                        <td className="p-3.5 font-extrabold text-accent uppercase">
                           {claim.module_key}
                         </td>
                         <td className="p-3.5 max-w-xs truncate">
                           {claim.proof_url ? (
-                            <a href={claim.proof_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-semibold truncate block">
+                            <a href={claim.proof_url} target="_blank" rel="noopener noreferrer" className="text-accent underline font-semibold truncate block">
                               {claim.proof_url}
                             </a>
                           ) : (
                             <span className="text-slate-400 font-medium">{claim.proof_note || 'Sin enlace'}</span>
                           )}
                         </td>
-                        <td className="p-3.5 font-bold text-slate-700">
+                        <td className="p-3.5 font-bold text-text-2">
                           {claim.grace_days_granted || 30} días
                         </td>
                         <td className="p-3.5">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                            claim.status === 'active' ? 'bg-emerald-100 text-emerald-800' :
-                            claim.status === 'pending_approval' ? 'bg-amber-100 text-amber-800' :
-                            'bg-rose-100 text-rose-800'
+                            claim.status === 'active' ? 'bg-success-bg text-success-text' :
+                            claim.status === 'pending_approval' ? 'bg-warning-bg text-warning-text' :
+                            'bg-danger-bg text-danger-text'
                           }`}>
                             {claim.status === 'active' ? 'Aprobado (Activo)' : claim.status === 'pending_approval' ? 'Pendiente' : 'Rechazado'}
                           </span>
@@ -2187,7 +2187,7 @@ export const SaaSPlatformAdmin = () => {
                                     alert("Error al aprobar.");
                                   }
                                 }}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm"
+                                className="px-3 py-1.5 bg-success-text hover:bg-success-text text-white font-bold text-xs rounded-xl shadow-sm"
                               >
                                 Aprobar
                               </button>
@@ -2200,7 +2200,7 @@ export const SaaSPlatformAdmin = () => {
                                     alert("Error al rechazar.");
                                   }
                                 }}
-                                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm"
+                                className="px-3 py-1.5 bg-danger-text hover:bg-danger-text text-white font-bold text-xs rounded-xl shadow-sm"
                               >
                                 Rechazar
                               </button>
@@ -2216,13 +2216,13 @@ export const SaaSPlatformAdmin = () => {
           </div>
 
           {/* Creador de Promociones de Temporada */}
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-border shadow-sm space-y-6">
             <div>
-              <h3 className="text-base font-black text-slate-900">Promociones de Temporada (Store Dock Inferior)</h3>
-              <p className="text-xs text-slate-500">Crea banners flotantes de ofertas especiales para los clientes.</p>
+              <h3 className="text-base font-black text-text-1">Promociones de Temporada (Store Dock Inferior)</h3>
+              <p className="text-xs text-text-3">Crea banners flotantes de ofertas especiales para los clientes.</p>
             </div>
 
-            <form 
+            <form
               onSubmit={async (e) => {
                 e.preventDefault();
                 try {
@@ -2241,10 +2241,10 @@ export const SaaSPlatformAdmin = () => {
                   alert("Error al crear la promoción.");
                 }
               }}
-              className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200"
+              className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-page p-4 rounded-2xl border border-border"
             >
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Título de la Oferta:</label>
+                <label className="block text-[11px] font-bold text-text-2 mb-1">Título de la Oferta:</label>
                 <input
                   type="text"
                   required
@@ -2256,7 +2256,7 @@ export const SaaSPlatformAdmin = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Subtítulo / Mensaje:</label>
+                <label className="block text-[11px] font-bold text-text-2 mb-1">Subtítulo / Mensaje:</label>
                 <input
                   type="text"
                   value={newPromoSubtitle}
@@ -2267,7 +2267,7 @@ export const SaaSPlatformAdmin = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Etiqueta Badge:</label>
+                <label className="block text-[11px] font-bold text-text-2 mb-1">Etiqueta Badge:</label>
                 <input
                   type="text"
                   value={newPromoBadge}
@@ -2280,7 +2280,7 @@ export const SaaSPlatformAdmin = () => {
               <div className="flex items-end">
                 <button
                   type="submit"
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all"
+                  className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-extrabold text-xs rounded-xl shadow-md transition-all"
                 >
                   Publicar Promoción
                 </button>
@@ -2288,7 +2288,7 @@ export const SaaSPlatformAdmin = () => {
             </form>
 
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-700">Promociones Existentes:</h4>
+              <h4 className="text-xs font-bold text-text-2">Promociones Existentes:</h4>
               {promotionsList.length === 0 ? (
                 <p className="text-xs text-slate-400 italic">No hay promociones activas registradas.</p>
               ) : (
@@ -2296,7 +2296,7 @@ export const SaaSPlatformAdmin = () => {
                   {promotionsList.map((promo) => (
                     <div key={promo.id} className="p-4 rounded-2xl bg-slate-900 text-white flex justify-between items-center shadow-sm">
                       <div>
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-400 text-slate-950">
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-warning-icon text-text-1">
                           {promo.badge_text || 'PROMO'}
                         </span>
                         <h4 className="font-extrabold text-sm mt-1">{promo.title}</h4>
@@ -2309,7 +2309,7 @@ export const SaaSPlatformAdmin = () => {
                             fetchSocialPromotionsData();
                           }
                         }}
-                        className="p-2 text-rose-400 hover:text-rose-200 hover:bg-white/10 rounded-xl"
+                        className="p-2 text-danger-text hover:text-danger-text hover:bg-white/10 rounded-xl"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -2325,20 +2325,20 @@ export const SaaSPlatformAdmin = () => {
 
       {activeTab === 'tickets' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white border border-border rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm gap-4">
              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md shrink-0">
+                <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-md shrink-0">
                    <LifeBuoy className="text-white" size={20} />
                 </div>
                 <div>
-                   <h2 className="text-base sm:text-lg font-black text-slate-800 leading-tight">Consola de Soporte y Call Center</h2>
-                   <p className="text-xs text-slate-500 font-medium">Monitoreo de incidencias y atención a inquilinos en tiempo real</p>
+                   <h2 className="text-base sm:text-lg font-black text-text-1 leading-tight">Consola de Soporte y Call Center</h2>
+                   <p className="text-xs text-text-3 font-medium">Monitoreo de incidencias y atención a inquilinos en tiempo real</p>
                 </div>
              </div>
-             <button 
+             <button
                 type="button"
-                onClick={() => setIsNewTicketModalOpen(true)} 
-                className="bg-indigo-600 hover:bg-indigo-750 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg transition-colors flex items-center justify-center gap-1.5 text-xs w-full sm:w-auto"
+                onClick={() => setIsNewTicketModalOpen(true)}
+                className="bg-accent hover:bg-accent-hover text-white px-4 py-2.5 rounded-xl font-bold shadow-lg transition-colors flex items-center justify-center gap-1.5 text-xs w-full sm:w-auto"
              >
                 <Plus size={14} />
                 Registrar Ticket
@@ -2346,25 +2346,25 @@ export const SaaSPlatformAdmin = () => {
           </div>
 
           {/* Filtros de Tickets */}
-          <div className="flex flex-col md:flex-row gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-3 bg-white p-4 rounded-2xl border border-border shadow-sm">
              <div className="relative flex-1">
                 <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                   type="text" 
+                <input
+                   type="text"
                    value={ticketsSearchQuery}
                    onChange={(e) => setTicketsSearchQuery(e.target.value)}
-                   placeholder="Buscar ticket por asunto, descripción o contacto..." 
-                   className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-800 placeholder-slate-400"
+                   placeholder="Buscar ticket por asunto, descripción o contacto..."
+                   className="w-full pl-10 pr-4 py-2 text-xs bg-page border border-border rounded-xl focus:border-accent focus:ring-1 focus-visible:ring-focus-ring outline-none transition-all font-bold text-text-1 placeholder-slate-400"
                 />
              </div>
              <div className="flex flex-wrap gap-2">
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-650">
+                <div className="flex items-center gap-1.5 bg-page border border-border px-3 py-1.5 rounded-xl text-xs font-bold text-text-2">
                    <Filter size={12} className="text-slate-400" />
                    <span>Estado:</span>
-                   <select 
+                   <select
                       value={ticketsStatusFilter}
                       onChange={(e) => setTicketsStatusFilter(e.target.value)}
-                      className="bg-transparent border-none outline-none cursor-pointer focus:ring-0 text-slate-800 font-black pr-4"
+                      className="bg-transparent border-none outline-none cursor-pointer focus:ring-0 text-text-1 font-black pr-4"
                    >
                       <option value="all">Todos</option>
                       <option value="open">Abiertos</option>
@@ -2373,13 +2373,13 @@ export const SaaSPlatformAdmin = () => {
                       <option value="closed">Cerrados</option>
                    </select>
                 </div>
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-650">
+                <div className="flex items-center gap-1.5 bg-page border border-border px-3 py-1.5 rounded-xl text-xs font-bold text-text-2">
                    <Activity size={12} className="text-slate-400" />
                    <span>Prioridad:</span>
-                   <select 
+                   <select
                       value={ticketsPriorityFilter}
                       onChange={(e) => setTicketsPriorityFilter(e.target.value)}
-                      className="bg-transparent border-none outline-none cursor-pointer focus:ring-0 text-slate-800 font-black pr-4"
+                      className="bg-transparent border-none outline-none cursor-pointer focus:ring-0 text-text-1 font-black pr-4"
                    >
                       <option value="all">Todas</option>
                       <option value="low">Baja</option>
@@ -2387,13 +2387,13 @@ export const SaaSPlatformAdmin = () => {
                       <option value="high">Alta</option>
                    </select>
                 </div>
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-650">
+                <div className="flex items-center gap-1.5 bg-page border border-border px-3 py-1.5 rounded-xl text-xs font-bold text-text-2">
                    <Building2 size={12} className="text-slate-400" />
                    <span>Inquilino:</span>
-                   <select 
+                   <select
                       value={ticketsTenantFilter}
                       onChange={(e) => setTicketsTenantFilter(e.target.value)}
-                      className="bg-transparent border-none outline-none cursor-pointer focus:ring-0 text-slate-800 font-black pr-4 max-w-[150px] truncate"
+                      className="bg-transparent border-none outline-none cursor-pointer focus:ring-0 text-text-1 font-black pr-4 max-w-[150px] truncate"
                    >
                       <option value="all">Todos</option>
                       {tenantsList.map(t => (
@@ -2406,72 +2406,72 @@ export const SaaSPlatformAdmin = () => {
 
           {/* Lista de Tickets */}
           {isTicketsLoading ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+            <div className="flex flex-col items-center justify-center py-12 text-text-3">
               <Loader2 className="animate-spin mb-2" />
               <span className="font-bold text-xs">Cargando tickets de soporte...</span>
             </div>
           ) : ticketsList.length === 0 ? (
-            <div className="text-center py-16 bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+            <div className="text-center py-16 bg-white border border-border rounded-3xl p-8 shadow-sm">
               <LifeBuoy size={48} className="mx-auto text-slate-350 mb-3 animate-bounce" />
-              <h3 className="text-base font-black text-slate-850">Sin tickets de soporte</h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto font-medium">No se encontraron tickets con los filtros actuales. Registra un nuevo ticket si ingresa una llamada o reporte.</p>
-              <button onClick={() => setIsNewTicketModalOpen(true)} className="mt-4 bg-indigo-600 hover:bg-indigo-750 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all">Registrar Primer Ticket</button>
+              <h3 className="text-base font-black text-text-1">Sin tickets de soporte</h3>
+              <p className="text-xs text-text-3 mt-1 max-w-sm mx-auto font-medium">No se encontraron tickets con los filtros actuales. Registra un nuevo ticket si ingresa una llamada o reporte.</p>
+              <button onClick={() => setIsNewTicketModalOpen(true)} className="mt-4 bg-accent hover:bg-accent-hover text-white font-bold text-xs px-4 py-2 rounded-xl transition-all">Registrar Primer Ticket</button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {ticketsList.map((ticket) => (
-                 <div key={ticket.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                 <div key={ticket.id} className="bg-white border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
                     <div>
                        <div className="flex justify-between items-start mb-3 gap-2">
                           <span className={`px-2.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
-                             ticket.status === 'open' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
-                             ticket.status === 'in_progress' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                             ticket.status === 'resolved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                             'bg-slate-50 text-slate-650 border border-slate-100'
+                             ticket.status === 'open' ? 'bg-danger-bg text-danger-text border border-danger-text/20' :
+                             ticket.status === 'in_progress' ? 'bg-warning-bg text-warning-text border border-warning-text/20' :
+                             ticket.status === 'resolved' ? 'bg-success-bg text-success-text border border-success-text/20' :
+                             'bg-page text-text-2 border border-border'
                           }`}>
                              {ticket.status === 'open' ? 'Abierto' :
                               ticket.status === 'in_progress' ? 'En Proceso' :
                               ticket.status === 'resolved' ? 'Resuelto' : 'Cerrado'}
                           </span>
                           <span className={`px-2.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
-                             ticket.priority === 'high' ? 'bg-rose-100 text-rose-800' :
-                             ticket.priority === 'medium' ? 'bg-amber-100 text-amber-800' :
-                             'bg-slate-100 text-slate-650'
+                             ticket.priority === 'high' ? 'bg-danger-bg text-danger-text' :
+                             ticket.priority === 'medium' ? 'bg-warning-bg text-warning-text' :
+                             'bg-page text-text-2'
                           }`}>
                              {ticket.priority === 'high' ? 'Alta' :
                               ticket.priority === 'medium' ? 'Media' : 'Baja'}
                           </span>
                        </div>
-                       <h3 className="font-extrabold text-slate-800 text-sm leading-tight line-clamp-1">{ticket.title}</h3>
-                       <p className="text-xs text-slate-500 mt-1.5 leading-relaxed line-clamp-2">{ticket.description}</p>
+                       <h3 className="font-extrabold text-text-1 text-sm leading-tight line-clamp-1">{ticket.title}</h3>
+                       <p className="text-xs text-text-3 mt-1.5 leading-relaxed line-clamp-2">{ticket.description}</p>
 
                        {ticket.tenant && (
-                          <div className="mt-3.5 bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-[11px] font-semibold text-slate-650 flex justify-between items-center">
+                          <div className="mt-3.5 bg-page border border-border rounded-xl p-2.5 text-[11px] font-semibold text-text-2 flex justify-between items-center">
                              <span className="text-slate-400">Cliente:</span>
-                             <span className="text-slate-800 font-extrabold">{ticket.tenant.name}</span>
+                             <span className="text-text-1 font-extrabold">{ticket.tenant.name}</span>
                           </div>
                        )}
                        {ticket.contact_name && (
-                          <div className="mt-2 text-[10px] text-slate-500 font-bold px-1 truncate">
-                             Contacto: <span className="text-slate-700">{ticket.contact_name}</span> {ticket.contact_email && <span className="text-slate-400 font-semibold">({ticket.contact_email})</span>}
+                          <div className="mt-2 text-[10px] text-text-3 font-bold px-1 truncate">
+                             Contacto: <span className="text-text-2">{ticket.contact_name}</span> {ticket.contact_email && <span className="text-slate-400 font-semibold">({ticket.contact_email})</span>}
                           </div>
                        )}
                     </div>
-                    <div className="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between">
+                    <div className="mt-5 pt-3.5 border-t border-border flex items-center justify-between">
                        <div className="text-[10px] text-slate-400 font-bold">
                           Creado {new Date(ticket.created_at).toLocaleDateString()}
                        </div>
                        <div className="flex gap-2">
-                          <button 
+                          <button
                              onClick={() => handleOpenTicketDetails(ticket.id)}
-                             className="bg-indigo-50 hover:bg-indigo-100 text-indigo-650 text-xs font-black px-3.5 py-1.5 rounded-xl border border-indigo-100 transition-colors"
+                             className="bg-navy-50 hover:bg-accent-soft text-accent text-xs font-black px-3.5 py-1.5 rounded-xl border border-border transition-colors"
                           >
                              Atender Ticket
                           </button>
                           {isAdmin && (
-                             <button 
+                             <button
                                 onClick={() => handleDeleteTicket(ticket.id)}
-                                className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg border border-transparent hover:bg-rose-50 transition-all"
+                                className="text-danger-text hover:text-danger-text p-1.5 rounded-lg border border-transparent hover:bg-danger-bg transition-all"
                              >
                                 <Trash2 size={14} />
                              </button>
@@ -2489,43 +2489,43 @@ export const SaaSPlatformAdmin = () => {
     {isPricingModalOpen && (
       <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-          <h3 className="text-2xl font-black text-slate-800 mb-6">Configurar Precios</h3>
+          <h3 className="text-2xl font-black text-text-1 mb-6">Configurar Precios</h3>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-bold text-slate-700 block mb-1">Portal de Vacantes (MXN/mes)</label>
-              <input type="number" value={saasPricing.reclutamiento} onChange={(e) => updateSaaSPricing('reclutamiento', Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 font-bold" />
+              <label className="text-sm font-bold text-text-2 block mb-1">Portal de Vacantes (MXN/mes)</label>
+              <input type="number" value={saasPricing.reclutamiento} onChange={(e) => updateSaaSPricing('reclutamiento', Number(e.target.value))} className="w-full bg-page border border-border rounded-xl px-4 py-2 font-bold" />
             </div>
             <div>
-              <label className="text-sm font-bold text-slate-700 block mb-1">Academia Interna (MXN/mes)</label>
-              <input type="number" value={saasPricing.academia} onChange={(e) => updateSaaSPricing('academia', Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 font-bold" />
+              <label className="text-sm font-bold text-text-2 block mb-1">Academia Interna (MXN/mes)</label>
+              <input type="number" value={saasPricing.academia} onChange={(e) => updateSaaSPricing('academia', Number(e.target.value))} className="w-full bg-page border border-border rounded-xl px-4 py-2 font-bold" />
             </div>
             <div>
-              <label className="text-sm font-bold text-slate-700 block mb-1">Reportes Avanzados (MXN/mes)</label>
-              <input type="number" value={saasPricing.reportes} onChange={(e) => updateSaaSPricing('reportes', Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 font-bold" />
+              <label className="text-sm font-bold text-text-2 block mb-1">Reportes Avanzados (MXN/mes)</label>
+              <input type="number" value={saasPricing.reportes} onChange={(e) => updateSaaSPricing('reportes', Number(e.target.value))} className="w-full bg-page border border-border rounded-xl px-4 py-2 font-bold" />
             </div>
           </div>
-          <button onClick={() => setIsPricingModalOpen(false)} className="w-full mt-8 bg-indigo-600 text-white font-black py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition-colors">Guardar y Cerrar</button>
+          <button onClick={() => setIsPricingModalOpen(false)} className="w-full mt-8 bg-accent text-white font-black py-3 rounded-xl shadow-lg hover:bg-accent-hover transition-colors">Guardar y Cerrar</button>
         </div>
       </div>
     )}
- 
+
     {/* MODAL: CONFIGURAR DATOS BANCARIOS (SPEI) */}
     {isBankConfigOpen && (
       <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
         <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl my-8">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h3 className="text-2xl font-black text-slate-800 flex items-center gap-2">
-                <CreditCard className="text-emerald-600" size={24} />
+              <h3 className="text-2xl font-black text-text-1 flex items-center gap-2">
+                <CreditCard className="text-success-text" size={24} />
                 Configurar Datos Bancarios (SPEI)
               </h3>
-              <p className="text-xs text-slate-500 font-semibold mt-1">
+              <p className="text-xs text-text-3 font-semibold mt-1">
                 Establece la cuenta bancaria donde los clientes realizarán transferencias para pagar el servicio.
               </p>
             </div>
-            <button 
+            <button
               onClick={() => setIsBankConfigOpen(false)}
-              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+              className="p-1.5 hover:bg-page rounded-lg text-slate-400 hover:text-text-2 transition-colors"
             >
               <X size={20} />
             </button>
@@ -2534,90 +2534,90 @@ export const SaaSPlatformAdmin = () => {
           <div className="space-y-4 pr-1">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">Banco Receptor</label>
-                <input 
-                  type="text" 
-                  value={bankConfigData.bank_name} 
-                  onChange={(e) => setBankConfigData({...bankConfigData, bank_name: e.target.value})} 
-                  placeholder="Ej. BBVA Bancomer" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all" 
+                <label className="text-xs font-bold text-text-2 block mb-1.5">Banco Receptor</label>
+                <input
+                  type="text"
+                  value={bankConfigData.bank_name}
+                  onChange={(e) => setBankConfigData({...bankConfigData, bank_name: e.target.value})}
+                  placeholder="Ej. BBVA Bancomer"
+                  className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-semibold text-sm text-text-1 focus:outline-none focus:ring-2 focus-visible:ring-success-text focus:bg-white transition-all"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">Titular de la Cuenta</label>
-                <input 
-                  type="text" 
-                  value={bankConfigData.account_holder} 
-                  onChange={(e) => setBankConfigData({...bankConfigData, account_holder: e.target.value})} 
-                  placeholder="Ej. Talent 360 SA de CV" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all" 
+                <label className="text-xs font-bold text-text-2 block mb-1.5">Titular de la Cuenta</label>
+                <input
+                  type="text"
+                  value={bankConfigData.account_holder}
+                  onChange={(e) => setBankConfigData({...bankConfigData, account_holder: e.target.value})}
+                  placeholder="Ej. Talent 360 SA de CV"
+                  className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-semibold text-sm text-text-1 focus:outline-none focus:ring-2 focus-visible:ring-success-text focus:bg-white transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5">CLABE Interbancaria (18 dígitos)</label>
-              <input 
-                type="text" 
+              <label className="text-xs font-bold text-text-2 block mb-1.5">CLABE Interbancaria (18 dígitos)</label>
+              <input
+                type="text"
                 maxLength={18}
-                value={bankConfigData.clabe} 
-                onChange={(e) => setBankConfigData({...bankConfigData, clabe: e.target.value.replace(/\D/g, '').slice(0, 18)})} 
-                placeholder="Ej. 012180004512345678" 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-black text-sm text-slate-800 tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all" 
+                value={bankConfigData.clabe}
+                onChange={(e) => setBankConfigData({...bankConfigData, clabe: e.target.value.replace(/\D/g, '').slice(0, 18)})}
+                placeholder="Ej. 012180004512345678"
+                className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-black text-sm text-text-1 tracking-wider focus:outline-none focus:ring-2 focus-visible:ring-success-text focus:bg-white transition-all"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5">Número de Tarjeta (16 dígitos, opcional)</label>
-              <input 
-                type="text" 
+              <label className="text-xs font-bold text-text-2 block mb-1.5">Número de Tarjeta (16 dígitos, opcional)</label>
+              <input
+                type="text"
                 maxLength={16}
-                value={bankConfigData.card_number} 
-                onChange={(e) => setBankConfigData({...bankConfigData, card_number: e.target.value.replace(/\D/g, '').slice(0, 16)})} 
-                placeholder="Ej. 4152313412345678" 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all" 
+                value={bankConfigData.card_number}
+                onChange={(e) => setBankConfigData({...bankConfigData, card_number: e.target.value.replace(/\D/g, '').slice(0, 16)})}
+                placeholder="Ej. 4152313412345678"
+                className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-bold text-sm text-text-1 focus:outline-none focus:ring-2 focus-visible:ring-success-text focus:bg-white transition-all"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5">Instrucciones Especiales</label>
-              <textarea 
+              <label className="text-xs font-bold text-text-2 block mb-1.5">Instrucciones Especiales</label>
+              <textarea
                 rows={3}
-                value={bankConfigData.instructions} 
-                onChange={(e) => setBankConfigData({...bankConfigData, instructions: e.target.value})} 
+                value={bankConfigData.instructions}
+                onChange={(e) => setBankConfigData({...bankConfigData, instructions: e.target.value})}
                 placeholder="Ej. Una vez hecha tu transferencia SPEI, reporta tu comprobante al correo facturacion@talent360.com.mx para la activación inmediata."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all resize-none" 
+                className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-medium text-xs text-text-2 focus:outline-none focus:ring-2 focus-visible:ring-success-text focus:bg-white transition-all resize-none"
               />
             </div>
 
-            <div className="flex items-center justify-between bg-slate-50 border border-slate-200/60 p-4 rounded-2xl mt-4">
+            <div className="flex items-center justify-between bg-page border border-border/60 p-4 rounded-2xl mt-4">
               <div>
-                <span className="text-xs font-bold text-slate-800 block">Habilitar en Checkout</span>
-                <span className="text-[10px] text-slate-500 block">Mostrar este método de transferencia como alternativa en la pasarela.</span>
+                <span className="text-xs font-bold text-text-1 block">Habilitar en Checkout</span>
+                <span className="text-[10px] text-text-3 block">Mostrar este método de transferencia como alternativa en la pasarela.</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={bankConfigData.is_active} 
+                <input
+                  type="checkbox"
+                  checked={bankConfigData.is_active}
                   onChange={(e) => setBankConfigData({...bankConfigData, is_active: e.target.checked})}
-                  className="sr-only peer" 
+                  className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success-icon"></div>
               </label>
             </div>
           </div>
 
           <div className="flex gap-3 mt-8">
-            <button 
-              onClick={() => setIsBankConfigOpen(false)} 
-              className="w-1/3 border border-slate-200 text-slate-500 font-bold py-3 rounded-xl hover:bg-slate-50 transition-colors text-sm"
+            <button
+              onClick={() => setIsBankConfigOpen(false)}
+              className="w-1/3 border border-border text-text-3 font-bold py-3 rounded-xl hover:bg-page transition-colors text-sm"
             >
               Cancelar
             </button>
-            <button 
-              onClick={handleSaveBankConfig} 
+            <button
+              onClick={handleSaveBankConfig}
               disabled={isSavingBank}
-              className="flex-1 bg-emerald-600 text-white font-black py-3 rounded-xl shadow-lg shadow-emerald-600/10 hover:bg-emerald-700 transition-colors text-sm flex items-center justify-center gap-1.5"
+              className="flex-1 bg-success-text text-white font-black py-3 rounded-xl shadow-lg shadow-success-text/10 hover:bg-success-text transition-colors text-sm flex items-center justify-center gap-1.5"
             >
               {isSavingBank ? 'Guardando...' : 'Guardar Configuración'}
             </button>
@@ -2632,15 +2632,15 @@ export const SaaSPlatformAdmin = () => {
         <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl my-8">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h3 className="text-2xl font-black text-slate-800 flex items-center gap-2">
-                <Settings className="text-indigo-600" size={24} />
+              <h3 className="text-2xl font-black text-text-1 flex items-center gap-2">
+                <Settings className="text-accent" size={24} />
                 Plan Gratuito y Prueba Global
               </h3>
-              <p className="text-xs text-slate-500 font-semibold mt-1">Configura las limitaciones y el periodo de prueba para nuevas cuentas.</p>
+              <p className="text-xs text-text-3 font-semibold mt-1">Configura las limitaciones y el periodo de prueba para nuevas cuentas.</p>
             </div>
-            <button 
+            <button
               onClick={() => setIsFreemiumConfigOpen(false)}
-              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+              className="p-1.5 hover:bg-page rounded-lg text-slate-400 hover:text-text-2 transition-colors"
             >
               <X size={20} />
             </button>
@@ -2648,27 +2648,27 @@ export const SaaSPlatformAdmin = () => {
 
           <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
             {/* Sección 1: Días de Prueba */}
-            <div className="bg-indigo-50/50 border border-indigo-100/80 rounded-2xl p-4">
-              <label className="text-sm font-bold text-slate-800 block mb-1.5 flex items-center gap-1.5">
+            <div className="bg-navy-50/50 border border-border/80 rounded-2xl p-4">
+              <label className="text-sm font-bold text-text-1 block mb-1.5 flex items-center gap-1.5">
                 <span>⏱</span> Días de Periodo de Prueba Global
               </label>
-              <p className="text-[11px] text-slate-500 font-medium mb-3">Establece la cantidad de días que las nuevas empresas registradas tendrán acceso ilimitado de prueba antes de bloquearse y degradarse a la versión gratuita básica.</p>
-              <input 
-                type="number" 
+              <p className="text-[11px] text-text-3 font-medium mb-3">Establece la cantidad de días que las nuevas empresas registradas tendrán acceso ilimitado de prueba antes de bloquearse y degradarse a la versión gratuita básica.</p>
+              <input
+                type="number"
                 min={0}
-                value={globalTrialDays} 
-                onChange={(e) => setGlobalTrialDays(Math.max(0, parseInt(e.target.value) || 0))} 
-                className="w-32 bg-white border border-slate-200 rounded-xl px-4 py-2 font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                value={globalTrialDays}
+                onChange={(e) => setGlobalTrialDays(Math.max(0, parseInt(e.target.value) || 0))}
+                className="w-32 bg-white border border-border rounded-xl px-4 py-2 font-black text-text-1 focus:outline-none focus:ring-2 focus-visible:ring-focus-ring"
               />
             </div>
 
             {/* Sección 2: Módulos del Sistema */}
             <div>
-              <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-3 pb-1 border-b border-slate-100 flex items-center gap-1.5">
+              <h4 className="text-sm font-black text-text-1 uppercase tracking-wider mb-3 pb-1 border-b border-border flex items-center gap-1.5">
                 <span>📦</span> Módulos Incluidos en el Plan Gratuito
               </h4>
-              <p className="text-[11px] text-slate-500 font-semibold mb-4">Selecciona cuáles de los siguientes módulos principales serán totalmente gratuitos para siempre (Freemium):</p>
-              
+              <p className="text-[11px] text-text-3 font-semibold mb-4">Selecciona cuáles de los siguientes módulos principales serán totalmente gratuitos para siempre (Freemium):</p>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { id: 'rrhh', label: 'Recursos Humanos', desc: 'Directorio y expediente básico' },
@@ -2684,23 +2684,23 @@ export const SaaSPlatformAdmin = () => {
                   { id: 'lft', label: 'Ley Federal del Trabajo', desc: 'Reglamento y tolerancias' },
                   { id: 'organizacion', label: 'Organigrama y SOP', desc: 'Procesos, Puestos y Wiki' }
                 ].map(mod => (
-                  <label 
+                  <label
                     key={mod.id}
                     className={`flex items-start gap-3 p-3.5 rounded-2xl border transition-all cursor-pointer select-none ${
                       freemiumModules.includes(mod.id)
-                        ? 'border-indigo-500 bg-indigo-50/30'
-                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                        ? 'border-accent bg-navy-50/30'
+                        : 'border-border hover:border-slate-300 hover:bg-page/50'
                     }`}
                   >
-                    <input 
+                    <input
                       type="checkbox"
                       checked={freemiumModules.includes(mod.id)}
                       onChange={() => toggleFreemiumModule(mod.id)}
-                      className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                      className="mt-0.5 rounded text-accent focus-visible:ring-focus-ring"
                     />
                     <div>
-                      <span className="text-xs font-bold text-slate-800 block">{mod.label}</span>
-                      <span className="text-[10px] text-slate-500 font-medium">{mod.desc}</span>
+                      <span className="text-xs font-bold text-text-1 block">{mod.label}</span>
+                      <span className="text-[10px] text-text-3 font-medium">{mod.desc}</span>
                     </div>
                   </label>
                 ))}
@@ -2709,42 +2709,42 @@ export const SaaSPlatformAdmin = () => {
 
             {/* Sección 3: Eventos y Funciones del Reloj Checador (Dialer) */}
             <div>
-              <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-3 pb-1 border-b border-slate-100 flex items-center gap-1.5">
+              <h4 className="text-sm font-black text-text-1 uppercase tracking-wider mb-3 pb-1 border-b border-border flex items-center gap-1.5">
                 <span>🕒</span> Eventos y Funciones del Reloj Checador (Dialer)
               </h4>
-              <p className="text-[11px] text-slate-500 font-semibold mb-4">Selecciona qué características y eventos del Dialer estarán desbloqueados en la versión gratuita:</p>
-              
+              <p className="text-[11px] text-text-3 font-semibold mb-4">Selecciona qué características y eventos del Dialer estarán desbloqueados en la versión gratuita:</p>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                 {CLOCK_FEATURE_TAGS_MATRIX.map(tag => {
                   const isChecked = tag.isMandatory || freemiumFeatures.includes(tag.key);
                   return (
-                    <label 
+                    <label
                       key={tag.key}
                       className={`flex items-start gap-3 p-3.5 rounded-2xl border transition-all select-none ${
                         tag.isMandatory
-                          ? 'border-emerald-300 bg-emerald-50/40 cursor-not-allowed'
+                          ? 'border-success-text/20 bg-success-bg/40 cursor-not-allowed'
                           : isChecked
-                          ? 'border-indigo-500 bg-indigo-50/30 cursor-pointer'
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 cursor-pointer'
+                          ? 'border-accent bg-navy-50/30 cursor-pointer'
+                          : 'border-border hover:border-slate-300 hover:bg-page/50 cursor-pointer'
                       }`}
                     >
-                      <input 
+                      <input
                         type="checkbox"
                         checked={isChecked}
                         disabled={tag.isMandatory}
                         onChange={() => !tag.isMandatory && toggleFreemiumFeature(tag.key)}
-                        className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                        className="mt-0.5 rounded text-accent focus-visible:ring-focus-ring"
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-800 block">{tag.name}</span>
+                          <span className="text-xs font-bold text-text-1 block">{tag.name}</span>
                           {tag.isMandatory ? (
-                            <span className="text-[9px] font-black px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded">Core</span>
+                            <span className="text-[9px] font-black px-1.5 py-0.5 bg-success-bg text-success-text rounded">Core</span>
                           ) : (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded uppercase">{tag.defaultTier}</span>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-page text-text-2 rounded uppercase">{tag.defaultTier}</span>
                           )}
                         </div>
-                        <span className="text-[10px] text-slate-500 font-medium block mt-0.5">{tag.description}</span>
+                        <span className="text-[10px] text-text-3 font-medium block mt-0.5">{tag.description}</span>
                         <code className="text-[9px] text-slate-400 font-mono mt-1 inline-block">Key: {tag.key}</code>
                       </div>
                     </label>
@@ -2755,11 +2755,11 @@ export const SaaSPlatformAdmin = () => {
 
             {/* Sección 4: Funciones Especiales Globales */}
             <div>
-              <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-3 pb-1 border-b border-slate-100 flex items-center gap-1.5">
+              <h4 className="text-sm font-black text-text-1 uppercase tracking-wider mb-3 pb-1 border-b border-border flex items-center gap-1.5">
                 <span>⚡</span> Funciones Especiales Globales
               </h4>
-              <p className="text-[11px] text-slate-500 font-semibold mb-4">Activa funcionalidades globales que se considerarán libres de costo en la versión gratuita:</p>
-              
+              <p className="text-[11px] text-text-3 font-semibold mb-4">Activa funcionalidades globales que se considerarán libres de costo en la versión gratuita:</p>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { id: 'voice_assistant', label: 'Asistente de Voz AI', desc: 'Creación de tareas mediante comandos de voz AI' },
@@ -2770,23 +2770,23 @@ export const SaaSPlatformAdmin = () => {
                   { id: 'system_backups', label: 'Respaldos JSON', desc: 'Exportación de la BD de empresa' },
                   { id: 'custom_logo', label: 'Logotipo Personalizado', desc: 'Establecer logotipo propio del workspace' }
                 ].map(feat => (
-                  <label 
+                  <label
                     key={feat.id}
                     className={`flex items-start gap-3 p-3.5 rounded-2xl border transition-all cursor-pointer select-none ${
                       freemiumFeatures.includes(feat.id)
-                        ? 'border-indigo-500 bg-indigo-50/30'
-                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                        ? 'border-accent bg-navy-50/30'
+                        : 'border-border hover:border-slate-300 hover:bg-page/50'
                     }`}
                   >
-                    <input 
+                    <input
                       type="checkbox"
                       checked={freemiumFeatures.includes(feat.id)}
                       onChange={() => toggleFreemiumFeature(feat.id)}
-                      className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                      className="mt-0.5 rounded text-accent focus-visible:ring-focus-ring"
                     />
                     <div>
-                      <span className="text-xs font-bold text-slate-800 block">{feat.label}</span>
-                      <span className="text-[10px] text-slate-500 font-medium">{feat.desc}</span>
+                      <span className="text-xs font-bold text-text-1 block">{feat.label}</span>
+                      <span className="text-[10px] text-text-3 font-medium">{feat.desc}</span>
                     </div>
                   </label>
                 ))}
@@ -2794,17 +2794,17 @@ export const SaaSPlatformAdmin = () => {
             </div>
           </div>
 
-          <div className="flex gap-3 mt-8 border-t border-slate-100 pt-6">
-            <button 
-              onClick={() => setIsFreemiumConfigOpen(false)} 
-              className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm"
+          <div className="flex gap-3 mt-8 border-t border-border pt-6">
+            <button
+              onClick={() => setIsFreemiumConfigOpen(false)}
+              className="flex-1 py-3 rounded-xl font-bold text-text-2 bg-page hover:bg-slate-200 transition-colors text-sm"
             >
               Cancelar
             </button>
-            <button 
+            <button
               onClick={handleSaveFreemiumConfig}
               disabled={isSavingFreemium}
-              className="flex-1 py-3 rounded-xl font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/25 transition-all text-sm flex items-center justify-center gap-2"
+              className="flex-1 py-3 rounded-xl font-black text-white bg-accent hover:bg-accent-hover shadow-lg shadow-accent/25 transition-all text-sm flex items-center justify-center gap-2"
             >
               {isSavingFreemium ? (
                 <>
@@ -2826,15 +2826,15 @@ export const SaaSPlatformAdmin = () => {
         <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl my-8">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                <Monitor className="text-indigo-600" size={22} />
+              <h3 className="text-xl font-black text-text-1 flex items-center gap-2">
+                <Monitor className="text-accent" size={22} />
                 Ajustes del Simulador Landing
               </h3>
-              <p className="text-xs text-slate-500 font-semibold mt-1">Configura las dimensiones y contenidos de la simulación en la página de inicio.</p>
+              <p className="text-xs text-text-3 font-semibold mt-1">Configura las dimensiones y contenidos de la simulación en la página de inicio.</p>
             </div>
-            <button 
+            <button
               onClick={() => setIsSimulatorConfigOpen(false)}
-              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer"
+              className="p-1.5 hover:bg-page rounded-lg text-slate-400 hover:text-text-2 transition-colors border-none bg-transparent cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -2842,57 +2842,57 @@ export const SaaSPlatformAdmin = () => {
 
           <div className="space-y-4 text-left">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5">Escala del Reloj (Porcentaje)</label>
+              <label className="text-xs font-bold text-text-2 block mb-1.5">Escala del Reloj (Porcentaje)</label>
               <div className="flex items-center gap-2">
-                <input 
-                  type="range" 
-                  min="50" 
-                  max="150" 
-                  value={simulatorConfig.scale} 
+                <input
+                  type="range"
+                  min="50"
+                  max="150"
+                  value={simulatorConfig.scale}
                   onChange={(e) => setSimulatorConfig({...simulatorConfig, scale: parseInt(e.target.value)})}
-                  className="flex-1 accent-indigo-650 cursor-pointer" 
+                  className="flex-1 accent-focus-ring cursor-pointer"
                 />
-                <span className="text-xs font-black text-slate-700 w-10 text-right">{simulatorConfig.scale}%</span>
+                <span className="text-xs font-black text-text-2 w-10 text-right">{simulatorConfig.scale}%</span>
               </div>
               <p className="text-[10px] text-slate-400 mt-1 font-medium">Permite reducir o agrandar el smartphone del simulador en la landing page para que encaje mejor.</p>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5">Nombre del Colaborador</label>
-              <input 
-                type="text" 
-                value={simulatorConfig.emp_name} 
+              <label className="text-xs font-bold text-text-2 block mb-1.5">Nombre del Colaborador</label>
+              <input
+                type="text"
+                value={simulatorConfig.emp_name}
                 onChange={(e) => setSimulatorConfig({...simulatorConfig, emp_name: e.target.value})}
                 placeholder="Francisco Vega"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all" 
+                className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-medium text-xs text-text-2 focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white transition-all"
               />
               <p className="text-[10px] text-slate-400 mt-1 font-medium">El nombre ficticio del empleado que se mostrará en el simulador.</p>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5">Nombre de la Sucursal</label>
-              <input 
-                type="text" 
-                value={simulatorConfig.store_name} 
+              <label className="text-xs font-bold text-text-2 block mb-1.5">Nombre de la Sucursal</label>
+              <input
+                type="text"
+                value={simulatorConfig.store_name}
                 onChange={(e) => setSimulatorConfig({...simulatorConfig, store_name: e.target.value})}
                 placeholder="Decorarte 365"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all" 
+                className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-medium text-xs text-text-2 focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white transition-all"
               />
               <p className="text-[10px] text-slate-400 mt-1 font-medium">El nombre de la sucursal ficticia que se mostrará en el simulador.</p>
             </div>
           </div>
 
-          <div className="flex gap-3 mt-8 border-t border-slate-100 pt-6">
-            <button 
-              onClick={() => setIsSimulatorConfigOpen(false)} 
-              className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm border-none cursor-pointer"
+          <div className="flex gap-3 mt-8 border-t border-border pt-6">
+            <button
+              onClick={() => setIsSimulatorConfigOpen(false)}
+              className="flex-1 py-3 rounded-xl font-bold text-text-2 bg-page hover:bg-slate-200 transition-colors text-sm border-none cursor-pointer"
             >
               Cancelar
             </button>
-            <button 
+            <button
               onClick={handleSaveSimulatorConfig}
               disabled={isSavingSimulator}
-              className="flex-1 py-3 rounded-xl font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/25 transition-all text-sm flex items-center justify-center gap-2 border-none cursor-pointer"
+              className="flex-1 py-3 rounded-xl font-black text-white bg-accent hover:bg-accent-hover shadow-lg shadow-accent/25 transition-all text-sm flex items-center justify-center gap-2 border-none cursor-pointer"
             >
               {isSavingSimulator ? (
                 <>
@@ -2914,32 +2914,32 @@ export const SaaSPlatformAdmin = () => {
         <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
           {createdTenantData ? (
             <div className="text-center">
-              <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100">
-                <ShieldCheck size={24} className="text-emerald-500" />
+              <div className="w-12 h-12 bg-success-bg text-success-text rounded-full flex items-center justify-center mx-auto mb-4 border border-success-text/20">
+                <ShieldCheck size={24} className="text-success-text" />
               </div>
-              <h3 className="text-2xl font-black text-slate-800 mb-2">¡Empresa Creada!</h3>
-              <p className="text-sm text-slate-500 mb-6">Guarda estas credenciales: <span className="font-bold text-slate-700">la contraseña sólo se muestra aquí</span> y no se puede volver a consultar (si se pierde, se resetea desde la ficha de la empresa).</p>
-              
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-3 mb-6 text-sm">
+              <h3 className="text-2xl font-black text-text-1 mb-2">¡Empresa Creada!</h3>
+              <p className="text-sm text-text-3 mb-6">Guarda estas credenciales: <span className="font-bold text-text-2">la contraseña sólo se muestra aquí</span> y no se puede volver a consultar (si se pierde, se resetea desde la ficha de la empresa).</p>
+
+              <div className="bg-page border border-border rounded-2xl p-4 text-left space-y-3 mb-6 text-sm">
                 <div>
                   <span className="block text-xs font-bold text-slate-400 uppercase">Empresa</span>
-                  <span className="font-bold text-slate-800">{createdTenantData.tenant.name}</span>
+                  <span className="font-bold text-text-1">{createdTenantData.tenant.name}</span>
                 </div>
                 <div>
                   <span className="block text-xs font-bold text-slate-400 uppercase">Subdominio / Slug</span>
-                  <span className="font-mono text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">{createdTenantData.tenant.subdomain}</span>
+                  <span className="font-mono text-xs font-bold text-accent bg-navy-50 px-2 py-1 rounded">{createdTenantData.tenant.subdomain}</span>
                 </div>
                 <div>
                   <span className="block text-xs font-bold text-slate-400 uppercase">Usuario Administrador</span>
-                  <span className="font-bold text-slate-800">{createdTenantData.user.email}</span>
+                  <span className="font-bold text-text-1">{createdTenantData.user.email}</span>
                 </div>
                 <div>
                   <span className="block text-xs font-bold text-slate-400 uppercase">Contraseña</span>
-                  <span className="font-mono font-bold text-slate-800">{createdTenantData.password}</span>
+                  <span className="font-mono font-bold text-text-1">{createdTenantData.password}</span>
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 onClick={() => {
                   setIsNewTenantModalOpen(false);
                   setCreatedTenantData(null);
@@ -2952,15 +2952,15 @@ export const SaaSPlatformAdmin = () => {
             </div>
           ) : (
             <>
-              <h3 className="text-2xl font-black text-slate-800 mb-6">Simular Nueva Empresa</h3>
+              <h3 className="text-2xl font-black text-text-1 mb-6">Simular Nueva Empresa</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-bold text-slate-700 block mb-1">Nombre de la Empresa</label>
-                  <input type="text" value={newTenantName} onChange={(e) => setNewTenantName(e.target.value)} placeholder="Ej. Constructora del Norte" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-800" />
+                  <label className="text-sm font-bold text-text-2 block mb-1">Nombre de la Empresa</label>
+                  <input type="text" value={newTenantName} onChange={(e) => setNewTenantName(e.target.value)} placeholder="Ej. Constructora del Norte" className="w-full bg-page border border-border rounded-xl px-4 py-2 font-bold text-text-1" />
                 </div>
                 <div>
-                  <label className="text-sm font-bold text-slate-700 block mb-1">Plan a Contratar</label>
-                  <select value={newTenantPlan} onChange={(e) => setNewTenantPlan(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-800">
+                  <label className="text-sm font-bold text-text-2 block mb-1">Plan a Contratar</label>
+                  <select value={newTenantPlan} onChange={(e) => setNewTenantPlan(e.target.value)} className="w-full bg-page border border-border rounded-xl px-4 py-2 font-bold text-text-1">
                     <option value="Freemium">Freemium (Gratis)</option>
                     <option value="PRO">PRO</option>
                     <option value="Enterprise">Enterprise</option>
@@ -2968,8 +2968,8 @@ export const SaaSPlatformAdmin = () => {
                 </div>
               </div>
               <div className="flex gap-4 mt-8">
-                <button onClick={() => { setIsNewTenantModalOpen(false); setNewTenantName(''); }} className="flex-1 bg-slate-100 text-slate-700 font-black py-3 rounded-xl hover:bg-slate-200 transition-colors">Cancelar</button>
-                <button onClick={handleCreateTenant} disabled={isLoading} className="flex-1 bg-blue-600 text-white font-black py-3 rounded-xl shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                <button onClick={() => { setIsNewTenantModalOpen(false); setNewTenantName(''); }} className="flex-1 bg-page text-text-2 font-black py-3 rounded-xl hover:bg-slate-200 transition-colors">Cancelar</button>
+                <button onClick={handleCreateTenant} disabled={isLoading} className="flex-1 bg-accent text-white font-black py-3 rounded-xl shadow-lg hover:bg-accent-hover transition-colors flex items-center justify-center gap-2">
                   {isLoading ? 'Creando...' : 'Crear Inquilino'}
                 </button>
               </div>
@@ -2983,18 +2983,18 @@ export const SaaSPlatformAdmin = () => {
     {isDetailOpen && (
       <div className="fixed inset-0 z-50 overflow-hidden">
         {/* Backdrop */}
-        <div 
+        <div
           className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
           onClick={() => setIsDetailOpen(false)}
         />
-        
+
         <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
-          <div className="pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl transform bg-white shadow-2xl transition-all duration-300 ease-in-out border-l border-slate-200 flex flex-col h-full animate-in slide-in-from-right duration-300">
+          <div className="pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl transform bg-white shadow-2xl transition-all duration-300 ease-in-out border-l border-border flex flex-col h-full animate-in slide-in-from-right duration-300">
             {/* Header del Slide-over */}
             <div className="bg-slate-900 px-6 py-6 text-white flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-slate-800 rounded-xl border border-slate-700">
-                  <Building2 size={24} className="text-indigo-400" />
+                  <Building2 size={24} className="text-navy-300" />
                 </div>
                 <div>
                   <h2 className="text-lg font-black leading-tight truncate max-w-[280px]">
@@ -3007,15 +3007,15 @@ export const SaaSPlatformAdmin = () => {
               </div>
               <div className="flex items-center gap-2">
                 {!isDetailLoading && (
-                  <button 
+                  <button
                     onClick={() => setIsEditing(!isEditing)}
                     title={isEditing ? "Ver Detalles" : "Editar Datos"}
                     className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
                   >
-                    <Settings size={18} className={isEditing ? "text-indigo-400 animate-spin-slow" : ""} />
+                    <Settings size={18} className={isEditing ? "text-navy-300 animate-spin-slow" : ""} />
                   </button>
                 )}
-                <button 
+                <button
                   onClick={() => setIsDetailOpen(false)}
                   className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
                 >
@@ -3028,7 +3028,7 @@ export const SaaSPlatformAdmin = () => {
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {isDetailLoading ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                  <Loader2 className="animate-spin mb-3 text-indigo-600" size={32} />
+                  <Loader2 className="animate-spin mb-3 text-accent" size={32} />
                   <p className="text-sm font-bold">Cargando información del inquilino...</p>
                 </div>
               ) : (
@@ -3036,26 +3036,26 @@ export const SaaSPlatformAdmin = () => {
                   {isEditing ? (
                     <div className="space-y-5 animate-in fade-in duration-200">
                       {/* Formulario de Edición */}
-                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                      <div className="bg-page border border-border rounded-2xl p-5 space-y-4">
                         <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Datos de la Empresa</h3>
-                        
+
                         <div>
-                          <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Nombre de la Empresa</label>
-                          <input 
-                            type="text" 
-                            value={editTenantName} 
-                            onChange={(e) => setEditTenantName(e.target.value)} 
-                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none text-slate-800 focus:border-indigo-500 transition-colors"
+                          <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Nombre de la Empresa</label>
+                          <input
+                            type="text"
+                            value={editTenantName}
+                            onChange={(e) => setEditTenantName(e.target.value)}
+                            className="w-full bg-white border border-border rounded-xl px-3 py-2 text-sm font-bold outline-none text-text-1 focus:border-accent transition-colors"
                           />
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Plan</label>
-                            <select 
-                              value={editTenantPlan} 
-                              onChange={(e) => setEditTenantPlan(e.target.value)} 
-                              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none text-slate-800 focus:border-indigo-500 transition-colors"
+                            <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Plan</label>
+                            <select
+                              value={editTenantPlan}
+                              onChange={(e) => setEditTenantPlan(e.target.value)}
+                              className="w-full bg-white border border-border rounded-xl px-3 py-2 text-sm font-bold outline-none text-text-1 focus:border-accent transition-colors"
                             >
                               <option value="freemium">Freemium</option>
                               <option value="pro">Pro</option>
@@ -3063,71 +3063,71 @@ export const SaaSPlatformAdmin = () => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Límite Usuarios</label>
-                            <input 
-                              type="number" 
-                              value={editMaxUsers} 
-                              onChange={(e) => setEditMaxUsers(Number(e.target.value))} 
-                              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none text-slate-800 focus:border-indigo-500 transition-colors"
+                            <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Límite Usuarios</label>
+                            <input
+                              type="number"
+                              value={editMaxUsers}
+                              onChange={(e) => setEditMaxUsers(Number(e.target.value))}
+                              className="w-full bg-white border border-border rounded-xl px-3 py-2 text-sm font-bold outline-none text-text-1 focus:border-accent transition-colors"
                             />
                           </div>
                         </div>
                       </div>
 
-                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                      <div className="bg-page border border-border rounded-2xl p-5 space-y-4">
                         <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Datos del Administrador</h3>
-                        
+
                         <div>
-                          <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Nombre Completo</label>
-                          <input 
-                            type="text" 
-                            value={editAdminName} 
-                            onChange={(e) => setEditAdminName(e.target.value)} 
-                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none text-slate-800 focus:border-indigo-500 transition-colors"
+                          <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Nombre Completo</label>
+                          <input
+                            type="text"
+                            value={editAdminName}
+                            onChange={(e) => setEditAdminName(e.target.value)}
+                            className="w-full bg-white border border-border rounded-xl px-3 py-2 text-sm font-bold outline-none text-text-1 focus:border-accent transition-colors"
                           />
                         </div>
 
                         <div>
-                           <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Correo de Acceso</label>
-                           <input 
-                             type="email" 
-                             value={editAdminEmail} 
-                             onChange={(e) => setEditAdminEmail(e.target.value)} 
-                             className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none text-slate-800 focus:border-indigo-500 transition-colors focus:ring-0"
+                           <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Correo de Acceso</label>
+                           <input
+                             type="email"
+                             value={editAdminEmail}
+                             onChange={(e) => setEditAdminEmail(e.target.value)}
+                             className="w-full bg-white border border-border rounded-xl px-3 py-2 text-sm font-bold outline-none text-text-1 focus:border-accent transition-colors focus:ring-0"
                            />
                          </div>
 
                          <div>
-                           <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Teléfono WhatsApp</label>
-                           <div className="flex border border-slate-200 rounded-xl overflow-hidden focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 bg-white">
-                             <div className="bg-slate-50 px-3 py-2 text-xs text-slate-500 font-bold border-r border-slate-200 flex items-center gap-1.5 select-none">
+                           <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Teléfono WhatsApp</label>
+                           <div className="flex border border-border rounded-xl overflow-hidden focus-within:ring-1 focus-within:ring-focus-ring focus-within:border-accent bg-white">
+                             <div className="bg-page px-3 py-2 text-xs text-text-3 font-bold border-r border-border flex items-center gap-1.5 select-none">
                                <span>🇲🇽</span>
                                <span>+52</span>
                              </div>
-                             <input 
-                               type="text" 
-                               value={formatPhoneVisual(editAdminPhone)} 
-                               onChange={(e) => setEditAdminPhone(getCleanDbPhone(e.target.value))} 
-                               className="w-full px-3 py-2 text-sm font-bold outline-none text-slate-800 font-mono"
+                             <input
+                               type="text"
+                               value={formatPhoneVisual(editAdminPhone)}
+                               onChange={(e) => setEditAdminPhone(getCleanDbPhone(e.target.value))}
+                               className="w-full px-3 py-2 text-sm font-bold outline-none text-text-1 font-mono"
                                placeholder="10 dígitos (ej: 55 1234 5678)"
                              />
                            </div>
                          </div>
 
-                        <div className="border-t border-slate-200 pt-4 mt-2">
-                          <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Contraseña Temporal (Opcional)</label>
+                        <div className="border-t border-border pt-4 mt-2">
+                          <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Contraseña Temporal (Opcional)</label>
                           <div className="flex gap-2">
-                            <input 
-                              type="text" 
-                              value={editAdminPassword} 
-                              onChange={(e) => setEditAdminPassword(e.target.value)} 
+                            <input
+                              type="text"
+                              value={editAdminPassword}
+                              onChange={(e) => setEditAdminPassword(e.target.value)}
                               placeholder="Dejar vacío para mantener actual"
-                              className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold outline-none text-slate-800 focus:border-indigo-500 transition-colors"
+                              className="flex-1 bg-white border border-border rounded-xl px-3 py-2 text-xs font-bold outline-none text-text-1 focus:border-accent transition-colors"
                             />
-                            <button 
+                            <button
                               type="button"
                               onClick={generateTemporaryPassword}
-                              className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-black px-3 py-2 rounded-xl transition-colors border border-indigo-150"
+                              className="bg-navy-50 hover:bg-accent-soft text-accent text-xs font-black px-3 py-2 rounded-xl transition-colors border border-border"
                             >
                               Generar
                             </button>
@@ -3136,16 +3136,16 @@ export const SaaSPlatformAdmin = () => {
                       </div>
 
                       <div className="flex gap-3 pt-4">
-                        <button 
-                          onClick={() => setIsEditing(false)} 
-                          className="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors text-xs"
+                        <button
+                          onClick={() => setIsEditing(false)}
+                          className="flex-1 bg-page text-text-2 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors text-xs"
                         >
                           Cancelar
                         </button>
-                        <button 
-                          onClick={handleSaveTenantEdit} 
+                        <button
+                          onClick={handleSaveTenantEdit}
                           disabled={isSavingEdit}
-                          className="flex-1 bg-indigo-600 text-white font-black py-3 rounded-xl shadow-lg shadow-indigo-500/10 hover:bg-indigo-700 transition-colors text-xs flex items-center justify-center gap-1.5"
+                          className="flex-1 bg-accent text-white font-black py-3 rounded-xl shadow-lg shadow-accent/10 hover:bg-accent-hover transition-colors text-xs flex items-center justify-center gap-1.5"
                         >
                           {isSavingEdit ? 'Guardando...' : 'Guardar Cambios'}
                         </button>
@@ -3155,15 +3155,15 @@ export const SaaSPlatformAdmin = () => {
                     <>
                       {/* Banner de Suspensión si no está activo */}
                       {!tenantDetail?.tenant?.is_active && (
-                        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-800 flex items-start gap-3">
-                          <ShieldX size={20} className="shrink-0 text-rose-500 mt-0.5" />
+                        <div className="p-4 bg-danger-bg border border-danger-text/20 rounded-2xl text-danger-text flex items-start gap-3">
+                          <ShieldX size={20} className="shrink-0 text-danger-text mt-0.5" />
                           <div>
                             <p className="text-sm font-extrabold leading-tight">Empresa Suspendida</p>
-                            <p className="text-xs mt-1 text-rose-700/90 font-bold">
+                            <p className="text-xs mt-1 text-danger-text/90 font-bold">
                               Motivo: <span className="underline">{tenantDetail?.tenant?.suspension_reason || 'No especificado'}</span>
                             </p>
                             {tenantDetail?.tenant?.suspended_at && (
-                              <p className="text-[10px] text-rose-500 mt-2 font-medium">
+                              <p className="text-[10px] text-danger-text mt-2 font-medium">
                                 Suspendida el {new Date(tenantDetail.tenant.suspended_at).toLocaleString()}
                               </p>
                             )}
@@ -3172,45 +3172,45 @@ export const SaaSPlatformAdmin = () => {
                       )}
 
                       {/* General Info Card */}
-                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3.5">
+                      <div className="bg-page border border-border rounded-2xl p-5 space-y-3.5">
                         <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Información del Plan</h3>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="font-semibold text-slate-500">Plan Contratado:</span>
+                          <span className="font-semibold text-text-3">Plan Contratado:</span>
                           <span className={`px-2.5 py-1 rounded-md text-xs font-black ${
-                            tenantDetail?.tenant?.plan?.toLowerCase() === 'pro' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                            tenantDetail?.tenant?.plan?.toLowerCase() === 'enterprise' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
-                            'bg-slate-100 text-slate-700 border border-slate-200'
+                            tenantDetail?.tenant?.plan?.toLowerCase() === 'pro' ? 'bg-warning-bg text-warning-text border border-warning-text/20' :
+                            tenantDetail?.tenant?.plan?.toLowerCase() === 'enterprise' ? 'bg-accent-soft text-accent border border-border' :
+                            'bg-page text-text-2 border border-border'
                           }`}>
                             {tenantDetail?.tenant?.plan}
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="font-semibold text-slate-500">Costo Mensual Actual:</span>
-                          <span className="font-black text-indigo-600 bg-indigo-50 border border-indigo-150 px-2.5 py-1 rounded-lg text-sm">
-                            ${tenantDetail?.tenant?.monthly_price ?? 0} <span className="text-[10px] text-slate-500 font-semibold">/mes</span>
+                          <span className="font-semibold text-text-3">Costo Mensual Actual:</span>
+                          <span className="font-black text-accent bg-navy-50 border border-border px-2.5 py-1 rounded-lg text-sm">
+                            ${tenantDetail?.tenant?.monthly_price ?? 0} <span className="text-[10px] text-text-3 font-semibold">/mes</span>
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="font-semibold text-slate-500">Estado de Facturación:</span>
+                          <span className="font-semibold text-text-3">Estado de Facturación:</span>
                           <span className={`px-2 py-0.5 rounded text-xs font-bold border ${estadoDeCobranza(tenantDetail?.tenant).clases}`}>
                             {estadoDeCobranza(tenantDetail?.tenant).etiqueta}
                           </span>
                         </div>
                         {estadoDeCobranza(tenantDetail?.tenant).detalle && (
-                          <p className="text-[11px] text-slate-500 font-medium -mt-1.5">
+                          <p className="text-[11px] text-text-3 font-medium -mt-1.5">
                             {estadoDeCobranza(tenantDetail?.tenant).detalle}
                           </p>
                         )}
                         {tenantDetail?.tenant?.trial_ends_at && (
-                          <div className="flex justify-between items-center text-sm border-t border-slate-200/50 pt-2">
-                            <span className="font-semibold text-slate-500">Periodo de Prueba Finaliza:</span>
-                            <span className="font-bold text-slate-700">{new Date(tenantDetail.tenant.trial_ends_at).toLocaleDateString()}</span>
+                          <div className="flex justify-between items-center text-sm border-t border-border/50 pt-2">
+                            <span className="font-semibold text-text-3">Periodo de Prueba Finaliza:</span>
+                            <span className="font-bold text-text-2">{new Date(tenantDetail.tenant.trial_ends_at).toLocaleDateString()}</span>
                           </div>
                         )}
-                        <div className="flex justify-between items-center text-sm border-t border-slate-200/50 pt-2">
-                          <span className="font-semibold text-slate-500">Próximo Cobro / Fin Ciclo:</span>
+                        <div className="flex justify-between items-center text-sm border-t border-border/50 pt-2">
+                          <span className="font-semibold text-text-3">Próximo Cobro / Fin Ciclo:</span>
                           {tenantDetail?.tenant?.current_period_end ? (
-                            <span className="font-bold text-slate-700">{new Date(tenantDetail.tenant.current_period_end).toLocaleDateString()}</span>
+                            <span className="font-bold text-text-2">{new Date(tenantDetail.tenant.current_period_end).toLocaleDateString()}</span>
                           ) : (
                             // Callarlo era peor que decirlo: sin fecha de corte, el barrido de mora
                             // (suscripciones:revisar-vencidas) no revisa a esta empresa nunca.
@@ -3218,48 +3218,48 @@ export const SaaSPlatformAdmin = () => {
                           )}
                         </div>
                         {tenantDetail?.tenant?.payment_warning_sent_at && (
-                          <div className="flex justify-between items-center text-sm border-t border-slate-200/50 pt-2">
-                            <span className="font-semibold text-slate-500">Aviso de mora registrado:</span>
-                            <span className="font-bold text-amber-700">{new Date(tenantDetail.tenant.payment_warning_sent_at).toLocaleDateString()}</span>
+                          <div className="flex justify-between items-center text-sm border-t border-border/50 pt-2">
+                            <span className="font-semibold text-text-3">Aviso de mora registrado:</span>
+                            <span className="font-bold text-warning-text">{new Date(tenantDetail.tenant.payment_warning_sent_at).toLocaleDateString()}</span>
                           </div>
                         )}
                       </div>
 
                       {/* Historial de Suscripciones y Evolución de Plan (Snapshotting Inmutable) */}
-                      <div className="border border-indigo-200 bg-indigo-50/10 rounded-2xl p-5 space-y-4">
+                      <div className="border border-border bg-navy-50/10 rounded-2xl p-5 space-y-4">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-xs font-black uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+                          <h3 className="text-xs font-black uppercase tracking-wider text-brand-dark flex items-center gap-1.5">
                             <span>📈</span> Historial y Evolución de Plan
                           </h3>
-                          <span className="text-[10px] font-black text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
+                          <span className="text-[10px] font-black text-accent bg-accent-soft px-2 py-0.5 rounded">
                             {tenantDetail?.subscription_history?.length || 0} registros
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 font-medium">
+                        <p className="text-[11px] text-text-3 font-medium">
                           Registro inmutable de la evolución de la empresa, pagos acordados y módulos contratados a lo largo del tiempo:
                         </p>
 
-                        <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-indigo-200">
+                        <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-accent-soft">
                           {(tenantDetail?.subscription_history || []).map((hist: any, index: number) => (
                             <div key={hist.id || index} className="relative pl-7 text-xs">
                               <div className={`absolute left-1.5 top-1.5 w-3 h-3 rounded-full border-2 bg-white ${
-                                hist.status === 'active' ? 'border-emerald-500 bg-emerald-500' : 'border-indigo-400'
+                                hist.status === 'active' ? 'border-success-text bg-success-icon' : 'border-navy-300'
                               }`} />
-                              <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs space-y-1.5">
+                              <div className="bg-white border border-border rounded-xl p-3 shadow-xs space-y-1.5">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="font-black text-slate-900">{hist.plan_name}</span>
-                                    <span className="font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-[10px]">
+                                    <span className="font-black text-text-1">{hist.plan_name}</span>
+                                    <span className="font-extrabold text-accent bg-navy-50 px-2 py-0.5 rounded text-[10px]">
                                       ${hist.monthly_price} /mes
                                     </span>
                                   </div>
                                   <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                                    hist.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                                    hist.status === 'active' ? 'bg-success-bg text-success-text' : 'bg-page text-text-3'
                                   }`}>
                                     {hist.status === 'active' ? 'Vigente Actual' : 'Histórico'}
                                   </span>
                                 </div>
-                                <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
+                                <div className="flex flex-wrap gap-2 text-[11px] text-text-2">
                                   <span>📦 <strong>{hist.modules_count}</strong> Módulos</span>
                                   <span>•</span>
                                   <span>👥 <strong>{hist.max_users}</strong> Usuarios Max</span>
@@ -3267,7 +3267,7 @@ export const SaaSPlatformAdmin = () => {
                                   <span className="text-slate-400 font-mono text-[10px]">{hist.date_formatted}</span>
                                 </div>
                                 {hist.change_reason && (
-                                  <div className="text-[10px] text-slate-500 italic bg-slate-50 p-1.5 rounded border border-slate-150">
+                                  <div className="text-[10px] text-text-3 italic bg-page p-1.5 rounded border border-border">
                                     Motivo: {hist.change_reason}
                                   </div>
                                 )}
@@ -3278,23 +3278,23 @@ export const SaaSPlatformAdmin = () => {
                       </div>
 
                       {/* Consumo y Recursos */}
-                      <div className="border border-slate-200 rounded-2xl p-5 space-y-4">
+                      <div className="border border-border rounded-2xl p-5 space-y-4">
                         <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Consumo de Recursos y Transacciones BD</h3>
-                        
+
                         {/* Barra de usuarios */}
                         <div>
-                          <div className="flex justify-between text-xs font-bold mb-1.5 text-slate-600">
+                          <div className="flex justify-between text-xs font-bold mb-1.5 text-text-2">
                             <span>Usuarios Creados</span>
                             <span>{tenantDetail?.metrics?.users_count} / {tenantDetail?.tenant?.max_users}</span>
                           </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2">
-                            <div 
+                          <div className="w-full bg-page rounded-full h-2">
+                            <div
                               className={`h-2 rounded-full transition-all duration-500 ${
-                                (tenantDetail?.metrics?.users_count / tenantDetail?.tenant?.max_users) >= 0.9 
-                                  ? 'bg-rose-500' 
-                                  : (tenantDetail?.metrics?.users_count / tenantDetail?.tenant?.max_users) >= 0.7 
-                                  ? 'bg-amber-500' 
-                                  : 'bg-indigo-600'
+                                (tenantDetail?.metrics?.users_count / tenantDetail?.tenant?.max_users) >= 0.9
+                                  ? 'bg-danger-icon'
+                                  : (tenantDetail?.metrics?.users_count / tenantDetail?.tenant?.max_users) >= 0.7
+                                  ? 'bg-warning-icon'
+                                  : 'bg-accent'
                               }`}
                               style={{ width: `${Math.min(100, (tenantDetail?.metrics?.users_count / tenantDetail?.tenant?.max_users) * 100)}%` }}
                             ></div>
@@ -3302,45 +3302,45 @@ export const SaaSPlatformAdmin = () => {
                         </div>
 
                         {/* Volumen de Transacciones */}
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+                        <div className="bg-page border border-border rounded-xl p-3.5 space-y-2">
                           <div className="flex justify-between items-center text-xs">
-                            <span className="font-extrabold text-slate-700 flex items-center gap-1">
+                            <span className="font-extrabold text-text-2 flex items-center gap-1">
                               ⚡ Throughput BD (Últimos 30 días):
                             </span>
-                            <span className="font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                            <span className="font-black text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-md">
                               {tenantDetail?.metrics?.tx_daily_avg ?? 0} Tx / día
                             </span>
                           </div>
-                          <div className="text-[11px] text-slate-500 flex justify-between font-medium">
+                          <div className="text-[11px] text-text-3 flex justify-between font-medium">
                             <span>Total 30 Días: <strong>{tenantDetail?.metrics?.tx_30_days ?? 0}</strong> operaciones</span>
                             <span>Histórico Total: <strong>{tenantDetail?.metrics?.tx_total ?? 0}</strong> operaciones</span>
                           </div>
                         </div>
 
                         {/* Vacantes */}
-                        <div className="flex justify-between items-center text-sm border-t border-slate-100 pt-3">
-                          <span className="font-semibold text-slate-500">Vacantes Publicadas:</span>
-                          <span className="font-black text-slate-800 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">{tenantDetail?.metrics?.vacancies_count}</span>
+                        <div className="flex justify-between items-center text-sm border-t border-border pt-3">
+                          <span className="font-semibold text-text-3">Vacantes Publicadas:</span>
+                          <span className="font-black text-text-1 bg-page px-3 py-1 rounded-lg border border-border">{tenantDetail?.metrics?.vacancies_count}</span>
                         </div>
                       </div>
 
                       {/* Módulos y Funciones Habilitadas (Tenant Overrides) */}
-                      <div className="border border-indigo-200 bg-indigo-50/20 rounded-2xl p-5 space-y-4">
+                      <div className="border border-border bg-navy-50/20 rounded-2xl p-5 space-y-4">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-xs font-black uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                          <h3 className="text-xs font-black uppercase tracking-wider text-brand-dark flex items-center gap-1.5">
                             <span>🎛️</span> Módulos y Funciones Habilitadas
                           </h3>
-                          <span className="text-[9px] font-black text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded uppercase">
+                          <span className="text-[9px] font-black text-accent bg-accent-soft px-2 py-0.5 rounded uppercase">
                             Empresa #{tenantDetail?.tenant?.id}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 font-medium">
+                        <p className="text-[11px] text-text-3 font-medium">
                           Personaliza los módulos y las funciones contratadas o permitidas específicamente para esta empresa:
                         </p>
 
                         {/* Módulos Principales */}
                         <div className="space-y-2">
-                          <h4 className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wide">📦 Módulos de Sistema</h4>
+                          <h4 className="text-[11px] font-extrabold text-text-2 uppercase tracking-wide">📦 Módulos de Sistema</h4>
                           <div className="grid grid-cols-2 gap-2">
                             {[
                               { id: 'rrhh', label: 'Recursos Humanos' },
@@ -3356,12 +3356,12 @@ export const SaaSPlatformAdmin = () => {
                               { id: 'lft', label: 'Ley Federal del Trabajo' },
                               { id: 'organizacion', label: 'Organigrama y SOP' }
                             ].map(mod => (
-                              <label key={mod.id} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer text-xs font-bold text-slate-800 hover:bg-slate-50">
-                                <input 
+                              <label key={mod.id} className="flex items-center gap-2 p-2 bg-white border border-border rounded-xl cursor-pointer text-xs font-bold text-text-1 hover:bg-page">
+                                <input
                                   type="checkbox"
                                   checked={tenantAllowedModules.includes(mod.id)}
                                   onChange={() => toggleTenantModule(mod.id)}
-                                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                                  className="rounded text-accent focus-visible:ring-focus-ring"
                                 />
                                 <span className="truncate">{mod.label}</span>
                               </label>
@@ -3370,24 +3370,24 @@ export const SaaSPlatformAdmin = () => {
                         </div>
 
                         {/* Eventos del Reloj Checador (Dialer) */}
-                        <div className="space-y-2 pt-2 border-t border-indigo-100">
-                          <h4 className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wide">🕒 Funciones del Dialer (Reloj)</h4>
+                        <div className="space-y-2 pt-2 border-t border-border">
+                          <h4 className="text-[11px] font-extrabold text-text-2 uppercase tracking-wide">🕒 Funciones del Dialer (Reloj)</h4>
                           <div className="grid grid-cols-1 gap-2 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
                             {CLOCK_FEATURE_TAGS_MATRIX.map(tag => {
                               const isChecked = tag.isMandatory || tenantAllowedFeatures.includes(tag.key);
                               return (
-                                <label key={tag.key} className={`flex items-start gap-2 p-2 bg-white border rounded-xl text-xs select-none ${tag.isMandatory ? 'border-emerald-200 bg-emerald-50/30' : isChecked ? 'border-indigo-400 bg-indigo-50/40 cursor-pointer' : 'border-slate-200 hover:bg-slate-50 cursor-pointer'}`}>
-                                  <input 
+                                <label key={tag.key} className={`flex items-start gap-2 p-2 bg-white border rounded-xl text-xs select-none ${tag.isMandatory ? 'border-success-text/20 bg-success-bg/30' : isChecked ? 'border-navy-300 bg-navy-50/40 cursor-pointer' : 'border-border hover:bg-page cursor-pointer'}`}>
+                                  <input
                                     type="checkbox"
                                     checked={isChecked}
                                     disabled={tag.isMandatory}
                                     onChange={() => !tag.isMandatory && toggleTenantFeature(tag.key)}
-                                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                                    className="mt-0.5 rounded text-accent focus-visible:ring-focus-ring"
                                   />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
-                                      <span className="font-bold text-slate-800 truncate">{tag.name}</span>
-                                      <span className="text-[8px] font-black px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded uppercase">{tag.defaultTier}</span>
+                                      <span className="font-bold text-text-1 truncate">{tag.name}</span>
+                                      <span className="text-[8px] font-black px-1.5 py-0.2 bg-page text-text-2 rounded uppercase">{tag.defaultTier}</span>
                                     </div>
                                     <p className="text-[10px] text-slate-400 font-normal leading-tight line-clamp-1">{tag.description}</p>
                                   </div>
@@ -3398,8 +3398,8 @@ export const SaaSPlatformAdmin = () => {
                         </div>
 
                         {/* Funciones Especiales Globales */}
-                        <div className="space-y-2 pt-2 border-t border-indigo-100">
-                          <h4 className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wide">⚡ Funciones Especiales</h4>
+                        <div className="space-y-2 pt-2 border-t border-border">
+                          <h4 className="text-[11px] font-extrabold text-text-2 uppercase tracking-wide">⚡ Funciones Especiales</h4>
                           <div className="grid grid-cols-2 gap-2">
                             {[
                               { id: 'voice_assistant', label: 'Asistente Voz AI' },
@@ -3410,12 +3410,12 @@ export const SaaSPlatformAdmin = () => {
                               { id: 'system_backups', label: 'Respaldos JSON' },
                               { id: 'custom_logo', label: 'Logo Propio' }
                             ].map(feat => (
-                              <label key={feat.id} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer text-xs font-bold text-slate-800 hover:bg-slate-50">
-                                <input 
+                              <label key={feat.id} className="flex items-center gap-2 p-2 bg-white border border-border rounded-xl cursor-pointer text-xs font-bold text-text-1 hover:bg-page">
+                                <input
                                   type="checkbox"
                                   checked={tenantAllowedFeatures.includes(feat.id)}
                                   onChange={() => toggleTenantFeature(feat.id)}
-                                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                                  className="rounded text-accent focus-visible:ring-focus-ring"
                                 />
                                 <span className="truncate">{feat.label}</span>
                               </label>
@@ -3424,10 +3424,10 @@ export const SaaSPlatformAdmin = () => {
                         </div>
 
                         {/* Botón de Guardado para la Empresa */}
-                        <button 
+                        <button
                           onClick={handleSaveTenantFeatures}
                           disabled={isSavingTenantFeatures}
-                          className="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 rounded-xl shadow-md transition-all text-xs flex items-center justify-center gap-2 cursor-pointer border-none"
+                          className="w-full mt-3 bg-accent hover:bg-accent-hover text-white font-black py-2.5 rounded-xl shadow-md transition-all text-xs flex items-center justify-center gap-2 cursor-pointer border-none"
                         >
                           {isSavingTenantFeatures ? (
                             <>
@@ -3441,57 +3441,57 @@ export const SaaSPlatformAdmin = () => {
                       </div>
 
                       {/* Accesos Administrativos */}
-                      <div className="border border-slate-200 rounded-2xl p-5 space-y-4">
+                      <div className="border border-border rounded-2xl p-5 space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Acceso Administrador</h3>
-                          <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Owner</span>
+                          <span className="text-[10px] font-black text-accent bg-navy-50 px-2 py-0.5 rounded">Owner</span>
                         </div>
                         {tenantDetail?.admin ? (
                           <div className="space-y-3">
                             <div className="text-sm">
                               <span className="block text-[10px] font-bold text-slate-400 uppercase">Nombre Completo</span>
-                              <span className="font-extrabold text-slate-800">{tenantDetail.admin.name}</span>
+                              <span className="font-extrabold text-text-1">{tenantDetail.admin.name}</span>
                             </div>
                             <div className="text-sm">
                               <span className="block text-[10px] font-bold text-slate-400 uppercase">Correo Electrónico</span>
-                              <span className="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded select-all break-all">{tenantDetail.admin.email}</span>
+                              <span className="font-mono font-bold text-accent bg-navy-50 px-2 py-1 rounded select-all break-all">{tenantDetail.admin.email}</span>
                             </div>
                             <div className="text-sm">
                               <span className="block text-[10px] font-bold text-slate-400 uppercase">Teléfono WhatsApp</span>
-                              <span className="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded select-all break-all">{tenantDetail.admin.phone || 'No registrado'}</span>
+                              <span className="font-mono font-bold text-accent bg-navy-50 px-2 py-1 rounded select-all break-all">{tenantDetail.admin.phone || 'No registrado'}</span>
                             </div>
 
                             {/* Modificar Contraseña */}
-                            <div className="border-t border-slate-150 pt-3 mt-2">
+                            <div className="border-t border-border pt-3 mt-2">
                               {!isResetFormVisible ? (
-                                <button 
+                                <button
                                   onClick={() => setIsResetFormVisible(true)}
-                                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1"
+                                  className="text-xs font-bold text-accent hover:text-navy-800 hover:underline flex items-center gap-1"
                                 >
                                   <KeyRound size={12} />
                                   Cambiar / Restablecer Contraseña
                                 </button>
                               ) : (
-                                <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl animate-in fade-in duration-200">
-                                  <label className="block text-[10px] font-black text-slate-500 uppercase">Nueva Contraseña</label>
+                                <div className="space-y-3 p-3 bg-page border border-border rounded-xl animate-in fade-in duration-200">
+                                  <label className="block text-[10px] font-black text-text-3 uppercase">Nueva Contraseña</label>
                                   <div className="flex gap-2">
-                                    <input 
-                                      type="text" 
+                                    <input
+                                      type="text"
                                       value={newPassword}
                                       onChange={(e) => setNewPassword(e.target.value)}
                                       placeholder="Min. 6 caracteres"
-                                      className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold outline-none text-slate-800"
+                                      className="flex-1 bg-white border border-border rounded-lg px-3 py-1.5 text-xs font-bold outline-none text-text-1"
                                     />
-                                    <button 
+                                    <button
                                       onClick={handleResetPassword}
                                       disabled={isResetting || !newPassword.trim()}
-                                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                                      className="bg-accent hover:bg-accent-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
                                     >
                                       {isResetting ? 'Guardando...' : 'Aplicar'}
                                     </button>
-                                    <button 
+                                    <button
                                       onClick={() => { setIsResetFormVisible(false); setNewPassword(''); }}
-                                      className="text-slate-400 hover:text-slate-600 p-1 text-xs"
+                                      className="text-slate-400 hover:text-text-2 p-1 text-xs"
                                     >
                                       Cancelar
                                     </button>
@@ -3501,34 +3501,34 @@ export const SaaSPlatformAdmin = () => {
                             </div>
                           </div>
                         ) : (
-                          <p className="text-xs text-rose-500 font-bold bg-rose-50 p-3 rounded-xl border border-rose-100">Advertencia: No se encontró ningún usuario administrador asignado a esta empresa.</p>
+                          <p className="text-xs text-danger-text font-bold bg-danger-bg p-3 rounded-xl border border-danger-text/20">Advertencia: No se encontró ningún usuario administrador asignado a esta empresa.</p>
                         )}
                       </div>
 
                       {/* Acciones del Slide-over */}
-                      <div className="grid grid-cols-2 gap-3 border-t border-slate-200 pt-6">
-                        <button 
+                      <div className="grid grid-cols-2 gap-3 border-t border-border pt-6">
+                        <button
                           onClick={() => handleImpersonate(tenantDetail.tenant.id)}
-                          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-500/10 transition-colors text-xs"
+                          className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white py-3 rounded-xl font-bold shadow-lg shadow-accent/10 transition-colors text-xs"
                         >
                           <LogIn size={14} />
                           Entrar como Admin
                         </button>
 
                         {tenantDetail.tenant.id !== 1 && tenantDetail.tenant.subdomain !== 'talent360' ? (
-                          <button 
+                          <button
                             onClick={() => handleToggleStatus(tenantDetail.tenant.id, tenantDetail.tenant.name, tenantDetail.tenant.is_active)}
                             className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-colors text-xs border ${
-                              tenantDetail.tenant.is_active 
-                                ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-200' 
-                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-200'
+                              tenantDetail.tenant.is_active
+                                ? 'bg-danger-bg hover:bg-danger-bg text-danger-text border-danger-text/20'
+                                : 'bg-success-bg hover:bg-success-bg text-success-text border-success-text/20'
                             }`}
                           >
                             <Ban size={14} />
                             {tenantDetail.tenant.is_active ? 'Suspender Empresa' : 'Activar Empresa'}
                           </button>
                         ) : (
-                          <div className="col-span-1 text-center py-3 bg-slate-50 border border-slate-200 text-slate-400 font-bold italic rounded-xl text-xs flex items-center justify-center">
+                          <div className="col-span-1 text-center py-3 bg-page border border-border text-slate-400 font-bold italic rounded-xl text-xs flex items-center justify-center">
                             Cuenta de Sistema Protegida
                           </div>
                         )}
@@ -3546,22 +3546,22 @@ export const SaaSPlatformAdmin = () => {
     {/* MODAL: CONFIRMAR SUSPENSIÓN */}
     {isSuspensionModalOpen && (
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-        <div className="bg-white rounded-3xl p-7 max-w-md w-full shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-150">
-          <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4 border border-rose-100">
+        <div className="bg-white rounded-3xl p-7 max-w-md w-full shadow-2xl border border-border animate-in zoom-in-95 duration-150">
+          <div className="w-12 h-12 bg-danger-bg text-danger-text rounded-full flex items-center justify-center mb-4 border border-danger-text/20">
             <ShieldAlert size={24} />
           </div>
-          <h3 className="text-xl font-black text-slate-800 mb-2">Suspender Empresa</h3>
-          <p className="text-sm text-slate-500 mb-5 leading-normal">
-            Estás a punto de suspender el acceso de la empresa <span className="font-extrabold text-slate-800">"{suspensionTenantName}"</span>. Sus usuarios no podrán usar la aplicación ni loguearse.
+          <h3 className="text-xl font-black text-text-1 mb-2">Suspender Empresa</h3>
+          <p className="text-sm text-text-3 mb-5 leading-normal">
+            Estás a punto de suspender el acceso de la empresa <span className="font-extrabold text-text-1">"{suspensionTenantName}"</span>. Sus usuarios no podrán usar la aplicación ni loguearse.
           </p>
 
           <div className="space-y-4 mb-6">
             <div>
-              <label className="text-xs font-bold text-slate-600 block mb-1.5 uppercase">Motivo de la Suspensión</label>
-              <select 
-                value={suspensionReason} 
-                onChange={(e) => setSuspensionReason(e.target.value)} 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-800 focus:border-indigo-500 outline-none text-sm"
+              <label className="text-xs font-bold text-text-2 block mb-1.5 uppercase">Motivo de la Suspensión</label>
+              <select
+                value={suspensionReason}
+                onChange={(e) => setSuspensionReason(e.target.value)}
+                className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-bold text-text-1 focus:border-accent outline-none text-sm"
               >
                 <option value="Falta de pago">Falta de pago (Adeudo/Facturación)</option>
                 <option value="Término del periodo de prueba">Término del periodo de prueba</option>
@@ -3572,27 +3572,27 @@ export const SaaSPlatformAdmin = () => {
 
             {suspensionReason === 'Otro' && (
               <div className="animate-in slide-in-from-top-2 duration-150">
-                <label className="text-xs font-bold text-slate-600 block mb-1.5 uppercase">Especificar Razón</label>
-                <textarea 
+                <label className="text-xs font-bold text-text-2 block mb-1.5 uppercase">Especificar Razón</label>
+                <textarea
                   value={customSuspensionReason}
                   onChange={(e) => setCustomSuspensionReason(e.target.value)}
                   placeholder="Detalla la razón de la suspensión..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-800 text-sm focus:border-indigo-500 outline-none h-20"
+                  className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-bold text-text-1 text-sm focus:border-accent outline-none h-20"
                 />
               </div>
             )}
           </div>
 
           <div className="flex gap-3">
-            <button 
-              onClick={() => setIsSuspensionModalOpen(false)} 
-              className="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors text-xs"
+            <button
+              onClick={() => setIsSuspensionModalOpen(false)}
+              className="flex-1 bg-page text-text-2 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors text-xs"
             >
               Cancelar
             </button>
-            <button 
+            <button
               onClick={handleConfirmSuspension}
-              className="flex-1 bg-rose-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-rose-700 transition-colors text-xs flex items-center justify-center gap-1.5"
+              className="flex-1 bg-danger-text text-white font-bold py-3 rounded-xl shadow-lg hover:bg-danger-text transition-colors text-xs flex items-center justify-center gap-1.5"
             >
               Confirmar Suspensión
             </button>
@@ -3604,61 +3604,61 @@ export const SaaSPlatformAdmin = () => {
     {/* MODAL: DETALLES DE AUDITORÍA DE MÓDULO */}
     {selectedAuditModule && (
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-        <div className="bg-white rounded-3xl p-7 max-w-md w-full shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-150 relative">
-          <button 
+        <div className="bg-white rounded-3xl p-7 max-w-md w-full shadow-2xl border border-border animate-in zoom-in-95 duration-150 relative">
+          <button
             onClick={() => setSelectedAuditModule(null)}
-            className="absolute top-5 right-5 p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+            className="absolute top-5 right-5 p-1.5 hover:bg-page rounded-lg text-slate-400 hover:text-text-2 transition-colors"
           >
             <X size={18} />
           </button>
-          
+
           <div className="flex items-center gap-3 mb-4">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg ${
-              selectedAuditModule.score >= 8 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-              selectedAuditModule.score >= 6 ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-              'bg-rose-50 text-rose-600 border border-rose-100'
+              selectedAuditModule.score >= 8 ? 'bg-success-bg text-success-text border border-success-text/20' :
+              selectedAuditModule.score >= 6 ? 'bg-warning-bg text-warning-text border border-warning-text/20' :
+              'bg-danger-bg text-danger-text border border-danger-text/20'
             }`}>
               {selectedAuditModule.score}
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-800 leading-tight">{selectedAuditModule.name}</h3>
+              <h3 className="text-lg font-black text-text-1 leading-tight">{selectedAuditModule.name}</h3>
               <span className={`inline-block text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded mt-0.5 ${
-                selectedAuditModule.details.status === 'Excelente' ? 'bg-emerald-100 text-emerald-800' :
-                selectedAuditModule.details.status === 'Estable' ? 'bg-blue-100 text-blue-800' :
-                'bg-amber-100 text-amber-800'
+                selectedAuditModule.details.status === 'Excelente' ? 'bg-success-bg text-success-text' :
+                selectedAuditModule.details.status === 'Estable' ? 'bg-accent-soft text-navy-800' :
+                'bg-warning-bg text-warning-text'
               }`}>
                 Estado: {selectedAuditModule.details.status}
               </span>
             </div>
           </div>
 
-          <p className="text-xs text-slate-500 leading-relaxed mb-6 font-semibold bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+          <p className="text-xs text-text-3 leading-relaxed mb-6 font-semibold bg-page p-3.5 rounded-xl border border-border">
             {selectedAuditModule.description}
           </p>
 
-          <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-3">Métricas Técnicas de Auditoría</h4>
-          <div className="space-y-3.5 text-xs font-bold text-slate-600 mb-7">
+          <h4 className="text-xs font-black text-text-2 uppercase tracking-wider mb-3">Métricas Técnicas de Auditoría</h4>
+          <div className="space-y-3.5 text-xs font-bold text-text-2 mb-7">
             {selectedAuditModule.details.meta && (
-              <div className="flex justify-between items-center gap-4 pb-2.5 border-b border-slate-50 text-emerald-600 font-extrabold bg-emerald-50/30 px-2.5 py-1.5 rounded-xl">
-                <span className="text-slate-500 font-semibold shrink-0">Monitoreo en Vivo:</span>
+              <div className="flex justify-between items-center gap-4 pb-2.5 border-b border-border text-success-text font-extrabold bg-success-bg/30 px-2.5 py-1.5 rounded-xl">
+                <span className="text-text-3 font-semibold shrink-0">Monitoreo en Vivo:</span>
                 <span className="text-right">{selectedAuditModule.details.meta}</span>
               </div>
             )}
-            <div className="flex justify-between items-start gap-4 pb-2.5 border-b border-slate-50">
+            <div className="flex justify-between items-start gap-4 pb-2.5 border-b border-border">
               <span className="text-slate-400 font-medium shrink-0">Cobertura de Código:</span>
-              <span className="text-slate-800 text-right">{selectedAuditModule.details.coverage}</span>
+              <span className="text-text-1 text-right">{selectedAuditModule.details.coverage}</span>
             </div>
-            <div className="flex justify-between items-start gap-4 pb-2.5 border-b border-slate-50">
+            <div className="flex justify-between items-start gap-4 pb-2.5 border-b border-border">
               <span className="text-slate-400 font-medium shrink-0">Base de Datos / Rendimiento:</span>
-              <span className="text-slate-800 text-right">{selectedAuditModule.details.performance}</span>
+              <span className="text-text-1 text-right">{selectedAuditModule.details.performance}</span>
             </div>
             <div className="flex justify-between items-start gap-4">
               <span className="text-slate-400 font-medium shrink-0">Seguridad & Multitenant:</span>
-              <span className="text-slate-800 text-right">{selectedAuditModule.details.security}</span>
+              <span className="text-text-1 text-right">{selectedAuditModule.details.security}</span>
             </div>
           </div>
 
-          <button 
+          <button
             onClick={() => setSelectedAuditModule(null)}
             className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-colors text-xs"
           >
@@ -3673,12 +3673,12 @@ export const SaaSPlatformAdmin = () => {
       <div className="fixed inset-0 z-50 overflow-hidden">
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsTicketDetailOpen(false)} />
         <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
-          <div className="pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl transform bg-white shadow-2xl transition-all duration-350 ease-in-out border-l border-slate-200 flex flex-col h-full animate-in slide-in-from-right duration-300">
+          <div className="pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl transform bg-white shadow-2xl transition-all duration-350 ease-in-out border-l border-border flex flex-col h-full animate-in slide-in-from-right duration-300">
             {/* Header del Drawer */}
             <div className="bg-slate-950 px-6 py-6 text-white flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-slate-800 rounded-xl border border-slate-700">
-                  <LifeBuoy size={24} className="text-indigo-400" />
+                  <LifeBuoy size={24} className="text-navy-300" />
                 </div>
                 <div>
                   <h2 className="text-base font-black leading-tight truncate max-w-[280px]">
@@ -3698,43 +3698,43 @@ export const SaaSPlatformAdmin = () => {
             <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col justify-between">
               {isTicketDetailLoading ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                  <Loader2 className="animate-spin mb-3 text-indigo-650" size={32} />
+                  <Loader2 className="animate-spin mb-3 text-accent" size={32} />
                   <p className="text-xs font-bold">Cargando detalles del ticket...</p>
                 </div>
               ) : (
                 <div className="space-y-6 flex-1">
                    {/* Detalles Generales */}
-                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                   <div className="bg-page border border-border rounded-2xl p-5 space-y-4">
                       <div>
                          <span className="block text-[10px] font-black text-slate-400 uppercase">Descripción del Reporte</span>
-                         <span className="text-xs text-slate-700 font-bold block mt-1 leading-relaxed bg-white border border-slate-150 rounded-xl p-3 select-all whitespace-pre-wrap">{ticketDetailData?.description}</span>
+                         <span className="text-xs text-text-2 font-bold block mt-1 leading-relaxed bg-white border border-border rounded-xl p-3 select-all whitespace-pre-wrap">{ticketDetailData?.description}</span>
                       </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-200/50">
+
+                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
                          <div>
                             <span className="block text-[10px] font-black text-slate-400 uppercase">Contacto</span>
-                            <span className="text-xs text-slate-800 font-extrabold block mt-0.5">{ticketDetailData?.contact_name || 'N/A'}</span>
-                            {ticketDetailData?.contact_email && <span className="text-[11px] text-indigo-600 font-bold block leading-tight truncate select-all">{ticketDetailData?.contact_email}</span>}
+                            <span className="text-xs text-text-1 font-extrabold block mt-0.5">{ticketDetailData?.contact_name || 'N/A'}</span>
+                            {ticketDetailData?.contact_email && <span className="text-[11px] text-accent font-bold block leading-tight truncate select-all">{ticketDetailData?.contact_email}</span>}
                          </div>
                          <div>
                             <span className="block text-[10px] font-black text-slate-400 uppercase">Empresa Cliente</span>
-                            <span className="text-xs text-slate-800 font-extrabold block mt-0.5">{ticketDetailData?.tenant?.name || 'N/A'}</span>
-                            {ticketDetailData?.tenant?.subdomain && <span className="text-[10px] text-slate-500 font-medium block truncate">ID: {ticketDetailData?.tenant?.subdomain}</span>}
+                            <span className="text-xs text-text-1 font-extrabold block mt-0.5">{ticketDetailData?.tenant?.name || 'N/A'}</span>
+                            {ticketDetailData?.tenant?.subdomain && <span className="text-[10px] text-text-3 font-medium block truncate">ID: {ticketDetailData?.tenant?.subdomain}</span>}
                          </div>
                       </div>
                    </div>
 
                    {/* Modificar Atributos */}
-                   <div className="border border-slate-200 rounded-2xl p-5 space-y-4">
-                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2">Acciones y Estado</h3>
-                      
+                   <div className="border border-border rounded-2xl p-5 space-y-4">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 border-b border-border pb-2">Acciones y Estado</h3>
+
                       <div className="grid grid-cols-2 gap-3">
                          <div>
-                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Estado</label>
-                            <select 
-                               value={ticketDetailData?.status || 'open'} 
-                               onChange={(e) => handleUpdateTicketStatus(e.target.value)} 
-                               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold outline-none text-slate-800 focus:border-indigo-500 transition-colors"
+                            <label className="block text-[10px] font-black text-text-3 uppercase mb-1.5">Estado</label>
+                            <select
+                               value={ticketDetailData?.status || 'open'}
+                               onChange={(e) => handleUpdateTicketStatus(e.target.value)}
+                               className="w-full bg-page border border-border rounded-xl px-3 py-2 text-xs font-bold outline-none text-text-1 focus:border-accent transition-colors"
                             >
                                <option value="open">Abierto (Open)</option>
                                <option value="in_progress">En Proceso</option>
@@ -3743,11 +3743,11 @@ export const SaaSPlatformAdmin = () => {
                             </select>
                          </div>
                          <div>
-                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Prioridad</label>
-                            <select 
-                               value={ticketDetailData?.priority || 'medium'} 
-                               onChange={(e) => handleUpdateTicketPriority(e.target.value)} 
-                               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold outline-none text-slate-800 focus:border-indigo-500 transition-colors"
+                            <label className="block text-[10px] font-black text-text-3 uppercase mb-1.5">Prioridad</label>
+                            <select
+                               value={ticketDetailData?.priority || 'medium'}
+                               onChange={(e) => handleUpdateTicketPriority(e.target.value)}
+                               className="w-full bg-page border border-border rounded-xl px-3 py-2 text-xs font-bold outline-none text-text-1 focus:border-accent transition-colors"
                             >
                                <option value="low">Baja</option>
                                <option value="medium">Media</option>
@@ -3757,11 +3757,11 @@ export const SaaSPlatformAdmin = () => {
                       </div>
 
                       <div>
-                         <label className="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Agente Asignado</label>
-                         <select 
-                            value={ticketDetailData?.assigned_to || ''} 
-                            onChange={(e) => handleUpdateTicketAssignment(e.target.value)} 
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold outline-none text-slate-800 focus:border-indigo-500 transition-colors"
+                         <label className="block text-[10px] font-black text-text-3 uppercase mb-1.5">Agente Asignado</label>
+                         <select
+                            value={ticketDetailData?.assigned_to || ''}
+                            onChange={(e) => handleUpdateTicketAssignment(e.target.value)}
+                            className="w-full bg-page border border-border rounded-xl px-3 py-2 text-xs font-bold outline-none text-text-1 focus:border-accent transition-colors"
                          >
                             <option value="">-- Sin asignar --</option>
                             {agentsList.map(agent => (
@@ -3772,46 +3772,46 @@ export const SaaSPlatformAdmin = () => {
                    </div>
 
                    {/* Notas Internas / Bitácora */}
-                   <div className="border border-slate-200 rounded-2xl p-5 space-y-4">
-                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2 flex items-center gap-1">
+                   <div className="border border-border rounded-2xl p-5 space-y-4">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 border-b border-border pb-2 flex items-center gap-1">
                          <MessageSquare size={12} />
                          Notas Internas del Call Center
                       </h3>
-                      
+
                       <div className="space-y-3.5 max-h-48 overflow-y-auto pr-1">
                          {(!ticketDetailData?.notes || ticketDetailData.notes.length === 0) ? (
                             <p className="text-[11px] text-slate-400 font-bold italic py-2">No hay notas internas todavía. Escribe una nota para dar seguimiento.</p>
                          ) : (
                             ticketDetailData.notes.map((note: any) => (
-                               <div key={note.id} className="bg-slate-50 border border-slate-150/80 rounded-xl p-3 text-xs leading-relaxed">
+                               <div key={note.id} className="bg-page border border-border/80 rounded-xl p-3 text-xs leading-relaxed">
                                   <div className="flex justify-between items-center mb-1 text-[10px] font-bold text-slate-400">
-                                     <span className="text-indigo-600 font-extrabold">{note.user_name}</span>
+                                     <span className="text-accent font-extrabold">{note.user_name}</span>
                                      <span>{new Date(note.created_at).toLocaleString()}</span>
                                   </div>
-                                  <p className="text-slate-700 font-semibold">{note.note}</p>
+                                  <p className="text-text-2 font-semibold">{note.note}</p>
                                </div>
                             ))
                          )}
                       </div>
 
                       <div className="pt-2">
-                         <textarea 
+                         <textarea
                             value={newNoteText}
                             onChange={(e) => setNewNoteText(e.target.value)}
                             placeholder="Escribe una nota de seguimiento interna..."
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 placeholder-slate-400 outline-none h-16 focus:border-indigo-500 transition-colors"
+                            className="w-full bg-page border border-border rounded-xl px-3.5 py-2 text-xs font-bold text-text-1 placeholder-slate-400 outline-none h-16 focus:border-accent transition-colors"
                          />
                          <div className="flex gap-2 mt-2">
-                            <button 
+                            <button
                                type="button"
                                onClick={handleSuggestResponseWithIA}
                                disabled={isSuggestingIA}
-                               className="flex-1 bg-gradient-to-r from-violet-600 to-indigo-600 disabled:opacity-50 text-white font-extrabold py-2 px-3 rounded-xl text-xs transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5 border-none outline-none cursor-pointer"
+                               className="flex-1 bg-gradient-to-r from-accent to-accent disabled:opacity-50 text-white font-extrabold py-2 px-3 rounded-xl text-xs transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5 border-none outline-none cursor-pointer"
                             >
                                <Sparkles size={12} className="animate-pulse" />
                                {isSuggestingIA ? 'Sugiriendo...' : 'Sugerir con IA'}
                             </button>
-                            <button 
+                            <button
                                type="button"
                                onClick={handleAddNote}
                                disabled={isAddingNote || !newNoteText.trim()}
@@ -3834,41 +3834,41 @@ export const SaaSPlatformAdmin = () => {
     {isNewTicketModalOpen && (
       <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-3xl p-7 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-150">
-          <div className="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
-             <h3 className="text-lg font-black text-slate-800 flex items-center gap-1.5">
-                <LifeBuoy className="text-indigo-650" size={20} />
+          <div className="flex justify-between items-center mb-5 border-b border-border pb-3">
+             <h3 className="text-lg font-black text-text-1 flex items-center gap-1.5">
+                <LifeBuoy className="text-accent" size={20} />
                 Registrar Ticket de Soporte
              </h3>
-             <button type="button" onClick={() => setIsNewTicketModalOpen(false)} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all"><X size={18} /></button>
+             <button type="button" onClick={() => setIsNewTicketModalOpen(false)} className="p-1 hover:bg-page rounded-lg text-slate-400 hover:text-text-2 transition-all"><X size={18} /></button>
           </div>
 
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
              <div>
-                <label className="text-xs font-bold text-slate-650 block mb-1">Título / Asunto</label>
-                <input 
-                   type="text" 
-                   value={newTicketTitle} 
-                   onChange={(e) => setNewTicketTitle(e.target.value)} 
-                   placeholder="Ej. Falla en sincronización de reloj" 
-                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800"
+                <label className="text-xs font-bold text-text-2 block mb-1">Título / Asunto</label>
+                <input
+                   type="text"
+                   value={newTicketTitle}
+                   onChange={(e) => setNewTicketTitle(e.target.value)}
+                   placeholder="Ej. Falla en sincronización de reloj"
+                   className="w-full bg-page border border-border rounded-xl px-3.5 py-2 text-xs font-bold text-text-1"
                 />
              </div>
              <div>
-                <label className="text-xs font-bold text-slate-650 block mb-1">Descripción del Problema</label>
-                <textarea 
-                   value={newTicketDesc} 
-                   onChange={(e) => setNewTicketDesc(e.target.value)} 
-                   placeholder="Describe los detalles del problema reportado por el cliente..." 
-                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 h-24"
+                <label className="text-xs font-bold text-text-2 block mb-1">Descripción del Problema</label>
+                <textarea
+                   value={newTicketDesc}
+                   onChange={(e) => setNewTicketDesc(e.target.value)}
+                   placeholder="Describe los detalles del problema reportado por el cliente..."
+                   className="w-full bg-page border border-border rounded-xl px-3.5 py-2 text-xs font-bold text-text-1 h-24"
                 />
              </div>
              <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                   <label className="text-xs font-bold text-slate-650 block mb-1">Prioridad</label>
-                   <select 
-                      value={newTicketPriority} 
-                      onChange={(e) => setNewTicketPriority(e.target.value)} 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                   <label className="text-xs font-bold text-text-2 block mb-1">Prioridad</label>
+                   <select
+                      value={newTicketPriority}
+                      onChange={(e) => setNewTicketPriority(e.target.value)}
+                      className="w-full bg-page border border-border rounded-xl px-3 py-2 text-xs font-bold text-text-1"
                    >
                       <option value="low">Baja</option>
                       <option value="medium">Media</option>
@@ -3876,11 +3876,11 @@ export const SaaSPlatformAdmin = () => {
                    </select>
                 </div>
                 <div>
-                   <label className="text-xs font-bold text-slate-650 block mb-1">Asignar Agente</label>
-                   <select 
-                      value={newTicketAssignedTo} 
-                      onChange={(e) => setNewTicketAssignedTo(e.target.value)} 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                   <label className="text-xs font-bold text-text-2 block mb-1">Asignar Agente</label>
+                   <select
+                      value={newTicketAssignedTo}
+                      onChange={(e) => setNewTicketAssignedTo(e.target.value)}
+                      className="w-full bg-page border border-border rounded-xl px-3 py-2 text-xs font-bold text-text-1"
                    >
                       <option value="">-- Sin asignar --</option>
                       {agentsList.map(agent => (
@@ -3891,11 +3891,11 @@ export const SaaSPlatformAdmin = () => {
              </div>
 
              <div>
-                <label className="text-xs font-bold text-slate-650 block mb-1">Empresa Relacionada (Opcional)</label>
-                <select 
-                   value={newTicketTenantId} 
-                   onChange={(e) => setNewTicketTenantId(e.target.value)} 
-                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                <label className="text-xs font-bold text-text-2 block mb-1">Empresa Relacionada (Opcional)</label>
+                <select
+                   value={newTicketTenantId}
+                   onChange={(e) => setNewTicketTenantId(e.target.value)}
+                   className="w-full bg-page border border-border rounded-xl px-3 py-2 text-xs font-bold text-text-1"
                 >
                    <option value="">-- Ninguna --</option>
                    {tenantsList.map(tenant => (
@@ -3904,40 +3904,40 @@ export const SaaSPlatformAdmin = () => {
                 </select>
              </div>
 
-             <div className="border-t border-slate-100 pt-3 mt-1">
+             <div className="border-t border-border pt-3 mt-1">
                 <span className="block text-[10px] font-black text-slate-400 uppercase mb-2">Datos de Contacto del Reporte</span>
                 <div className="grid grid-cols-2 gap-3.5">
                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Nombre</label>
-                      <input 
-                         type="text" 
-                         value={newTicketContactName} 
-                         onChange={(e) => setNewTicketContactName(e.target.value)} 
-                         placeholder="Juan López" 
-                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-805"
+                      <label className="text-[10px] font-bold text-text-3 block mb-1">Nombre</label>
+                      <input
+                         type="text"
+                         value={newTicketContactName}
+                         onChange={(e) => setNewTicketContactName(e.target.value)}
+                         placeholder="Juan López"
+                         className="w-full bg-page border border-border rounded-xl px-3 py-1.5 text-xs font-bold text-text-1"
                       />
                    </div>
                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Correo</label>
-                      <input 
-                         type="email" 
-                         value={newTicketContactEmail} 
-                         onChange={(e) => setNewTicketContactEmail(e.target.value)} 
-                         placeholder="juan@empresa.com" 
-                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-805"
+                      <label className="text-[10px] font-bold text-text-3 block mb-1">Correo</label>
+                      <input
+                         type="email"
+                         value={newTicketContactEmail}
+                         onChange={(e) => setNewTicketContactEmail(e.target.value)}
+                         placeholder="juan@empresa.com"
+                         className="w-full bg-page border border-border rounded-xl px-3 py-1.5 text-xs font-bold text-text-1"
                       />
                    </div>
                 </div>
              </div>
           </div>
 
-          <div className="flex gap-3 mt-6 border-t border-slate-100 pt-4">
-             <button type="button" onClick={() => setIsNewTicketModalOpen(false)} className="flex-1 bg-slate-100 text-slate-700 font-bold py-2.5 rounded-xl hover:bg-slate-200 transition-colors text-xs">Cancelar</button>
-             <button 
+          <div className="flex gap-3 mt-6 border-t border-border pt-4">
+             <button type="button" onClick={() => setIsNewTicketModalOpen(false)} className="flex-1 bg-page text-text-2 font-bold py-2.5 rounded-xl hover:bg-slate-200 transition-colors text-xs">Cancelar</button>
+             <button
                 type="button"
-                onClick={handleCreateTicket} 
-                disabled={isCreatingTicket} 
-                className="flex-1 bg-indigo-600 text-white font-bold py-2.5 rounded-xl shadow-lg hover:bg-indigo-700 transition-colors text-xs flex items-center justify-center gap-1.5"
+                onClick={handleCreateTicket}
+                disabled={isCreatingTicket}
+                className="flex-1 bg-accent text-white font-bold py-2.5 rounded-xl shadow-lg hover:bg-accent-hover transition-colors text-xs flex items-center justify-center gap-1.5"
              >
                 {isCreatingTicket ? 'Registrando...' : 'Registrar Ticket'}
              </button>
@@ -3953,23 +3953,23 @@ export const SaaSPlatformAdmin = () => {
                <ShieldCheck size={200} />
             </div>
             <div className="text-left relative z-10">
-              <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full">Ciberseguridad SaaS</span>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-2">Bitácora de <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">Seguridad y Auditoría</span></h1>
+              <span className="text-[10px] font-black uppercase text-navy-300 tracking-widest bg-accent/10 px-3 py-1 rounded-full">Ciberseguridad SaaS</span>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-2">Bitácora de <span className="text-transparent bg-clip-text bg-gradient-to-r from-navy-400 to-navy-400">Seguridad y Auditoría</span></h1>
               <p className="text-slate-400 text-xs font-semibold mt-1">Historial de accesos, intentos de autenticación, timbrados SAT CFDI 4.0 y eventos del sistema.</p>
             </div>
-            
+
             <button
               type="button"
               onClick={fetchSecurityLogs}
               disabled={isLogsLoading}
-              className="bg-white hover:bg-slate-50 text-slate-900 px-5 py-2.5 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer w-full sm:w-auto"
+              className="bg-white hover:bg-page text-text-1 px-5 py-2.5 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer w-full sm:w-auto"
             >
               {isLogsLoading ? 'Recargando...' : '🔄 Actualizar Bitácora'}
             </button>
           </div>
 
           {/* Filtros */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-md flex flex-wrap gap-4 items-center">
+          <div className="bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl p-5 shadow-md flex flex-wrap gap-4 items-center">
             <div className="flex-1 min-w-[200px]">
               <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase block mb-1">Filtrar por Empresa</label>
               <select
@@ -3977,7 +3977,7 @@ export const SaaSPlatformAdmin = () => {
                 onChange={(e) => {
                   setLogsTenantFilter(e.target.value);
                 }}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none"
+                className="w-full bg-page dark:bg-slate-950 border border-border dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-text-1 dark:text-slate-200 outline-none"
               >
                 <option value="all">Todas las Empresas / Tenants</option>
                 {tenantsList.map((tenant: any) => (
@@ -3993,7 +3993,7 @@ export const SaaSPlatformAdmin = () => {
                 onChange={(e) => {
                   setLogsEventFilter(e.target.value);
                 }}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none"
+                className="w-full bg-page dark:bg-slate-950 border border-border dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-text-1 dark:text-slate-200 outline-none"
               >
                 <option value="all">Todos los Eventos</option>
                 <option value="auth_login">auth_login (Inicio de sesión)</option>
@@ -4007,11 +4007,11 @@ export const SaaSPlatformAdmin = () => {
           </div>
 
           {/* Tabla de Logs */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-md overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl shadow-md overflow-hidden">
             {isLogsLoading ? (
               <div className="p-20 text-center flex flex-col items-center justify-center gap-3">
-                <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-xs font-bold text-slate-500">Cargando registros de auditoría de seguridad...</p>
+                <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-xs font-bold text-text-3">Cargando registros de auditoría de seguridad...</p>
               </div>
             ) : securityLogs.length === 0 ? (
               <div className="p-20 text-center">
@@ -4021,7 +4021,7 @@ export const SaaSPlatformAdmin = () => {
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left text-xs font-sans">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-950/40 text-slate-450 border-b border-slate-100 dark:border-slate-800/60 uppercase font-black tracking-widest text-[9.5px]">
+                    <tr className="bg-page dark:bg-slate-950/40 text-slate-450 border-b border-border dark:border-slate-800/60 uppercase font-black tracking-widest text-[9.5px]">
                       <th className="px-6 py-4">Evento / ID</th>
                       <th className="px-6 py-4">Empresa</th>
                       <th className="px-6 py-4">Usuario</th>
@@ -4030,30 +4030,30 @@ export const SaaSPlatformAdmin = () => {
                       <th className="px-6 py-4">Fecha y Hora</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
+                  <tbody className="divide-y divide-border dark:divide-slate-800/40">
                     {securityLogs.map((log: any) => {
-                      let badgeColor = 'bg-slate-100 text-slate-600 border-slate-200';
-                      if (log.event_type === 'auth_login') badgeColor = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-                      else if (log.event_type === 'auth_failed') badgeColor = 'bg-rose-500/10 text-rose-500 border-rose-500/20';
-                      else if (log.event_type === 'cfdi_signed') badgeColor = 'bg-violet-500/10 text-violet-600 border-violet-500/20';
-                      else if (log.event_type === 'stripe_webhook') badgeColor = 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20';
+                      let badgeColor = 'bg-page text-text-2 border-border';
+                      if (log.event_type === 'auth_login') badgeColor = 'bg-success-icon/10 text-success-text border-success-text/20';
+                      else if (log.event_type === 'auth_failed') badgeColor = 'bg-danger-icon/10 text-danger-text border-danger-text/20';
+                      else if (log.event_type === 'cfdi_signed') badgeColor = 'bg-accent/10 text-accent border-accent/20';
+                      else if (log.event_type === 'stripe_webhook') badgeColor = 'bg-accent/10 text-accent border-accent/20';
 
                       return (
-                        <tr key={log.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-950/20 font-medium text-slate-700 dark:text-slate-300">
+                        <tr key={log.id} className="hover:bg-page/60 dark:hover:bg-slate-950/20 font-medium text-text-2 dark:text-slate-300">
                           <td className="px-6 py-4.5">
                             <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wide border ${badgeColor}`}>
                               {log.event_type}
                             </span>
                             <span className="block text-[9px] text-slate-400 mt-1 font-mono">ID: #{log.id}</span>
                           </td>
-                          <td className="px-6 py-4.5 font-bold text-slate-850 dark:text-slate-205">{log.tenant_name}</td>
-                          <td className="px-6 py-4.5 font-bold text-indigo-600 dark:text-indigo-400">{log.user_name}</td>
+                          <td className="px-6 py-4.5 font-bold text-text-1 dark:text-slate-205">{log.tenant_name}</td>
+                          <td className="px-6 py-4.5 font-bold text-accent dark:text-navy-300">{log.user_name}</td>
                           <td className="px-6 py-4.5 max-w-xs truncate leading-relaxed" title={log.description}>{log.description}</td>
                           <td className="px-6 py-4.5">
-                            <span className="font-mono text-slate-600 dark:text-slate-400 font-bold block">{log.ip_address}</span>
+                            <span className="font-mono text-text-2 dark:text-slate-400 font-bold block">{log.ip_address}</span>
                             <span className="block text-[9.5px] text-slate-400 truncate max-w-[150px] mt-0.5" title={log.user_agent}>{log.user_agent}</span>
                           </td>
-                          <td className="px-6 py-4.5 text-slate-500 dark:text-slate-400">
+                          <td className="px-6 py-4.5 text-text-3 dark:text-slate-400">
                             {new Date(log.created_at).toLocaleString()}
                           </td>
                         </tr>

@@ -104,19 +104,19 @@ export default function MealQueue({ currentUserId, globalUsers, onClose }: MealQ
   };
 
   const statusBadge = (status: QueueEntry['status']) => {
-    if (status === 'done') return <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700">Ya eligió</span>;
-    if (status === 'choosing') return <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 animate-pulse">Eligiendo…</span>;
-    return <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">En espera</span>;
+    if (status === 'done') return <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-success-bg text-success-text">Ya eligió</span>;
+    if (status === 'choosing') return <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-warning-bg text-warning-text animate-pulse">Eligiendo…</span>;
+    return <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-page text-text-3">En espera</span>;
   };
 
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="meal-queue-modal-title" className="absolute inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl p-5 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left relative flex flex-col max-h-[85%]">
+      <div className="bg-white rounded-3xl p-5 w-full max-w-md shadow-2xl animate-fade-in-up text-text-1 text-left relative flex flex-col max-h-[85%]">
         <div className="flex justify-between items-center mb-3">
-          <h3 id="meal-queue-modal-title" className="font-extrabold text-lg text-slate-800 flex items-center gap-2">
-            <Utensils size={18} className="text-amber-500" /> Apartar Turno de Comida
+          <h3 id="meal-queue-modal-title" className="font-extrabold text-lg text-text-1 flex items-center gap-2">
+            <Utensils size={18} className="text-warning-text" /> Apartar Turno de Comida
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Cerrar">
+          <button onClick={onClose} className="text-slate-400 hover:text-text-2" aria-label="Cerrar">
             <X size={20} />
           </button>
         </div>
@@ -130,27 +130,27 @@ export default function MealQueue({ currentUserId, globalUsers, onClose }: MealQ
           <>
             {/* Estado del turno del usuario */}
             <div className={`rounded-2xl px-4 py-3 mb-3 border ${
-              isMyTurn ? 'bg-amber-50 border-amber-200' : myEntry?.status === 'done' ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'
+              isMyTurn ? 'bg-warning-bg border-warning-text/20' : myEntry?.status === 'done' ? 'bg-success-bg border-success-text/20' : 'bg-page border-border'
             }`}>
               {myEntry?.status === 'done' ? (
-                <p className="text-sm font-bold text-emerald-700 flex items-center gap-2">
+                <p className="text-sm font-bold text-success-text flex items-center gap-2">
                   <CheckCircle size={16} /> Tu horario: {myEntry.slot_start} – {myEntry.slot_end}
                 </p>
               ) : isMyTurn ? (
-                <p className="text-sm font-black text-amber-700 flex items-center gap-2">
+                <p className="text-sm font-black text-warning-text flex items-center gap-2">
                   <Clock size={16} /> ¡Es tu turno! Elige tu horario abajo.
                 </p>
               ) : myPosition >= 0 ? (
-                <p className="text-sm font-bold text-slate-600 flex items-center gap-2">
+                <p className="text-sm font-bold text-text-2 flex items-center gap-2">
                   <Hourglass size={16} className="text-slate-400" />
                   Espera tu turno {currentTurnId ? `(eligiendo: ${nameOf(currentTurnId).split(' ')[0]})` : ''}
                 </p>
               ) : (
-                <p className="text-xs text-slate-500">No estás en la cola de hoy (¿ya fichaste tu entrada?).</p>
+                <p className="text-xs text-text-3">No estás en la cola de hoy (¿ya fichaste tu entrada?).</p>
               )}
             </div>
 
-            {error && <div className="text-[11px] text-rose-600 font-semibold bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 mb-3">{error}</div>}
+            {error && <div className="text-[11px] text-danger-text font-semibold bg-danger-bg border border-danger-text/20 rounded-xl px-3 py-2 mb-3">{error}</div>}
 
             {/* Slots elegibles — solo interactivos cuando es mi turno */}
             {isMyTurn && (
@@ -166,12 +166,12 @@ export default function MealQueue({ currentUserId, globalUsers, onClose }: MealQ
                         disabled={disabled}
                         className={`rounded-xl border px-3 py-2 text-left transition-all active:scale-95 ${
                           disabled
-                            ? 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'
-                            : 'bg-amber-50 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
+                            ? 'bg-page border-border opacity-50 cursor-not-allowed'
+                            : 'bg-warning-bg border-warning-text/20 hover:bg-warning-bg hover:border-warning-text/20'
                         }`}
                       >
-                        <span className="block text-xs font-black text-slate-800">{slot.slot_start} – {slot.slot_end}</span>
-                        <span className="flex items-center gap-1 text-[9px] font-bold text-slate-500 mt-0.5">
+                        <span className="block text-xs font-black text-text-1">{slot.slot_start} – {slot.slot_end}</span>
+                        <span className="flex items-center gap-1 text-[9px] font-bold text-text-3 mt-0.5">
                           <Users size={9} />
                           {slot.same_role_blocked ? 'Mismo puesto ocupado' : slot.is_full ? 'Lleno' : `${slot.available} lugares`}
                         </span>
@@ -183,17 +183,17 @@ export default function MealQueue({ currentUserId, globalUsers, onClose }: MealQ
             )}
 
             {/* Lista de la cola */}
-            <div className="flex-grow overflow-y-auto border-t border-slate-100 pt-3">
+            <div className="flex-grow overflow-y-auto border-t border-border pt-3">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Orden de la fila</p>
               <div className="space-y-1.5">
                 {queue.map((q, i) => (
                   <div
                     key={q.employee_id}
                     className={`flex items-center justify-between px-3 py-2 rounded-xl border ${
-                      Number(q.employee_id) === Number(currentUserId) ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-slate-100'
+                      Number(q.employee_id) === Number(currentUserId) ? 'bg-navy-50 border-border' : 'bg-page border-border'
                     }`}
                   >
-                    <span className="flex items-center gap-2 text-xs font-bold text-slate-700 truncate">
+                    <span className="flex items-center gap-2 text-xs font-bold text-text-2 truncate">
                       <span className="text-[10px] font-black text-slate-400 w-4">{i + 1}.</span>
                       {nameOf(q.employee_id)}
                       {q.slot_start && <span className="text-[9px] font-semibold text-slate-400">({q.slot_start})</span>}

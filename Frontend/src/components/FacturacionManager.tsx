@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Building2, FileText, CheckCircle2, AlertCircle, 
+import {
+  Building2, FileText, CheckCircle2, AlertCircle,
   Upload, Key, Clock, ShieldCheck,
   RefreshCw, CheckCircle, BarChart3, Receipt, Settings2, FileCode, CheckSquare, Printer
 } from 'lucide-react';
@@ -110,7 +110,7 @@ export const FacturacionManager = () => {
       setTaxName(currentUser.tenant.tax_name || '');
       setTaxRegimen(currentUser.tenant.tax_regimen || '601');
       setPostalCode(currentUser.tenant.postal_code || '');
-      
+
       // Indicar si ya existen certificados
       if (currentUser.tenant.csd_certificate) {
         setCerName('certificado_guardado.cer');
@@ -303,26 +303,26 @@ export const FacturacionManager = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-page overflow-hidden">
       {/* Encabezado Principal (Escritorio) */}
-      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex justify-between items-center gap-4">
+      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+        <div className="bg-white rounded-3xl p-6 border border-border shadow-sm flex justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 shadow-inner">
+            <div className="p-3 bg-success-bg text-success-text rounded-2xl border border-success-text/20 shadow-inner">
               <Receipt size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-black text-slate-800">Facturación Electrónica CFDI 4.0</h2>
+              <h2 className="text-xl font-black text-text-1">Facturación Electrónica CFDI 4.0</h2>
               <p className="text-xs text-slate-400 font-semibold">Configuración de sellos CSD y timbrado de recibos de nómina SAT</p>
             </div>
           </div>
 
           {/* Tab Selector */}
-          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/50">
+          <div className="flex bg-page p-1 rounded-xl border border-border/50">
             <button
               onClick={() => setActiveTab('fiscal')}
               className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer border-none ${
-                activeTab === 'fiscal' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 bg-transparent'
+                activeTab === 'fiscal' ? 'bg-white text-success-text shadow-sm' : 'text-text-3 hover:text-text-1 bg-transparent'
               }`}
             >
               <ShieldCheck size={14} /> Fiscal / CSD
@@ -330,7 +330,7 @@ export const FacturacionManager = () => {
             <button
               onClick={() => setActiveTab('timbrado')}
               className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer border-none ${
-                activeTab === 'timbrado' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 bg-transparent'
+                activeTab === 'timbrado' ? 'bg-white text-success-text shadow-sm' : 'text-text-3 hover:text-text-1 bg-transparent'
               }`}
             >
               <Key size={14} /> Timbrado de Nómina
@@ -338,7 +338,7 @@ export const FacturacionManager = () => {
             <button
               onClick={() => setActiveTab('historial')}
               className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer border-none ${
-                activeTab === 'historial' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 bg-transparent'
+                activeTab === 'historial' ? 'bg-white text-success-text shadow-sm' : 'text-text-3 hover:text-text-1 bg-transparent'
               }`}
             >
               <Clock size={14} /> Historial SAT
@@ -366,14 +366,14 @@ export const FacturacionManager = () => {
       <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
         {/* Mensajes de Alerta */}
         {successMsg && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-250 text-emerald-800 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
-            <CheckCircle2 size={18} className="shrink-0 text-emerald-600 animate-bounce" />
+          <div className="mb-6 p-4 bg-success-bg border border-success-text/20 text-success-text rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
+            <CheckCircle2 size={18} className="shrink-0 text-success-text animate-bounce" />
             <span className="text-xs font-bold">{successMsg}</span>
           </div>
         )}
         {errorMsg && (
-          <div className="mb-6 p-4 bg-rose-50 border border-rose-250 text-rose-800 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
-            <AlertCircle size={18} className="shrink-0 text-rose-600 animate-pulse" />
+          <div className="mb-6 p-4 bg-danger-bg border border-danger-text/20 text-danger-text rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
+            <AlertCircle size={18} className="shrink-0 text-danger-text animate-pulse" />
             <span className="text-xs font-bold">{errorMsg}</span>
           </div>
         )}
@@ -382,27 +382,27 @@ export const FacturacionManager = () => {
         {activeTab === 'fiscal' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Formulario de Datos Fiscales */}
-            <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
-              <div className="border-b border-slate-100 pb-3 flex items-center gap-2">
-                <Building2 size={18} className="text-slate-500" />
-                <h3 className="text-base font-black text-slate-800">Cédula de Identificación Fiscal</h3>
+            <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-border shadow-sm space-y-6">
+              <div className="border-b border-border pb-3 flex items-center gap-2">
+                <Building2 size={18} className="text-text-3" />
+                <h3 className="text-base font-black text-text-1">Cédula de Identificación Fiscal</h3>
               </div>
 
               <form onSubmit={handleSaveTaxData} className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-wider">Razón Social (SAT)</label>
+                  <label className="text-xs font-black text-text-3 uppercase tracking-wider">Razón Social (SAT)</label>
                   <input
                     type="text"
                     required
                     value={taxName}
                     onChange={(e) => setTaxName(e.target.value)}
                     placeholder="Ej. DECORARTE S.A. DE C.V."
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50/50 text-slate-800 text-sm font-semibold transition-all outline-none"
+                    className="w-full px-4 py-2.5 rounded-xl border border-border focus:border-success-text focus:ring-1 focus-visible:ring-success-text bg-page/50 text-text-1 text-sm font-semibold transition-all outline-none"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-wider">RFC</label>
+                  <label className="text-xs font-black text-text-3 uppercase tracking-wider">RFC</label>
                   <input
                     type="text"
                     required
@@ -410,16 +410,16 @@ export const FacturacionManager = () => {
                     value={rfc}
                     onChange={(e) => setRfc(e.target.value.toUpperCase())}
                     placeholder="Ej. DEC150203AA0"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50/50 text-slate-800 text-sm font-semibold transition-all outline-none"
+                    className="w-full px-4 py-2.5 rounded-xl border border-border focus:border-success-text focus:ring-1 focus-visible:ring-success-text bg-page/50 text-text-1 text-sm font-semibold transition-all outline-none"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-wider">Régimen Fiscal</label>
+                  <label className="text-xs font-black text-text-3 uppercase tracking-wider">Régimen Fiscal</label>
                   <select
                     value={taxRegimen}
                     onChange={(e) => setTaxRegimen(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50/50 text-slate-800 text-sm font-semibold transition-all outline-none"
+                    className="w-full px-4 py-2.5 rounded-xl border border-border focus:border-success-text focus:ring-1 focus-visible:ring-success-text bg-page/50 text-text-1 text-sm font-semibold transition-all outline-none"
                   >
                     <option value="601">601 - General de Ley Personas Morales</option>
                     <option value="603">603 - Personas Morales con Fines no Lucrativos</option>
@@ -431,7 +431,7 @@ export const FacturacionManager = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-wider">Código Postal Fiscal</label>
+                  <label className="text-xs font-black text-text-3 uppercase tracking-wider">Código Postal Fiscal</label>
                   <input
                     type="text"
                     required
@@ -439,15 +439,15 @@ export const FacturacionManager = () => {
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
                     placeholder="Ej. 64000"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50/50 text-slate-800 text-sm font-semibold transition-all outline-none"
+                    className="w-full px-4 py-2.5 rounded-xl border border-border focus:border-success-text focus:ring-1 focus-visible:ring-success-text bg-page/50 text-text-1 text-sm font-semibold transition-all outline-none"
                   />
                 </div>
 
-                <div className="md:col-span-2 pt-3 border-t border-slate-100 flex justify-end">
+                <div className="md:col-span-2 pt-3 border-t border-border flex justify-end">
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md hover:scale-102 transition-all cursor-pointer border-none flex items-center gap-1.5 disabled:opacity-50"
+                    className="px-5 py-2.5 bg-success-text hover:bg-success-text text-white rounded-xl text-xs font-black shadow-md hover:scale-102 transition-all cursor-pointer border-none flex items-center gap-1.5 disabled:opacity-50"
                   >
                     {isSaving && <RefreshCw size={12} className="animate-spin" />}
                     Guardar Datos Fiscales
@@ -462,42 +462,42 @@ export const FacturacionManager = () => {
                 usarlo nunca. Se sustituye por la explicación: pedir un archivo que no se va a
                 utilizar es pedirle a alguien que asuma un riesgo a cambio de nada. */}
             {timbradoDesactivado ? (
-              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-3">
-                <div className="border-b border-slate-100 pb-3 flex items-center gap-2">
+              <div className="bg-white rounded-3xl p-6 border border-border shadow-sm space-y-3">
+                <div className="border-b border-border pb-3 flex items-center gap-2">
                   <Key size={18} className="text-slate-400" />
-                  <h3 className="text-base font-black text-slate-800">Certificados SAT (CSD)</h3>
+                  <h3 className="text-base font-black text-text-1">Certificados SAT (CSD)</h3>
                 </div>
-                <p className="text-[12px] text-slate-600 leading-relaxed">
+                <p className="text-[12px] text-text-2 leading-relaxed">
                   <strong>No subas aquí tus sellos digitales.</strong> El timbrado CFDI está
                   desactivado, así que este sistema no tiene por qué custodiar el sello fiscal de
                   tu empresa — es el equivalente digital de tu firma ante el SAT.
                 </p>
-                <p className="text-[12px] text-slate-500 leading-relaxed">
+                <p className="text-[12px] text-text-3 leading-relaxed">
                   Mientras tanto, exporta tu pre-nómina en Excel o PDF y entrégasela a tu contador
                   para que él la timbre desde su propio sistema.
                 </p>
               </div>
             ) : (
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6 flex flex-col justify-between">
+            <div className="bg-white rounded-3xl p-6 border border-border shadow-sm space-y-6 flex flex-col justify-between">
               <div className="space-y-5">
-                <div className="border-b border-slate-100 pb-3 flex items-center gap-2">
-                  <Key size={18} className="text-slate-500" />
-                  <h3 className="text-base font-black text-slate-800">Certificados SAT (CSD)</h3>
+                <div className="border-b border-border pb-3 flex items-center gap-2">
+                  <Key size={18} className="text-text-3" />
+                  <h3 className="text-base font-black text-text-1">Certificados SAT (CSD)</h3>
                 </div>
 
                 {/* Subida del .cer */}
                 <div className="space-y-2">
-                  <span className="text-xs font-black text-slate-500 uppercase tracking-wider block">Archivo Certificado (.cer)</span>
-                  <div className="relative border border-dashed border-slate-250 hover:border-emerald-500 rounded-xl p-3 bg-slate-50/50 hover:bg-slate-50/20 transition-all flex items-center justify-between">
+                  <span className="text-xs font-black text-text-3 uppercase tracking-wider block">Archivo Certificado (.cer)</span>
+                  <div className="relative border border-dashed border-slate-250 hover:border-success-text rounded-xl p-3 bg-page/50 hover:bg-page/20 transition-all flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className={`p-2 rounded-lg ${cerFileBase64 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                      <div className={`p-2 rounded-lg ${cerFileBase64 ? 'bg-success-bg text-success-text' : 'bg-page text-slate-400'}`}>
                         <FileCode size={16} />
                       </div>
-                      <span className="text-xs font-bold text-slate-700 truncate max-w-[150px]">
+                      <span className="text-xs font-bold text-text-2 truncate max-w-[150px]">
                         {cerName || 'Selecciona archivo .cer'}
                       </span>
                     </div>
-                    <label className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-[10px] font-black cursor-pointer transition-all">
+                    <label className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-text-2 rounded-lg text-[10px] font-black cursor-pointer transition-all">
                       Buscar
                       <input
                         type="file"
@@ -511,17 +511,17 @@ export const FacturacionManager = () => {
 
                 {/* Subida del .key */}
                 <div className="space-y-2">
-                  <span className="text-xs font-black text-slate-500 uppercase tracking-wider block">Archivo Llave Privada (.key)</span>
-                  <div className="relative border border-dashed border-slate-250 hover:border-emerald-500 rounded-xl p-3 bg-slate-50/50 hover:bg-slate-50/20 transition-all flex items-center justify-between">
+                  <span className="text-xs font-black text-text-3 uppercase tracking-wider block">Archivo Llave Privada (.key)</span>
+                  <div className="relative border border-dashed border-slate-250 hover:border-success-text rounded-xl p-3 bg-page/50 hover:bg-page/20 transition-all flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className={`p-2 rounded-lg ${keyFileBase64 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                      <div className={`p-2 rounded-lg ${keyFileBase64 ? 'bg-success-bg text-success-text' : 'bg-page text-slate-400'}`}>
                         <Key size={16} />
                       </div>
-                      <span className="text-xs font-bold text-slate-700 truncate max-w-[150px]">
+                      <span className="text-xs font-bold text-text-2 truncate max-w-[150px]">
                         {keyName || 'Selecciona archivo .key'}
                       </span>
                     </div>
-                    <label className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-[10px] font-black cursor-pointer transition-all">
+                    <label className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-text-2 rounded-lg text-[10px] font-black cursor-pointer transition-all">
                       Buscar
                       <input
                         type="file"
@@ -535,18 +535,18 @@ export const FacturacionManager = () => {
 
                 {/* Contraseña CSD */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-wider">Contraseña de la Llave CSD</label>
+                  <label className="text-xs font-black text-text-3 uppercase tracking-wider">Contraseña de la Llave CSD</label>
                   <input
                     type="password"
                     value={csdPassword}
                     onChange={(e) => setCsdPassword(e.target.value)}
                     placeholder="Contraseña del certificado"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50/50 text-slate-800 text-sm font-semibold transition-all outline-none"
+                    className="w-full px-4 py-2.5 rounded-xl border border-border focus:border-success-text focus:ring-1 focus-visible:ring-success-text bg-page/50 text-text-1 text-sm font-semibold transition-all outline-none"
                   />
                 </div>
               </div>
 
-              <div className="pt-5 border-t border-slate-100 flex flex-col gap-2">
+              <div className="pt-5 border-t border-border flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={handleUploadCsd}
@@ -566,11 +566,11 @@ export const FacturacionManager = () => {
 
         {/* CONTENIDO TAB: TIMBRADO DE NÓMINA */}
         {activeTab === 'timbrado' && (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden flex flex-col">
             {/* Header del timbrado: el periodo operativo REAL (última semana cerrada) */}
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/30 flex items-center justify-between flex-wrap gap-4">
+            <div className="px-6 py-4 border-b border-border bg-page/30 flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <span className="px-3 py-1.5 bg-white border border-slate-250 rounded-xl text-xs font-bold text-slate-700">
+                <span className="px-3 py-1.5 bg-white border border-slate-250 rounded-xl text-xs font-bold text-text-2">
                   {payrollPeriod
                     ? `Periodo del ${payrollPeriod.start_date} al ${payrollPeriod.end_date}`
                     : 'Cargando periodo...'}
@@ -582,7 +582,7 @@ export const FacturacionManager = () => {
 
               {/* Un botón apagado sin explicación manda a alguien a "arreglarlo". Se dice por qué. */}
               {timbradoDesactivado && (
-                <div className="w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-800 leading-relaxed">
+                <div className="w-full rounded-xl border border-warning-text/20 bg-warning-bg px-3 py-2 text-[11px] font-medium text-warning-text leading-relaxed">
                   <strong>Timbrado desactivado.</strong>{' '}
                   {motivoDesactivado ?? 'El timbrado CFDI nativo está desactivado por decisión estratégica.'}{' '}
                   El cálculo, la firma y la exportación de la nómina funcionan con normalidad.
@@ -593,7 +593,7 @@ export const FacturacionManager = () => {
                 disabled={timbradoDesactivado || selectedEmployees.length === 0 || timbrando}
                 title={timbradoDesactivado ? (motivoDesactivado ?? '') : undefined}
                 onClick={handleTimbrarMasivo}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md hover:scale-102 transition-all cursor-pointer border-none flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
+                className="px-5 py-2 bg-success-text hover:bg-success-text text-white rounded-xl text-xs font-black shadow-md hover:scale-102 transition-all cursor-pointer border-none flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
               >
                 {timbrando ? (
                   <>
@@ -611,9 +611,9 @@ export const FacturacionManager = () => {
 
             {/* Barra de progreso de timbrado */}
             {timbrando && (
-              <div className="w-full bg-slate-100 h-1.5 relative overflow-hidden">
-                <div 
-                  className="bg-emerald-500 h-full transition-all duration-300"
+              <div className="w-full bg-page h-1.5 relative overflow-hidden">
+                <div
+                  className="bg-success-icon h-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -623,13 +623,13 @@ export const FacturacionManager = () => {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
+                  <tr className="bg-page border-b border-border">
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider w-12 text-center">
                       <input
                         type="checkbox"
                         checked={selectedEmployees.length === timbrables.length && timbrables.length > 0}
                         onChange={toggleSelectAll}
-                        className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                        className="rounded text-success-text focus-visible:ring-success-text w-4 h-4 cursor-pointer"
                       />
                     </th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Colaborador</th>
@@ -641,7 +641,7 @@ export const FacturacionManager = () => {
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider text-center">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-150">
+                <tbody className="divide-y divide-border">
                   {payrollSummary.map((emp) => {
                     const isSelected = selectedEmployees.includes(emp.id);
                     const status = payrollStatus[emp.id];
@@ -653,8 +653,8 @@ export const FacturacionManager = () => {
                     return (
                       <tr
                         key={emp.id}
-                        className={`hover:bg-slate-50/50 transition-all ${
-                          isSelected ? 'bg-emerald-50/10' : ''
+                        className={`hover:bg-page/50 transition-all ${
+                          isSelected ? 'bg-success-bg/10' : ''
                         }`}
                       >
                         <td className="py-4 px-6 text-center">
@@ -663,25 +663,25 @@ export const FacturacionManager = () => {
                             checked={isSelected}
                             disabled={!timbrable}
                             onChange={() => toggleSelectEmployee(emp.id)}
-                            className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="rounded text-success-text focus-visible:ring-success-text w-4 h-4 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                           />
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-600">
+                            <div className="w-9 h-9 rounded-full bg-page flex items-center justify-center font-black text-text-2">
                               {emp.name.charAt(0)}
                             </div>
                             <div>
-                              <span className="text-sm font-black text-slate-800 block">{emp.name}</span>
+                              <span className="text-sm font-black text-text-1 block">{emp.name}</span>
                               <span className="text-[10px] text-slate-400 font-semibold block">{emp.role}</span>
                             </div>
                           </div>
                         </td>
                         <td className="py-4 px-6">
                           {emp.rfc ? (
-                            <span className="text-xs font-mono font-bold text-slate-700 block">{emp.rfc}</span>
+                            <span className="text-xs font-mono font-bold text-text-2 block">{emp.rfc}</span>
                           ) : (
-                            <span className="text-[10px] font-bold text-amber-600 block">Sin RFC (se usará genérico)</span>
+                            <span className="text-[10px] font-bold text-warning-text block">Sin RFC (se usará genérico)</span>
                           )}
                           {emp.curp && (
                             <span className="text-[10px] font-mono text-slate-400 font-semibold block">{emp.curp}</span>
@@ -689,29 +689,29 @@ export const FacturacionManager = () => {
                         </td>
                         <td className="py-4 px-6">
                           {emp.salary_pending ? (
-                            <span className="text-[10px] font-bold text-amber-600">Salario sin capturar</span>
+                            <span className="text-[10px] font-bold text-warning-text">Salario sin capturar</span>
                           ) : (
-                            <span className="text-sm font-black text-slate-800">
+                            <span className="text-sm font-black text-text-1">
                               ${Number(netoMostrado ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           )}
                         </td>
                         <td className="py-4 px-6">
-                          <span className="text-xs font-bold text-rose-600">
+                          <span className="text-xs font-bold text-danger-text">
                             {emp.penalty > 0 ? `-$${Number(emp.penalty).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
                           </span>
                         </td>
                         <td className="py-4 px-6">
                           {emp.approval_status === 'approved_by_admin' ? (
-                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase rounded-full border border-emerald-200/50">
+                            <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-extrabold uppercase rounded-full border border-success-text/50">
                               🟢 Autorizada
                             </span>
                           ) : emp.approval_status === 'approved_by_employee' || emp.approval_status === 'finalized' ? (
-                            <span className="px-2.5 py-1 bg-sky-50 text-sky-700 text-[10px] font-extrabold uppercase rounded-full border border-sky-200/50">
+                            <span className="px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-extrabold uppercase rounded-full border border-border/50">
                               🔵 Firmada · falta autorizar
                             </span>
                           ) : (
-                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase rounded-full border border-amber-200/50">
+                            <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-[10px] font-extrabold uppercase rounded-full border border-warning-text/50">
                               🟡 Sin firma del colaborador
                             </span>
                           )}
@@ -719,7 +719,7 @@ export const FacturacionManager = () => {
                         <td className="py-4 px-6">
                           {yaTimbrada ? (
                             <div className="space-y-0.5">
-                              <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase rounded-full border border-emerald-200/50 flex items-center gap-1 w-fit">
+                              <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-extrabold uppercase rounded-full border border-success-text/50 flex items-center gap-1 w-fit">
                                 <CheckCircle size={10} /> Timbrado SAT
                               </span>
                               <span className="text-[9px] font-mono font-bold text-slate-450 block truncate max-w-[120px]" title={emp.cfdi_uuid || status?.uuid || ''}>
@@ -728,15 +728,15 @@ export const FacturacionManager = () => {
                             </div>
                           ) : status?.status === 'failed' ? (
                             <div className="space-y-0.5">
-                              <span className="px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-extrabold uppercase rounded-full border border-rose-200/50 flex items-center gap-1 w-fit">
+                              <span className="px-2.5 py-1 bg-danger-bg text-danger-text text-[10px] font-extrabold uppercase rounded-full border border-danger-text/50 flex items-center gap-1 w-fit">
                                 <AlertCircle size={10} /> Falló Timbrado
                               </span>
                               {status.error && (
-                                <span className="text-[9px] font-bold text-rose-500 block max-w-[180px]">{status.error}</span>
+                                <span className="text-[9px] font-bold text-danger-text block max-w-[180px]">{status.error}</span>
                               )}
                             </div>
                           ) : (
-                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase rounded-full border border-amber-200/50">
+                            <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-[10px] font-extrabold uppercase rounded-full border border-warning-text/50">
                               Pendiente Timbrar
                             </span>
                           )}
@@ -746,7 +746,7 @@ export const FacturacionManager = () => {
                             <button
                               onClick={() => handlePrintTicket(emp.id)}
                               title="Imprimir Ticket 80mm"
-                              className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-lg transition-all border-none cursor-pointer"
+                              className="p-1.5 bg-page hover:bg-slate-200 text-text-2 hover:text-text-1 rounded-lg transition-all border-none cursor-pointer"
                             >
                               <Printer size={12} />
                             </button>
@@ -770,13 +770,13 @@ export const FacturacionManager = () => {
 
         {/* CONTENIDO TAB: HISTORIAL SAT */}
         {activeTab === 'historial' && (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/30 flex items-center justify-between flex-wrap gap-4">
-              <h3 className="text-base font-black text-slate-800">Facturas y Recibos Emitidos en el SAT</h3>
+          <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-border bg-page/30 flex items-center justify-between flex-wrap gap-4">
+              <h3 className="text-base font-black text-text-1">Facturas y Recibos Emitidos en el SAT</h3>
               <button
                 onClick={fetchInvoices}
                 disabled={loadingInvoices}
-                className="px-4 py-1.5 bg-white border border-slate-250 hover:bg-slate-50 rounded-xl text-xs font-black text-slate-600 hover:text-slate-800 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="px-4 py-1.5 bg-white border border-slate-250 hover:bg-page rounded-xl text-xs font-black text-text-2 hover:text-text-1 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
                 <RefreshCw size={12} className={loadingInvoices ? 'animate-spin' : ''} />
                 Sincronizar Historial
@@ -786,19 +786,19 @@ export const FacturacionManager = () => {
             {loadingInvoices ? (
               <div className="py-12 flex flex-col items-center justify-center gap-3">
                 <RefreshCw size={24} className="text-slate-400 animate-spin" />
-                <span className="text-xs font-bold text-slate-500">Consultando API de Facturapi...</span>
+                <span className="text-xs font-bold text-text-3">Consultando API de Facturapi...</span>
               </div>
             ) : invoicesError ? (
               <div className="py-10 px-8 text-center">
-                <AlertCircle size={28} className="text-amber-500 mx-auto mb-3" />
-                <p className="text-xs font-bold text-slate-600 mb-1">No se pudo consultar el historial fiscal</p>
+                <AlertCircle size={28} className="text-warning-text mx-auto mb-3" />
+                <p className="text-xs font-bold text-text-2 mb-1">No se pudo consultar el historial fiscal</p>
                 <p className="text-[10.5px] text-slate-400 font-medium max-w-md mx-auto">{invoicesError}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
+                    <tr className="bg-page border-b border-border">
                       <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Folio Fiscal (UUID)</th>
                       <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Receptor</th>
                       <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">RFC</th>
@@ -807,39 +807,39 @@ export const FacturacionManager = () => {
                       <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Estado</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-150">
+                  <tbody className="divide-y divide-border">
                     {invoices.map((inv) => (
-                      <tr key={inv.id} className="hover:bg-slate-50/50 transition-all">
+                      <tr key={inv.id} className="hover:bg-page/50 transition-all">
                         <td className="py-4 px-6">
-                          <span className="text-xs font-mono font-bold text-slate-700 block max-w-[200px] truncate" title={inv.uuid}>
+                          <span className="text-xs font-mono font-bold text-text-2 block max-w-[200px] truncate" title={inv.uuid}>
                             {inv.uuid}
                           </span>
                           <span className="text-[10px] text-slate-400 font-semibold block">ID: {inv.id}</span>
                         </td>
                         <td className="py-4 px-6">
-                          <span className="text-sm font-black text-slate-800">{inv.legal_name}</span>
+                          <span className="text-sm font-black text-text-1">{inv.legal_name}</span>
                           <span className="text-[10px] text-slate-400 font-semibold block capitalize">CFDI Tipo {inv.type === 'payroll' ? 'Nómina' : 'Ingreso'}</span>
                         </td>
                         <td className="py-4 px-6">
-                          <span className="text-xs font-mono font-bold text-slate-700">{inv.rfc}</span>
+                          <span className="text-xs font-mono font-bold text-text-2">{inv.rfc}</span>
                         </td>
                         <td className="py-4 px-6">
-                          <span className="text-xs font-bold text-slate-500">
+                          <span className="text-xs font-bold text-text-3">
                             {new Date(inv.created_at).toLocaleString('es-MX')}
                           </span>
                         </td>
                         <td className="py-4 px-6">
-                          <span className="text-sm font-black text-slate-800">
+                          <span className="text-sm font-black text-text-1">
                             ${inv.total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </td>
                         <td className="py-4 px-6">
                           {inv.status === 'valid' ? (
-                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase rounded-full border border-emerald-200/50">
+                            <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-extrabold uppercase rounded-full border border-success-text/50">
                               Vigente / Activo
                             </span>
                           ) : (
-                            <span className="px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-extrabold uppercase rounded-full border border-slate-200">
+                            <span className="px-2.5 py-1 bg-page text-text-3 text-[10px] font-extrabold uppercase rounded-full border border-border">
                               Cancelado SAT
                             </span>
                           )}

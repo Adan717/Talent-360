@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Scale, Clock, AlertTriangle, ShieldAlert, Award, 
+import {
+  Scale, Clock, AlertTriangle, ShieldAlert, Award,
   HelpCircle, CheckCircle2, Save, RotateCcw, Activity, Coffee, Upload, Sparkles,
   Calendar, Plus, Trash2, Lock, Unlock
 } from 'lucide-react';
@@ -323,22 +323,22 @@ export default function LftManager() {
   const simResult = calcSimResult();
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-page overflow-hidden">
       {/* Cabecera */}
-      <div className="bg-white px-8 py-5 border-b border-slate-200 shrink-0 flex items-center justify-between">
+      <div className="bg-white px-8 py-5 border-b border-border shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl border border-amber-100 shadow-inner">
+          <div className="p-3 bg-warning-bg text-warning-text rounded-2xl border border-warning-text/20 shadow-inner">
             <Scale size={24} />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-800">Ley Federal del Trabajo (LFT)</h2>
+            <h2 className="text-xl font-black text-text-1">Ley Federal del Trabajo (LFT)</h2>
             <p className="text-xs text-slate-400 font-semibold">Configuración legal del reglamento interno de asistencia y cálculo proporcional de pagos</p>
           </div>
         </div>
 
-        <button 
+        <button
           onClick={() => { fetchSettings(); fetchHolidays(); }}
-          className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all cursor-pointer border-none"
+          className="p-2.5 bg-page hover:bg-slate-200 text-text-2 rounded-xl transition-all cursor-pointer border-none"
           title="Recargar configuración"
         >
           <RotateCcw size={16} />
@@ -348,55 +348,55 @@ export default function LftManager() {
       {/* Cuerpo */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar pb-24 sm:pb-8">
         {successMsg && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-250 text-emerald-800 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
-            <CheckCircle2 size={18} className="shrink-0 text-emerald-600 animate-bounce" />
+          <div className="mb-6 p-4 bg-success-bg border border-success-text/20 text-success-text rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
+            <CheckCircle2 size={18} className="shrink-0 text-success-text animate-bounce" />
             <span className="text-xs font-bold">{successMsg}</span>
           </div>
         )}
         {errorMsg && (
-          <div className="mb-6 p-4 bg-rose-50 border border-rose-250 text-rose-800 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
-            <ShieldAlert size={18} className="shrink-0 text-rose-600 animate-pulse" />
+          <div className="mb-6 p-4 bg-danger-bg border border-danger-text/20 text-danger-text rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
+            <ShieldAlert size={18} className="shrink-0 text-danger-text animate-pulse" />
             <span className="text-xs font-bold">{errorMsg}</span>
           </div>
         )}
         {warnMsg && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
-            <AlertTriangle size={18} className="shrink-0 text-amber-600" />
+          <div className="mb-6 p-4 bg-warning-bg border border-warning-text/20 text-warning-text rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
+            <AlertTriangle size={18} className="shrink-0 text-warning-text" />
             <span className="text-xs font-bold">{warnMsg}</span>
           </div>
         )}
 
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-200">
-            <div className="w-10 h-10 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin mb-4"></div>
-            <p className="text-sm font-semibold text-slate-500">Cargando reglamento...</p>
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-border">
+            <div className="w-10 h-10 border-4 border-border border-t-warning-text rounded-full animate-spin mb-4"></div>
+            <p className="text-sm font-semibold text-text-3">Cargando reglamento...</p>
           </div>
         ) : (
           <>
             {/* Card: Carga de Ley Federal del Trabajo para Extracción por IA */}
-            <div className="mb-8 p-6 bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-200/60 rounded-3xl shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
-              <div className="p-4 bg-amber-100/80 text-amber-700 rounded-2xl border border-amber-200 shadow-sm shrink-0">
-                <Sparkles size={28} className="text-amber-600 animate-pulse" />
+            <div className="mb-8 p-6 bg-gradient-to-br from-warning-icon/5 to-warning-icon/5 border border-warning-text/60 rounded-3xl shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-warning-icon/10 rounded-full blur-2xl pointer-events-none"></div>
+              <div className="p-4 bg-warning-bg/80 text-warning-text rounded-2xl border border-warning-text/20 shadow-sm shrink-0">
+                <Sparkles size={28} className="text-warning-text animate-pulse" />
               </div>
-              
+
               <div className="space-y-1.5 text-center md:text-left flex-1 min-w-0">
                 <div className="flex items-center gap-2 justify-center md:justify-start">
-                  <span className="bg-amber-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full leading-none">Asistente IA</span>
-                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Cargar Reglamento LFT</h3>
+                  <span className="bg-warning-text text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full leading-none">Asistente IA</span>
+                  <h3 className="text-sm font-black text-text-1 uppercase tracking-wider">Cargar Reglamento LFT</h3>
                 </div>
-                <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
+                <p className="text-xs text-text-3 leading-relaxed max-w-2xl">
                   Sube el <strong>reglamento interior de trabajo</strong> de tu empresa (PDF o TXT). La IA lo lee y te propone las tolerancias, retardos y faltas que encuentre, con la cita de dónde salió cada número. Tú decides qué cargar y después guardas: nada se aplica solo.
                 </p>
 
                 {isParsingLft && (
-                  <div className="mt-4 p-3.5 bg-white border border-amber-100 rounded-2xl space-y-2 text-left" role="status">
+                  <div className="mt-4 p-3.5 bg-white border border-warning-text/20 rounded-2xl space-y-2 text-left" role="status">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-extrabold text-amber-700 animate-pulse">Leyendo el reglamento con la IA...</span>
+                      <span className="font-extrabold text-warning-text animate-pulse">Leyendo el reglamento con la IA...</span>
                       <span className="text-slate-400 font-bold">Puede tardar hasta un minuto</span>
                     </div>
-                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-amber-500 h-full rounded-full animate-pulse w-[60%]"></div>
+                    <div className="w-full bg-page h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-warning-icon h-full rounded-full animate-pulse w-[60%]"></div>
                     </div>
                   </div>
                 )}
@@ -412,16 +412,16 @@ export default function LftManager() {
               </div>
 
               <div className="shrink-0 w-full md:w-auto">
-                <label className="flex flex-col items-center justify-center px-6 py-4 bg-white hover:bg-slate-50 border-2 border-dashed border-amber-300 hover:border-amber-500 rounded-2xl cursor-pointer transition-all text-center gap-1.5 shadow-sm active:scale-95">
-                  <Upload size={20} className="text-amber-500" />
-                  <span className="text-xs font-extrabold text-slate-700">Subir Archivo LFT</span>
+                <label className="flex flex-col items-center justify-center px-6 py-4 bg-white hover:bg-page border-2 border-dashed border-warning-text/20 hover:border-warning-text rounded-2xl cursor-pointer transition-all text-center gap-1.5 shadow-sm active:scale-95">
+                  <Upload size={20} className="text-warning-text" />
+                  <span className="text-xs font-extrabold text-text-2">Subir Archivo LFT</span>
                   <span className="text-[10px] text-slate-400">PDF, TXT (Max 5MB)</span>
-                  <input 
+                  <input
                     type="file"
                     accept=".pdf,.txt"
                     onChange={handleLftFileUpload}
                     disabled={isParsingLft}
-                    className="hidden" 
+                    className="hidden"
                   />
                 </label>
               </div>
@@ -430,17 +430,17 @@ export default function LftManager() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Columna Izquierda: Configuración con pestañas */}
             <div className="lg:col-span-2 space-y-6">
-              
+
               {/* Selector de Pestañas (Escritorio) */}
-              <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
-                <div className="bg-white rounded-3xl p-3 border border-slate-200 shadow-sm flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
+              <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+                <div className="bg-white rounded-3xl p-3 border border-border shadow-sm flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
                   <button
                     type="button"
                     onClick={() => setActiveTab('variables')}
                     className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all rounded-xl border-none cursor-pointer ${
                       activeTab === 'variables'
-                        ? 'bg-amber-500 text-white font-extrabold shadow-sm'
-                        : 'bg-transparent text-slate-500 hover:text-slate-800'
+                        ? 'bg-warning-icon text-white font-extrabold shadow-sm'
+                        : 'bg-transparent text-text-3 hover:text-text-1'
                     }`}
                   >
                     Reglamento y Tolerancias
@@ -450,8 +450,8 @@ export default function LftManager() {
                     onClick={() => setActiveTab('holidays')}
                     className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all rounded-xl border-none cursor-pointer ${
                       activeTab === 'holidays'
-                        ? 'bg-amber-500 text-white font-extrabold shadow-sm'
-                        : 'bg-transparent text-slate-500 hover:text-slate-800'
+                        ? 'bg-warning-icon text-white font-extrabold shadow-sm'
+                        : 'bg-transparent text-text-3 hover:text-text-1'
                     }`}
                   >
                     Días Festivos Oficiales
@@ -475,56 +475,56 @@ export default function LftManager() {
 
               {activeTab === 'variables' ? (
                 <form onSubmit={handleSave} className="space-y-6">
-              
+
               {/* Sección 1: Tolerancia de Horarios */}
-              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                  <Clock size={16} className="text-amber-500" />
+              <div className="bg-white rounded-3xl p-6 border border-border shadow-sm space-y-4">
+                <h3 className="text-sm font-black text-text-1 uppercase tracking-wider flex items-center gap-2 border-b border-border pb-3">
+                  <Clock size={16} className="text-warning-text" />
                   Tolerancias de Entrada y Salidas
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500">Tolerancia Entrada (minutos)</label>
-                    <input 
+                    <label className="text-xs font-bold text-text-3">Tolerancia Entrada (minutos)</label>
+                    <input
                       type="number"
                       value={lateToleranceMinutes}
                       onChange={(e) => setLateToleranceMinutes(parseInt(e.target.value) || 0)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                      className="w-full px-4 py-2.5 bg-page border border-border rounded-xl text-text-1 font-semibold outline-none focus:border-warning-text"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500">Tolerancia Comida (minutos)</label>
-                    <input 
+                    <label className="text-xs font-bold text-text-3">Tolerancia Comida (minutos)</label>
+                    <input
                       type="number"
                       value={mealToleranceMinutes}
                       onChange={(e) => setMealToleranceMinutes(parseInt(e.target.value) || 0)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                      className="w-full px-4 py-2.5 bg-page border border-border rounded-xl text-text-1 font-semibold outline-none focus:border-warning-text"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500">Tolerancia Descansos (minutos)</label>
-                    <input 
+                    <label className="text-xs font-bold text-text-3">Tolerancia Descansos (minutos)</label>
+                    <input
                       type="number"
                       value={restToleranceMinutes}
                       onChange={(e) => setRestToleranceMinutes(parseInt(e.target.value) || 0)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                      className="w-full px-4 py-2.5 bg-page border border-border rounded-xl text-text-1 font-semibold outline-none focus:border-warning-text"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2 pt-2">
-                  <label className="text-xs font-bold text-slate-500">Resolución de Retardos (Tolerancia Flexible)</label>
+                  <label className="text-xs font-bold text-text-3">Resolución de Retardos (Tolerancia Flexible)</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => setLateActionMode('deduct')}
                       className={`px-4 py-3 rounded-xl border text-xs font-bold text-left transition-all ${
-                        lateActionMode === 'deduct' 
-                          ? 'bg-amber-50 border-amber-300 text-amber-800' 
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        lateActionMode === 'deduct'
+                          ? 'bg-warning-bg border-warning-text/20 text-warning-text'
+                          : 'bg-page border-border text-text-2 hover:bg-page'
                       }`}
                     >
                       <div className="font-extrabold mb-1">Descuento del Salario</div>
@@ -534,9 +534,9 @@ export default function LftManager() {
                       type="button"
                       onClick={() => setLateActionMode('extend_shift')}
                       className={`px-4 py-3 rounded-xl border text-xs font-bold text-left transition-all ${
-                        lateActionMode === 'extend_shift' 
-                          ? 'bg-amber-50 border-amber-300 text-amber-800' 
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        lateActionMode === 'extend_shift'
+                          ? 'bg-warning-bg border-warning-text/20 text-warning-text'
+                          : 'bg-page border-border text-text-2 hover:bg-page'
                       }`}
                     >
                       <div className="font-extrabold mb-1">Extensión de Turno (Ley Silla / Flex)</div>
@@ -550,15 +550,15 @@ export default function LftManager() {
                   Antes no existía ningún tope en el producto: se podían acumular las horas que
                   fueran sin que nadie las contara ni avisara. El techo es de ley (art. 66) y lo
                   hace cumplir el SERVIDOR; esta pantalla sólo lo dice y no ofrece lo imposible. */}
-              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                  <Activity size={16} className="text-amber-500" />
+              <div className="bg-white rounded-3xl p-6 border border-border shadow-sm space-y-4">
+                <h3 className="text-sm font-black text-text-1 uppercase tracking-wider flex items-center gap-2 border-b border-border pb-3">
+                  <Activity size={16} className="text-warning-text" />
                   Tiempo Extraordinario (Horas Extra)
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500">
+                    <label className="text-xs font-bold text-text-3">
                       Tope por semana y por colaborador (minutos)
                     </label>
                     <input
@@ -567,29 +567,29 @@ export default function LftManager() {
                       max={TECHO_LFT_MINUTOS_SEMANA}
                       value={overtimeWeeklyCapMinutes}
                       onChange={(e) => setOvertimeWeeklyCapMinutes(parseInt(e.target.value) || 0)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                      className="w-full px-4 py-2.5 bg-page border border-border rounded-xl text-text-1 font-semibold outline-none focus:border-warning-text"
                     />
-                    <div className="text-[10px] text-slate-500">
+                    <div className="text-[10px] text-text-3">
                       Equivale a {Math.floor(overtimeWeeklyCapMinutes / 60)} h
                       {overtimeWeeklyCapMinutes % 60 > 0 ? ` ${overtimeWeeklyCapMinutes % 60} min` : ''} por semana.
                       Máximo de ley: {TECHO_LFT_MINUTOS_SEMANA} min (9 h).
                     </div>
                   </div>
 
-                  <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 space-y-2">
-                    <div className="text-[11px] font-extrabold text-amber-900 flex items-center gap-1.5">
+                  <div className="rounded-xl bg-warning-bg border border-warning-text/20 p-4 space-y-2">
+                    <div className="text-[11px] font-extrabold text-warning-text flex items-center gap-1.5">
                       <Scale size={13} /> Artículo 66 de la LFT
                     </div>
-                    <p className="text-[10px] text-amber-800 leading-relaxed">
+                    <p className="text-[10px] text-warning-text leading-relaxed">
                       La jornada se puede prolongar hasta <b>3 horas diarias y no más de 3 veces por
                       semana</b> (9 h). Puedes ponerte un tope <b>menor</b>; uno mayor lo rechaza el
                       sistema.
                     </p>
-                    <p className="text-[10px] text-amber-800 leading-relaxed">
+                    <p className="text-[10px] text-warning-text leading-relaxed">
                       Rebasarlo <b>avisa, no bloquea</b>: el colaborador lo ve en su reloj y tú en el
                       Monitor, con las horas que lleva esta semana. Nadie deja de poder fichar.
                     </p>
-                    <p className="text-[10px] text-amber-700 leading-relaxed border-t border-amber-200 pt-2">
+                    <p className="text-[10px] text-warning-text leading-relaxed border-t border-warning-text/20 pt-2">
                       Este tope <b>no toca la nómina</b>: el sistema paga por día, no por horas. Es
                       un control operativo y de cumplimiento.
                     </p>
@@ -598,55 +598,55 @@ export default function LftManager() {
               </div>
 
               {/* Sección 2: Reglamento de Asistencias (Retardos, Faltas y Sanciones) */}
-              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                  <AlertTriangle size={16} className="text-amber-500" />
+              <div className="bg-white rounded-3xl p-6 border border-border shadow-sm space-y-4">
+                <h3 className="text-sm font-black text-text-1 uppercase tracking-wider flex items-center gap-2 border-b border-border pb-3">
+                  <AlertTriangle size={16} className="text-warning-text" />
                   Reglamento de Faltas e Incidencias
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500">Retardos equivalentes a 1 Falta</label>
-                    <input 
+                    <label className="text-xs font-bold text-text-3">Retardos equivalentes a 1 Falta</label>
+                    <input
                       type="number"
                       value={latesPerAbsence}
                       onChange={(e) => setLatesPerAbsence(parseInt(e.target.value) || 3)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                      className="w-full px-4 py-2.5 bg-page border border-border rounded-xl text-text-1 font-semibold outline-none focus:border-warning-text"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500">Faltas para Llamada de Atención (Sanción Escrita)</label>
-                    <input 
+                    <label className="text-xs font-bold text-text-3">Faltas para Llamada de Atención (Sanción Escrita)</label>
+                    <input
                       type="number"
                       value={absencesForWarning}
                       onChange={(e) => setAbsencesForWarning(parseInt(e.target.value) || 3)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                      className="w-full px-4 py-2.5 bg-page border border-border rounded-xl text-text-1 font-semibold outline-none focus:border-warning-text"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500">Faltas para Suspensión Temporal</label>
+                    <label className="text-xs font-bold text-text-3">Faltas para Suspensión Temporal</label>
                     <input
                       type="number"
                       value={absencesForSuspension}
                       onChange={(e) => setAbsencesForSuspension(parseInt(e.target.value) || 4)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                      className="w-full px-4 py-2.5 bg-page border border-border rounded-xl text-text-1 font-semibold outline-none focus:border-warning-text"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500">Descuento por minuto de retardo ($ MXN)</label>
+                    <label className="text-xs font-bold text-text-3">Descuento por minuto de retardo ($ MXN)</label>
                     <input
                       type="number"
                       min={0}
                       step={0.5}
                       value={latePenaltyPerMinute}
                       onChange={(e) => setLatePenaltyPerMinute(Math.max(0, parseFloat(e.target.value) || 0))}
-                      className={`w-full px-4 py-2.5 border rounded-xl font-semibold outline-none focus:border-amber-500 ${
+                      className={`w-full px-4 py-2.5 border rounded-xl font-semibold outline-none focus:border-warning-text ${
                         latePenaltyPerMinute > 0
-                          ? 'bg-rose-50/60 border-rose-200 text-rose-800'
-                          : 'bg-slate-50 border-slate-200 text-slate-800'
+                          ? 'bg-danger-bg/60 border-danger-text/20 text-danger-text'
+                          : 'bg-page border-border text-text-1'
                       }`}
                     />
                   </div>
@@ -654,9 +654,9 @@ export default function LftManager() {
 
                 {/* N5/opción A: default $0. Si la empresa lo activa, el aviso legal es permanente. */}
                 {latePenaltyPerMinute > 0 ? (
-                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2">
-                    <ShieldAlert size={15} className="text-rose-600 shrink-0 mt-0.5" />
-                    <span className="text-[10.5px] text-rose-800 font-semibold leading-relaxed">
+                  <div className="p-3 bg-danger-bg border border-danger-text/20 rounded-xl flex items-start gap-2">
+                    <ShieldAlert size={15} className="text-danger-text shrink-0 mt-0.5" />
+                    <span className="text-[10.5px] text-danger-text font-semibold leading-relaxed">
                       <strong>Aviso legal:</strong> el art. 107 de la LFT prohíbe imponer multas al salario
                       del trabajador, y un descuento por minuto de retardo puede considerarse una multa.
                       Lo activas bajo la responsabilidad de tu empresa; el sistema registra quién lo
@@ -672,41 +672,41 @@ export default function LftManager() {
                 )}
 
                 <div className="flex flex-col gap-3 pt-2">
-                  <label className="relative flex items-center gap-3 cursor-pointer p-3 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 transition-colors">
-                    <input 
+                  <label className="relative flex items-center gap-3 cursor-pointer p-3 bg-page rounded-xl border border-border hover:bg-page transition-colors">
+                    <input
                       type="checkbox"
                       checked={deductAbsenceDay}
                       onChange={(e) => setDeductAbsenceDay(e.target.checked)}
-                      className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4"
+                      className="rounded text-warning-text focus-visible:ring-warning-text w-4 h-4"
                     />
                     <div>
-                      <span className="text-xs font-extrabold text-slate-800 block">Descontar día completo por falta</span>
+                      <span className="text-xs font-extrabold text-text-1 block">Descontar día completo por falta</span>
                       <span className="text-[10px] text-slate-400">Si se activa, el día no trabajado se resta completamente del sueldo base devengado.</span>
                     </div>
                   </label>
 
-                  <label className="relative flex items-center gap-3 cursor-pointer p-3 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 transition-colors">
-                    <input 
+                  <label className="relative flex items-center gap-3 cursor-pointer p-3 bg-page rounded-xl border border-border hover:bg-page transition-colors">
+                    <input
                       type="checkbox"
                       checked={proportionalRestDay}
                       onChange={(e) => setProportionalRestDay(e.target.checked)}
-                      className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4"
+                      className="rounded text-warning-text focus-visible:ring-warning-text w-4 h-4"
                     />
                     <div>
-                      <span className="text-xs font-extrabold text-slate-800 block">Pago de Día de Descanso Proporcional (Séptimo Día)</span>
+                      <span className="text-xs font-extrabold text-text-1 block">Pago de Día de Descanso Proporcional (Séptimo Día)</span>
                       <span className="text-[10px] text-slate-400">Si hay faltas en la semana, el pago del descanso dominical/séptimo día se pagará proporcionalmente.</span>
                     </div>
                   </label>
 
-                  <label className="relative flex items-center gap-3 cursor-pointer p-3 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 transition-colors">
-                    <input 
+                  <label className="relative flex items-center gap-3 cursor-pointer p-3 bg-page rounded-xl border border-border hover:bg-page transition-colors">
+                    <input
                       type="checkbox"
                       checked={paidRestDay}
                       onChange={(e) => setPaidRestDay(e.target.checked)}
-                      className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4"
+                      className="rounded text-warning-text focus-visible:ring-warning-text w-4 h-4"
                     />
                     <div>
-                      <span className="text-xs font-extrabold text-slate-800 block">Día de descanso pagado (por defecto)</span>
+                      <span className="text-xs font-extrabold text-text-1 block">Día de descanso pagado (por defecto)</span>
                       <span className="text-[10px] text-slate-400">Indica si el día de descanso obligatorio se paga bajo condiciones ideales.</span>
                     </div>
                   </label>
@@ -728,32 +728,32 @@ export default function LftManager() {
           ) : (
             <div className="space-y-6">
               {/* Formulario rápido para añadir Día Festivo */}
-              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                  <Calendar size={16} className="text-amber-500" />
+              <div className="bg-white rounded-3xl p-6 border border-border shadow-sm space-y-4">
+                <h3 className="text-sm font-black text-text-1 uppercase tracking-wider flex items-center gap-2 border-b border-border pb-3">
+                  <Calendar size={16} className="text-warning-text" />
                   Registrar Nuevo Día Festivo Oficial
                 </h3>
-                
+
                 <form onSubmit={handleAddHoliday} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500">Fecha del Festivo</label>
-                    <input 
+                    <label className="text-xs font-bold text-text-3">Fecha del Festivo</label>
+                    <input
                       type="date"
                       value={holidayDate}
                       onChange={(e) => setHolidayDate(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                      className="w-full px-4 py-2.5 bg-page border border-border rounded-xl text-text-1 font-semibold outline-none focus:border-warning-text"
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500">Nombre del Día Festivo</label>
-                    <input 
+                    <label className="text-xs font-bold text-text-3">Nombre del Día Festivo</label>
+                    <input
                       type="text"
                       placeholder="Ej: Año Nuevo, Natalicio Juárez"
                       value={holidayName}
                       onChange={(e) => setHolidayName(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                      className="w-full px-4 py-2.5 bg-page border border-border rounded-xl text-text-1 font-semibold outline-none focus:border-warning-text"
                       required
                     />
                   </div>
@@ -761,7 +761,7 @@ export default function LftManager() {
                   <div>
                     <button
                       type="submit"
-                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-md transition-all hover:scale-[1.02] flex items-center justify-center gap-2 cursor-pointer border-none"
+                      className="w-full py-2.5 bg-warning-icon hover:bg-warning-text text-white font-extrabold rounded-xl shadow-md transition-all hover:scale-[1.02] flex items-center justify-center gap-2 cursor-pointer border-none"
                     >
                       <Plus size={16} />
                       Agregar Día
@@ -770,15 +770,15 @@ export default function LftManager() {
                 </form>
 
                 <div className="pt-2">
-                  <label className="relative flex items-center gap-3 cursor-pointer p-3 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 transition-colors">
-                    <input 
+                  <label className="relative flex items-center gap-3 cursor-pointer p-3 bg-page rounded-xl border border-border hover:bg-page transition-colors">
+                    <input
                       type="checkbox"
                       checked={holidayBlockApp}
                       onChange={(e) => setHolidayBlockApp(e.target.checked)}
-                      className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4"
+                      className="rounded text-warning-text focus-visible:ring-warning-text w-4 h-4"
                     />
                     <div>
-                      <span className="text-xs font-extrabold text-slate-800 block">Bloquear la aplicación en esta fecha</span>
+                      <span className="text-xs font-extrabold text-text-1 block">Bloquear la aplicación en esta fecha</span>
                       <span className="text-[10px] text-slate-400">Si se activa, ningún empleado podrá iniciar jornada o realizar fichajes en esta fecha feriada.</span>
                     </div>
                   </label>
@@ -786,15 +786,15 @@ export default function LftManager() {
               </div>
 
               {/* Lista de Festivos Oficiales */}
-              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                  <Calendar size={16} className="text-amber-500" />
+              <div className="bg-white rounded-3xl p-6 border border-border shadow-sm space-y-4">
+                <h3 className="text-sm font-black text-text-1 uppercase tracking-wider flex items-center gap-2 border-b border-border pb-3">
+                  <Calendar size={16} className="text-warning-text" />
                   Festivos Registrados
                 </h3>
 
                 {isHolidaysLoading ? (
                   <div className="flex flex-col items-center justify-center py-10">
-                    <div className="w-8 h-8 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin mb-2"></div>
+                    <div className="w-8 h-8 border-4 border-border border-t-warning-text rounded-full animate-spin mb-2"></div>
                     <p className="text-xs font-semibold text-slate-400">Cargando fechas festivas...</p>
                   </div>
                 ) : holidays.length === 0 ? (
@@ -802,30 +802,30 @@ export default function LftManager() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {holidays.map((h) => (
-                      <div key={h.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3 hover:shadow-sm transition-all hover:bg-white">
+                      <div key={h.id} className="p-4 bg-page border border-border rounded-2xl flex items-center justify-between gap-3 hover:shadow-sm transition-all hover:bg-white">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                          <div className="p-2.5 bg-warning-bg text-warning-text rounded-xl">
                             <Calendar size={16} />
                           </div>
                           <div className="space-y-1">
-                            <h4 className="text-xs font-extrabold text-slate-800">{h.name}</h4>
+                            <h4 className="text-xs font-extrabold text-text-1">{h.name}</h4>
                             <p className="text-[10px] text-slate-400 font-bold">{h.date}</p>
                             {h.block_app ? (
-                              <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full border border-rose-100">
+                              <span className="inline-flex items-center gap-1 bg-danger-bg text-danger-text text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full border border-danger-text/20">
                                 <Lock size={8} /> Bloquea Fichaje
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full border border-emerald-100">
+                              <span className="inline-flex items-center gap-1 bg-success-bg text-success-text text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full border border-success-text/20">
                                 <Unlock size={8} /> Libre (Nómina Doble)
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <button 
+                        <button
                           type="button"
                           onClick={() => handleDeleteHoliday(h.id)}
-                          className="p-2 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 rounded-xl transition-all cursor-pointer"
+                          className="p-2 bg-white hover:bg-danger-bg text-slate-400 hover:text-danger-text border border-border rounded-xl transition-all cursor-pointer"
                           title="Eliminar Día Festivo"
                         >
                           <Trash2 size={14} />
@@ -841,75 +841,75 @@ export default function LftManager() {
 
             {/* Simulador Interactivo LFT */}
             <div className="space-y-6">
-              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-amber-400 to-yellow-500"></div>
+              <div className="bg-white rounded-3xl p-6 border border-border shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-warning-icon to-warning-icon"></div>
 
                 <div className="flex items-center gap-2 mb-4">
-                  <Activity size={18} className="text-amber-500" />
-                  <h3 className="text-base font-black text-slate-800">Simulador de Impacto LFT</h3>
+                  <Activity size={18} className="text-warning-text" />
+                  <h3 className="text-base font-black text-text-1">Simulador de Impacto LFT</h3>
                 </div>
 
-                <p className="text-[11.5px] text-slate-500 leading-relaxed mb-6">
+                <p className="text-[11.5px] text-text-3 leading-relaxed mb-6">
                   Modifica las variables en tiempo real para visualizar cómo afectará el reglamento de la LFT a la nómina de un empleado.
                 </p>
 
-                <div className="space-y-4 border-b border-slate-100 pb-5 mb-5">
+                <div className="space-y-4 border-b border-border pb-5 mb-5">
                   <div className="space-y-1">
-                    <div className="flex justify-between text-xs font-bold text-slate-500">
+                    <div className="flex justify-between text-xs font-bold text-text-3">
                       <span>Salario Diario Integrado</span>
-                      <span className="text-amber-600">${simSalarioDiario} MXN</span>
+                      <span className="text-warning-text">${simSalarioDiario} MXN</span>
                     </div>
-                    <input 
+                    <input
                       type="range"
                       min={250}
                       max={1200}
                       step={50}
                       value={simSalarioDiario}
                       onChange={(e) => setSimSalarioDiario(parseInt(e.target.value))}
-                      className="w-full accent-amber-500 cursor-pointer"
+                      className="w-full accent-warning-text cursor-pointer"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex justify-between text-xs font-bold text-slate-500">
+                    <div className="flex justify-between text-xs font-bold text-text-3">
                       <span>Retardos Acumulados</span>
-                      <span className="text-amber-600">{simRetardos} retardos</span>
+                      <span className="text-warning-text">{simRetardos} retardos</span>
                     </div>
-                    <input 
+                    <input
                       type="range"
                       min={0}
                       max={10}
                       value={simRetardos}
                       onChange={(e) => setSimRetardos(parseInt(e.target.value))}
-                      className="w-full accent-amber-500 cursor-pointer"
+                      className="w-full accent-warning-text cursor-pointer"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex justify-between text-xs font-bold text-slate-500">
+                    <div className="flex justify-between text-xs font-bold text-text-3">
                       <span>Faltas Físicas directas</span>
-                      <span className="text-amber-600">{simFaltas} faltas</span>
+                      <span className="text-warning-text">{simFaltas} faltas</span>
                     </div>
-                    <input 
+                    <input
                       type="range"
                       min={0}
                       max={6}
                       value={simFaltas}
                       onChange={(e) => setSimFaltas(parseInt(e.target.value))}
-                      className="w-full accent-amber-500 cursor-pointer"
+                      className="w-full accent-warning-text cursor-pointer"
                     />
                   </div>
 
-                  <div className="space-y-1 pt-1.5 border-t border-slate-100">
-                    <label className="relative flex items-center gap-3 cursor-pointer p-2.5 bg-amber-500/5 rounded-xl border border-amber-250/50 hover:bg-amber-500/10 transition-colors">
-                      <input 
+                  <div className="space-y-1 pt-1.5 border-t border-border">
+                    <label className="relative flex items-center gap-3 cursor-pointer p-2.5 bg-warning-icon/5 rounded-xl border border-warning-text/50 hover:bg-warning-icon/10 transition-colors">
+                      <input
                         type="checkbox"
                         checked={simFestivoTrabajado}
                         onChange={(e) => setSimFestivoTrabajado(e.target.checked)}
-                        className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+                        className="rounded text-warning-text focus-visible:ring-warning-text w-4 h-4 cursor-pointer"
                       />
                       <div>
-                        <span className="text-[11px] font-extrabold text-slate-800 block">¿Laboró en día festivo oficial?</span>
+                        <span className="text-[11px] font-extrabold text-text-1 block">¿Laboró en día festivo oficial?</span>
                         <span className="text-[9.5px] text-slate-400">Si se activa, sumará el pago doble adicional por festivo trabajado (LFT).</span>
                       </div>
                     </label>
@@ -917,48 +917,48 @@ export default function LftManager() {
                 </div>
 
                 {/* Resultados de Simulación */}
-                <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
+                <div className="space-y-3 bg-page p-4 rounded-2xl border border-border/50">
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-400 font-bold">Faltas por Retardo:</span>
-                    <span className="text-slate-700 font-extrabold">{simResult.faltasEquivalentes}</span>
+                    <span className="text-text-2 font-extrabold">{simResult.faltasEquivalentes}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-400 font-bold">Faltas Totales (Nómina):</span>
-                    <span className="text-slate-700 font-extrabold">{simResult.faltasTotales}</span>
+                    <span className="text-text-2 font-extrabold">{simResult.faltasTotales}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-400 font-bold">Descuento de Faltas:</span>
-                    <span className="text-rose-600 font-extrabold">-${simResult.descuentoFaltas.toLocaleString()} MXN</span>
+                    <span className="text-danger-text font-extrabold">-${simResult.descuentoFaltas.toLocaleString()} MXN</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-400 font-bold">Proporción 7mo Día:</span>
-                    <span className="text-amber-600 font-extrabold">{(simResult.factorProporcional * 100).toFixed(1)}%</span>
+                    <span className="text-warning-text font-extrabold">{(simResult.factorProporcional * 100).toFixed(1)}%</span>
                   </div>
-                  <div className="flex justify-between text-xs border-b border-slate-200 pb-2">
+                  <div className="flex justify-between text-xs border-b border-border pb-2">
                     <span className="text-slate-400 font-bold">Descuento 7mo Día:</span>
-                    <span className="text-rose-600 font-extrabold">-${simResult.descuentoSeptimoDia.toLocaleString()} MXN</span>
+                    <span className="text-danger-text font-extrabold">-${simResult.descuentoSeptimoDia.toLocaleString()} MXN</span>
                   </div>
 
                   {simResult.holidayWorkedPay > 0 && (
-                    <div className="flex justify-between text-xs bg-emerald-50 p-2 rounded-xl border border-emerald-100">
-                      <span className="text-emerald-700 font-bold">Bono Festivo (+200% LFT):</span>
-                      <span className="text-emerald-600 font-extrabold">+${simResult.holidayWorkedPay.toLocaleString()} MXN</span>
+                    <div className="flex justify-between text-xs bg-success-bg p-2 rounded-xl border border-success-text/20">
+                      <span className="text-success-text font-bold">Bono Festivo (+200% LFT):</span>
+                      <span className="text-success-text font-extrabold">+${simResult.holidayWorkedPay.toLocaleString()} MXN</span>
                     </div>
                   )}
 
                   <div className="flex justify-between text-sm items-center pt-1">
-                    <span className="text-slate-800 font-black">Neto Semanal a Pagar:</span>
-                    <span className="text-emerald-600 font-black text-base">${simResult.netoSemanal.toLocaleString()} MXN</span>
+                    <span className="text-text-1 font-black">Neto Semanal a Pagar:</span>
+                    <span className="text-success-text font-black text-base">${simResult.netoSemanal.toLocaleString()} MXN</span>
                   </div>
                 </div>
 
                 {/* Sanción Administrativa */}
                 {simResult.faltasTotales > 0 && (
-                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
-                    <ShieldAlert size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div className="mt-4 p-3 bg-warning-bg border border-warning-text/20 rounded-xl flex items-start gap-2">
+                    <ShieldAlert size={16} className="text-warning-text shrink-0 mt-0.5" />
                     <div>
-                      <span className="text-[10px] font-black uppercase text-amber-700 block">Sanción Reglamento Interno</span>
-                      <span className="text-[10.5px] text-amber-900 font-semibold">{simResult.alerta}</span>
+                      <span className="text-[10px] font-black uppercase text-warning-text block">Sanción Reglamento Interno</span>
+                      <span className="text-[10.5px] text-warning-text font-semibold">{simResult.alerta}</span>
                     </div>
                   </div>
                 )}

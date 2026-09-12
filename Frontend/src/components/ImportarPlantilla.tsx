@@ -118,12 +118,12 @@ export const ImportarPlantilla = ({ onCerrar, onImportado }: { onCerrar: () => v
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
         <div className="flex items-start justify-between mb-1">
-          <h2 className="text-xl font-extrabold text-slate-900">Importar plantilla desde un archivo</h2>
-          <button onClick={onCerrar} className="text-slate-400 hover:text-slate-700 border-none bg-transparent cursor-pointer">
+          <h2 className="text-xl font-extrabold text-text-1">Importar plantilla desde un archivo</h2>
+          <button onClick={onCerrar} className="text-slate-400 hover:text-text-2 border-none bg-transparent cursor-pointer">
             <X size={20} />
           </button>
         </div>
-        <p className="text-sm text-slate-500 mb-5">
+        <p className="text-sm text-text-3 mb-5">
           Da de alta a todo tu equipo de una vez. Primero se revisa el archivo y se te muestra qué
           pasaría; nada se guarda hasta que tú lo confirmes.
         </p>
@@ -131,7 +131,7 @@ export const ImportarPlantilla = ({ onCerrar, onImportado }: { onCerrar: () => v
         <div className="flex flex-col sm:flex-row gap-2 mb-5">
           <button
             onClick={descargarPlantilla}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-bold hover:bg-slate-50 cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-text-2 text-sm font-bold hover:bg-page cursor-pointer"
           >
             <Download size={16} /> Descargar plantilla de ejemplo
           </button>
@@ -148,20 +148,20 @@ export const ImportarPlantilla = ({ onCerrar, onImportado }: { onCerrar: () => v
           <button
             onClick={revisar}
             disabled={trabajando}
-            className="w-full px-4 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-50 cursor-pointer border-none"
+            className="w-full px-4 py-3 rounded-xl bg-accent text-white font-bold hover:bg-accent-hover disabled:opacity-50 cursor-pointer border-none"
           >
             {trabajando ? 'Revisando…' : 'Revisar el archivo'}
           </button>
         )}
 
         {error && (
-          <div className="mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-semibold flex items-start gap-2">
+          <div className="mt-4 p-3 rounded-xl bg-danger-bg border border-danger-text/20 text-danger-text text-sm font-semibold flex items-start gap-2">
             <AlertTriangle size={16} className="mt-0.5 shrink-0" /> {error}
           </div>
         )}
 
         {hecho && (
-          <div className="mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-start gap-2">
+          <div className="mt-4 p-3 rounded-xl bg-success-bg border border-success-text/20 text-success-text text-sm font-semibold flex items-start gap-2">
             <CheckCircle2 size={16} className="mt-0.5 shrink-0" /> {hecho}
           </div>
         )}
@@ -170,64 +170,64 @@ export const ImportarPlantilla = ({ onCerrar, onImportado }: { onCerrar: () => v
           <div className="mt-5 space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                ['En el archivo', veredicto.resumen.en_el_archivo, 'text-slate-900'],
-                ['Listos para dar de alta', veredicto.resumen.listos, 'text-emerald-700'],
-                ['Con problema', veredicto.resumen.con_problema, 'text-rose-700'],
-                ['Ya en la empresa', veredicto.resumen.plantilla_actual, 'text-slate-500'],
+                ['En el archivo', veredicto.resumen.en_el_archivo, 'text-text-1'],
+                ['Listos para dar de alta', veredicto.resumen.listos, 'text-success-text'],
+                ['Con problema', veredicto.resumen.con_problema, 'text-danger-text'],
+                ['Ya en la empresa', veredicto.resumen.plantilla_actual, 'text-text-3'],
               ].map(([etiqueta, valor, color]) => (
-                <div key={String(etiqueta)} className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{etiqueta}</p>
+                <div key={String(etiqueta)} className="p-3 rounded-xl bg-page border border-border">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-text-3">{etiqueta}</p>
                   <p className={`text-xl font-black ${color}`}>{valor}</p>
                 </div>
               ))}
             </div>
 
             {veredicto.errores.length > 0 && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200">
-                <p className="text-xs font-black text-rose-900 uppercase tracking-wider mb-1.5">
+              <div className="p-3 rounded-xl bg-danger-bg border border-danger-text/20">
+                <p className="text-xs font-black text-danger-text uppercase tracking-wider mb-1.5">
                   Corrige esto en el archivo y vuelve a subirlo
                 </p>
                 {/* Todo o nada: si un renglón está mal, no se da de alta a nadie. Media
                     plantilla dentro es peor — nadie sabría quién quedó y reintentar duplica. */}
-                <p className="text-[11px] text-rose-700 mb-2">
+                <p className="text-[11px] text-danger-text mb-2">
                   Mientras haya un renglón con problema no se da de alta a nadie, para que no quede
                   media plantilla cargada.
                 </p>
                 <ul className="space-y-1 max-h-40 overflow-y-auto">
                   {veredicto.errores.map((e, i) => (
-                    <li key={i} className="text-xs text-rose-800 font-semibold">· {e}</li>
+                    <li key={i} className="text-xs text-danger-text font-semibold">· {e}</li>
                   ))}
                 </ul>
               </div>
             )}
 
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <div className="border border-border rounded-xl overflow-hidden">
               <div className="overflow-x-auto max-h-64">
                 <table className="w-full text-xs">
-                  <thead className="bg-slate-50 sticky top-0">
+                  <thead className="bg-page sticky top-0">
                     <tr>
                       {['#', 'Nombre', 'Correo', 'Puesto', 'Ingreso', 'Sueldo', 'Notas'].map(h => (
-                        <th key={h} className="text-left px-2.5 py-2 font-bold text-slate-600 whitespace-nowrap">{h}</th>
+                        <th key={h} className="text-left px-2.5 py-2 font-bold text-text-2 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {veredicto.renglones.map(r => (
-                      <tr key={r.renglon} className={`border-t border-slate-100 ${r.problemas.length ? 'bg-rose-50/60' : ''}`}>
+                      <tr key={r.renglon} className={`border-t border-border ${r.problemas.length ? 'bg-danger-bg/60' : ''}`}>
                         <td className="px-2.5 py-1.5 text-slate-400 font-mono">{r.renglon}</td>
-                        <td className="px-2.5 py-1.5 font-semibold text-slate-800 whitespace-nowrap">{r.nombre || '—'}</td>
-                        <td className="px-2.5 py-1.5 text-slate-500">{r.correo || <span className="text-slate-400">sin correo</span>}</td>
-                        <td className="px-2.5 py-1.5 text-slate-500">{r.puesto || '—'}</td>
-                        <td className="px-2.5 py-1.5 text-slate-500 whitespace-nowrap">{r.fecha_ingreso || '—'}</td>
-                        <td className="px-2.5 py-1.5 text-slate-500 text-right tabular-nums">
+                        <td className="px-2.5 py-1.5 font-semibold text-text-1 whitespace-nowrap">{r.nombre || '—'}</td>
+                        <td className="px-2.5 py-1.5 text-text-3">{r.correo || <span className="text-slate-400">sin correo</span>}</td>
+                        <td className="px-2.5 py-1.5 text-text-3">{r.puesto || '—'}</td>
+                        <td className="px-2.5 py-1.5 text-text-3 whitespace-nowrap">{r.fecha_ingreso || '—'}</td>
+                        <td className="px-2.5 py-1.5 text-text-3 text-right tabular-nums">
                           {r.sueldo !== null ? r.sueldo.toLocaleString('es-MX') : '—'}
                         </td>
                         <td className="px-2.5 py-1.5">
                           {r.problemas.map((p, i) => (
-                            <span key={`p${i}`} className="block text-rose-700 font-semibold">{p}</span>
+                            <span key={`p${i}`} className="block text-danger-text font-semibold">{p}</span>
                           ))}
                           {r.avisos.map((a, i) => (
-                            <span key={`a${i}`} className="block text-amber-700">{a}</span>
+                            <span key={`a${i}`} className="block text-warning-text">{a}</span>
                           ))}
                         </td>
                       </tr>
@@ -238,7 +238,7 @@ export const ImportarPlantilla = ({ onCerrar, onImportado }: { onCerrar: () => v
             </div>
 
             {veredicto.resumen.con_aviso > 0 && veredicto.errores.length === 0 && (
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-start gap-2">
+              <div className="p-3 rounded-xl bg-warning-bg border border-warning-text/20 text-warning-text text-xs font-semibold flex items-start gap-2">
                 <Info size={14} className="mt-0.5 shrink-0" />
                 Hay avisos, pero ninguno impide el alta: quien no trae correo entrará por el kiosco
                 con su PIN, y a quien no trae sueldo no se le calculará pre-nómina hasta que se lo
@@ -250,7 +250,7 @@ export const ImportarPlantilla = ({ onCerrar, onImportado }: { onCerrar: () => v
               <button
                 onClick={importar}
                 disabled={!puedeImportar || trabajando}
-                className="flex-1 px-4 py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border-none"
+                className="flex-1 px-4 py-3 rounded-xl bg-success-text text-white font-bold hover:bg-success-text disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border-none"
               >
                 {trabajando
                   ? 'Dando de alta…'
@@ -258,7 +258,7 @@ export const ImportarPlantilla = ({ onCerrar, onImportado }: { onCerrar: () => v
               </button>
               <button
                 onClick={() => { setVeredicto(null); setCsv(''); setNombreArchivo(''); }}
-                className="px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
+                className="px-4 py-3 rounded-xl border border-slate-300 bg-white text-text-2 font-bold hover:bg-page cursor-pointer"
               >
                 Elegir otro archivo
               </button>

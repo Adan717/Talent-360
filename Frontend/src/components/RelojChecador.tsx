@@ -15,9 +15,9 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-8 bg-red-50 text-red-900 h-screen">
+        <div className="p-8 bg-danger-bg text-danger-text h-screen">
           <h1 className="text-2xl font-bold">Error Fatal en React</h1>
-          <pre className="mt-4 bg-white p-4 rounded border border-red-200 overflow-auto">
+          <pre className="mt-4 bg-white p-4 rounded border border-danger-text/20 overflow-auto">
             {this.state.error?.stack || this.state.error?.message || String(this.state.error)}
           </pre>
         </div>
@@ -37,10 +37,10 @@ export default function RelojChecadorWrapper() {
 
 function RelojChecador() {
   const engine = useClockEngine();
-  
+
   if (engine.isGlobalLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-slate-100 p-8 text-center animate-pulse">
+      <div className="flex flex-col items-center justify-center h-screen bg-page p-8 text-center animate-pulse">
         <h2 className="text-3xl font-black text-slate-400 mb-4">Cargando Sincronización...</h2>
       </div>
     );
@@ -48,9 +48,9 @@ function RelojChecador() {
 
   if (engine.dbEmpty) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-slate-100 p-8 text-center">
-        <h2 className="text-3xl font-black text-slate-800 mb-4">Base de Datos Vacía</h2>
-        <p className="text-slate-600 mb-8 max-w-md">No hay empleados registrados en la base de datos. Ve al Centro de Mando e inyecta los mocks de prueba.</p>
+      <div className="flex flex-col items-center justify-center h-screen bg-page p-8 text-center">
+        <h2 className="text-3xl font-black text-text-1 mb-4">Base de Datos Vacía</h2>
+        <p className="text-text-2 mb-8 max-w-md">No hay empleados registrados en la base de datos. Ve al Centro de Mando e inyecta los mocks de prueba.</p>
       </div>
     );
   }

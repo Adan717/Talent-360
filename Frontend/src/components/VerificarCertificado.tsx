@@ -74,11 +74,11 @@ export default function VerificarCertificado() {
     : null;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-5">
+    <div className="min-h-screen bg-page flex flex-col items-center justify-center p-5">
       <div className="w-full max-w-lg">
         <div className="text-center mb-7">
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Verificar un certificado</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1.5 leading-relaxed">
+          <h1 className="text-2xl font-black text-text-1 tracking-tight">Verificar un certificado</h1>
+          <p className="text-sm text-text-3 font-medium mt-1.5 leading-relaxed">
             Escribe el folio impreso al pie del certificado para comprobar que fue emitido de verdad.
           </p>
         </div>
@@ -91,12 +91,12 @@ export default function VerificarCertificado() {
             value={folio}
             onChange={e => setFolio(e.target.value)}
             placeholder="TAL-2026-XXXXXXXX"
-            className="flex-1 px-4 py-3.5 rounded-2xl border border-slate-200 bg-white text-slate-900 font-mono font-bold tracking-wider text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all uppercase"
+            className="flex-1 px-4 py-3.5 rounded-2xl border border-border bg-white text-text-1 font-mono font-bold tracking-wider text-sm outline-none focus:border-accent focus:ring-4 focus-visible:ring-focus-ring/10 transition-all uppercase"
           />
           <button
             type="submit"
             disabled={buscando || !folio.trim()}
-            className="px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-black text-sm transition-all flex items-center gap-2 shrink-0"
+            className="px-5 rounded-2xl bg-accent hover:bg-accent-hover disabled:opacity-40 text-white font-black text-sm transition-all flex items-center gap-2 shrink-0"
           >
             {buscando ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
             <span className="hidden sm:inline">Verificar</span>
@@ -104,17 +104,17 @@ export default function VerificarCertificado() {
         </form>
 
         {error && (
-          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-bold text-center">
+          <div className="p-4 rounded-2xl bg-warning-bg border border-warning-text/20 text-warning-text text-sm font-bold text-center">
             {error}
           </div>
         )}
 
         {resultado?.valid && (
-          <div className="rounded-3xl border-2 border-emerald-200 bg-white p-6 shadow-sm animate-in fade-in duration-200">
-            <div className="flex items-center gap-2.5 mb-5 pb-5 border-b border-slate-100">
-              <ShieldCheck className="text-emerald-600 shrink-0" size={26} />
+          <div className="rounded-3xl border-2 border-success-text/20 bg-white p-6 shadow-sm animate-in fade-in duration-200">
+            <div className="flex items-center gap-2.5 mb-5 pb-5 border-b border-border">
+              <ShieldCheck className="text-success-text shrink-0" size={26} />
               <div>
-                <p className="font-black text-emerald-700 leading-tight">Certificado válido</p>
+                <p className="font-black text-success-text leading-tight">Certificado válido</p>
                 <p className="text-[11px] text-slate-400 font-mono font-bold tracking-wider">{resultado.folio}</p>
               </div>
             </div>
@@ -122,28 +122,28 @@ export default function VerificarCertificado() {
             <dl className="space-y-3.5">
               <div>
                 <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Otorgado a</dt>
-                <dd className="text-slate-900 font-black text-lg leading-tight">{resultado.participant_name}</dd>
+                <dd className="text-text-1 font-black text-lg leading-tight">{resultado.participant_name}</dd>
               </div>
               <div>
                 <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Curso</dt>
-                <dd className="text-slate-800 font-bold text-sm">{resultado.course_title}</dd>
+                <dd className="text-text-1 font-bold text-sm">{resultado.course_title}</dd>
               </div>
               {resultado.company_name && (
                 <div>
                   <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Empresa</dt>
-                  <dd className="text-slate-800 font-bold text-sm">{resultado.company_name}</dd>
+                  <dd className="text-text-1 font-bold text-sm">{resultado.company_name}</dd>
                 </div>
               )}
               <div className="flex gap-8">
                 {fecha && (
                   <div>
                     <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Expedido</dt>
-                    <dd className="text-slate-800 font-bold text-sm">{fecha}</dd>
+                    <dd className="text-text-1 font-bold text-sm">{fecha}</dd>
                   </div>
                 )}
                 <div>
                   <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calificación</dt>
-                  <dd className="text-slate-800 font-bold text-sm">{resultado.score}%</dd>
+                  <dd className="text-text-1 font-bold text-sm">{resultado.score}%</dd>
                 </div>
               </div>
             </dl>
@@ -151,10 +151,10 @@ export default function VerificarCertificado() {
         )}
 
         {resultado && !resultado.valid && (
-          <div className="rounded-3xl border-2 border-rose-200 bg-white p-6 text-center animate-in fade-in duration-200">
-            <ShieldX className="text-rose-500 mx-auto mb-3" size={30} />
-            <p className="font-black text-rose-700">No encontramos ese certificado</p>
-            <p className="text-xs text-slate-500 font-semibold mt-1.5 leading-relaxed">
+          <div className="rounded-3xl border-2 border-danger-text/20 bg-white p-6 text-center animate-in fade-in duration-200">
+            <ShieldX className="text-danger-text mx-auto mb-3" size={30} />
+            <p className="font-black text-danger-text">No encontramos ese certificado</p>
+            <p className="text-xs text-text-3 font-semibold mt-1.5 leading-relaxed">
               Revisa que el folio esté copiado completo. Si sigue sin aparecer, no fue emitido por
               esta plataforma.
             </p>

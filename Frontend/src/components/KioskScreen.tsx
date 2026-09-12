@@ -30,10 +30,10 @@ interface KioskAction {
 }
 
 const ACTIONS: KioskAction[] = [
-  { type: 'check_in', label: 'Entrada', icon: <LogIn size={28} />, color: 'bg-emerald-500 hover:bg-emerald-600' },
-  { type: 'break_start', label: 'Iniciar comida', icon: <Utensils size={28} />, color: 'bg-amber-500 hover:bg-amber-600' },
-  { type: 'break_end', label: 'Regresar de comida', icon: <Coffee size={28} />, color: 'bg-sky-500 hover:bg-sky-600' },
-  { type: 'check_out', label: 'Salida', icon: <LogOut size={28} />, color: 'bg-rose-500 hover:bg-rose-600' },
+  { type: 'check_in', label: 'Entrada', icon: <LogIn size={28} />, color: 'bg-success-icon hover:bg-success-text' },
+  { type: 'break_start', label: 'Iniciar comida', icon: <Utensils size={28} />, color: 'bg-warning-icon hover:bg-warning-text' },
+  { type: 'break_end', label: 'Regresar de comida', icon: <Coffee size={28} />, color: 'bg-accent hover:bg-accent' },
+  { type: 'check_out', label: 'Salida', icon: <LogOut size={28} />, color: 'bg-danger-icon hover:bg-danger-text' },
 ];
 
 const PIN_LENGTH = 6;
@@ -303,7 +303,7 @@ export const KioskScreen = () => {
             type="button"
             onClick={aceptarPrivacidad}
             disabled={aceptando}
-            className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-white/20 text-white font-black text-lg transition-colors shadow-lg"
+            className="w-full py-4 rounded-2xl bg-success-icon hover:bg-success-text disabled:bg-white/20 text-white font-black text-lg transition-colors shadow-lg"
           >
             {aceptando ? 'Registrando…' : 'He leído y acepto'}
           </button>
@@ -322,7 +322,7 @@ export const KioskScreen = () => {
       <div className="text-center">
         <div
           className={`w-28 h-28 rounded-full mx-auto flex items-center justify-center mb-6 ${
-            result?.ok ? 'bg-emerald-500' : 'bg-rose-500'
+            result?.ok ? 'bg-success-icon' : 'bg-danger-icon'
           }`}
         >
           {result?.ok ? <span className="text-6xl">✓</span> : <X size={56} className="text-white" />}

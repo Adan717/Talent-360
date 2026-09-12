@@ -82,6 +82,6 @@ export function SocialSignIn({ onSuccess, onError }: Props) {
       try { await submit.current('apple', await (window as any).AppleID.auth.signIn()); }
       catch (error: any) { if (error?.error !== 'popup_closed_by_user') handlers.current.onError('Apple no pudo completar el acceso. Intenta de nuevo.'); }
     }}>Continuar con Apple</button>}
-    {busy && <p className="text-sm text-slate-500" role="status">Verificando tu cuenta…</p>}
+    {busy && <p className="text-sm text-text-3" role="status">Verificando tu cuenta…</p>}
   </div>;
 }

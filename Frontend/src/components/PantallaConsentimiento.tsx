@@ -42,7 +42,7 @@ export const PantallaConsentimiento: React.FC<{
     <div className="min-h-[100dvh] bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden">
         <div className="bg-slate-900 px-6 py-5 flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-300 shrink-0">
+          <div className="w-11 h-11 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center text-navy-100 shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
@@ -53,26 +53,26 @@ export const PantallaConsentimiento: React.FC<{
           </div>
         </div>
 
-        <div className="p-6 space-y-4 text-slate-700">
-          <p className="text-sm font-semibold text-slate-800">
+        <div className="p-6 space-y-4 text-text-2">
+          <p className="text-sm font-semibold text-text-1">
             {nombre ? `${nombre}, para` : 'Para'} usar Talent 360 necesitamos tu consentimiento sobre el tratamiento de
             tus datos personales.
           </p>
 
-          <ul className="text-xs space-y-2 bg-slate-50 border border-slate-200 rounded-2xl p-4">
-            <li className="flex gap-2"><span className="text-indigo-500 font-black">·</span> Tus datos de identificación y laborales (nombre, CURP, RFC, NSS, puesto, horario y sueldo).</li>
-            <li className="flex gap-2"><span className="text-indigo-500 font-black">·</span> Tus registros de asistencia, y la <strong>ubicación</strong> del dispositivo al fichar cuando tu empresa usa geocerca.</li>
-            <li className="flex gap-2"><span className="text-indigo-500 font-black">·</span> Las <strong>fotografías</strong> que tomes como evidencia (comedor, tareas) desde la cámara del dispositivo.</li>
-            <li className="flex gap-2"><span className="text-indigo-500 font-black">·</span> Tu avance y resultados en la Academia.</li>
+          <ul className="text-xs space-y-2 bg-page border border-border rounded-2xl p-4">
+            <li className="flex gap-2"><span className="text-accent font-black">·</span> Tus datos de identificación y laborales (nombre, CURP, RFC, NSS, puesto, horario y sueldo).</li>
+            <li className="flex gap-2"><span className="text-accent font-black">·</span> Tus registros de asistencia, y la <strong>ubicación</strong> del dispositivo al fichar cuando tu empresa usa geocerca.</li>
+            <li className="flex gap-2"><span className="text-accent font-black">·</span> Las <strong>fotografías</strong> que tomes como evidencia (comedor, tareas) desde la cámara del dispositivo.</li>
+            <li className="flex gap-2"><span className="text-accent font-black">·</span> Tu avance y resultados en la Academia.</li>
           </ul>
 
-          <p className="text-[11px] text-slate-500 leading-relaxed">
+          <p className="text-[11px] text-text-3 leading-relaxed">
             Esto es un resumen de lo que el sistema recoge; lo que rige es el texto completo, con la finalidad de cada
-            dato, los plazos y tus derechos ARCO. <EnlaceAlAviso className="text-indigo-600">Leer el Aviso de Privacidad completo</EnlaceAlAviso> (se abre en otra pestaña).
+            dato, los plazos y tus derechos ARCO. <EnlaceAlAviso className="text-accent">Leer el Aviso de Privacidad completo</EnlaceAlAviso> (se abre en otra pestaña).
           </p>
 
           {error && (
-            <div className="flex items-start gap-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-3 text-xs font-semibold">
+            <div className="flex items-start gap-2 bg-danger-bg border border-danger-text/20 text-danger-text rounded-xl p-3 text-xs font-semibold">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" /> {error}
             </div>
           )}
@@ -81,7 +81,7 @@ export const PantallaConsentimiento: React.FC<{
             type="button"
             onClick={aceptar}
             disabled={enviando}
-            className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-sm transition-colors shadow-lg shadow-indigo-600/20"
+            className="w-full py-4 rounded-2xl bg-accent hover:bg-accent-hover disabled:bg-slate-300 text-white font-black text-sm transition-colors shadow-lg shadow-accent/20"
           >
             {enviando ? 'Registrando…' : 'He leído y acepto el Aviso de Privacidad'}
           </button>
@@ -90,7 +90,7 @@ export const PantallaConsentimiento: React.FC<{
             <button
               type="button"
               onClick={onSalir}
-              className="w-full text-center text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
+              className="w-full text-center text-xs font-bold text-slate-400 hover:text-text-2 transition-colors"
             >
               Cerrar sesión
             </button>

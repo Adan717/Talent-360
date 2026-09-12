@@ -92,33 +92,33 @@ export default function PendientesDeMiEquipo() {
     <div>
       <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h3 className="text-2xl font-extrabold text-slate-800 flex items-center gap-2">
-            <Users className="text-indigo-600" /> Pendientes de mi equipo
+          <h3 className="text-2xl font-extrabold text-text-1 flex items-center gap-2">
+            <Users className="text-accent" /> Pendientes de mi equipo
           </h3>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-text-3 text-sm mt-1">
             Quién trae la inducción pendiente y quién se atoró con un curso. Nada de esto le
             bloquea nada al colaborador: es para que tú te acerques a tiempo.
           </p>
         </div>
         <button
           onClick={cargar}
-          className="self-start md:self-auto shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-black uppercase tracking-wider transition-colors"
+          className="self-start md:self-auto shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-page hover:bg-slate-200 text-text-2 text-xs font-black uppercase tracking-wider transition-colors"
         >
           <RefreshCw size={14} /> Actualizar
         </button>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold">
+        <div className="mb-6 p-4 rounded-2xl bg-danger-bg border border-danger-text/20 text-danger-text text-sm font-bold">
           {error}
         </div>
       )}
 
       {total === 0 && !error && (
-        <div className="py-14 text-center bg-emerald-50/60 rounded-3xl border border-emerald-100">
-          <CheckCircle2 size={40} className="text-emerald-500 mx-auto mb-3" />
-          <p className="font-black text-emerald-800">Tu equipo está al corriente.</p>
-          <p className="text-emerald-700/70 text-xs font-semibold mt-1">
+        <div className="py-14 text-center bg-success-bg/60 rounded-3xl border border-success-text/20">
+          <CheckCircle2 size={40} className="text-success-text mx-auto mb-3" />
+          <p className="font-black text-success-text">Tu equipo está al corriente.</p>
+          <p className="text-success-text/70 text-xs font-semibold mt-1">
             Nadie trae inducción pendiente ni cursos atorados.
           </p>
         </div>
@@ -136,13 +136,13 @@ export default function PendientesDeMiEquipo() {
                 key={p.user_id}
                 className={`rounded-2xl p-4 border flex items-center justify-between gap-4 ${
                   p.urge
-                    ? 'bg-rose-50 border-rose-200'
-                    : 'bg-white border-slate-200'
+                    ? 'bg-danger-bg border-danger-text/20'
+                    : 'bg-white border-border'
                 }`}
               >
                 <div className="min-w-0">
-                  <p className="font-black text-slate-800 text-sm truncate">{p.nombre}</p>
-                  <p className="text-[11px] font-semibold text-slate-500 truncate">
+                  <p className="font-black text-text-1 text-sm truncate">{p.nombre}</p>
+                  <p className="text-[11px] font-semibold text-text-3 truncate">
                     {p.puesto || 'Sin puesto asignado'}
                     {p.hire_date && <> · ingresó el {p.hire_date}</>}
                   </p>
@@ -154,10 +154,10 @@ export default function PendientesDeMiEquipo() {
                     <span className="text-[11px] font-bold text-slate-400">sin fecha de ingreso</span>
                   ) : (
                     <>
-                      <p className={`text-lg font-black leading-none ${p.urge ? 'text-rose-600' : 'text-slate-700'}`}>
+                      <p className={`text-lg font-black leading-none ${p.urge ? 'text-danger-text' : 'text-text-2'}`}>
                         {p.dias_sin_induccion}
                       </p>
-                      <p className={`text-[10px] font-black uppercase tracking-wider ${p.urge ? 'text-rose-500' : 'text-slate-400'}`}>
+                      <p className={`text-[10px] font-black uppercase tracking-wider ${p.urge ? 'text-danger-text' : 'text-slate-400'}`}>
                         {p.dias_sin_induccion === 1 ? 'día' : 'días'}
                       </p>
                     </>
@@ -182,17 +182,17 @@ export default function PendientesDeMiEquipo() {
 
           <div className="space-y-2.5">
             {pendientesReales.map(c => (
-              <div key={c.progress_id} className="rounded-2xl p-4 border bg-amber-50 border-amber-200 flex items-center justify-between gap-4">
+              <div key={c.progress_id} className="rounded-2xl p-4 border bg-warning-bg border-warning-text/20 flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="font-black text-slate-800 text-sm truncate">{c.nombre}</p>
-                  <p className="text-[11px] font-semibold text-slate-500 truncate">
+                  <p className="font-black text-text-1 text-sm truncate">{c.nombre}</p>
+                  <p className="text-[11px] font-semibold text-text-3 truncate">
                     {c.curso} · {c.intentos} intentos reprobados
                   </p>
                 </div>
                 <button
                   onClick={() => marcarAtendido(c)}
                   disabled={atendiendo === c.progress_id}
-                  className="shrink-0 px-3.5 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-black transition-colors disabled:opacity-50"
+                  className="shrink-0 px-3.5 py-2 rounded-xl bg-white hover:bg-success-bg text-success-text border border-success-text/20 text-[11px] font-black transition-colors disabled:opacity-50"
                 >
                   {atendiendo === c.progress_id ? 'Guardando…' : 'Ya hablé con él'}
                 </button>
@@ -207,8 +207,8 @@ export default function PendientesDeMiEquipo() {
               </p>
               <div className="space-y-1.5">
                 {atendidos.map(c => (
-                  <div key={c.progress_id} className="rounded-xl px-4 py-2.5 border border-slate-150 bg-slate-50 flex items-center gap-2 text-slate-500">
-                    <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                  <div key={c.progress_id} className="rounded-xl px-4 py-2.5 border border-border bg-page flex items-center gap-2 text-text-3">
+                    <CheckCircle2 size={14} className="text-success-text shrink-0" />
                     <span className="text-[11.5px] font-bold truncate">{c.nombre}</span>
                     <span className="text-[11px] truncate">— {c.curso}</span>
                   </div>

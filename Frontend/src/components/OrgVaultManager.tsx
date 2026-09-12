@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, FileText, Briefcase, Repeat, CheckSquare, Settings, 
-  Edit, Check, X, ChevronRight, MessageSquare, Upload, 
+import {
+  Search, FileText, Briefcase, Repeat, CheckSquare, Settings,
+  Edit, Check, X, ChevronRight, MessageSquare, Upload,
   GitPullRequest, Eye, BookOpen, AlertCircle, Sparkles, CheckCircle2,
   Volume2, VolumeX, Users, Plus, Trash2, Key, LayoutGrid, Trophy
 } from 'lucide-react';
@@ -28,7 +28,7 @@ interface DocIndex {
 export function OrgVaultManager() {
   const { currentUser } = useAppStore();
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'supervisor';
-  
+
   // State variables
   const [index, setIndex] = useState<DocIndex>({});
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,19 +39,19 @@ export function OrgVaultManager() {
   const [loading, setLoading] = useState(false);
   const [loadingDoc, setLoadingDoc] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  
+
   // Suggestion state
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [proposedContent, setProposedContent] = useState('');
   const [suggestionComment, setSuggestionComment] = useState('');
   const [submittingSuggestion, setSubmittingSuggestion] = useState(false);
-  
+
   // Admin tabs & state
   const [adminTab, setAdminTab] = useState<'view' | 'sync' | 'suggestions' | 'edit' | 'users' | 'matrix' | 'exams'>('view');
   const [vaultSettings, setVaultSettings] = useState<any>({ name: '', local_path: '', hide_oracle_button: false, gemini_api_key: '' });
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [syncing, setSyncing] = useState(false);
-  
+
   // Admin exams states
   const [examsReport, setExamsReport] = useState<any[]>([]);
   const [loadingExamsReport, setLoadingExamsReport] = useState(false);
@@ -130,7 +130,7 @@ export function OrgVaultManager() {
     const catItems = [...(index[category as keyof DocIndex] || [])];
     const draggedIndex = catItems.findIndex(item => item.id === draggedId);
     const targetIndex = catItems.findIndex(item => item.id === targetId);
-    
+
     if (draggedIndex === -1 || targetIndex === -1) return;
 
     const [removed] = catItems.splice(draggedIndex, 1);
@@ -239,7 +239,7 @@ export function OrgVaultManager() {
     try {
       const res = await axiosInstance.get('/org-vault/index');
       setIndex(res.data.documents || {});
-      
+
       // Auto-load first document if none active
       if (autoLoadFirst && !activeSlug) {
         const categories = ['puesto', 'proceso', 'tarea', 'nota'];
@@ -272,7 +272,7 @@ export function OrgVaultManager() {
       setActiveDoc(res.data.document);
       setLinks(res.data.links || []);
       setBacklinks(res.data.backlinks || []);
-      
+
       // Prep editing values
       setProposedContent(res.data.document.raw_content || '');
       setEditText(res.data.document.raw_content || '');
@@ -292,7 +292,7 @@ export function OrgVaultManager() {
     try {
       const settingsRes = await axiosInstance.get('/org-vault/settings');
       setVaultSettings(settingsRes.data);
-      
+
       const suggestionsRes = await axiosInstance.get('/org-vault/suggestions');
       setSuggestions(suggestionsRes.data || []);
     } catch (err) {
@@ -358,7 +358,7 @@ export function OrgVaultManager() {
       utterance.lang = 'es-MX';
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = () => setIsSpeaking(false);
-      
+
       setIsSpeaking(true);
       window.speechSynthesis.speak(utterance);
     } else {
@@ -405,7 +405,7 @@ export function OrgVaultManager() {
     try {
       const usersRes = await axiosInstance.get('/org-vault/users');
       setManualUsers(usersRes.data || []);
-      
+
       const rolesRes = await axiosInstance.get('/job-roles');
       setJobRoles(rolesRes.data || []);
 
@@ -581,7 +581,7 @@ export function OrgVaultManager() {
       alert(res.data.message);
       setReviewingSuggestion(null);
       setReviewComment('');
-      
+
       // Reload everything
       fetchIndex();
       if (activeSlug) fetchDocument(activeSlug);
@@ -617,12 +617,12 @@ export function OrgVaultManager() {
     const query = searchQuery.toLowerCase();
     const result: DocIndex = {};
     const categories: ('puesto' | 'proceso' | 'tarea' | 'nota')[] = ['puesto', 'proceso', 'tarea', 'nota'];
-    
+
     categories.forEach(cat => {
       const items = index[cat];
       if (items) {
-        const filtered = items.filter((item: DocIndexItem) => 
-          item.title.toLowerCase().includes(query) || 
+        const filtered = items.filter((item: DocIndexItem) =>
+          item.title.toLowerCase().includes(query) ||
           item.type.toLowerCase().includes(query)
         );
         if (filtered.length > 0) {
@@ -637,17 +637,17 @@ export function OrgVaultManager() {
 
   return (
     <div className="flex flex-col lg:flex-row h-full gap-6 select-text">
-      
+
       {/* Sidebar - Index list */}
-      <div className="w-full lg:w-80 bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex flex-col shrink-0">
+      <div className="w-full lg:w-80 bg-white border border-border rounded-3xl p-5 shadow-sm flex flex-col shrink-0">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-black text-slate-800 tracking-tight text-lg">Índice del Baúl</h3>
+          <h3 className="font-black text-text-1 tracking-tight text-lg">Índice del Baúl</h3>
           {isAdmin && (
-            <button 
+            <button
               onClick={() => {
                 setAdminTab(adminTab === 'view' ? 'sync' : 'view');
-              }} 
-              className={`p-2 rounded-xl border transition-colors ${adminTab === 'sync' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+              }}
+              className={`p-2 rounded-xl border transition-colors ${adminTab === 'sync' ? 'bg-navy-50 border-border text-accent' : 'bg-page border-border text-text-3 hover:bg-page'}`}
               title="Ajustes de Sincronización"
             >
               <Settings size={16} />
@@ -658,12 +658,12 @@ export function OrgVaultManager() {
         {/* Search */}
         <div className="relative mb-5">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Buscar en el baúl..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white text-sm font-medium transition-all"
+            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-border bg-page/50 text-text-2 placeholder-slate-400 focus:outline-none focus:border-accent focus:bg-white text-sm font-medium transition-all"
           />
         </div>
 
@@ -693,12 +693,12 @@ export function OrgVaultManager() {
                         setAdminTab('view');
                       }}
                       className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all cursor-grab active:cursor-grabbing ${
-                        isActive 
-                          ? 'bg-blue-50 text-blue-700 font-bold border-l-4 border-blue-600 shadow-sm' 
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-l-4 border-transparent'
+                        isActive
+                          ? 'bg-navy-50 text-accent font-bold border-l-4 border-accent shadow-sm'
+                          : 'text-text-2 hover:bg-page hover:text-text-1 border-l-4 border-transparent'
                       }`}
                     >
-                      <div className={`p-1.5 rounded-lg ${isActive ? 'bg-white shadow-sm text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                      <div className={`p-1.5 rounded-lg ${isActive ? 'bg-white shadow-sm text-accent' : 'bg-page text-text-3'}`}>
                         {getIcon(item.icon)}
                       </div>
                       <span className="text-xs font-bold truncate flex-1">{item.title}</span>
@@ -712,19 +712,19 @@ export function OrgVaultManager() {
         </div>
 
         {/* Public view share alert */}
-        <div className="mt-4 p-4 border border-slate-100 bg-slate-50 rounded-2xl">
+        <div className="mt-4 p-4 border border-border bg-page rounded-2xl">
           <div className="flex gap-2.5">
-            <AlertCircle size={16} className="text-blue-500 shrink-0 mt-0.5" />
+            <AlertCircle size={16} className="text-accent shrink-0 mt-0.5" />
             <div className="flex flex-col text-left">
-              <span className="text-[11px] font-black text-slate-800">Publicado Online</span>
-              <p className="text-[10px] text-slate-500 font-medium leading-relaxed mt-0.5">
+              <span className="text-[11px] font-black text-text-1">Publicado Online</span>
+              <p className="text-[10px] text-text-3 font-medium leading-relaxed mt-0.5">
                 Este baúl está enlazado a una página pública de solo lectura. Cualquiera puede ver la estructura.
               </p>
-              <a 
+              <a
                 href={`/organizacion/${currentUser?.tenant?.public_slug || currentUser?.tenant?.subdomain || 'decorarte360'}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[10px] text-blue-600 hover:text-blue-700 font-bold mt-1.5 flex items-center gap-1"
+                className="text-[10px] text-accent hover:text-accent font-bold mt-1.5 flex items-center gap-1"
               >
                 <Eye size={12} /> Ver Web Pública
               </a>
@@ -734,16 +734,16 @@ export function OrgVaultManager() {
       </div>
 
       {/* Main pane */}
-      <div className="flex-1 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col min-w-0">
-        
+      <div className="flex-1 bg-white border border-border rounded-3xl p-6 shadow-sm flex flex-col min-w-0">
+
         {/* Admin Navigation (Escritorio) */}
         {isAdmin && (
-          <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
-            <div className="bg-white rounded-3xl p-2 border border-slate-200 shadow-sm flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
+          <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+            <div className="bg-white rounded-3xl p-2 border border-border shadow-sm flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
               <button
                 onClick={() => setAdminTab('view')}
                 className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                  adminTab === 'view' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                  adminTab === 'view' ? 'bg-slate-900 text-white' : 'text-text-2 hover:bg-page'
                 }`}
               >
                 <BookOpen size={14} /> Leer Documento
@@ -751,12 +751,12 @@ export function OrgVaultManager() {
               <button
                 onClick={() => setAdminTab('suggestions')}
                 className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 relative ${
-                  adminTab === 'suggestions' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                  adminTab === 'suggestions' ? 'bg-slate-900 text-white' : 'text-text-2 hover:bg-page'
                 }`}
               >
                 <GitPullRequest size={14} /> Propuestas de Cambio
                 {suggestions.filter(s => s.status === 'pending').length > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center animate-bounce">
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-danger-icon text-white font-black text-[9px] rounded-full flex items-center justify-center animate-bounce">
                     {suggestions.filter(s => s.status === 'pending').length}
                   </span>
                 )}
@@ -764,7 +764,7 @@ export function OrgVaultManager() {
               <button
                 onClick={() => setAdminTab('edit')}
                 className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                  adminTab === 'edit' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                  adminTab === 'edit' ? 'bg-slate-900 text-white' : 'text-text-2 hover:bg-page'
                 }`}
                 disabled={!activeDoc}
               >
@@ -773,7 +773,7 @@ export function OrgVaultManager() {
               <button
                 onClick={() => setAdminTab('sync')}
                 className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                  adminTab === 'sync' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                  adminTab === 'sync' ? 'bg-slate-900 text-white' : 'text-text-2 hover:bg-page'
                 }`}
               >
                 <Upload size={14} /> Sincronización
@@ -781,7 +781,7 @@ export function OrgVaultManager() {
               <button
                 onClick={() => setAdminTab('users')}
                 className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                  adminTab === 'users' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                  adminTab === 'users' ? 'bg-slate-900 text-white' : 'text-text-2 hover:bg-page'
                 }`}
               >
                 <Users size={14} /> Avance y Usuarios
@@ -789,7 +789,7 @@ export function OrgVaultManager() {
               <button
                 onClick={() => setAdminTab('matrix')}
                 className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                  adminTab === 'matrix' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                  adminTab === 'matrix' ? 'bg-slate-900 text-white' : 'text-text-2 hover:bg-page'
                 }`}
               >
                 <LayoutGrid size={14} /> Matriz de Puestos
@@ -797,7 +797,7 @@ export function OrgVaultManager() {
               <button
                 onClick={() => setAdminTab('exams')}
                 className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                  adminTab === 'exams' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                  adminTab === 'exams' ? 'bg-slate-900 text-white' : 'text-text-2 hover:bg-page'
                 }`}
               >
                 <Trophy size={14} /> Certificaciones
@@ -842,44 +842,44 @@ export function OrgVaultManager() {
               ) : isSuggesting ? (
                 /* SUGGEST CHANGE FORM */
                 <form onSubmit={handleSubmitSuggestion} className="flex-1 flex flex-col text-left space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center justify-between border-b border-border pb-3">
                     <div>
-                      <h3 className="text-lg font-black text-slate-900">Sugerir Cambio</h3>
-                      <p className="text-xs text-slate-500 font-semibold">Estás sugiriendo mejoras para: <span className="text-blue-600">{activeDoc.title}</span></p>
+                      <h3 className="text-lg font-black text-text-1">Sugerir Cambio</h3>
+                      <p className="text-xs text-text-3 font-semibold">Estás sugiriendo mejoras para: <span className="text-accent">{activeDoc.title}</span></p>
                     </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setIsSuggesting(false)} 
-                      className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"
+                    <button
+                      type="button"
+                      onClick={() => setIsSuggesting(false)}
+                      className="p-1.5 rounded-full hover:bg-page text-text-3"
                     >
                       <X size={18} />
                     </button>
                   </div>
 
-                  <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-xs font-semibold text-amber-700 flex gap-2.5">
+                  <div className="bg-warning-bg border border-warning-text/20 rounded-2xl p-4 text-xs font-semibold text-warning-text flex gap-2.5">
                     <Sparkles size={16} className="shrink-0 mt-0.5" />
                     <span>Redacta los cambios en formato markdown libre. Tu propuesta será validada y aprobada por un administrador antes de publicarse.</span>
                   </div>
 
                   <div className="flex-1 flex flex-col min-h-[250px]">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Contenido Propuesto</label>
+                    <label className="text-xs font-black text-text-3 uppercase tracking-widest mb-1.5">Contenido Propuesto</label>
                     <textarea
                       value={proposedContent}
                       onChange={(e) => setProposedContent(e.target.value)}
-                      className="w-full flex-1 p-4 border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-500 font-mono text-xs leading-relaxed"
+                      className="w-full flex-1 p-4 border border-border rounded-2xl focus:outline-none focus:border-accent font-mono text-xs leading-relaxed"
                       placeholder="Redacta el nuevo contenido..."
                       required
                     />
                   </div>
 
                   <div className="flex flex-col">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Comentario / Motivo de la propuesta</label>
+                    <label className="text-xs font-black text-text-3 uppercase tracking-widest mb-1.5">Comentario / Motivo de la propuesta</label>
                     <input
                       type="text"
                       value={suggestionComment}
                       onChange={(e) => setSuggestionComment(e.target.value)}
                       placeholder="Explica brevemente por qué propones este cambio..."
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-500 text-sm font-medium"
+                      className="w-full px-4 py-2.5 border border-border rounded-2xl focus:outline-none focus:border-accent text-sm font-medium"
                     />
                   </div>
 
@@ -887,14 +887,14 @@ export function OrgVaultManager() {
                     <button
                       type="button"
                       onClick={() => setIsSuggesting(false)}
-                      className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-650 bg-slate-100 hover:bg-slate-200 transition-colors"
+                      className="px-4 py-2.5 rounded-xl font-bold text-xs text-text-2 bg-page hover:bg-slate-200 transition-colors"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
                       disabled={submittingSuggestion}
-                      className="px-4 py-2.5 rounded-xl font-black text-xs text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all flex items-center gap-1.5"
+                      className="px-4 py-2.5 rounded-xl font-black text-xs text-white bg-accent hover:bg-accent-hover shadow-md shadow-accent/20 transition-all flex items-center gap-1.5"
                     >
                       {submittingSuggestion ? 'Enviando...' : 'Enviar Sugerencia'}
                     </button>
@@ -904,25 +904,25 @@ export function OrgVaultManager() {
                 /* STANDARD READ VIEW */
                 <div className="flex-1 flex flex-col text-left">
                   {/* Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-150 pb-4 mb-5">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-border pb-4 mb-5">
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner shrink-0 [&>svg]:w-6 [&>svg]:h-6">
+                      <div className="w-14 h-14 rounded-2xl bg-navy-50 text-accent flex items-center justify-center shadow-inner shrink-0 [&>svg]:w-6 [&>svg]:h-6">
                         {getIcon(activeDoc.icon)}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase text-blue-600 tracking-widest leading-none mb-1.5">{activeCategoryTitle}</span>
-                        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">{activeDoc.title}</h1>
+                        <span className="text-[10px] font-black uppercase text-accent tracking-widest leading-none mb-1.5">{activeCategoryTitle}</span>
+                        <h1 className="text-2xl sm:text-3xl font-black text-text-1 tracking-tight leading-tight">{activeDoc.title}</h1>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 self-start shrink-0">
                       {/* Narrator Button */}
                       <button
                         onClick={() => speakText(activeDoc.content)}
                         className={`px-3 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border ${
-                          isSpeaking 
-                            ? 'bg-rose-50 border-rose-200 text-rose-700 animate-pulse' 
-                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                          isSpeaking
+                            ? 'bg-danger-bg border-danger-text/20 text-danger-text animate-pulse'
+                            : 'bg-page border-border text-text-2 hover:bg-page'
                         }`}
                         title="Narrar contenido"
                       >
@@ -933,7 +933,7 @@ export function OrgVaultManager() {
                       {!isAdmin && (
                         <button
                           onClick={() => setIsSuggesting(true)}
-                          className="px-4 py-2.5 rounded-xl font-black text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 transition-all shrink-0 flex items-center justify-center gap-1.5 border border-blue-200/50"
+                          className="px-4 py-2.5 rounded-xl font-black text-xs text-accent bg-navy-50 hover:bg-accent-soft transition-all shrink-0 flex items-center justify-center gap-1.5 border border-border/50"
                         >
                           <MessageSquare size={14} /> Sugerir Mejora
                         </button>
@@ -942,14 +942,14 @@ export function OrgVaultManager() {
                   </div>
 
                   {/* Rendered HTML Content */}
-                  <div 
+                  <div
                     ref={contentRef}
-                    className="flex-1 text-slate-800 leading-relaxed pr-1 custom-markdown"
+                    className="flex-1 text-text-1 leading-relaxed pr-1 custom-markdown"
                     dangerouslySetInnerHTML={{ __html: activeDoc.content ? sanitizeHtml(activeDoc.content) : '<p class="text-slate-400 italic">Este documento no tiene contenido redactado.</p>' }}
                   />
 
                   {/* Info alert / Help */}
-                  <div className="mt-8 pt-4 border-t border-slate-100 text-[11px] text-slate-400 font-bold flex justify-between items-center">
+                  <div className="mt-8 pt-4 border-t border-border text-[11px] text-slate-400 font-bold flex justify-between items-center">
                     <span>Última sincronización: {new Date(activeDoc.updated_at).toLocaleDateString()}</span>
                     <span>Haga clic en los enlaces azules para navegar instantáneamente</span>
                   </div>
@@ -959,7 +959,7 @@ export function OrgVaultManager() {
 
             {/* Right Pane (Metadata, links and backlinks) */}
             {activeDoc && !isSuggesting && (
-              <div className="w-full lg:w-60 shrink-0 flex flex-col gap-5 text-left border-t lg:border-t-0 lg:border-l border-slate-150 pt-5 lg:pt-0 lg:pl-5">
+              <div className="w-full lg:w-60 shrink-0 flex flex-col gap-5 text-left border-t lg:border-t-0 lg:border-l border-border pt-5 lg:pt-0 lg:pl-5">
                 {/* Linked Documents (Outgoing) */}
                 <div className="space-y-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Enlaces en esta Nota</span>
@@ -971,10 +971,10 @@ export function OrgVaultManager() {
                         <button
                           key={l.id}
                           onClick={() => setActiveSlug(l.slug)}
-                          className="w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 text-left transition-colors"
+                          className="w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-page text-left transition-colors"
                         >
-                          <div className="text-blue-600 shrink-0">{getIcon(l.icon)}</div>
-                          <span className="text-xs font-bold text-blue-600 hover:underline truncate">{l.title}</span>
+                          <div className="text-accent shrink-0">{getIcon(l.icon)}</div>
+                          <span className="text-xs font-bold text-accent hover:underline truncate">{l.title}</span>
                         </button>
                       ))}
                     </div>
@@ -992,10 +992,10 @@ export function OrgVaultManager() {
                         <button
                           key={l.id}
                           onClick={() => setActiveSlug(l.slug)}
-                          className="w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 text-left transition-colors"
+                          className="w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-page text-left transition-colors"
                         >
-                          <div className="text-slate-500 shrink-0">{getIcon(l.icon)}</div>
-                          <span className="text-xs font-bold text-slate-700 hover:underline truncate">{l.title}</span>
+                          <div className="text-text-3 shrink-0">{getIcon(l.icon)}</div>
+                          <span className="text-xs font-bold text-text-2 hover:underline truncate">{l.title}</span>
                         </button>
                       ))}
                     </div>
@@ -1003,23 +1003,23 @@ export function OrgVaultManager() {
                 </div>
 
                 {/* Categories description helper */}
-                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl mt-auto">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">Guía de Iconos</span>
+                <div className="p-4 bg-page border border-border rounded-2xl mt-auto">
+                  <span className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1.5">Guía de Iconos</span>
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                      <div className="p-1 bg-slate-200/60 rounded text-slate-500"><Briefcase size={12} /></div>
+                    <div className="flex items-center gap-2 text-xs font-bold text-text-2">
+                      <div className="p-1 bg-slate-200/60 rounded text-text-3"><Briefcase size={12} /></div>
                       Puesto Organizacional
                     </div>
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                      <div className="p-1 bg-slate-200/60 rounded text-slate-500"><Repeat size={12} /></div>
+                    <div className="flex items-center gap-2 text-xs font-bold text-text-2">
+                      <div className="p-1 bg-slate-200/60 rounded text-text-3"><Repeat size={12} /></div>
                       Proceso o Flujo
                     </div>
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                      <div className="p-1 bg-slate-200/60 rounded text-slate-500"><CheckSquare size={12} /></div>
+                    <div className="flex items-center gap-2 text-xs font-bold text-text-2">
+                      <div className="p-1 bg-slate-200/60 rounded text-text-3"><CheckSquare size={12} /></div>
                       Tarea y Checklist
                     </div>
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                      <div className="p-1 bg-slate-200/60 rounded text-slate-500"><FileText size={12} /></div>
+                    <div className="flex items-center gap-2 text-xs font-bold text-text-2">
+                      <div className="p-1 bg-slate-200/60 rounded text-text-3"><FileText size={12} /></div>
                       Nota General / Manual
                     </div>
                   </div>
@@ -1033,49 +1033,49 @@ export function OrgVaultManager() {
         {adminTab === 'sync' && isAdmin && (
           <div className="flex-1 flex flex-col text-left space-y-6 max-w-2xl">
             <div>
-              <h3 className="text-lg font-black text-slate-900">Ajustes de Sincronización</h3>
-              <p className="text-xs text-slate-500 font-semibold">Configura la lectura automatizada de tus archivos Markdown desde Google Drive u Obsidian.</p>
+              <h3 className="text-lg font-black text-text-1">Ajustes de Sincronización</h3>
+              <p className="text-xs text-text-3 font-semibold">Configura la lectura automatizada de tus archivos Markdown desde Google Drive u Obsidian.</p>
             </div>
 
             {/* Local Sync (Google Drive Desktop) */}
-            <form onSubmit={handleSaveSettings} className="bg-slate-50 border border-slate-200 rounded-3xl p-6 space-y-4">
-              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block border-b border-slate-200 pb-2">Método 1: Carpeta Local Sincronizada</span>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+            <form onSubmit={handleSaveSettings} className="bg-page border border-border rounded-3xl p-6 space-y-4">
+              <span className="text-xs font-black text-text-1 uppercase tracking-wider block border-b border-border pb-2">Método 1: Carpeta Local Sincronizada</span>
+              <p className="text-xs text-text-3 font-medium leading-relaxed">
                 Si el servidor corre de forma local o tiene acceso directo a unidades montadas en disco (ej. Google Drive Desktop), especifica la ruta absoluta de la carpeta de Obsidian.
               </p>
-              
+
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Nombre del Baúl</label>
+                  <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Nombre del Baúl</label>
                   <input
                     type="text"
                     value={vaultSettings.name || ''}
                     onChange={(e) => setVaultSettings({ ...vaultSettings, name: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-white rounded-2xl focus:outline-none focus:border-blue-500 text-sm font-medium"
+                    className="w-full px-4 py-2.5 border border-border bg-white rounded-2xl focus:outline-none focus:border-accent text-sm font-medium"
                     placeholder="Ej. Mi Empresa Wiki"
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Ruta del Servidor</label>
+                  <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Ruta del Servidor</label>
                   <input
                     type="text"
                     value={vaultSettings.local_path || ''}
                     onChange={(e) => setVaultSettings({ ...vaultSettings, local_path: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-white rounded-2xl focus:outline-none focus:border-blue-500 text-sm font-medium"
+                    className="w-full px-4 py-2.5 border border-border bg-white rounded-2xl focus:outline-none focus:border-accent text-sm font-medium"
                     placeholder="Ej. C:\Users\Nombre\Google Drive\MiBaulObsidian"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Clave de API de Gemini</label>
+                  <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Clave de API de Gemini</label>
                   <input
                     type="password"
                     value={vaultSettings.gemini_api_key || ''}
                     onChange={(e) => setVaultSettings({ ...vaultSettings, gemini_api_key: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-white rounded-2xl focus:outline-none focus:border-blue-500 text-sm font-medium"
+                    className="w-full px-4 py-2.5 border border-border bg-white rounded-2xl focus:outline-none focus:border-accent text-sm font-medium"
                     placeholder="AIzaSy..."
                   />
-                  <p className="text-[10px] text-slate-400 mt-1 font-semibold leading-normal text-slate-500">
+                  <p className="text-[10px] text-slate-400 mt-1 font-semibold leading-normal text-text-3">
                     Clave privada utilizada para habilitar consultas al Oráculo y generación automática de exámenes. Si no se provee, se usará la del servidor global.
                   </p>
                 </div>
@@ -1084,7 +1084,7 @@ export function OrgVaultManager() {
               <div className="flex gap-3 justify-end pt-2">
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl font-bold text-xs bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors"
+                  className="px-4 py-2 rounded-xl font-bold text-xs bg-slate-200 text-text-2 hover:bg-slate-300 transition-colors"
                 >
                   Guardar Ajustes
                 </button>
@@ -1092,7 +1092,7 @@ export function OrgVaultManager() {
                   type="button"
                   onClick={handleLocalSync}
                   disabled={syncing || !vaultSettings.local_path}
-                  className="px-4 py-2 rounded-xl font-black text-xs bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 shadow-md shadow-blue-600/20 transition-all"
+                  className="px-4 py-2 rounded-xl font-black text-xs bg-accent text-white hover:bg-accent-hover disabled:opacity-50 shadow-md shadow-accent/20 transition-all"
                 >
                   {syncing ? 'Sincronizando...' : 'Sincronizar Ahora'}
                 </button>
@@ -1100,9 +1100,9 @@ export function OrgVaultManager() {
             </form>
 
             {/* ZIP Upload Sync */}
-            <form onSubmit={handleZipSync} className="bg-slate-50 border border-slate-200 rounded-3xl p-6 space-y-4">
-              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block border-b border-slate-200 pb-2">Método 2: Cargar Archivo ZIP</span>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+            <form onSubmit={handleZipSync} className="bg-page border border-border rounded-3xl p-6 space-y-4">
+              <span className="text-xs font-black text-text-1 uppercase tracking-wider block border-b border-border pb-2">Método 2: Cargar Archivo ZIP</span>
+              <p className="text-xs text-text-3 font-medium leading-relaxed">
                 Exporta tu baúl de Obsidian como un archivo `.zip` en tu computadora local y arrástralo aquí. Es ideal para cuando el servidor corre en la nube.
               </p>
 
@@ -1119,10 +1119,10 @@ export function OrgVaultManager() {
                 />
                 <Upload size={32} className="text-slate-400 mx-auto mb-2" />
                 {zipFile ? (
-                  <span className="text-xs font-bold text-blue-600">{zipFile.name} ({(zipFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                  <span className="text-xs font-bold text-accent">{zipFile.name} ({(zipFile.size / 1024 / 1024).toFixed(2)} MB)</span>
                 ) : (
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-slate-600">Arrastra tu archivo .zip aquí o haz clic para explorar</span>
+                    <span className="text-xs font-bold text-text-2">Arrastra tu archivo .zip aquí o haz clic para explorar</span>
                     <span className="text-[10px] text-slate-400 font-bold mt-1">Límite de tamaño: 20MB</span>
                   </div>
                 )}
@@ -1132,7 +1132,7 @@ export function OrgVaultManager() {
                 <button
                   type="submit"
                   disabled={syncing || !zipFile}
-                  className="px-4 py-2 rounded-xl font-black text-xs bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 shadow-md shadow-blue-600/20 transition-all"
+                  className="px-4 py-2 rounded-xl font-black text-xs bg-accent text-white hover:bg-accent-hover disabled:opacity-50 shadow-md shadow-accent/20 transition-all"
                 >
                   {syncing ? 'Subiendo y Sincronizando...' : 'Subir ZIP'}
                 </button>
@@ -1140,9 +1140,9 @@ export function OrgVaultManager() {
             </form>
 
             {/* Acciones de Depuración y Reconstrucción */}
-            <div className="bg-rose-50/50 border border-rose-100 rounded-3xl p-6 space-y-4">
-              <span className="text-xs font-black text-rose-800 uppercase tracking-wider block border-b border-rose-100 pb-2">Herramientas de Mantenimiento</span>
-              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+            <div className="bg-danger-bg/50 border border-danger-text/20 rounded-3xl p-6 space-y-4">
+              <span className="text-xs font-black text-danger-text uppercase tracking-wider block border-b border-danger-text/20 pb-2">Herramientas de Mantenimiento</span>
+              <p className="text-xs text-text-3 font-semibold leading-relaxed">
                 Utiliza estas opciones para depurar (vaciar completamente) el baúl actual y volver a subir tu información desde cero, o para reconstruir el índice de enlaces si notas discrepancias.
               </p>
 
@@ -1151,7 +1151,7 @@ export function OrgVaultManager() {
                   type="button"
                   onClick={handlePurgeVault}
                   disabled={syncing}
-                  className="px-4 py-2.5 rounded-xl font-black text-xs bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 shadow-md shadow-rose-600/20 transition-all flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl font-black text-xs bg-danger-text text-white hover:bg-danger-text disabled:opacity-50 shadow-md shadow-danger-text/20 transition-all flex items-center gap-1.5"
                 >
                   <Trash2 size={14} />
                   <span>Depurar / Vaciar Baúl</span>
@@ -1161,7 +1161,7 @@ export function OrgVaultManager() {
                   type="button"
                   onClick={handleRebuildCache}
                   disabled={syncing}
-                  className="px-4 py-2.5 rounded-xl font-black text-xs bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 shadow-md shadow-amber-600/20 transition-all flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl font-black text-xs bg-warning-text text-white hover:bg-warning-text disabled:opacity-50 shadow-md shadow-warning-text/20 transition-all flex items-center gap-1.5"
                 >
                   <Repeat size={14} />
                   <span>Reconstruir Enlaces</span>
@@ -1175,27 +1175,27 @@ export function OrgVaultManager() {
         {adminTab === 'edit' && isAdmin && activeDoc && (
           <form onSubmit={handleSaveDirectEdit} className="flex-1 flex flex-col text-left space-y-4">
             <div>
-              <h3 className="text-lg font-black text-slate-900">Editar Documento Directamente</h3>
-              <p className="text-xs text-slate-500 font-semibold">Modifica el título, tipo o contenido en markdown de la nota. Guardar reconstruirá los enlaces.</p>
+              <h3 className="text-lg font-black text-text-1">Editar Documento Directamente</h3>
+              <p className="text-xs text-text-3 font-semibold">Modifica el título, tipo o contenido en markdown de la nota. Guardar reconstruirá los enlaces.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Título del Documento</label>
+                <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Título del Documento</label>
                 <input
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-bold"
+                  className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:border-accent text-xs font-bold"
                   required
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Tipo de Documento</label>
+                <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Tipo de Documento</label>
                 <select
                   value={editType}
                   onChange={(e) => setEditType(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-bold"
+                  className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:border-accent text-xs font-bold"
                 >
                   <option value="puesto">Puesto Organizacional</option>
                   <option value="proceso">Proceso de Operación (SOP)</option>
@@ -1204,11 +1204,11 @@ export function OrgVaultManager() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Icono (Lucide)</label>
+                <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Icono (Lucide)</label>
                 <select
                   value={editIcon}
                   onChange={(e) => setEditIcon(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-550 text-xs font-bold"
+                  className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:border-accent text-xs font-bold"
                 >
                   <option value="briefcase">Maletín (Puesto)</option>
                   <option value="repeat">Engrane de Ciclo (Proceso)</option>
@@ -1219,11 +1219,11 @@ export function OrgVaultManager() {
             </div>
 
             <div className="flex-1 flex flex-col min-h-[300px]">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Contenido Markdown</label>
+              <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Contenido Markdown</label>
               <textarea
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
-                className="w-full flex-1 p-4 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 font-mono text-xs leading-relaxed"
+                className="w-full flex-1 p-4 border border-border rounded-xl focus:outline-none focus:border-accent font-mono text-xs leading-relaxed"
                 required
               />
             </div>
@@ -1232,14 +1232,14 @@ export function OrgVaultManager() {
               <button
                 type="button"
                 onClick={() => setAdminTab('view')}
-                className="px-4 py-2 rounded-xl font-bold text-xs text-slate-650 bg-slate-100 hover:bg-slate-200 transition-colors"
+                className="px-4 py-2 rounded-xl font-bold text-xs text-text-2 bg-page hover:bg-slate-200 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={savingEdit}
-                className="px-4 py-2 rounded-xl font-black text-xs text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all"
+                className="px-4 py-2 rounded-xl font-black text-xs text-white bg-accent hover:bg-accent-hover shadow-md shadow-accent/20 transition-all"
               >
                 {savingEdit ? 'Guardando...' : 'Guardar Cambios'}
               </button>
@@ -1251,51 +1251,51 @@ export function OrgVaultManager() {
         {adminTab === 'suggestions' && isAdmin && (
           <div className="flex-1 flex flex-col text-left space-y-4">
             <div>
-              <h3 className="text-lg font-black text-slate-900">Buzón de Sugerencias de Cambios</h3>
-              <p className="text-xs text-slate-500 font-semibold">Revisa, compara y aprueba las propuestas de mejora sugeridas por tus colaboradores.</p>
+              <h3 className="text-lg font-black text-text-1">Buzón de Sugerencias de Cambios</h3>
+              <p className="text-xs text-text-3 font-semibold">Revisa, compara y aprueba las propuestas de mejora sugeridas por tus colaboradores.</p>
             </div>
 
             {reviewingSuggestion ? (
               /* SUGGESTION DETAIL AND DIFF VIEW */
               <div className="flex-1 flex flex-col space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center justify-between border-b border-border pb-3">
                   <div>
-                    <h4 className="text-sm font-black text-slate-800">Comparación de Cambios</h4>
-                    <p className="text-xs text-slate-500 font-semibold">
-                      Sugerido por: <span className="font-bold text-slate-700">{reviewingSuggestion.user?.name || reviewingSuggestion.author_name}</span> para la nota <span className="text-blue-600 font-black">{reviewingSuggestion.document?.title}</span>
+                    <h4 className="text-sm font-black text-text-1">Comparación de Cambios</h4>
+                    <p className="text-xs text-text-3 font-semibold">
+                      Sugerido por: <span className="font-bold text-text-2">{reviewingSuggestion.user?.name || reviewingSuggestion.author_name}</span> para la nota <span className="text-accent font-black">{reviewingSuggestion.document?.title}</span>
                     </p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setReviewingSuggestion(null)}
-                    className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"
+                    className="p-1.5 rounded-full hover:bg-page text-text-3"
                   >
                     <X size={18} />
                   </button>
                 </div>
 
                 {reviewingSuggestion.comment && (
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                  <div className="bg-page border border-border rounded-2xl p-4">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Comentario del Colaborador</span>
-                    <p className="text-xs text-slate-700 font-medium italic">"{reviewingSuggestion.comment}"</p>
+                    <p className="text-xs text-text-2 font-medium italic">"{reviewingSuggestion.comment}"</p>
                   </div>
                 )}
 
                 {/* Diff Side by Side */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-[250px]">
-                  <div className="flex flex-col border border-slate-200 rounded-2xl overflow-hidden">
-                    <div className="bg-rose-50 border-b border-rose-100 px-4 py-2 text-rose-700 text-xs font-black">Original</div>
-                    <textarea 
+                  <div className="flex flex-col border border-border rounded-2xl overflow-hidden">
+                    <div className="bg-danger-bg border-b border-danger-text/20 px-4 py-2 text-danger-text text-xs font-black">Original</div>
+                    <textarea
                       value={reviewingSuggestion.original_content}
                       readOnly
-                      className="w-full flex-1 p-3 font-mono text-[11px] leading-relaxed bg-rose-50/10 text-rose-800 focus:outline-none"
+                      className="w-full flex-1 p-3 font-mono text-[11px] leading-relaxed bg-danger-bg/10 text-danger-text focus:outline-none"
                     />
                   </div>
-                  <div className="flex flex-col border border-slate-200 rounded-2xl overflow-hidden">
-                    <div className="bg-emerald-50 border-b border-emerald-100 px-4 py-2 text-emerald-700 text-xs font-black">Propuesta del Empleado</div>
-                    <textarea 
+                  <div className="flex flex-col border border-border rounded-2xl overflow-hidden">
+                    <div className="bg-success-bg border-b border-success-text/20 px-4 py-2 text-success-text text-xs font-black">Propuesta del Empleado</div>
+                    <textarea
                       value={reviewingSuggestion.proposed_content}
                       readOnly
-                      className="w-full flex-1 p-3 font-mono text-[11px] leading-relaxed bg-emerald-50/10 text-emerald-800 focus:outline-none"
+                      className="w-full flex-1 p-3 font-mono text-[11px] leading-relaxed bg-success-bg/10 text-success-text focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1303,13 +1303,13 @@ export function OrgVaultManager() {
                 {/* Action Form */}
                 <div className="space-y-3 pt-2">
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Nota de Revisión (Comentario para el empleado)</label>
+                    <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Nota de Revisión (Comentario para el empleado)</label>
                     <input
                       type="text"
                       value={reviewComment}
                       onChange={(e) => setReviewComment(e.target.value)}
                       placeholder="Ej. Aprobado, cambios integrados. / Rechazado, información desactualizada..."
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-semibold"
+                      className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:border-accent text-xs font-semibold"
                     />
                   </div>
 
@@ -1317,14 +1317,14 @@ export function OrgVaultManager() {
                     <button
                       onClick={() => handleProcessSuggestion(false)}
                       disabled={processingReview}
-                      className="px-4 py-2.5 rounded-xl font-bold text-xs bg-rose-150 text-rose-700 hover:bg-rose-200 transition-colors flex items-center gap-1.5"
+                      className="px-4 py-2.5 rounded-xl font-bold text-xs bg-danger-bg text-danger-text hover:bg-danger-bg transition-colors flex items-center gap-1.5"
                     >
                       <X size={14} /> Rechazar Sugerencia
                     </button>
                     <button
                       onClick={() => handleProcessSuggestion(true)}
                       disabled={processingReview}
-                      className="px-4 py-2.5 rounded-xl font-black text-xs bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5"
+                      className="px-4 py-2.5 rounded-xl font-black text-xs bg-success-text text-white hover:bg-success-text shadow-md shadow-success-text/20 transition-all flex items-center gap-1.5"
                     >
                       <Check size={14} /> Aprobar e Integrar Cambios
                     </button>
@@ -1335,9 +1335,9 @@ export function OrgVaultManager() {
               <div className="py-12 text-center text-slate-400 text-xs font-semibold">No hay propuestas de cambios en el buzón.</div>
             ) : (
               /* SUGGESTIONS LIST TABLE */
-              <div className="overflow-x-auto border border-slate-150 rounded-2xl">
+              <div className="overflow-x-auto border border-border rounded-2xl">
                 <table className="w-full text-xs">
-                  <thead className="bg-slate-50 text-slate-500 font-black uppercase border-b border-slate-150">
+                  <thead className="bg-page text-text-3 font-black uppercase border-b border-border">
                     <tr>
                       <th className="px-4 py-3 text-left">Documento</th>
                       <th className="px-4 py-3 text-left">Colaborador</th>
@@ -1346,17 +1346,17 @@ export function OrgVaultManager() {
                       <th className="px-4 py-3 text-center">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-150 font-medium text-slate-700">
+                  <tbody className="divide-y divide-border font-medium text-text-2">
                     {suggestions.map((s) => (
-                      <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-4 py-3 text-left font-bold text-slate-900">{s.document?.title || 'Eliminado'}</td>
+                      <tr key={s.id} className="hover:bg-page/50 transition-colors">
+                        <td className="px-4 py-3 text-left font-bold text-text-1">{s.document?.title || 'Eliminado'}</td>
                         <td className="px-4 py-3 text-left">{s.user?.name || s.author_name}</td>
                         <td className="px-4 py-3 text-left">{new Date(s.created_at).toLocaleDateString()}</td>
                         <td className="px-4 py-3 text-left">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                            s.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                            s.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
-                            'bg-slate-200 text-slate-700'
+                            s.status === 'pending' ? 'bg-warning-bg text-warning-text' :
+                            s.status === 'approved' ? 'bg-success-bg text-success-text' :
+                            'bg-slate-200 text-text-2'
                           }`}>
                             {s.status === 'pending' ? 'Pendiente' :
                              s.status === 'approved' ? 'Aprobada' : 'Rechazada'}
@@ -1384,10 +1384,10 @@ export function OrgVaultManager() {
         )}
         {adminTab === 'users' && isAdmin && (
           <div className="space-y-6 text-left">
-            <div className="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-3xl p-6">
+            <div className="flex justify-between items-center bg-page border border-border rounded-3xl p-6">
               <div>
-                <h3 className="text-base font-black text-slate-900">Usuarios y Progreso de Lectura</h3>
-                <p className="text-xs text-slate-500 font-semibold mt-1">
+                <h3 className="text-base font-black text-text-1">Usuarios y Progreso de Lectura</h3>
+                <p className="text-xs text-text-3 font-semibold mt-1">
                   Gestiona las cuentas de acceso aisladas para el manual de operaciones y consulta su nivel de avance.
                 </p>
               </div>
@@ -1397,7 +1397,7 @@ export function OrgVaultManager() {
                   setUserForm({ name: '', email: '', password: '', job_role_id: '', role: 'colaborador' });
                   setShowUserModal(true);
                 }}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md shadow-blue-600/20 transition-all flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white font-black text-xs shadow-md shadow-accent/20 transition-all flex items-center gap-1.5"
               >
                 <Plus size={14} /> Registrar Lector
               </button>
@@ -1410,19 +1410,19 @@ export function OrgVaultManager() {
             ) : (
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 {/* LECTORES LIST & CRUD */}
-                <div className="xl:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 space-y-4">
-                  <span className="text-xs font-black text-slate-900 uppercase tracking-widest block border-b border-slate-100 pb-2">
+                <div className="xl:col-span-2 bg-white border border-border rounded-3xl p-6 space-y-4">
+                  <span className="text-xs font-black text-text-1 uppercase tracking-widest block border-b border-border pb-2">
                     Cuentas de Acceso del Manual
                   </span>
-                  
+
                   {manualUsers.length === 0 ? (
                     <div className="py-12 text-center text-slate-400 text-xs font-semibold">
                       No hay usuarios registrados específicamente para el manual.
                     </div>
                   ) : (
-                    <div className="overflow-x-auto border border-slate-150 rounded-2xl">
+                    <div className="overflow-x-auto border border-border rounded-2xl">
                       <table className="w-full text-xs">
-                        <thead className="bg-slate-50 text-slate-500 font-black uppercase border-b border-slate-150">
+                        <thead className="bg-page text-text-3 font-black uppercase border-b border-border">
                           <tr>
                             <th className="px-4 py-3 text-left">Nombre</th>
                             <th className="px-4 py-3 text-left">Usuario / Correo</th>
@@ -1431,19 +1431,19 @@ export function OrgVaultManager() {
                             <th className="px-4 py-3 text-center">Acciones</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-150 font-medium text-slate-700">
+                        <tbody className="divide-y divide-border font-medium text-text-2">
                           {manualUsers.map((u) => (
-                            <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-4 py-3 text-left font-bold text-slate-900">{u.name}</td>
+                            <tr key={u.id} className="hover:bg-page/50 transition-colors">
+                              <td className="px-4 py-3 text-left font-bold text-text-1">{u.name}</td>
                               <td className="px-4 py-3 text-left">{u.email}</td>
                               <td className="px-4 py-3 text-left">
-                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">
+                                <span className="px-2 py-0.5 rounded bg-page text-text-2 font-bold text-[10px]">
                                   {u.job_role?.name ?? 'General / Admin'}
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-left">
                                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                                  u.role === 'admin' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-150 text-slate-800'
+                                  u.role === 'admin' ? 'bg-accent-soft text-navy-800' : 'bg-slate-150 text-text-1'
                                 }`}>
                                   {u.role === 'admin' ? 'Admin' : 'Lector'}
                                 </span>
@@ -1451,14 +1451,14 @@ export function OrgVaultManager() {
                               <td className="px-4 py-3 text-center flex items-center justify-center gap-2">
                                 <button
                                   onClick={() => openEditUserModal(u)}
-                                  className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-lg"
+                                  className="p-1.5 hover:bg-page text-text-2 rounded-lg"
                                   title="Editar"
                                 >
                                   <Edit size={14} />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteUser(u.id)}
-                                  className="p-1.5 hover:bg-rose-50 text-rose-600 rounded-lg"
+                                  className="p-1.5 hover:bg-danger-bg text-danger-text rounded-lg"
                                   title="Eliminar"
                                 >
                                   <Trash2 size={14} />
@@ -1473,8 +1473,8 @@ export function OrgVaultManager() {
                 </div>
 
                 {/* AVANCE GENERAL SUMMARY */}
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4">
-                  <span className="text-xs font-black text-slate-900 uppercase tracking-widest block border-b border-slate-100 pb-2">
+                <div className="bg-white border border-border rounded-3xl p-6 space-y-4">
+                  <span className="text-xs font-black text-text-1 uppercase tracking-widest block border-b border-border pb-2">
                     Progreso de Lectura
                   </span>
 
@@ -1485,19 +1485,19 @@ export function OrgVaultManager() {
                   ) : (
                     <div className="space-y-4 max-h-[480px] overflow-y-auto pr-1">
                       {progressSummary.map((p) => (
-                        <div key={p.id} className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl space-y-2">
+                        <div key={p.id} className="p-3.5 bg-page border border-border rounded-2xl space-y-2">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h4 className="text-xs font-bold text-slate-900 leading-none">{p.name}</h4>
-                              <span className="text-[10px] text-slate-500 font-medium block mt-1">{p.job_role}</span>
+                              <h4 className="text-xs font-bold text-text-1 leading-none">{p.name}</h4>
+                              <span className="text-[10px] text-text-3 font-medium block mt-1">{p.job_role}</span>
                             </div>
-                            <span className="text-xs font-black text-blue-600">{p.percentage}%</span>
+                            <span className="text-xs font-black text-accent">{p.percentage}%</span>
                           </div>
-                          
+
                           {/* Progress bar */}
                           <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                            <div
+                              className="h-full bg-accent rounded-full transition-all duration-500"
                               style={{ width: `${p.percentage}%` }}
                             />
                           </div>
@@ -1517,17 +1517,17 @@ export function OrgVaultManager() {
 
           {adminTab === 'matrix' && isAdmin && (
               <div className="flex-1 flex flex-col space-y-6 text-left">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
                   <div>
-                    <h4 className="text-sm font-black text-slate-800">Matriz de Visibilidad por Puesto</h4>
-                    <p className="text-[10px] font-medium text-slate-500 mt-1">
+                    <h4 className="text-sm font-black text-text-1">Matriz de Visibilidad por Puesto</h4>
+                    <p className="text-[10px] font-medium text-text-3 mt-1">
                       Selecciona qué temas y capítulos del manual debe de visualizar cada puesto en su cuenta de lector lectora individual.
                     </p>
                   </div>
                   <button
                     onClick={saveMatrix}
                     disabled={savingMatrix}
-                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 self-start disabled:opacity-50"
+                    className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 self-start disabled:opacity-50"
                   >
                     {savingMatrix ? 'Guardando...' : 'Guardar Cambios'}
                   </button>
@@ -1538,23 +1538,23 @@ export function OrgVaultManager() {
                     Cargando matriz de puestos...
                   </div>
                 ) : (
-                  <div className="flex-1 overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-slate-50/50">
-                    <table className="w-full border-collapse text-xs font-semibold text-slate-600">
-                      <thead className="bg-slate-100/80 sticky top-0 backdrop-blur-md border-b border-slate-200 z-10">
+                  <div className="flex-1 overflow-x-auto border border-border rounded-2xl shadow-sm bg-page/50">
+                    <table className="w-full border-collapse text-xs font-semibold text-text-2">
+                      <thead className="bg-page/80 sticky top-0 backdrop-blur-md border-b border-border z-10">
                         <tr>
-                          <th className="p-3 text-left min-w-[240px] bg-slate-100 font-black text-slate-800">Temas del Manual / Capítulos</th>
+                          <th className="p-3 text-left min-w-[240px] bg-page font-black text-text-1">Temas del Manual / Capítulos</th>
                           {matrixRoles.map(role => {
-                            const allAssigned = matrixDocs.length > 0 && matrixDocs.every(doc => 
+                            const allAssigned = matrixDocs.length > 0 && matrixDocs.every(doc =>
                               matrixAssignments.some(a => a.document_id === doc.id && a.job_role_id === role.id)
                             );
                             return (
-                              <th key={role.id} className="p-3 text-center min-w-[120px] font-black text-slate-800 border-l border-slate-200/60">
+                              <th key={role.id} className="p-3 text-center min-w-[120px] font-black text-text-1 border-l border-border/60">
                                 <div className="flex flex-col items-center gap-1">
                                   <span className="truncate max-w-[150px]" title={role.name}>{role.name}</span>
                                   <button
                                     type="button"
                                     onClick={() => handleToggleAllForRole(role.id, !allAssigned)}
-                                    className={`text-[9px] font-black underline mt-0.5 ${allAssigned ? 'text-rose-500' : 'text-blue-600'}`}
+                                    className={`text-[9px] font-black underline mt-0.5 ${allAssigned ? 'text-danger-text' : 'text-accent'}`}
                                   >
                                     {allAssigned ? 'Desmarcar Todos' : 'Marcar Todos'}
                                   </button>
@@ -1564,16 +1564,16 @@ export function OrgVaultManager() {
                           })}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200/80 bg-white">
+                      <tbody className="divide-y divide-border/80 bg-white">
                         {matrixDocs.map(doc => {
-                          const allRolesAssigned = matrixRoles.length > 0 && matrixRoles.every(role => 
+                          const allRolesAssigned = matrixRoles.length > 0 && matrixRoles.every(role =>
                             matrixAssignments.some(a => a.document_id === doc.id && a.job_role_id === role.id)
                           );
                           return (
-                            <tr key={doc.id} className="hover:bg-slate-50/60 transition-colors">
-                              <td className="p-3 flex items-center justify-between gap-3 font-bold text-slate-700 min-w-[240px]">
+                            <tr key={doc.id} className="hover:bg-page/60 transition-colors">
+                              <td className="p-3 flex items-center justify-between gap-3 font-bold text-text-2 min-w-[240px]">
                                 <div className="flex items-center gap-2 truncate">
-                                  <span className="text-[10px] text-slate-400 capitalize bg-slate-100 px-2 py-0.5 rounded font-black tracking-wider">
+                                  <span className="text-[10px] text-slate-400 capitalize bg-page px-2 py-0.5 rounded font-black tracking-wider">
                                     {doc.type}
                                   </span>
                                   <span className="truncate" title={doc.title}>{doc.title}</span>
@@ -1581,7 +1581,7 @@ export function OrgVaultManager() {
                                 <button
                                   type="button"
                                   onClick={() => handleToggleAllForDoc(doc.id, !allRolesAssigned)}
-                                  className={`text-[9px] font-black underline shrink-0 ${allRolesAssigned ? 'text-rose-500' : 'text-blue-600'}`}
+                                  className={`text-[9px] font-black underline shrink-0 ${allRolesAssigned ? 'text-danger-text' : 'text-accent'}`}
                                 >
                                   {allRolesAssigned ? 'Nadie' : 'Todos'}
                                 </button>
@@ -1589,12 +1589,12 @@ export function OrgVaultManager() {
                               {matrixRoles.map(role => {
                                 const isChecked = matrixAssignments.some(a => a.document_id === doc.id && a.job_role_id === role.id);
                                 return (
-                                  <td key={role.id} className="p-3 text-center border-l border-slate-200/40">
+                                  <td key={role.id} className="p-3 text-center border-l border-border/40">
                                     <input
                                       type="checkbox"
                                       checked={isChecked}
                                       onChange={() => handleToggleMatrix(doc.id, role.id)}
-                                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/30 cursor-pointer"
+                                      className="w-4 h-4 rounded border-slate-300 text-accent focus-visible:ring-focus-ring/30 cursor-pointer"
                                     />
                                   </td>
                                 );
@@ -1611,9 +1611,9 @@ export function OrgVaultManager() {
 
             {adminTab === 'exams' && isAdmin && (
               <div className="flex-1 flex flex-col space-y-6 text-left">
-                <div className="border-b border-slate-100 pb-4">
-                  <h4 className="text-sm font-black text-slate-800">Certificaciones y Evaluaciones por Puesto</h4>
-                  <p className="text-[10px] font-medium text-slate-500 mt-1">
+                <div className="border-b border-border pb-4">
+                  <h4 className="text-sm font-black text-text-1">Certificaciones y Evaluaciones por Puesto</h4>
+                  <p className="text-[10px] font-medium text-text-3 mt-1">
                     Consulta el estatus de avance y calificaciones de los colaboradores lectores. Puedes resetear intentos fallidos para permitirles volver a presentar de inmediato.
                   </p>
                 </div>
@@ -1623,9 +1623,9 @@ export function OrgVaultManager() {
                     Cargando reporte de evaluaciones...
                   </div>
                 ) : (
-                  <div className="border border-slate-200 rounded-2xl shadow-sm bg-white overflow-hidden">
-                    <table className="w-full border-collapse text-xs font-semibold text-slate-600">
-                      <thead className="bg-slate-55 border-b border-slate-200 font-black text-slate-800 text-left">
+                  <div className="border border-border rounded-2xl shadow-sm bg-white overflow-hidden">
+                    <table className="w-full border-collapse text-xs font-semibold text-text-2">
+                      <thead className="bg-page border-b border-border font-black text-text-1 text-left">
                         <tr>
                           <th className="p-3">Colaborador</th>
                           <th className="p-3">Puesto</th>
@@ -1636,7 +1636,7 @@ export function OrgVaultManager() {
                           <th className="p-3 text-right">Acciones</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-border">
                         {examsReport.length === 0 ? (
                           <tr>
                             <td colSpan={7} className="p-8 text-center text-slate-400 font-medium italic">
@@ -1647,48 +1647,48 @@ export function OrgVaultManager() {
                           examsReport.map(row => {
                             const lastAttempt = row.attempts?.length > 0 ? row.attempts[0] : null;
                             return (
-                              <tr key={row.user_id} className="hover:bg-slate-50/50 transition-colors">
+                              <tr key={row.user_id} className="hover:bg-page/50 transition-colors">
                                 <td className="p-3">
-                                  <div className="font-bold text-slate-800">{row.name}</div>
+                                  <div className="font-bold text-text-1">{row.name}</div>
                                   <div className="text-[10px] text-slate-400 font-normal">{row.email}</div>
                                 </td>
-                                <td className="p-3 font-bold text-slate-700">{row.job_role}</td>
+                                <td className="p-3 font-bold text-text-2">{row.job_role}</td>
                                 <td className="p-3 min-w-[140px]">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-full h-2 bg-slate-100 rounded-full border border-slate-200 overflow-hidden">
-                                      <div 
-                                        className="h-full bg-blue-500 rounded-full" 
+                                    <div className="w-full h-2 bg-page rounded-full border border-border overflow-hidden">
+                                      <div
+                                        className="h-full bg-accent rounded-full"
                                         style={{ width: `${row.progress_percentage}%` }}
                                       />
                                     </div>
-                                    <span className="text-[10px] font-bold text-slate-500 shrink-0">{row.progress_percentage}%</span>
+                                    <span className="text-[10px] font-bold text-text-3 shrink-0">{row.progress_percentage}%</span>
                                   </div>
                                 </td>
-                                <td className="p-3 text-center font-bold text-slate-700">
+                                <td className="p-3 text-center font-bold text-text-2">
                                   {row.highest_score > 0 ? `${row.highest_score}/10` : '-'}
                                 </td>
                                 <td className="p-3 text-center">
                                   {row.certified ? (
-                                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[9px] font-bold border border-emerald-100">
+                                    <span className="px-2 py-0.5 rounded-full bg-success-bg text-success-text text-[9px] font-bold border border-success-text/20">
                                       Certificado
                                     </span>
                                   ) : row.progress_percentage >= 100 ? (
-                                    <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[9px] font-bold border border-amber-100">
+                                    <span className="px-2 py-0.5 rounded-full bg-warning-bg text-warning-text text-[9px] font-bold border border-warning-text/20">
                                       Listo para Examen
                                     </span>
                                   ) : (
-                                    <span className="px-2 py-0.5 rounded-full bg-slate-50 text-slate-400 text-[9px] font-bold border border-slate-100">
+                                    <span className="px-2 py-0.5 rounded-full bg-page text-slate-400 text-[9px] font-bold border border-border">
                                       Leyendo
                                     </span>
                                   )}
                                 </td>
-                                <td className="p-3 text-center font-bold text-slate-500">{row.total_attempts}</td>
+                                <td className="p-3 text-center font-bold text-text-3">{row.total_attempts}</td>
                                 <td className="p-3 text-right space-x-2">
                                   {row.attempts?.length > 0 && (
                                     <button
                                       type="button"
                                       onClick={() => setSelectedAttemptDetails(row)}
-                                      className="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold transition-all"
+                                      className="px-2.5 py-1 rounded-lg border border-border hover:bg-page text-text-2 font-bold transition-all"
                                     >
                                       Historial
                                     </button>
@@ -1697,7 +1697,7 @@ export function OrgVaultManager() {
                                     <button
                                       type="button"
                                       onClick={() => handleResetAttempt(lastAttempt.id)}
-                                      className="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-100 text-rose-600 hover:bg-rose-100 font-black transition-all"
+                                      className="px-2.5 py-1 rounded-lg bg-danger-bg border border-danger-text/20 text-danger-text hover:bg-danger-bg font-black transition-all"
                                       title="Eliminar intento reprobado para permitir que repita el examen"
                                     >
                                       Liberar
@@ -1716,17 +1716,17 @@ export function OrgVaultManager() {
                 {/* ATTEMPT DETAILS MODAL POPUP */}
                 {selectedAttemptDetails && (
                   <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-2xl rounded-3xl p-6 relative border border-slate-100 shadow-2xl flex flex-col max-h-[85vh] text-left">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+                    <div className="bg-white w-full max-w-2xl rounded-3xl p-6 relative border border-border shadow-2xl flex flex-col max-h-[85vh] text-left">
+                      <div className="flex items-center justify-between border-b border-border pb-3 shrink-0">
                         <div>
-                          <h3 className="text-sm font-black text-slate-800">Historial de Intentos</h3>
-                          <p className="text-[10px] font-medium text-slate-500 mt-0.5">
-                            Historial para: <span className="font-bold text-blue-600">{selectedAttemptDetails.name}</span> ({selectedAttemptDetails.job_role})
+                          <h3 className="text-sm font-black text-text-1">Historial de Intentos</h3>
+                          <p className="text-[10px] font-medium text-text-3 mt-0.5">
+                            Historial para: <span className="font-bold text-accent">{selectedAttemptDetails.name}</span> ({selectedAttemptDetails.job_role})
                           </p>
                         </div>
-                        <button 
-                          onClick={() => setSelectedAttemptDetails(null)} 
-                          className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"
+                        <button
+                          onClick={() => setSelectedAttemptDetails(null)}
+                          className="p-1.5 rounded-full hover:bg-page text-text-3"
                         >
                           <X size={18} />
                         </button>
@@ -1734,16 +1734,16 @@ export function OrgVaultManager() {
 
                       <div className="flex-1 overflow-y-auto py-4 space-y-6">
                         {selectedAttemptDetails.attempts.map((att: any, idx: number) => (
-                          <div key={att.id} className="border border-slate-200 rounded-2xl p-5 space-y-4 bg-slate-50/40">
-                            <div className="flex justify-between items-center border-b border-slate-200/50 pb-2">
+                          <div key={att.id} className="border border-border rounded-2xl p-5 space-y-4 bg-page/40">
+                            <div className="flex justify-between items-center border-b border-border/50 pb-2">
                               <div>
                                 <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">Intento #{selectedAttemptDetails.attempts.length - idx}</span>
-                                <span className="text-[10px] text-slate-500 font-semibold">{new Date(att.created_at).toLocaleString()}</span>
+                                <span className="text-[10px] text-text-3 font-semibold">{new Date(att.created_at).toLocaleString()}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="font-black text-sm text-slate-700">{att.score}/10</span>
+                                <span className="font-black text-sm text-text-2">{att.score}/10</span>
                                 <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${
-                                  att.passed ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-rose-50 text-rose-600 border border-rose-100"
+                                  att.passed ? "bg-success-bg text-success-text border border-success-text/20" : "bg-danger-bg text-danger-text border border-danger-text/20"
                                 }`}>
                                   {att.passed ? "Aprobado" : "Reprobado"}
                                 </span>
@@ -1753,22 +1753,22 @@ export function OrgVaultManager() {
                             {/* Detailed answers breakdown */}
                             {att.answers && att.answers.length > 0 && (
                               <div className="space-y-3 pl-2">
-                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Detalle de Respuestas</span>
+                                <span className="text-[9px] font-black text-text-3 uppercase tracking-widest block">Detalle de Respuestas</span>
                                 <div className="space-y-2.5">
                                   {att.answers.map((ans: any, aIdx: number) => (
                                     <div key={aIdx} className="text-xs leading-normal">
-                                      <div className="flex gap-1.5 font-bold text-slate-800">
+                                      <div className="flex gap-1.5 font-bold text-text-1">
                                         <span>{aIdx + 1}.</span>
                                         <span>{ans.question_text}</span>
                                       </div>
                                       <div className="mt-1 flex items-center gap-3 pl-4 font-semibold font-mono text-[10px]">
                                         <span className="flex items-center gap-1">
                                           Respuesta: <span className={`px-1.5 py-0.5 rounded font-black ${
-                                            ans.is_correct ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                                            ans.is_correct ? "bg-success-bg text-success-text" : "bg-danger-bg text-danger-text"
                                           }`}>{ans.chosen || 'Ninguna'}</span>
                                         </span>
                                         <span className="text-slate-400">|</span>
-                                        <span className="text-slate-500">Correcta: <span className="font-black text-slate-700">{ans.correct_option}</span></span>
+                                        <span className="text-text-3">Correcta: <span className="font-black text-text-2">{ans.correct_option}</span></span>
                                       </div>
                                     </div>
                                   ))}
@@ -1779,11 +1779,11 @@ export function OrgVaultManager() {
                         ))}
                       </div>
 
-                      <div className="border-t border-slate-100 pt-3 flex justify-end shrink-0">
+                      <div className="border-t border-border pt-3 flex justify-end shrink-0">
                         <button
                           type="button"
                           onClick={() => setSelectedAttemptDetails(null)}
-                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-all"
+                          className="px-4 py-2 bg-page hover:bg-slate-200 text-text-2 rounded-xl text-xs font-black transition-all"
                         >
                           Cerrar Historial
                         </button>
@@ -1797,72 +1797,72 @@ export function OrgVaultManager() {
             {/* CREATE / EDIT USER MODAL */}
             {showUserModal && (
               <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <form 
+                <form
                   onSubmit={handleSaveUser}
-                  className="bg-white w-full max-w-md rounded-3xl p-6 relative border border-slate-100 shadow-2xl flex flex-col space-y-4 text-left"
+                  className="bg-white w-full max-w-md rounded-3xl p-6 relative border border-border shadow-2xl flex flex-col space-y-4 text-left"
                 >
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowUserModal(false)}
-                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-500"
+                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-page text-text-3"
                   >
                     <X size={16} />
                   </button>
 
-                  <div className="border-b border-slate-100 pb-2">
-                    <h3 className="text-base font-black text-slate-900">
+                  <div className="border-b border-border pb-2">
+                    <h3 className="text-base font-black text-text-1">
                       {editingUser ? 'Editar Cuenta de Lector' : 'Registrar Nuevo Lector'}
                     </h3>
-                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                    <p className="text-xs text-text-3 font-semibold mt-0.5">
                       {editingUser ? 'Actualiza los datos del usuario.' : 'Crea una cuenta aislada de acceso al manual.'}
                     </p>
                   </div>
 
                   <div className="space-y-3">
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Nombre Completo</label>
-                      <input 
-                        type="text" 
+                      <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Nombre Completo</label>
+                      <input
+                        type="text"
                         required
                         value={userForm.name}
                         onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-250 bg-slate-50/50 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-semibold"
+                        className="w-full px-4 py-2 border border-slate-250 bg-page/50 rounded-xl focus:outline-none focus:border-accent text-xs font-semibold"
                         placeholder="Ej. Juan Pérez"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Usuario o Correo</label>
-                      <input 
-                        type="text" 
+                      <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Usuario o Correo</label>
+                      <input
+                        type="text"
                         required
                         value={userForm.email}
                         onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-250 bg-slate-50/50 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-semibold"
+                        className="w-full px-4 py-2 border border-slate-250 bg-page/50 rounded-xl focus:outline-none focus:border-accent text-xs font-semibold"
                         placeholder="Ej. juan.perez o juan@empresa.com"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                      <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">
                         Contraseña {editingUser && '(Dejar en blanco para no cambiar)'}
                       </label>
-                      <input 
-                        type="password" 
+                      <input
+                        type="password"
                         required={!editingUser}
                         value={userForm.password}
                         onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-250 bg-slate-50/50 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-semibold"
+                        className="w-full px-4 py-2 border border-slate-250 bg-page/50 rounded-xl focus:outline-none focus:border-accent text-xs font-semibold"
                         placeholder="Mínimo 4 caracteres"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Puesto (Para Filtrado de Contenido)</label>
-                      <select 
+                      <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Puesto (Para Filtrado de Contenido)</label>
+                      <select
                         value={userForm.job_role_id}
                         onChange={(e) => setUserForm({ ...userForm, job_role_id: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-250 bg-slate-50/50 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-semibold"
+                        className="w-full px-4 py-2 border border-slate-250 bg-page/50 rounded-xl focus:outline-none focus:border-accent text-xs font-semibold"
                       >
                         <option value="">-- Sin puesto específico (Ve todo) --</option>
                         {jobRoles.map((r) => (
@@ -1872,11 +1872,11 @@ export function OrgVaultManager() {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Rol de Acceso</label>
-                      <select 
+                      <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Rol de Acceso</label>
+                      <select
                         value={userForm.role}
                         onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-250 bg-slate-50/50 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-semibold"
+                        className="w-full px-4 py-2 border border-slate-250 bg-page/50 rounded-xl focus:outline-none focus:border-accent text-xs font-semibold"
                       >
                         <option value="colaborador">Lector Normal (Filtrado por puesto)</option>
                         <option value="admin">Administrador / Auditor (Ve todo + aprueba propuestas)</option>
@@ -1888,13 +1888,13 @@ export function OrgVaultManager() {
                     <button
                       type="button"
                       onClick={() => setShowUserModal(false)}
-                      className="px-4 py-2 rounded-xl font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+                      className="px-4 py-2 rounded-xl font-bold text-xs bg-page hover:bg-slate-200 text-text-2 transition-colors"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-xl font-black text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 transition-all"
+                      className="px-4 py-2 rounded-xl font-black text-xs bg-accent hover:bg-accent-hover text-white shadow-md shadow-accent/20 transition-all"
                     >
                       Guardar Lector
                     </button>

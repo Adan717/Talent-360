@@ -97,54 +97,54 @@ export function SupervisorPinValidation({
     }
   };
 
-  const panel = isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800';
+  const panel = isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-border text-text-1';
   const field = isDark
     ? 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-600'
-    : 'bg-white border-slate-200 text-slate-800 placeholder-slate-400';
+    : 'bg-white border-border text-text-1 placeholder-slate-400';
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className={`w-full max-w-sm rounded-3xl border shadow-2xl p-5 ${panel}`}>
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-accent-soft text-accent flex items-center justify-center shrink-0">
               <ShieldCheck size={20} />
             </div>
             <div className="min-w-0">
               <h3 className="text-sm font-black leading-tight">Validación del supervisor</h3>
               {taskTitle && (
-                <p className={`text-[11px] font-semibold truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <p className={`text-[11px] font-semibold truncate ${isDark ? 'text-slate-400' : 'text-text-3'}`}>
                   {taskTitle}
                 </p>
               )}
             </div>
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600" aria-label="Cerrar">
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-text-2" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>
 
         {done ? (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-success-bg text-success-text flex items-center justify-center">
               <Check size={24} />
             </div>
-            <p className="text-sm font-black text-emerald-700">Tarea validada</p>
+            <p className="text-sm font-black text-success-text">Tarea validada</p>
           </div>
         ) : (
           <>
-            <p className={`text-[11px] leading-relaxed mb-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <p className={`text-[11px] leading-relaxed mb-4 ${isDark ? 'text-slate-400' : 'text-text-3'}`}>
               Entrega el dispositivo a tu supervisor. Él elige su nombre y teclea su PIN — no necesita
               iniciar sesión aquí.
             </p>
 
-            <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-slate-500">
+            <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-text-3">
               ¿Quién valida?
             </label>
             <select
               value={supervisorId}
               onChange={e => setSupervisorId(e.target.value)}
-              className={`w-full mb-3 px-3 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-violet-500 ${field}`}
+              className={`w-full mb-3 px-3 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-accent ${field}`}
             >
               <option value="">Selecciona a tu supervisor</option>
               {candidates.map((u: any) => (
@@ -152,7 +152,7 @@ export function SupervisorPinValidation({
               ))}
             </select>
 
-            <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-slate-500">
+            <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-text-3">
               PIN del supervisor
             </label>
             <input
@@ -162,10 +162,10 @@ export function SupervisorPinValidation({
               value={pin}
               onChange={e => setPin(e.target.value)}
               placeholder="••••"
-              className={`w-full mb-3 px-3 py-2.5 rounded-xl border text-sm font-bold tracking-[0.3em] outline-none focus:border-violet-500 ${field}`}
+              className={`w-full mb-3 px-3 py-2.5 rounded-xl border text-sm font-bold tracking-[0.3em] outline-none focus:border-accent ${field}`}
             />
 
-            <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-slate-500">
+            <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-text-3">
               Comentario (opcional)
             </label>
             <textarea
@@ -173,11 +173,11 @@ export function SupervisorPinValidation({
               onChange={e => setFeedback(e.target.value)}
               rows={2}
               placeholder="Observaciones sobre el trabajo realizado"
-              className={`w-full mb-4 px-3 py-2.5 rounded-xl border text-sm font-medium outline-none resize-none focus:border-violet-500 ${field}`}
+              className={`w-full mb-4 px-3 py-2.5 rounded-xl border text-sm font-medium outline-none resize-none focus:border-accent ${field}`}
             />
 
             {error && (
-              <p className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-2.5 mb-3">
+              <p className="text-[11px] font-bold text-danger-text bg-danger-bg border border-danger-text/20 rounded-xl p-2.5 mb-3">
                 {error}
               </p>
             )}
@@ -186,7 +186,7 @@ export function SupervisorPinValidation({
               type="button"
               onClick={submit}
               disabled={submitting}
-              className="w-full py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-black text-sm flex items-center justify-center gap-2 transition-colors"
+              className="w-full py-3 rounded-2xl bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-black text-sm flex items-center justify-center gap-2 transition-colors"
             >
               {submitting ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
               Validar tarea

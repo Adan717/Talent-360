@@ -91,17 +91,17 @@ export default function MealPhotoCapture({ type, onCapture, onCancel, submitting
 
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="meal-photo-modal-title" className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm z-[60] flex flex-col p-4 animate-fade-in-up">
-      <div className="bg-white rounded-3xl p-4 w-full flex-grow flex flex-col shadow-2xl relative overflow-hidden text-slate-800">
+      <div className="bg-white rounded-3xl p-4 w-full flex-grow flex flex-col shadow-2xl relative overflow-hidden text-text-1">
         <div className="flex justify-between items-center mb-3">
-          <h3 id="meal-photo-modal-title" className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
-            <Camera size={16} className="text-emerald-600" /> Evidencia de Comedor
+          <h3 id="meal-photo-modal-title" className="font-extrabold text-sm text-text-1 flex items-center gap-2">
+            <Camera size={16} className="text-success-text" /> Evidencia de Comedor
           </h3>
-          <button onClick={onCancel} className="text-slate-400 hover:text-slate-700" aria-label="Cancelar">
+          <button onClick={onCancel} className="text-slate-400 hover:text-text-2" aria-label="Cancelar">
             <X size={20} />
           </button>
         </div>
 
-        <p className="text-[11px] text-slate-500 mb-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold">
+        <p className="text-[11px] text-text-3 mb-2 bg-page border border-border rounded-xl px-3 py-2 font-semibold">
           {title}
         </p>
 
@@ -115,7 +115,7 @@ export default function MealPhotoCapture({ type, onCapture, onCancel, submitting
         <div className="flex-grow relative bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center">
           {error ? (
             <div className="text-center p-6">
-              <p className="text-rose-300 text-xs font-bold mb-3">{error}</p>
+              <p className="text-danger-text text-xs font-bold mb-3">{error}</p>
               <button onClick={startCamera} className="bg-white/10 text-white text-xs font-bold px-4 py-2 rounded-full border border-white/20 hover:bg-white/20 flex items-center gap-1.5 mx-auto">
                 <RefreshCw size={12} /> Reintentar
               </button>
@@ -136,14 +136,14 @@ export default function MealPhotoCapture({ type, onCapture, onCancel, submitting
               <button
                 onClick={retake}
                 disabled={submitting}
-                className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-2xl hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                className="flex-1 py-3 bg-page text-text-2 font-bold rounded-2xl hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 <RefreshCw size={16} /> Repetir
               </button>
               <button
                 onClick={confirm}
                 disabled={submitting}
-                className="flex-1 py-3 bg-emerald-600 text-white font-extrabold rounded-2xl shadow-lg hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                className="flex-1 py-3 bg-success-text text-white font-extrabold rounded-2xl shadow-lg hover:bg-success-text active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 <Check size={16} /> {submitting ? 'Enviando…' : 'Usar foto'}
               </button>
@@ -152,7 +152,7 @@ export default function MealPhotoCapture({ type, onCapture, onCancel, submitting
             <button
               onClick={takePhoto}
               disabled={!!error || starting}
-              className="w-full py-4 bg-emerald-600 text-white font-extrabold rounded-2xl shadow-lg hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-4 bg-success-text text-white font-extrabold rounded-2xl shadow-lg hover:bg-success-text active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Camera size={18} /> Tomar Foto
             </button>

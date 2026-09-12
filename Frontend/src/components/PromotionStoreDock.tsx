@@ -36,10 +36,10 @@ export const PromotionStoreDock: React.FC<PromotionStoreDockProps> = ({ onOpenSt
     // Default fallback seasonal promotion if none active in DB
     return (
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-2xl animate-in slide-in-from-bottom-4 duration-300">
-        <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-2xl shadow-xl border border-slate-700/60 p-3.5 flex items-center justify-between gap-4 backdrop-blur-md">
-          
+        <div className="bg-gradient-to-r from-slate-900 via-brand-dark to-slate-900 text-white rounded-2xl shadow-xl border border-slate-700/60 p-3.5 flex items-center justify-between gap-4 backdrop-blur-md">
+
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="p-2 bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 rounded-xl font-black text-[10px] shrink-0 uppercase tracking-widest shadow-md flex items-center gap-1">
+            <div className="p-2 bg-gradient-to-tr from-warning-icon to-warning-icon text-text-1 rounded-xl font-black text-[10px] shrink-0 uppercase tracking-widest shadow-md flex items-center gap-1">
               <Sparkles size={12} />
               Add-ons A la Carta
             </div>
@@ -53,14 +53,14 @@ export const PromotionStoreDock: React.FC<PromotionStoreDockProps> = ({ onOpenSt
 
           <div className="flex items-center gap-2 shrink-0">
             {!isMinimized && (
-              <button 
+              <button
                 onClick={onOpenStore || (() => window.location.href = '/settings?tab=billing')}
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                className="px-3.5 py-1.5 bg-accent hover:bg-accent text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5"
               >
                 Explorar Tienda <ArrowRight size={13} />
               </button>
             )}
-            <button 
+            <button
               onClick={toggleMinimize}
               className="p-1.5 hover:bg-white/10 text-slate-300 hover:text-white rounded-lg transition-colors"
               title={isMinimized ? 'Expandir' : 'Minimizar'}
@@ -76,10 +76,10 @@ export const PromotionStoreDock: React.FC<PromotionStoreDockProps> = ({ onOpenSt
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-2xl animate-in slide-in-from-bottom-4 duration-300">
-      <div className={`bg-gradient-to-r ${promotion.banner_bg_color || 'from-slate-900 via-blue-950 to-slate-900'} ${promotion.banner_text_color || 'text-white'} rounded-2xl shadow-2xl border border-white/10 p-3.5 flex items-center justify-between gap-4 backdrop-blur-md`}>
-        
+      <div className={`bg-gradient-to-r ${promotion.banner_bg_color || 'from-slate-900 via-brand-dark to-slate-900'} ${promotion.banner_text_color || 'text-white'} rounded-2xl shadow-2xl border border-white/10 p-3.5 flex items-center justify-between gap-4 backdrop-blur-md`}>
+
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="p-2 bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 rounded-xl font-black text-[10px] shrink-0 uppercase tracking-widest shadow-md flex items-center gap-1">
+          <div className="p-2 bg-gradient-to-tr from-warning-icon to-warning-icon text-text-1 rounded-xl font-black text-[10px] shrink-0 uppercase tracking-widest shadow-md flex items-center gap-1">
             <Tag size={12} />
             {promotion.badge_text || '20% OFF'}
           </div>
@@ -95,14 +95,14 @@ export const PromotionStoreDock: React.FC<PromotionStoreDockProps> = ({ onOpenSt
 
         <div className="flex items-center gap-2 shrink-0">
           {!isMinimized && (
-            <button 
+            <button
               onClick={onOpenStore || (() => window.location.href = '/settings?tab=billing')}
-              className="px-3.5 py-1.5 bg-white text-slate-900 hover:bg-slate-100 font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5"
+              className="px-3.5 py-1.5 bg-white text-text-1 hover:bg-page font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5"
             >
               {promotion.cta_label || 'Ver Oferta'} <ArrowRight size={13} />
             </button>
           )}
-          <button 
+          <button
             onClick={toggleMinimize}
             className="p-1.5 hover:bg-white/10 opacity-80 hover:opacity-100 rounded-lg transition-colors"
             title={isMinimized ? 'Expandir' : 'Minimizar'}

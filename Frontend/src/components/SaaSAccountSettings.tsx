@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Building2, CreditCard, LayoutGrid, Save, Check,
-  CheckCircle2, AlertCircle, ShieldCheck, 
+  CheckCircle2, AlertCircle, ShieldCheck,
   Smartphone, Upload, Globe, ChevronRight,
   Receipt, Database, Loader2, MessageSquare, Send, X,
   Users, Clock, CheckSquare, Briefcase, FileText, GraduationCap, ListTodo,
@@ -16,16 +16,8 @@ import axiosInstance from '../lib/axios';
 import { useTarifario } from '../hooks/useTarifario';
 import { cotizar, planDelTarifario, pesos } from '../lib/tarifario';
 
-export const ColorMap: Record<string, { sidebar: string; hex: string; text: string }> = {
-  violet: { sidebar: 'bg-violet-50 text-violet-650 border-violet-100 dark:bg-violet-955/40 dark:text-violet-400 dark:border-violet-900/30', hex: '#8a2be2', text: 'text-violet-655' },
-  blue: { sidebar: 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-955/40 dark:text-blue-400 dark:border-blue-900/30', hex: '#2563eb', text: 'text-blue-600' },
-  emerald: { sidebar: 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-955/40 dark:text-emerald-400 dark:border-emerald-900/30', hex: '#10b981', text: 'text-emerald-600' },
-  indigo: { sidebar: 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-955/40 dark:text-indigo-400 dark:border-indigo-900/30', hex: '#6366f1', text: 'text-indigo-600' },
-  amber: { sidebar: 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-955/40 dark:text-amber-400 dark:border-amber-900/30', hex: '#f59e0b', text: 'text-amber-600' },
-  rose: { sidebar: 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-955/40 dark:text-rose-400 dark:border-rose-900/30', hex: '#f43f5e', text: 'text-rose-600' },
-  sky: { sidebar: 'bg-sky-50 text-sky-650 border-sky-100 dark:bg-sky-955/40 dark:text-sky-400 dark:border-sky-900/30', hex: '#0ea5e9', text: 'text-sky-655' },
-  slate: { sidebar: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700', hex: '#64748b', text: 'text-slate-650' }
-};
+import { ColorMap } from '../design/theme';
+export { ColorMap } from '../design/theme';
 
 const IconMap: Record<string, React.ReactNode> = {
   Building2: <Building2 size={20} />,
@@ -68,32 +60,32 @@ const ModuleCard = ({
   setSelectedModuleForDetail: (mod: any) => void;
   setConfiguringModule: (mod: any) => void;
 }) => {
-  const activeClasses = 
-    mod.tier === 'freemium' ? 'border-l-emerald-500 bg-emerald-50/10 hover:bg-emerald-100/50 hover:shadow-lg hover:shadow-emerald-500/10' :
-    mod.tier === 'pro' ? 'border-l-blue-500 bg-blue-50/10 hover:bg-blue-100/50 hover:shadow-lg hover:shadow-blue-500/10' :
-    'border-l-purple-500 bg-purple-50/10 hover:bg-purple-100/50 hover:shadow-lg hover:shadow-purple-500/10';
+  const activeClasses =
+    mod.tier === 'freemium' ? 'border-l-success-text bg-success-bg/10 hover:bg-success-bg/50 hover:shadow-lg hover:shadow-success-text/10' :
+    mod.tier === 'pro' ? 'border-l-accent bg-navy-50/10 hover:bg-accent-soft/50 hover:shadow-lg hover:shadow-accent/10' :
+    'border-l-accent bg-navy-50/10 hover:bg-accent-soft/50 hover:shadow-lg hover:shadow-accent/10';
 
-  const cardClasses = mod.active 
-    ? activeClasses 
-    : 'border-l-slate-300 bg-slate-50/50 opacity-80 grayscale-[20%] hover:shadow-sm';
+  const cardClasses = mod.active
+    ? activeClasses
+    : 'border-l-slate-300 bg-page/50 opacity-80 grayscale-[20%] hover:shadow-sm';
 
-  const versionBadgeColor = !mod.active ? 'bg-slate-200 text-slate-500' :
-    mod.tier === 'freemium' ? 'bg-emerald-100 text-emerald-800' :
-    mod.tier === 'pro' ? 'bg-blue-100 text-blue-800' :
-    'bg-purple-100 text-purple-800';
+  const versionBadgeColor = !mod.active ? 'bg-slate-200 text-text-3' :
+    mod.tier === 'freemium' ? 'bg-success-bg text-success-text' :
+    mod.tier === 'pro' ? 'bg-accent-soft text-navy-800' :
+    'bg-accent-soft text-navy-800';
 
   return (
-    <div 
-      className={`p-4.5 rounded-2xl border border-slate-200 border-l-4 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group hover:border-slate-300 ${cardClasses}`}
+    <div
+      className={`p-4.5 rounded-2xl border border-border border-l-4 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group hover:border-slate-300 ${cardClasses}`}
     >
       {/* Fondo Temático Alusivo (Marca de Agua Dinámica) */}
-      {mod.icon && React.cloneElement(mod.icon as React.ReactElement<any>, { 
-        size: 110, 
+      {mod.icon && React.cloneElement(mod.icon as React.ReactElement<any>, {
+        size: 110,
         className: `absolute -right-4 -bottom-6 opacity-[0.05] pointer-events-none transform rotate-12 transition-all duration-500 group-hover:rotate-6 group-hover:scale-110 group-hover:opacity-[0.12] ${
-          mod.active 
-            ? (mod.tier === 'freemium' ? 'text-emerald-500' : mod.tier === 'pro' ? 'text-blue-500' : 'text-purple-500') 
+          mod.active
+            ? (mod.tier === 'freemium' ? 'text-success-text' : mod.tier === 'pro' ? 'text-accent' : 'text-accent')
             : 'text-slate-400'
-        }` 
+        }`
       } as any)}
 
       <div className="relative z-10 flex-grow">
@@ -103,11 +95,11 @@ const ModuleCard = ({
           <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${mod.iconColor} shadow-inner shrink-0 [&>svg]:w-5.5 [&>svg]:h-5.5`}>
             {mod.icon}
           </div>
-          
+
           {/* Nombre, Versión y Descripción */}
           <div className="min-w-0 text-left">
             <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-              <h4 className={`font-black text-sm sm:text-base leading-tight break-words ${mod.active ? 'text-slate-900' : 'text-slate-500'}`}>
+              <h4 className={`font-black text-sm sm:text-base leading-tight break-words ${mod.active ? 'text-text-1' : 'text-text-3'}`}>
                 {mod.name}
               </h4>
               {mod.version && (
@@ -116,12 +108,12 @@ const ModuleCard = ({
                 </span>
               )}
               {trialActive && mod.tier !== 'freemium' && (
-                <span className="text-[8px] font-black px-1.5 py-0.2 rounded bg-amber-500 text-white uppercase tracking-wider whitespace-nowrap animate-pulse">
+                <span className="text-[8px] font-black px-1.5 py-0.2 rounded bg-warning-icon text-white uppercase tracking-wider whitespace-nowrap animate-pulse">
                   Prueba
                 </span>
               )}
             </div>
-            <p className={`text-xs font-medium leading-relaxed ${mod.active ? 'text-slate-500' : 'text-slate-400'}`}>
+            <p className={`text-xs font-medium leading-relaxed ${mod.active ? 'text-text-3' : 'text-slate-400'}`}>
               {mod.desc}
             </p>
           </div>
@@ -133,7 +125,7 @@ const ModuleCard = ({
             const hiddenModules = systemSettings?.hiddenMenuModules || [];
             const isHidden = hiddenModules.includes(mod.moduleId);
             const isAdmin = currentUser?.role === 'admin' || currentUser?.system_role === 'platform_admin';
-            
+
             return (
               <div className="flex items-center gap-1.5 mr-1">
                 {/* Botón de Edición (Lapicito) */}
@@ -163,8 +155,8 @@ const ModuleCard = ({
                     });
                   }}
                   className={`p-1 rounded-full border transition-all duration-200 flex items-center justify-center hover:scale-110 shadow-xs ${
-                    !isAdmin ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
-                    'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                    !isAdmin ? 'opacity-50 cursor-not-allowed bg-page text-slate-400 border-border' :
+                    'bg-navy-50 text-accent border-border hover:bg-accent-soft'
                   }`}
                   title={!isAdmin ? "Solo los administradores pueden cambiar el nombre/icono." : "Editar módulo."}
                 >
@@ -181,10 +173,10 @@ const ModuleCard = ({
                     updateSetting('hiddenMenuModules', newHidden);
                   }}
                   className={`p-1 rounded-full border transition-all duration-200 flex items-center justify-center hover:scale-110 shadow-xs ${
-                    !isAdmin ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
+                    !isAdmin ? 'opacity-50 cursor-not-allowed bg-page text-slate-400 border-border' :
                     isHidden
-                      ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100'
-                      : 'bg-emerald-50 text-emerald-665 border-emerald-200 hover:bg-emerald-100'
+                      ? 'bg-danger-bg text-danger-text border-danger-text/20 hover:bg-danger-bg'
+                      : 'bg-success-bg text-success-text border-success-text/20 hover:bg-success-bg'
                   }`}
                   title={!isAdmin ? "Solo los administradores pueden cambiar la visibilidad." : isHidden ? "Mostrar en menú." : "Ocultar en menú."}
                 >
@@ -193,17 +185,17 @@ const ModuleCard = ({
               </div>
             );
           })()}
-          
+
           {mod.active && (
-            <span className="bg-emerald-50 text-emerald-700 text-[8px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border border-emerald-200/50 flex items-center gap-0.5 whitespace-nowrap">
+            <span className="bg-success-bg text-success-text text-[8px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border border-success-text/50 flex items-center gap-0.5 whitespace-nowrap">
               <CheckCircle2 size={8} /> Activo
             </span>
           )}
-          
+
           <span className={`text-[8px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border whitespace-nowrap ${
-            mod.tier === 'freemium' ? 'bg-slate-100 text-slate-700 border-slate-200' :
-            mod.tier === 'pro' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-            'bg-purple-100 text-purple-700 border-purple-200'
+            mod.tier === 'freemium' ? 'bg-page text-text-2 border-border' :
+            mod.tier === 'pro' ? 'bg-accent-soft text-accent border-border' :
+            'bg-accent-soft text-accent border-border'
           }`}>
             {mod.tier === 'freemium' ? 'Incluido' : `Requiere ${mod.tier}`}
           </span>
@@ -211,25 +203,25 @@ const ModuleCard = ({
       </div>
 
       {/* Fila Inferior (Footer): Ver más... y Engranaje */}
-      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 relative z-10">
-        <button 
+      <div className="pt-3 border-t border-border flex items-center justify-between gap-2 relative z-10">
+        <button
           onClick={() => setSelectedModuleForDetail(mod)}
-          className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline transition-colors flex items-center gap-1"
+          className="text-xs font-bold text-accent hover:text-navy-800 hover:underline transition-colors flex items-center gap-1"
         >
           Ver más...
         </button>
 
         {currentUser?.role === 'admin' || currentUser?.system_role === 'platform_admin' ? (
           mod.active ? (
-            <button 
+            <button
               onClick={() => setConfiguringModule(mod)}
-              className="p-1 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg hover:rotate-90 transition-all duration-300 border-none bg-transparent cursor-pointer"
+              className="p-1 text-text-3 hover:text-accent hover:bg-page rounded-lg hover:rotate-90 transition-all duration-300 border-none bg-transparent cursor-pointer"
               title={`Configurar ${mod.name}`}
             >
               <Settings size={14} />
             </button>
           ) : (
-            <button 
+            <button
               disabled
               className="p-1 text-slate-300 cursor-not-allowed border-none bg-transparent"
               title="Requiere plan superior"
@@ -270,7 +262,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
   useEffect(() => {
     const currentCompany = systemSettings?.company_name || currentUser?.tenant?.name || 'Mi Empresa';
     const currentSubdomain = systemSettings?.subdomain || currentUser?.tenant?.subdomain || 'miempresa';
-    
+
     setOrgName(currentCompany);
     setSubdomain(currentSubdomain);
     setWelcomeTitle(systemSettings?.welcome_title || `¡Bienvenido a ${currentCompany}!`);
@@ -331,7 +323,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
     const employeeIdToUse = emp?.employee_id || selectedEmployeeId;
     const cleanPhone = invitePhone.replace(/\D/g, '');
     const cleanDbPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
-    
+
     if (emp && emp.phone !== cleanDbPhone) {
       try {
         await axiosInstance.put(`/employees/${employeeIdToUse}`, { phone: cleanDbPhone });
@@ -399,9 +391,9 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
   const cotizacionActual = cotizar(planActual, activeEmployeesCount, 'monthly');
 
   const planDetails = {
-    freemium: { name: 'Freemium', color: 'text-slate-600', bg: 'bg-slate-100' },
-    pro: { name: 'PRO', color: 'text-blue-600', bg: 'bg-blue-100' },
-    enterprise: { name: 'Enterprise', color: 'text-purple-600', bg: 'bg-purple-100' },
+    freemium: { name: 'Freemium', color: 'text-text-2', bg: 'bg-page' },
+    pro: { name: 'PRO', color: 'text-accent', bg: 'bg-accent-soft' },
+    enterprise: { name: 'Enterprise', color: 'text-accent', bg: 'bg-accent-soft' },
   };
 
   const tierInfo = planDetails[currentTier as keyof typeof planDetails] || planDetails.freemium;
@@ -434,24 +426,24 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
-      
+
       {/* Header */}
-      <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-end justify-between gap-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-50 pointer-events-none"></div>
+      <div className="bg-white rounded-3xl p-8 border border-border shadow-sm flex flex-col md:flex-row md:items-end justify-between gap-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-navy-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-50 pointer-events-none"></div>
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-xs font-bold text-blue-700 mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-navy-50 border border-border text-xs font-bold text-accent mb-4">
             <ShieldCheck size={14} /> Espacio de Trabajo Seguro
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Configuración de la Cuenta</h1>
-          <p className="text-slate-500 mt-2 font-medium max-w-xl">
+          <h1 className="text-3xl font-black text-text-1 tracking-tight">Configuración de la Cuenta</h1>
+          <p className="text-text-3 mt-2 font-medium max-w-xl">
             Gestiona los detalles de tu empresa, tu suscripción a Talent 360 y los módulos habilitados para tu equipo.
           </p>
         </div>
         <div className="relative z-10 flex gap-3">
-          <button 
+          <button
             onClick={handleSave}
             disabled={isSaving}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-70"
+            className="bg-accent text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-accent-hover transition-all shadow-lg shadow-accent/20 disabled:opacity-70"
           >
             {isSaving ? <span className="animate-pulse">Guardando...</span> : <><Save size={18}/> Guardar Cambios</>}
           </button>
@@ -460,27 +452,27 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
       {/* Navegación por Tabs */}
       <div className="flex gap-2 p-1.5 bg-slate-200/50 rounded-2xl w-fit">
-        <button 
+        <button
           onClick={() => setActiveTab('profile')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'profile' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'profile' ? 'bg-white text-text-1 shadow-sm' : 'text-text-3 hover:text-text-2'}`}
         >
           <Building2 size={16} /> Perfil de Empresa
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('billing')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'billing' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'billing' ? 'bg-white text-text-1 shadow-sm' : 'text-text-3 hover:text-text-2'}`}
         >
           <CreditCard size={16} /> Facturación y Plan
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('modules')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'modules' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'modules' ? 'bg-white text-text-1 shadow-sm' : 'text-text-3 hover:text-text-2'}`}
         >
           <LayoutGrid size={16} /> Módulos del Sistema
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('backups')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'backups' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'backups' ? 'bg-white text-text-1 shadow-sm' : 'text-text-3 hover:text-text-2'}`}
         >
           <Database size={16} /> Respaldos
         </button>
@@ -488,24 +480,24 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
       {/* Contenido de los Tabs */}
       <div className="mt-6">
-        
+
         {/* TAB: PERFIL DE EMPRESA */}
         {activeTab === 'profile' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4">
-            
+
             <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
-                <h2 className="text-xl font-black text-slate-800 mb-6">Datos Generales</h2>
+              <div className="bg-white rounded-3xl p-8 border border-border shadow-sm">
+                <h2 className="text-xl font-black text-text-1 mb-6">Datos Generales</h2>
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Nombre de la Organización</label>
-                    <input type="text" value={orgName} onChange={e => setOrgName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium" />
+                    <label className="block text-sm font-bold text-text-2 mb-2">Nombre de la Organización</label>
+                    <input type="text" value={orgName} onChange={e => setOrgName(e.target.value)} className="w-full px-4 py-3 bg-page border border-border rounded-xl focus:ring-2 focus-visible:ring-focus-ring focus:outline-none font-medium" />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Identificador interno de la empresa</label>
-                    <div className="flex border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
-                      <div className="bg-slate-100 px-4 py-3 text-sm text-slate-500 font-bold border-r border-slate-200 flex items-center gap-2"><Globe size={16}/> ID</div>
-                      <input type="text" value={subdomain} onChange={e => setSubdomain(e.target.value)} className="w-full bg-slate-50 px-4 py-3 font-medium outline-none text-blue-600" />
+                    <label className="block text-sm font-bold text-text-2 mb-2">Identificador interno de la empresa</label>
+                    <div className="flex border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-focus-ring">
+                      <div className="bg-page px-4 py-3 text-sm text-text-3 font-bold border-r border-border flex items-center gap-2"><Globe size={16}/> ID</div>
+                      <input type="text" value={subdomain} onChange={e => setSubdomain(e.target.value)} className="w-full bg-page px-4 py-3 font-medium outline-none text-accent" />
                     </div>
                     <p className="text-xs text-slate-400 mt-2">No es una dirección web. El acceso para todos los usuarios es https://talent360.com.mx/login.</p>
                   </div>
@@ -516,31 +508,31 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                 </div>
               </div>
 
-              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+              <div className="bg-white rounded-3xl p-8 border border-border shadow-sm">
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h2 className="text-xl font-black text-slate-800">Mensaje de Onboarding</h2>
-                    <p className="text-sm text-slate-500">Lo que ven tus empleados al instalar la PWA.</p>
+                    <h2 className="text-xl font-black text-text-1">Mensaje de Onboarding</h2>
+                    <p className="text-sm text-text-3">Lo que ven tus empleados al instalar la PWA.</p>
                   </div>
                   <Smartphone className="text-slate-300" size={32} />
                 </div>
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Título de Bienvenida</label>
-                    <input type="text" value={welcomeTitle} onChange={e => setWelcomeTitle(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium" />
+                    <label className="block text-sm font-bold text-text-2 mb-2">Título de Bienvenida</label>
+                    <input type="text" value={welcomeTitle} onChange={e => setWelcomeTitle(e.target.value)} className="w-full px-4 py-3 bg-page border border-border rounded-xl focus:ring-2 focus-visible:ring-focus-ring focus:outline-none font-medium" />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Texto Introductorio</label>
-                    <textarea rows={3} value={welcomeText} onChange={e => setWelcomeText(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium resize-none" />
+                    <label className="block text-sm font-bold text-text-2 mb-2">Texto Introductorio</label>
+                    <textarea rows={3} value={welcomeText} onChange={e => setWelcomeText(e.target.value)} className="w-full px-4 py-3 bg-page border border-border rounded-xl focus:ring-2 focus-visible:ring-focus-ring focus:outline-none font-medium resize-none" />
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-6">
-              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex flex-col items-center text-center">
-                <h2 className="text-sm font-bold text-slate-700 mb-4 w-full text-left">Logotipo Corporativo</h2>
-                <div 
+              <div className="bg-white rounded-3xl p-8 border border-border shadow-sm flex flex-col items-center text-center">
+                <h2 className="text-sm font-bold text-text-2 mb-4 w-full text-left">Logotipo Corporativo</h2>
+                <div
                   onClick={() => {
                     if (!isFeatureUnlocked('custom_logo')) {
                       alert("La personalización de logotipo está disponible únicamente en el Plan PRO/Enterprise o si fue activada para tu plan. Por favor, actualiza tu plan en Facturación.");
@@ -548,22 +540,22 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     }
                     document.getElementById('logo-upload-input')?.click();
                   }}
-                  className="w-32 h-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400 mb-4 hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer group relative overflow-hidden"
+                  className="w-32 h-32 bg-page border-2 border-dashed border-border rounded-3xl flex flex-col items-center justify-center text-slate-400 mb-4 hover:bg-navy-50 hover:border-navy-300 transition-colors cursor-pointer group relative overflow-hidden"
                 >
                   {companyLogo ? (
                     <img src={companyLogo} alt="Logo preview" className="w-full h-full object-contain p-2" />
                   ) : (
                     <>
-                      <Upload size={24} className="mb-2 group-hover:text-blue-500 group-hover:-translate-y-1 transition-all" />
+                      <Upload size={24} className="mb-2 group-hover:text-accent group-hover:-translate-y-1 transition-all" />
                       <span className="text-xs font-bold">Subir Imagen</span>
                     </>
                   )}
                 </div>
-                <input 
-                  id="logo-upload-input" 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
+                <input
+                  id="logo-upload-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
@@ -576,9 +568,9 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                   }}
                 />
                 {companyLogo && (
-                  <button 
-                    onClick={() => setCompanyLogo('')} 
-                    className="text-xs text-rose-500 font-bold hover:text-rose-700 transition-colors mb-2"
+                  <button
+                    onClick={() => setCompanyLogo('')}
+                    className="text-xs text-danger-text font-bold hover:text-danger-text transition-colors mb-2"
                   >
                     Eliminar Logotipo
                   </button>
@@ -587,13 +579,13 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
               </div>
 
               {/* ACTION: Enviar Invitaciones PWA */}
-              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-8 text-white shadow-lg relative overflow-hidden">
+              <div className="bg-gradient-to-br from-success-icon to-accent rounded-3xl p-8 text-white shadow-lg relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-20"><Smartphone size={64}/></div>
                 <h3 className="font-black text-xl mb-2 relative z-10">Invitaciones PWA</h3>
-                <p className="text-emerald-100 text-sm mb-6 relative z-10">Invita a tu personal operativo a descargar el Reloj Checador móvil vía WhatsApp o SMS.</p>
-                <button 
+                <p className="text-success-text text-sm mb-6 relative z-10">Invita a tu personal operativo a descargar el Reloj Checador móvil vía WhatsApp o SMS.</p>
+                <button
                   onClick={() => setShowInviteModal(true)}
-                  className="w-full bg-white text-emerald-700 font-black py-3 rounded-xl shadow-md hover:bg-emerald-50 transition-colors relative z-10"
+                  className="w-full bg-white text-success-text font-black py-3 rounded-xl shadow-md hover:bg-success-bg transition-colors relative z-10"
                 >
                   Enviar Enlaces
                 </button>
@@ -606,31 +598,31 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
         {/* TAB: FACTURACIÓN Y PLAN */}
         {activeTab === 'billing' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4">
-            
+
             {/* Tarjeta del Plan Actual */}
             <div className="lg:col-span-1 space-y-6">
-              <div className={`bg-white rounded-3xl p-8 border-2 ${currentTier === 'enterprise' ? 'border-purple-300 bg-gradient-to-b from-purple-50/20 to-white' : currentTier === 'pro' ? 'border-blue-300 bg-gradient-to-b from-blue-50/20 to-white' : 'border-slate-200'} shadow-sm relative overflow-hidden`}>
+              <div className={`bg-white rounded-3xl p-8 border-2 ${currentTier === 'enterprise' ? 'border-navy-300 bg-gradient-to-b from-navy-50/20 to-white' : currentTier === 'pro' ? 'border-navy-300 bg-gradient-to-b from-navy-50/20 to-white' : 'border-border'} shadow-sm relative overflow-hidden`}>
                 <div className="flex justify-between items-start mb-6">
                   <div className={`px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-widest ${tierInfo.bg} ${tierInfo.color} border border-current/20`}>
                     Plan Actual
                   </div>
                 </div>
-                
-                <h3 className="text-4xl font-black text-slate-900 mb-2">{tierInfo.name}</h3>
-                
+
+                <h3 className="text-4xl font-black text-text-1 mb-2">{tierInfo.name}</h3>
+
                 <div className="mb-6">
                   {currentTier === 'freemium' ? (
                     <div>
-                      <span className="text-3xl font-black text-slate-900">$0</span>
-                      <span className="text-slate-500 font-bold"> /mes</span>
+                      <span className="text-3xl font-black text-text-1">$0</span>
+                      <span className="text-text-3 font-bold"> /mes</span>
                       <p className="text-xs text-slate-400 mt-1">Plan Gratuito Permanente</p>
                     </div>
                   ) : (
                     <div>
-                      <span className="text-3xl font-black text-slate-900">
+                      <span className="text-3xl font-black text-text-1">
                         {cotizacionActual ? `$${pesos(cotizacionActual.totalMensual)}` : '—'}
                       </span>
-                      <span className="text-slate-500 font-bold"> MXN /mes</span>
+                      <span className="text-text-3 font-bold"> MXN /mes</span>
                       <p className="text-xs text-slate-400 mt-1">
                         {planActual
                           ? `${activeEmployeesCount} colaborador(es) × $${pesos(planActual.tarifa_mensual_por_colaborador)}/mes`
@@ -641,14 +633,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                 </div>
 
                 <div className="space-y-4 mb-8">
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <div className="bg-page p-4 rounded-2xl border border-border">
                     <div className="flex justify-between text-sm mb-2">
-                      <span className="font-bold text-slate-700">Licencias Utilizadas</span>
-                      <span className="font-black text-slate-900">{activeEmployeesCount} / {topeColaboradores ?? 'Ilimitados'}</span>
+                      <span className="font-bold text-text-2">Licencias Utilizadas</span>
+                      <span className="font-black text-text-1">{activeEmployeesCount} / {topeColaboradores ?? 'Ilimitados'}</span>
                     </div>
                     {topeColaboradores !== null && (
                       <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                        <div className={`${sobreCupo ? 'bg-amber-500' : 'bg-slate-800'} h-full rounded-full`} style={{ width: `${Math.min(100, (activeEmployeesCount / topeColaboradores) * 100)}%` }}></div>
+                        <div className={`${sobreCupo ? 'bg-warning-icon' : 'bg-slate-800'} h-full rounded-full`} style={{ width: `${Math.min(100, (activeEmployeesCount / topeColaboradores) * 100)}%` }}></div>
                       </div>
                     )}
                   </div>
@@ -658,11 +650,11 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       es "nada bloquea, todo avisa": nadie se queda fuera de su reloj checador
                       por esto. Pero el admin tiene derecho a enterarse. */}
                   {sobreCupo && (
-                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex gap-3">
-                      <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={18} />
+                    <div className="bg-warning-bg border border-warning-text/20 p-4 rounded-2xl flex gap-3">
+                      <AlertCircle className="text-warning-text shrink-0 mt-0.5" size={18} />
                       <div className="text-xs">
-                        <p className="font-black text-amber-900">Tu plan incluye {topeColaboradores} colaboradores y tienes {activeEmployeesCount}.</p>
-                        <p className="text-amber-800 font-semibold mt-1">
+                        <p className="font-black text-warning-text">Tu plan incluye {topeColaboradores} colaboradores y tienes {activeEmployeesCount}.</p>
+                        <p className="text-warning-text font-semibold mt-1">
                           Nada se bloquea y nadie deja de poder checar. Te lo avisamos para que decidas si conviene cambiar de plan.
                         </p>
                       </div>
@@ -671,7 +663,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                 </div>
 
                 {currentTier === 'freemium' && (
-                  <button 
+                  <button
                     onClick={() => {
                       setSelectedUpgradePlan('pro');
                       setShowCheckout(true);
@@ -683,19 +675,19 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                 )}
 
                 {currentTier === 'pro' && (
-                  <button 
+                  <button
                     onClick={() => {
                       setSelectedUpgradePlan('enterprise');
                       setShowCheckout(true);
                     }}
-                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-600/20 cursor-pointer"
+                    className="w-full bg-gradient-to-r from-accent to-accent hover:from-accent-hover hover:to-accent-hover text-white font-black py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20 cursor-pointer"
                   >
                     Mejorar a Enterprise <ChevronRight size={18}/>
                   </button>
                 )}
 
                 {currentTier === 'enterprise' && (
-                  <div className="w-full bg-purple-50 border border-purple-200 text-purple-700 font-extrabold py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+                  <div className="w-full bg-navy-50 border border-border text-accent font-extrabold py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
                     <ShieldCheck size={18} /> Plan Máximo Enterprise Activo
                   </div>
                 )}
@@ -704,44 +696,44 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
             {/* Historial de Facturación y Método de Pago */}
             <div className="lg:col-span-2 space-y-6">
-              
-              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+
+              <div className="bg-white rounded-3xl p-8 border border-border shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-12 bg-slate-100 rounded-xl flex items-center justify-center border border-slate-200 text-slate-400 shrink-0">
+                  <div className="w-14 h-12 bg-page rounded-xl flex items-center justify-center border border-border text-slate-400 shrink-0">
                     <CreditCard size={24} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-800">
+                    <h4 className="font-bold text-text-1">
                       {currentTier === 'freemium' ? 'Plan Gratuito Sin Tarjeta' : 'Método de Pago Registrado'}
                     </h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {currentTier === 'freemium' 
+                    <p className="text-xs text-text-3 mt-0.5">
+                      {currentTier === 'freemium'
                         ? 'Tu empresa está operando bajo la versión gratuita Talent360.'
                         : 'Gestionado de forma segura vía pasarela de pagos (MercadoPago / Stripe).'}
                     </p>
                   </div>
                 </div>
                 {currentTier !== 'enterprise' && (
-                  <button 
+                  <button
                     onClick={() => {
                       setSelectedUpgradePlan(currentTier === 'pro' ? 'enterprise' : 'pro');
                       setShowCheckout(true);
                     }}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl border border-blue-100 shrink-0"
+                    className="text-xs font-bold text-accent hover:text-navy-800 transition-colors bg-navy-50 hover:bg-accent-soft px-4 py-2.5 rounded-xl border border-border shrink-0"
                   >
                     {currentTier === 'freemium' ? 'Agregar Tarjeta y Mejorar' : 'Actualizar Suscripción'}
                   </button>
                 )}
               </div>
 
-              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
-                <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
+              <div className="bg-white rounded-3xl p-8 border border-border shadow-sm">
+                <h3 className="text-lg font-black text-text-1 mb-6 flex items-center gap-2">
                   <Receipt className="text-slate-400"/> Historial de Facturación
                 </h3>
-                
-                <div className="text-center py-10 px-4 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200">
+
+                <div className="text-center py-10 px-4 bg-page/70 rounded-2xl border border-dashed border-border">
                   <Receipt className="mx-auto text-slate-300 mb-3" size={40} />
-                  <h4 className="font-bold text-slate-700 text-sm">Sin historial de facturación</h4>
+                  <h4 className="font-bold text-text-2 text-sm">Sin historial de facturación</h4>
                   <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
                     Esta empresa aún no cuenta con recibos o comprobantes de pago registrados. Las facturas de tu suscripción aparecerán aquí automáticamente al realizar la adquisición o renovación de tu plan.
                   </p>
@@ -756,31 +748,31 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
         {/* TAB: MÓDULOS DEL SISTEMA */}
         {activeTab === 'modules' && (
           <div className="animate-in slide-in-from-bottom-4">
-            
+
             {/* Banner de Tiempo de Prueba */}
             {trialActive && (
-              <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-300 rounded-3xl p-6 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="bg-gradient-to-r from-warning-icon/10 to-warning-icon/10 border border-warning-text/20 rounded-3xl p-6 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-amber-500/20 text-amber-700 rounded-2xl flex items-center justify-center font-black text-xl shrink-0">
+                  <div className="w-12 h-12 bg-warning-icon/20 text-warning-text rounded-2xl flex items-center justify-center font-black text-xl shrink-0">
                     ⏳
                   </div>
                   <div>
-                    <h3 className="font-black text-slate-800 text-base">Modo de Prueba Activo (Módulos PRO y Enterprise)</h3>
-                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                      Tienes acceso a todas las herramientas. Quedan <span className="text-amber-600 font-extrabold">{daysRemaining} días</span> de prueba completa antes del bloqueo de los módulos premium.
+                    <h3 className="font-black text-text-1 text-base">Modo de Prueba Activo (Módulos PRO y Enterprise)</h3>
+                    <p className="text-xs text-text-3 font-semibold mt-0.5">
+                      Tienes acceso a todas las herramientas. Quedan <span className="text-warning-text font-extrabold">{daysRemaining} días</span> de prueba completa antes del bloqueo de los módulos premium.
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0 flex-wrap">
-                  <button 
+                  <button
                     onClick={() => setTutorialStep(0)}
-                    className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all shrink-0 flex items-center gap-1.5"
+                    className="bg-white hover:bg-page text-text-1 border border-border font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all shrink-0 flex items-center gap-1.5"
                   >
                     📖 Ver Tutorial
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveTab('billing')}
-                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all shrink-0"
+                    className="bg-warning-text hover:bg-warning-text text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all shrink-0"
                   >
                     Adquirir Plan PRO
                   </button>
@@ -788,15 +780,15 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
               </div>
             )}
 
-            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm mb-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-slate-100 pb-6">
+            <div className="bg-white rounded-3xl p-8 border border-border shadow-sm mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-border pb-6">
                 <div>
-                  <h2 className="text-xl font-black text-slate-800 mb-1">Ecosistema Talent 360</h2>
-                  <p className="text-sm text-slate-500">Administra qué herramientas tienen activas tus equipos. El acceso depende de tu plan de suscripción actual.</p>
+                  <h2 className="text-xl font-black text-text-1 mb-1">Ecosistema Talent 360</h2>
+                  <p className="text-sm text-text-3">Administra qué herramientas tienen activas tus equipos. El acceso depende de tu plan de suscripción actual.</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setTutorialStep(0)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md transition-all shrink-0 flex items-center gap-1.5"
+                  className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md transition-all shrink-0 flex items-center gap-1.5"
                 >
                   📖 Ver Tutorial de Módulos
                 </button>
@@ -804,14 +796,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
               {(() => {
                 const modulesWithDetails = [
-                  { 
-                    name: 'Directorio Digital', 
-                    desc: 'Estructura y Contratos', 
-                    tier: 'freemium', 
-                    active: isModuleUnlocked('rrhh'), 
+                  {
+                    name: 'Directorio Digital',
+                    desc: 'Estructura y Contratos',
+                    tier: 'freemium',
+                    active: isModuleUnlocked('rrhh'),
                     version: 'v3.1',
                     icon: <Users size={20} />,
-                    iconColor: 'bg-blue-50 text-blue-600',
+                    iconColor: 'bg-navy-50 text-accent',
                     moduleId: 'rrhh',
                     features: [
                       'Expedientes digitales completos de colaboradores.',
@@ -820,14 +812,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Directorio interno con búsqueda rápida y filtros por sucursal.'
                     ]
                   },
-                  { 
-                    name: 'Reloj Checador', 
-                    desc: 'Asistencia y Ley Silla', 
-                    tier: 'freemium', 
-                    active: isModuleUnlocked('reloj'), 
+                  {
+                    name: 'Reloj Checador',
+                    desc: 'Asistencia y Ley Silla',
+                    tier: 'freemium',
+                    active: isModuleUnlocked('reloj'),
                     version: 'v4.3',
                     icon: <Clock size={20} />,
-                    iconColor: 'bg-emerald-50 text-emerald-600',
+                    iconColor: 'bg-success-bg text-success-text',
                     moduleId: 'reloj',
                     features: [
                       'Registro de asistencia en tiempo real mediante PWA móvil.',
@@ -836,14 +828,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Cola de sincronización y modo offline aislado.'
                     ]
                   },
-                  { 
-                    name: 'Control de Comedor', 
-                    desc: 'Turnos y reserva de comida', 
-                    tier: 'freemium', 
-                    active: isModuleUnlocked('reloj'), 
+                  {
+                    name: 'Control de Comedor',
+                    desc: 'Turnos y reserva de comida',
+                    tier: 'freemium',
+                    active: isModuleUnlocked('reloj'),
                     version: 'v2.1',
                     icon: <Coffee size={20} />,
-                    iconColor: 'bg-amber-50 text-amber-600',
+                    iconColor: 'bg-warning-bg text-warning-text',
                     moduleId: 'comidas',
                     features: [
                       'Registro básico de comidas y descansos largos.',
@@ -852,14 +844,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Integración directa con el historial del Reloj Checador.'
                     ]
                   },
-                  { 
-                    name: 'Tareas IA', 
-                    desc: 'Automatiza Rutinas', 
-                    tier: 'freemium', 
-                    active: isModuleUnlocked('operativo'), 
+                  {
+                    name: 'Tareas IA',
+                    desc: 'Automatiza Rutinas',
+                    tier: 'freemium',
+                    active: isModuleUnlocked('operativo'),
                     version: 'v1.5',
                     icon: <CheckSquare size={20} />,
-                    iconColor: 'bg-green-50 text-green-600',
+                    iconColor: 'bg-success-bg text-success-text',
                     moduleId: 'operativo',
                     features: [
                       'Creación de listas de tareas diarias para personal de piso.',
@@ -868,14 +860,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Rutinas recurrentes y Asistente de Voz AI (disponible en Plan PRO).'
                     ]
                   },
-                  { 
-                    name: 'Bolsa de Trabajo ATS', 
-                    desc: 'Vacantes y Prospectos', 
-                    tier: 'pro', 
-                    active: isModuleUnlocked('ats'), 
+                  {
+                    name: 'Bolsa de Trabajo ATS',
+                    desc: 'Vacantes y Prospectos',
+                    tier: 'pro',
+                    active: isModuleUnlocked('ats'),
                     version: 'v1.1',
                     icon: <Briefcase size={20} />,
-                    iconColor: 'bg-purple-50 text-purple-600',
+                    iconColor: 'bg-navy-50 text-accent',
                     moduleId: 'ats',
                     features: [
                       'Publicación automática de vacantes en portal de empleo.',
@@ -884,14 +876,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Historial de comentarios y evaluación de psicometría básica.'
                     ]
                   },
-                  { 
-                    name: 'Reportes IA', 
-                    desc: 'Analítica Nómina e incidencias', 
-                    tier: 'pro', 
-                    active: isModuleUnlocked('reportes'), 
+                  {
+                    name: 'Reportes IA',
+                    desc: 'Analítica Nómina e incidencias',
+                    tier: 'pro',
+                    active: isModuleUnlocked('reportes'),
                     version: 'v2.0',
                     icon: <FileText size={20} />,
-                    iconColor: 'bg-emerald-50 text-emerald-600',
+                    iconColor: 'bg-success-bg text-success-text',
                     moduleId: 'reportes',
                     features: [
                       'Reportes de asistencia consolidados (horas trabajadas, retardos).',
@@ -900,14 +892,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Exportación de datos en formato Excel (XLSX) y PDF.'
                     ]
                   },
-                  { 
-                    name: 'Portal de Empleo Web', 
-                    desc: 'Sitio web de vacantes', 
-                    tier: 'enterprise', 
-                    active: isModuleUnlocked('portal'), 
+                  {
+                    name: 'Portal de Empleo Web',
+                    desc: 'Sitio web de vacantes',
+                    tier: 'enterprise',
+                    active: isModuleUnlocked('portal'),
                     version: 'v1.0',
                     icon: <Globe size={20} />,
-                    iconColor: 'bg-sky-50 text-sky-600',
+                    iconColor: 'bg-navy-50 text-accent',
                     moduleId: 'portal',
                     features: [
                       'Sitio web corporativo de vacantes personalizado con tu dominio.',
@@ -916,14 +908,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Enlaces directos para compartir en redes sociales.'
                     ]
                   },
-                  { 
-                    name: 'Academia 360', 
-                    desc: 'Inducción y Capacitación', 
-                    tier: 'enterprise', 
-                    active: isModuleUnlocked('academia'), 
+                  {
+                    name: 'Academia 360',
+                    desc: 'Inducción y Capacitación',
+                    tier: 'enterprise',
+                    active: isModuleUnlocked('academia'),
                     version: 'v2.8',
                     icon: <GraduationCap size={20} />,
-                    iconColor: 'bg-indigo-50 text-indigo-600',
+                    iconColor: 'bg-navy-50 text-accent',
                     moduleId: 'academia',
                     features: [
                       'Plataforma de capacitación interna (LMS) para onboarding.',
@@ -932,14 +924,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Certificaciones automatizadas descargables para los colaboradores.'
                     ]
                   },
-                  { 
-                    name: 'Archivo Digital', 
-                    desc: 'Expedientes y Manuales', 
-                    tier: 'enterprise', 
-                    active: isModuleUnlocked('documentos'), 
+                  {
+                    name: 'Archivo Digital',
+                    desc: 'Expedientes y Manuales',
+                    tier: 'enterprise',
+                    active: isModuleUnlocked('documentos'),
                     version: 'v1.0',
                     icon: <FileText size={20} />,
-                    iconColor: 'bg-yellow-50 text-yellow-600',
+                    iconColor: 'bg-warning-bg text-warning-text',
                     moduleId: 'documentos',
                     features: [
                       'Expedientes digitales ordenados por colaborador.',
@@ -948,14 +940,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Vinculación directa de manuales a cursos de Academia 360.'
                     ]
                   },
-                  { 
-                    name: 'Nómina CFDI 4.0', 
-                    desc: 'Timbrado masivo del SAT', 
-                    tier: 'pro', 
-                    active: isModuleUnlocked('facturacion'), 
+                  {
+                    name: 'Nómina CFDI 4.0',
+                    desc: 'Timbrado masivo del SAT',
+                    tier: 'pro',
+                    active: isModuleUnlocked('facturacion'),
                     version: 'v1.0',
                     icon: <Receipt size={20} />,
-                    iconColor: 'bg-emerald-50 text-emerald-650',
+                    iconColor: 'bg-success-bg text-success-text',
                     moduleId: 'facturacion',
                     features: [
                       'Configuración de Sellos CSD y certificados fiscales encriptados.',
@@ -963,14 +955,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Integración directa con el cálculo de la pre-nómina.'
                     ]
                   },
-                  { 
-                    name: 'Matrix QA', 
-                    desc: 'Entorno de simulación', 
-                    tier: 'pro', 
-                    active: isModuleUnlocked('matrix'), 
+                  {
+                    name: 'Matrix QA',
+                    desc: 'Entorno de simulación',
+                    tier: 'pro',
+                    active: isModuleUnlocked('matrix'),
                     version: 'v1.2',
                     icon: <Monitor size={20} />,
-                    iconColor: 'bg-indigo-50 text-indigo-600',
+                    iconColor: 'bg-navy-50 text-accent',
                     moduleId: 'matrix',
                     features: [
                       'Simulación interactiva de múltiples celulares en simultáneo.',
@@ -988,8 +980,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       ...mod,
                       name: customizations.title || mod.name,
                       desc: customizations.desc || mod.desc,
-                      icon: customizations.iconName && IconMap[customizations.iconName] 
-                        ? IconMap[customizations.iconName] 
+                      icon: customizations.iconName && IconMap[customizations.iconName]
+                        ? IconMap[customizations.iconName]
                         : mod.icon
                     };
                   }
@@ -1004,7 +996,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       const enterpriseModules = customizedModulesWithDetails.filter(m => m.tier === 'enterprise');
 
                       const renderModuleCard = (mod: any, idx: number) => (
-                        <ModuleCard 
+                        <ModuleCard
                           key={idx}
                           mod={mod}
                           currentUser={currentUser}
@@ -1021,12 +1013,12 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                         <div className="space-y-10">
                           {/* SECCIÓN 1: FREE */}
                           <div className="space-y-4">
-                            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                            <div className="flex items-center justify-between border-b border-border pb-3">
                               <div className="flex items-center gap-2">
-                                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-emerald-200/50">
+                                <span className="bg-success-bg text-success-text text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-success-text/50">
                                   Plan Free
                                 </span>
-                                <h3 className="text-base font-black text-slate-800">Módulos del Plan Gratuito</h3>
+                                <h3 className="text-base font-black text-text-1">Módulos del Plan Gratuito</h3>
                               </div>
                               <span className="text-xs text-slate-450 font-bold">Herramientas básicas incluidas</span>
                             </div>
@@ -1037,12 +1029,12 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
                           {/* SECCIÓN 2: PRO */}
                           <div className="space-y-4">
-                            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                            <div className="flex items-center justify-between border-b border-border pb-3">
                               <div className="flex items-center gap-2">
-                                <span className="bg-blue-100 text-blue-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-blue-200/50 flex items-center gap-1">
+                                <span className="bg-accent-soft text-navy-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-border/50 flex items-center gap-1">
                                   🚀 Plan Pro
                                 </span>
-                                <h3 className="text-base font-black text-slate-800">Módulos Profesionales</h3>
+                                <h3 className="text-base font-black text-text-1">Módulos Profesionales</h3>
                               </div>
                               <span className="text-xs text-slate-450 font-bold">Cálculo de nóminas, reportes e integraciones SAT</span>
                             </div>
@@ -1053,12 +1045,12 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
                           {/* SECCIÓN 3: ENTERPRISE */}
                           <div className="space-y-4">
-                            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                            <div className="flex items-center justify-between border-b border-border pb-3">
                               <div className="flex items-center gap-2">
-                                <span className="bg-purple-100 text-purple-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-purple-200/50 flex items-center gap-1">
+                                <span className="bg-accent-soft text-navy-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-border/50 flex items-center gap-1">
                                   👑 Plan Enterprise
                                 </span>
-                                <h3 className="text-base font-black text-slate-800">Módulos Corporativos Premium</h3>
+                                <h3 className="text-base font-black text-text-1">Módulos Corporativos Premium</h3>
                               </div>
                               <span className="text-xs text-slate-450 font-bold">LMS, expedientes avanzados y sitio de vacantes público</span>
                             </div>
@@ -1073,10 +1065,10 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     {/* Modal de Detalle de Módulo */}
                     {selectedModuleForDetail && (
                       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
-                        <div className="bg-white rounded-3xl p-8 max-w-lg w-full border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200">
-                          <button 
+                        <div className="bg-white rounded-3xl p-8 max-w-lg w-full border border-border shadow-2xl relative animate-in zoom-in-95 duration-200">
+                          <button
                             onClick={() => setSelectedModuleForDetail(null)}
-                            className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"
+                            className="absolute top-6 right-6 text-slate-400 hover:text-text-2 transition-colors"
                           >
                             <X size={20} />
                           </button>
@@ -1087,45 +1079,45 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <h3 className="text-2xl font-black text-slate-900">{selectedModuleForDetail.name}</h3>
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                                <h3 className="text-2xl font-black text-text-1">{selectedModuleForDetail.name}</h3>
+                                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-page text-text-2">
                                   {selectedModuleForDetail.version}
                                 </span>
                               </div>
                               <span className={`inline-block text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border mt-1.5 ${
-                                selectedModuleForDetail.tier === 'freemium' ? 'bg-slate-100 text-slate-700 border-slate-200' :
-                                selectedModuleForDetail.tier === 'pro' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                                'bg-purple-100 text-purple-700 border-purple-200'
+                                selectedModuleForDetail.tier === 'freemium' ? 'bg-page text-text-2 border-border' :
+                                selectedModuleForDetail.tier === 'pro' ? 'bg-accent-soft text-accent border-border' :
+                                'bg-accent-soft text-accent border-border'
                               }`}>
                                 Plan {selectedModuleForDetail.tier.toUpperCase()}
                               </span>
                             </div>
                           </div>
 
-                          <p className="text-sm text-slate-600 mb-6 font-medium leading-relaxed">
+                          <p className="text-sm text-text-2 mb-6 font-medium leading-relaxed">
                             {selectedModuleForDetail.desc}. A continuación te desglosamos las funcionalidades y beneficios incluidos:
                           </p>
 
                           {/* Degradación Elegante / Upsell Contextual (Módulo Comedor) */}
                           {selectedModuleForDetail.name.includes('Comedor') && (
-                            <div className="mb-6 p-4 rounded-2xl border border-amber-100 bg-amber-50/50 text-left">
-                              <h5 className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                            <div className="mb-6 p-4 rounded-2xl border border-warning-text/20 bg-warning-bg/50 text-left">
+                              <h5 className="text-[10px] font-black text-warning-text uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
                                 ⚖️ Estado del Servicio (Degradación Activa)
                               </h5>
                               <div className="space-y-2 text-xs">
-                                <div className="flex justify-between items-center font-bold text-slate-700">
+                                <div className="flex justify-between items-center font-bold text-text-2">
                                   <span>Registros Básicos de Comida:</span>
-                                  <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200/50 font-black text-[9px] uppercase">Activo (Gratis)</span>
+                                  <span className="text-success-text bg-success-bg px-2.5 py-0.5 rounded-md border border-success-text/50 font-black text-[9px] uppercase">Activo (Gratis)</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-slate-450 font-semibold">Límite de Sillas en Tiempo Real:</span>
-                                  <span className="text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1 font-bold text-[9px] uppercase">
+                                  <span className="text-text-3 bg-page px-2 py-0.5 rounded border border-border flex items-center gap-1 font-bold text-[9px] uppercase">
                                     <Lock size={10} /> Bloqueado (PRO)
                                   </span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-slate-450 font-semibold">Prevención de Solape de Roles:</span>
-                                  <span className="text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1 font-bold text-[9px] uppercase">
+                                  <span className="text-text-3 bg-page px-2 py-0.5 rounded border border-border flex items-center gap-1 font-bold text-[9px] uppercase">
                                     <Lock size={10} /> Bloqueado (PRO)
                                   </span>
                                 </div>
@@ -1133,12 +1125,12 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                             </div>
                           )}
 
-                          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mb-6">
-                            <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider mb-3">Funcionalidades Clave</h4>
+                          <div className="bg-page border border-border rounded-2xl p-5 mb-6">
+                            <h4 className="text-xs font-black uppercase text-text-3 tracking-wider mb-3">Funcionalidades Clave</h4>
                             <ul className="space-y-2.5">
                               {selectedModuleForDetail.features.map((feature: string, fIdx: number) => (
-                                <li key={fIdx} className="flex gap-2 text-xs font-semibold text-slate-700 leading-relaxed">
-                                  <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+                                <li key={fIdx} className="flex gap-2 text-xs font-semibold text-text-2 leading-relaxed">
+                                  <CheckCircle2 size={16} className="text-success-text shrink-0 mt-0.5" />
                                   <span>{feature}</span>
                                 </li>
                               ))}
@@ -1146,24 +1138,24 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           </div>
 
                           <div className="flex gap-3">
-                            <button 
+                            <button
                               onClick={() => setSelectedModuleForDetail(null)}
-                              className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest rounded-xl transition-all"
+                              className="flex-1 py-3 bg-page hover:bg-slate-200 text-text-2 font-bold text-xs uppercase tracking-widest rounded-xl transition-all"
                             >
                               Cerrar
                             </button>
                             {!selectedModuleForDetail.active ? (
-                              <button 
+                              <button
                                 onClick={() => {
                                   handleBuyPlan(selectedModuleForDetail.tier);
                                   setSelectedModuleForDetail(null);
                                 }}
-                                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-1.5"
+                                className="flex-1 py-3 bg-accent hover:bg-accent-hover text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-1.5"
                               >
                                 <Zap size={14} className="fill-current" /> Adquirir {selectedModuleForDetail.tier.toUpperCase()}
                               </button>
                             ) : (
-                              <div className="flex-1 flex items-center justify-center gap-1.5 py-3 border border-emerald-200 bg-emerald-50 text-emerald-700 rounded-xl font-bold text-xs uppercase tracking-widest select-none">
+                              <div className="flex-1 flex items-center justify-center gap-1.5 py-3 border border-success-text/20 bg-success-bg text-success-text rounded-xl font-bold text-xs uppercase tracking-widest select-none">
                                 <CheckCircle2 size={14} /> Módulo Activo
                               </div>
                             )}
@@ -1192,28 +1184,28 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
                       return (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
-                          <div className="bg-slate-50 rounded-3xl max-w-4xl w-full border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-hidden">
+                          <div className="bg-page rounded-3xl max-w-4xl w-full border border-border shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-hidden">
                             {/* Cabecera del Modal */}
-                            <div className="bg-white px-8 py-5 border-b border-slate-200 flex items-center justify-between shrink-0">
+                            <div className="bg-white px-8 py-5 border-b border-border flex items-center justify-between shrink-0">
                               <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                                <div className="p-2.5 bg-navy-50 text-accent rounded-xl">
                                   <Settings size={20} className="animate-spin-slow" />
                                 </div>
                                 <div>
-                                  <h3 className="text-xl font-black text-slate-800">Ajustes: {configuringModule.name}</h3>
-                                  <p className="text-xs text-slate-500 font-semibold mt-0.5">Establece los parámetros operativos específicos del módulo</p>
+                                  <h3 className="text-xl font-black text-text-1">Ajustes: {configuringModule.name}</h3>
+                                  <p className="text-xs text-text-3 font-semibold mt-0.5">Establece los parámetros operativos específicos del módulo</p>
                                 </div>
                               </div>
-                              <button 
+                              <button
                                 onClick={() => setConfiguringModule(null)}
-                                className="w-10 h-10 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 rounded-full transition-all border-none cursor-pointer"
+                                className="w-10 h-10 flex items-center justify-center bg-page hover:bg-slate-200 text-text-3 hover:text-text-1 rounded-full transition-all border-none cursor-pointer"
                               >
                                 <X size={18} />
                               </button>
                             </div>
 
                             {/* Cuerpo del Modal (Scrollable) */}
-                            <div className="flex-1 overflow-y-auto p-6 bg-slate-50 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-6 bg-page custom-scrollbar">
                               <CompanySettingsPanel initialTab={mapModuleToTab(configuringModule.moduleId)} hideSidebar={true} />
                             </div>
                           </div>
@@ -1279,20 +1271,20 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
                       return (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[101] flex items-center justify-center p-4 animate-in fade-in duration-200">
-                          <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                          <div className="bg-white rounded-3xl max-w-lg w-full border border-border shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden">
+                            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                               <div className="flex items-center gap-2.5">
-                                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                                <div className="p-2 bg-navy-50 text-accent rounded-xl">
                                   <Pencil size={18} />
                                 </div>
                                 <div>
-                                  <h3 className="font-black text-slate-800 text-base">Personalizar Módulo</h3>
+                                  <h3 className="font-black text-text-1 text-base">Personalizar Módulo</h3>
                                   <p className="text-[11px] text-slate-400 font-medium">Modifica cómo se ve este módulo en el sistema</p>
                                 </div>
                               </div>
                               <button
                                 onClick={() => setEditingCustomModule(null)}
-                                className="w-8 h-8 flex items-center justify-center bg-slate-150 hover:bg-slate-255 text-slate-500 hover:text-slate-800 rounded-full transition-all border-none cursor-pointer"
+                                className="w-8 h-8 flex items-center justify-center bg-slate-150 hover:bg-slate-255 text-text-3 hover:text-text-1 rounded-full transition-all border-none cursor-pointer"
                               >
                                 <X size={16} />
                               </button>
@@ -1300,42 +1292,44 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
                             <div className="p-6 space-y-5">
                               <div className="space-y-1.5">
-                                <label className="text-xs font-black text-slate-600 uppercase tracking-wider">Nombre del Módulo</label>
+                                <label className="text-xs font-black text-text-2 uppercase tracking-wider">Nombre del Módulo</label>
                                 <input
                                   type="text"
                                   value={editingCustomModule.title || ''}
                                   onChange={(e) => setEditingCustomModule({ ...editingCustomModule, title: e.target.value })}
                                   placeholder="Ej. Mi Reloj Inteligente"
-                                  className="w-full px-4 py-2.5 rounded-xl border border-slate-250 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-slate-50/50 text-slate-800 text-sm font-semibold transition-all outline-none"
+                                  className="w-full px-4 py-2.5 rounded-xl border border-slate-250 focus:border-accent focus:ring-1 focus-visible:ring-focus-ring bg-page/50 text-text-1 text-sm font-semibold transition-all outline-none"
                                 />
                               </div>
 
                               <div className="space-y-1.5">
-                                <label className="text-xs font-black text-slate-600 uppercase tracking-wider">Descripción Breve</label>
+                                <label className="text-xs font-black text-text-2 uppercase tracking-wider">Descripción Breve</label>
                                 <input
                                   type="text"
                                   value={editingCustomModule.desc || ''}
                                   onChange={(e) => setEditingCustomModule({ ...editingCustomModule, desc: e.target.value })}
                                   placeholder="Ej. Registra entradas de manera rápida"
-                                  className="w-full px-4 py-2.5 rounded-xl border border-slate-250 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-slate-50/50 text-slate-800 text-sm font-semibold transition-all outline-none"
+                                  className="w-full px-4 py-2.5 rounded-xl border border-slate-250 focus:border-accent focus:ring-1 focus-visible:ring-focus-ring bg-page/50 text-text-1 text-sm font-semibold transition-all outline-none"
                                 />
                               </div>
 
                               <div className="space-y-1.5">
-                                <label className="text-xs font-black text-slate-600 uppercase tracking-wider block">Color del Módulo (Ecosistema)</label>
-                                <div className="flex flex-wrap gap-2.5 p-3.5 bg-slate-50/60 rounded-2xl border border-slate-100">
-                                  {Object.entries(ColorMap).map(([colorKey, colorVal]) => {
-                                    const isSelected = editingCustomModule.color === colorKey || (!editingCustomModule.color && colorKey === 'violet');
+                                <label className="text-xs font-black text-text-2 uppercase tracking-wider block">Color de marca</label>
+                                <div className="flex flex-wrap gap-2.5 p-3.5 bg-page/60 rounded-2xl border border-border">
+                                  {Object.entries(ColorMap).filter(([key]) => key === 'navy').map(([colorKey, colorVal]) => {
+                                    const isSelected = colorKey === 'navy';
                                     return (
                                       <button
                                         key={colorKey}
                                         type="button"
                                         onClick={() => setEditingCustomModule({ ...editingCustomModule, color: colorKey })}
                                         className={`w-8 h-8 rounded-full border-2 transition-all cursor-pointer relative flex items-center justify-center ${
-                                          isSelected ? 'border-blue-600 scale-110 shadow-sm' : 'border-transparent hover:scale-105'
+                                          isSelected ? 'border-accent scale-110 shadow-sm' : 'border-transparent hover:scale-105'
                                         }`}
                                         style={{ backgroundColor: colorVal.hex }}
-                                        title={colorKey.toUpperCase()}
+                                        aria-label="Navy — color de marca"
+                                        aria-pressed={isSelected}
+                                        title="Navy — color de marca"
                                       >
                                         {isSelected && (
                                           <Check size={14} className="text-white drop-shadow-sm font-black" />
@@ -1347,8 +1341,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                               </div>
 
                               <div className="space-y-2">
-                                <label className="text-xs font-black text-slate-600 uppercase tracking-wider block">Icono Visual</label>
-                                <div className="grid grid-cols-4 gap-3 bg-slate-50/60 p-3 rounded-2xl border border-slate-100 max-h-[180px] overflow-y-auto custom-scrollbar">
+                                <label className="text-xs font-black text-text-2 uppercase tracking-wider block">Icono Visual</label>
+                                <div className="grid grid-cols-4 gap-3 bg-page/60 p-3 rounded-2xl border border-border max-h-[180px] overflow-y-auto custom-scrollbar">
                                   {iconsList.map((ic) => {
                                     const isSelected = editingCustomModule.iconName === ic.name;
                                     return (
@@ -1357,13 +1351,13 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                                         onClick={() => setEditingCustomModule({ ...editingCustomModule, iconName: ic.name })}
                                         className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all duration-200 cursor-pointer ${
                                           isSelected
-                                            ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-105'
-                                            : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200 hover:scale-102 hover:text-slate-800'
+                                            ? 'bg-accent text-white border-accent shadow-md scale-105'
+                                            : 'bg-white hover:bg-page text-text-2 border-border hover:scale-102 hover:text-text-1'
                                         }`}
                                         title={ic.label}
                                       >
                                         {renderIcon(ic.name)}
-                                        <span className={`text-[9px] mt-1 font-bold truncate max-w-[80px] ${isSelected ? 'text-blue-50' : 'text-slate-400'}`}>
+                                        <span className={`text-[9px] mt-1 font-bold truncate max-w-[80px] ${isSelected ? 'text-navy-100' : 'text-slate-400'}`}>
                                           {ic.label}
                                         </span>
                                       </button>
@@ -1373,16 +1367,16 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                               </div>
                             </div>
 
-                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                            <div className="px-6 py-4 bg-page border-t border-border flex items-center justify-end gap-2.5">
                               <button
                                 onClick={() => setEditingCustomModule(null)}
-                                className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-150 text-xs font-bold transition-all cursor-pointer border-none bg-transparent"
+                                className="px-4 py-2 rounded-xl text-text-3 hover:bg-slate-150 text-xs font-bold transition-all cursor-pointer border-none bg-transparent"
                               >
                                 Cancelar
                               </button>
                               <button
                                 onClick={handleSave}
-                                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 transition-all cursor-pointer border-none flex items-center gap-1.5"
+                                className="px-5 py-2 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-black shadow-md shadow-accent/20 hover:shadow-accent/30 transition-all cursor-pointer border-none flex items-center gap-1.5"
                               >
                                 <Save size={14} />
                                 Guardar Cambios
@@ -1396,15 +1390,15 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     {/* Modal de Tutorial Interactivo */}
                     {tutorialStep !== null && (
                       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
-                        <div className="bg-white rounded-3xl p-8 max-w-xl w-full border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col justify-between min-h-[460px]">
+                        <div className="bg-white rounded-3xl p-8 max-w-xl w-full border border-border shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col justify-between min-h-[460px]">
                           <div>
                             {/* Header del Tutorial */}
-                            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+                            <div className="flex items-center justify-between pb-4 border-b border-border mb-6">
                               <div className="flex items-center gap-2">
                                 <span className="text-xl">📖</span>
-                                <h3 className="text-lg font-black text-slate-800">Recorrido de Módulos</h3>
+                                <h3 className="text-lg font-black text-text-1">Recorrido de Módulos</h3>
                               </div>
-                              <span className="text-xs font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                              <span className="text-xs font-black text-accent bg-navy-50 px-3 py-1 rounded-full">
                                 Módulo {tutorialStep + 1} de {customizedModulesWithDetails.length}
                               </span>
                             </div>
@@ -1420,22 +1414,22 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                                       {mod.icon}
                                     </div>
                                     <div>
-                                      <h4 className="text-2xl font-black text-slate-900 leading-tight">{mod.name}</h4>
+                                      <h4 className="text-2xl font-black text-text-1 leading-tight">{mod.name}</h4>
                                       <p className="text-xs text-slate-400 font-bold uppercase mt-1">Requisito: Plan {mod.tier.toUpperCase()}</p>
                                     </div>
                                   </div>
 
                                   <div className="space-y-3">
-                                    <p className="text-sm text-slate-700 font-bold italic">¿Para qué sirve?</p>
-                                    <p className="text-sm text-slate-600 font-medium leading-relaxed">{mod.desc}</p>
+                                    <p className="text-sm text-text-2 font-bold italic">¿Para qué sirve?</p>
+                                    <p className="text-sm text-text-2 font-medium leading-relaxed">{mod.desc}</p>
                                   </div>
 
-                                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
-                                    <p className="text-xs font-black uppercase text-slate-500 tracking-wider mb-2.5">Funciones destacadas:</p>
+                                  <div className="bg-page border border-border rounded-2xl p-5">
+                                    <p className="text-xs font-black uppercase text-text-3 tracking-wider mb-2.5">Funciones destacadas:</p>
                                     <ul className="space-y-2">
                                       {mod.features.map((feature, fIdx) => (
-                                        <li key={fIdx} className="flex gap-2 text-xs font-semibold text-slate-700">
-                                          <span className="text-blue-500 shrink-0">•</span>
+                                        <li key={fIdx} className="flex gap-2 text-xs font-semibold text-text-2">
+                                          <span className="text-accent shrink-0">•</span>
                                           <span>{feature}</span>
                                         </li>
                                       ))}
@@ -1447,10 +1441,10 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           </div>
 
                           {/* Botones de Navegación del Tutorial */}
-                          <div className="pt-6 border-t border-slate-100 flex items-center justify-between gap-4 mt-6">
-                            <button 
+                          <div className="pt-6 border-t border-border flex items-center justify-between gap-4 mt-6">
+                            <button
                               onClick={() => setTutorialStep(tutorialStep > 0 ? tutorialStep - 1 : null)}
-                              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5"
+                              className="px-4 py-2.5 bg-page hover:bg-slate-200 text-text-2 font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5"
                             >
                               <ArrowLeft size={14} /> {tutorialStep === 0 ? 'Salir' : 'Anterior'}
                             </button>
@@ -1458,14 +1452,14 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                             {/* Progress Dots */}
                             <div className="flex gap-1.5">
                               {customizedModulesWithDetails.map((_, dotIdx) => (
-                                <div 
+                                <div
                                   key={dotIdx}
-                                  className={`w-2 h-2 rounded-full transition-all ${dotIdx === tutorialStep ? 'bg-blue-600 w-4' : 'bg-slate-200'}`}
+                                  className={`w-2 h-2 rounded-full transition-all ${dotIdx === tutorialStep ? 'bg-accent w-4' : 'bg-slate-200'}`}
                                 />
                               ))}
                             </div>
 
-                            <button 
+                            <button
                               onClick={() => {
                                 if (tutorialStep < customizedModulesWithDetails.length - 1) {
                                   setTutorialStep(tutorialStep + 1);
@@ -1473,7 +1467,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                                   setTutorialStep(null);
                                 }
                               }}
-                              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center gap-1.5"
+                              className="px-4 py-2.5 bg-accent hover:bg-accent-hover text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-accent/20 transition-all flex items-center gap-1.5"
                             >
                               {tutorialStep === customizedModulesWithDetails.length - 1 ? 'Finalizar' : 'Siguiente'} <ArrowRight size={14} />
                             </button>
@@ -1489,7 +1483,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
           </div>
         )}
         {activeTab === 'backups' && (
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm animate-in slide-in-from-bottom-4">
+          <div className="bg-white rounded-3xl p-8 border border-border shadow-sm animate-in slide-in-from-bottom-4">
             <BackupPanel />
           </div>
         )}
@@ -1497,8 +1491,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
       {/* Modal de Invitaciones PWA */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 border border-slate-100 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 relative">
-            <button 
+          <div className="bg-white rounded-3xl p-8 border border-border max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 relative">
+            <button
               onClick={() => {
                 setShowInviteModal(false);
                 setSelectedEmployeeId('');
@@ -1506,24 +1500,24 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                 setInvitePin('');
                 setInviteFeedback(null);
               }}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"
+              className="absolute top-6 right-6 text-slate-400 hover:text-text-2 transition-colors"
             >
               <X size={20} />
             </button>
 
-            <h3 className="text-xl font-black text-slate-900 mb-2">Enviar Invitación PWA</h3>
-            <p className="text-sm text-slate-500 mb-6">
+            <h3 className="text-xl font-black text-text-1 mb-2">Enviar Invitación PWA</h3>
+            <p className="text-sm text-text-3 mb-6">
               Selecciona un colaborador para enviarle sus datos de acceso temporal y el link de instalación de la PWA.
             </p>
 
             <div className="space-y-4">
               {/* Selector de Colaborador */}
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Colaborador</label>
-                <select 
+                <label className="block text-xs font-bold text-text-3 uppercase tracking-wider mb-2">Colaborador</label>
+                <select
                   value={selectedEmployeeId}
                   onChange={(e) => handleSelectEmployee(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold"
+                  className="w-full px-4 py-3 bg-page border border-border rounded-xl focus:ring-2 focus-visible:ring-focus-ring focus:outline-none font-bold"
                 >
                   <option value="">-- Selecciona un colaborador --</option>
                   {employees.map(emp => (
@@ -1536,31 +1530,31 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                 <>
                   {/* Teléfono */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Número de WhatsApp (10 dígitos)</label>
-                    <input 
-                      type="text" 
-                      value={invitePhone} 
-                      onChange={e => setInvitePhone(e.target.value)} 
+                    <label className="block text-xs font-bold text-text-3 uppercase tracking-wider mb-2">Número de WhatsApp (10 dígitos)</label>
+                    <input
+                      type="text"
+                      value={invitePhone}
+                      onChange={e => setInvitePhone(e.target.value)}
                       placeholder="Ej. 4622071234"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold"
+                      className="w-full px-4 py-3 bg-page border border-border rounded-xl focus:ring-2 focus-visible:ring-focus-ring focus:outline-none font-bold"
                     />
                   </div>
 
                   {/* PIN */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">PIN Temporal</label>
+                    <label className="block text-xs font-bold text-text-3 uppercase tracking-wider mb-2">PIN Temporal</label>
                     <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        value={invitePin} 
-                        readOnly 
+                      <input
+                        type="text"
+                        value={invitePin}
+                        readOnly
                         placeholder="Sin PIN asignado"
-                        className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-700 font-bold focus:outline-none"
+                        className="w-full px-4 py-3 bg-page border border-border rounded-xl font-mono text-text-2 font-bold focus:outline-none"
                       />
-                      <button 
+                      <button
                         onClick={handleGeneratePin}
                         disabled={isGeneratingPin}
-                        className="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 px-4 rounded-xl font-bold text-sm transition-colors whitespace-nowrap flex items-center justify-center gap-1 disabled:opacity-50"
+                        className="bg-navy-50 text-accent border border-border hover:bg-accent-soft px-4 rounded-xl font-bold text-sm transition-colors whitespace-nowrap flex items-center justify-center gap-1 disabled:opacity-50"
                       >
                         {isGeneratingPin ? <Loader2 className="animate-spin" size={16} /> : 'Generar'}
                       </button>
@@ -1569,17 +1563,17 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
                   {/* Feedback */}
                   {inviteFeedback && (
-                    <div className={`p-4 rounded-xl border text-sm font-medium ${inviteFeedback.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
+                    <div className={`p-4 rounded-xl border text-sm font-medium ${inviteFeedback.type === 'success' ? 'bg-success-bg border-success-text/20 text-success-text' : 'bg-danger-bg border-danger-text/20 text-danger-text'}`}>
                       {inviteFeedback.message}
                     </div>
                   )}
 
                   {/* Botones de acción */}
                   <div className="pt-4 flex flex-col gap-2">
-                    <button 
+                    <button
                       onClick={handleSendManualInvite}
                       disabled={!invitePin || invitePhone.length < 10}
-                      className="w-full bg-emerald-600 text-white font-black py-3 rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
+                      className="w-full bg-success-text text-white font-black py-3 rounded-xl hover:bg-success-text transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
                     >
                       <MessageSquare size={18} />
                       Abrir WhatsApp con la invitación
@@ -1595,41 +1589,41 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
       {/* Modal de Actualización / Mejorar Plan */}
       {showCheckout && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-8 border border-slate-100 max-w-xl w-full shadow-2xl animate-in zoom-in-95 duration-200 relative">
-            <button 
+          <div className="bg-white rounded-3xl p-8 border border-border max-w-xl w-full shadow-2xl animate-in zoom-in-95 duration-200 relative">
+            <button
               onClick={() => setShowCheckout(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              className="absolute top-6 right-6 text-slate-400 hover:text-text-2 transition-colors cursor-pointer"
             >
               <X size={20} />
             </button>
 
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black">
+              <div className="w-10 h-10 bg-navy-50 text-accent rounded-xl flex items-center justify-center font-black">
                 <Zap size={20} />
               </div>
               <div>
-                <h3 className="text-xl font-black text-slate-900">Mejorar Plan de Suscripción</h3>
-                <p className="text-xs text-slate-500 font-medium">Selecciona el plan y periodo para desbloquear las herramientas avanzadas.</p>
+                <h3 className="text-xl font-black text-text-1">Mejorar Plan de Suscripción</h3>
+                <p className="text-xs text-text-3 font-medium">Selecciona el plan y periodo para desbloquear las herramientas avanzadas.</p>
               </div>
             </div>
 
             {/* Selector de Ciclo de Facturación */}
-            <div className="my-6 p-1 bg-slate-100 rounded-2xl flex items-center gap-1">
-              <button 
+            <div className="my-6 p-1 bg-page rounded-2xl flex items-center gap-1">
+              <button
                 type="button"
                 onClick={() => setSelectedCycle('monthly')}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${selectedCycle === 'monthly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${selectedCycle === 'monthly' ? 'bg-white text-text-1 shadow-sm' : 'text-text-3 hover:text-text-1'}`}
               >
                 Mensual
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setSelectedCycle('yearly')}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${selectedCycle === 'yearly' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${selectedCycle === 'yearly' ? 'bg-white text-accent shadow-sm' : 'text-text-3 hover:text-text-1'}`}
               >
                 Anual
                 {tarifario && tarifario.descuento_anual_maximo_pct > 0 && (
-                  <span className="bg-emerald-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  <span className="bg-success-icon text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
                     Hasta {tarifario.descuento_anual_maximo_pct}% OFF
                   </span>
                 )}
@@ -1640,58 +1634,58 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               {/* Opción Plan PRO */}
               {currentTier === 'freemium' && (
-                <div 
+                <div
                   onClick={() => setSelectedUpgradePlan('pro')}
-                  className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${selectedUpgradePlan === 'pro' ? 'border-blue-600 bg-blue-50/30 shadow-md' : 'border-slate-200 hover:border-slate-300'}`}
+                  className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${selectedUpgradePlan === 'pro' ? 'border-accent bg-navy-50/30 shadow-md' : 'border-border hover:border-slate-300'}`}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <span className="font-black text-slate-900 text-lg">PRO</span>
-                    {selectedUpgradePlan === 'pro' && <CheckCircle2 className="text-blue-600" size={18} />}
+                    <span className="font-black text-text-1 text-lg">PRO</span>
+                    {selectedUpgradePlan === 'pro' && <CheckCircle2 className="text-accent" size={18} />}
                   </div>
                   <div className="mb-3">
-                    <span className="text-2xl font-black text-slate-900">
+                    <span className="text-2xl font-black text-text-1">
                       {cotizacionUpgradePro ? `$${pesos(cotizacionUpgradePro.totalACobrar)}` : '—'}
                     </span>
-                    <span className="text-xs text-slate-500 font-bold"> {selectedCycle === 'yearly' ? 'MXN /año' : 'MXN /mes'}</span>
+                    <span className="text-xs text-text-3 font-bold"> {selectedCycle === 'yearly' ? 'MXN /año' : 'MXN /mes'}</span>
                   </div>
-                  <ul className="space-y-1.5 text-xs font-semibold text-slate-600">
-                    <li className="flex items-center gap-1.5"><Check size={12} className="text-emerald-500"/> Reloj Checador & LFT</li>
-                    <li className="flex items-center gap-1.5"><Check size={12} className="text-emerald-500"/> Reportes Avanzados IA</li>
-                    <li className="flex items-center gap-1.5"><Check size={12} className="text-emerald-500"/> Timbrado Nómina CFDI 4.0</li>
+                  <ul className="space-y-1.5 text-xs font-semibold text-text-2">
+                    <li className="flex items-center gap-1.5"><Check size={12} className="text-success-text"/> Reloj Checador & LFT</li>
+                    <li className="flex items-center gap-1.5"><Check size={12} className="text-success-text"/> Reportes Avanzados IA</li>
+                    <li className="flex items-center gap-1.5"><Check size={12} className="text-success-text"/> Timbrado Nómina CFDI 4.0</li>
                   </ul>
                 </div>
               )}
 
               {/* Opción Plan Enterprise */}
-              <div 
+              <div
                 onClick={() => setSelectedUpgradePlan('enterprise')}
-                className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${currentTier === 'freemium' ? '' : 'col-span-2'} ${selectedUpgradePlan === 'enterprise' ? 'border-purple-600 bg-purple-50/30 shadow-md' : 'border-slate-200 hover:border-slate-300'}`}
+                className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${currentTier === 'freemium' ? '' : 'col-span-2'} ${selectedUpgradePlan === 'enterprise' ? 'border-accent bg-navy-50/30 shadow-md' : 'border-border hover:border-slate-300'}`}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <span className="font-black text-purple-900 text-lg">ENTERPRISE</span>
-                  {selectedUpgradePlan === 'enterprise' && <CheckCircle2 className="text-purple-600" size={18} />}
+                  <span className="font-black text-brand-dark text-lg">ENTERPRISE</span>
+                  {selectedUpgradePlan === 'enterprise' && <CheckCircle2 className="text-accent" size={18} />}
                 </div>
                 <div className="mb-3">
-                  <span className="text-2xl font-black text-slate-900">
+                  <span className="text-2xl font-black text-text-1">
                     {cotizacionUpgradeEnterprise ? `$${pesos(cotizacionUpgradeEnterprise.totalACobrar)}` : '—'}
                   </span>
-                  <span className="text-xs text-slate-500 font-bold"> {selectedCycle === 'yearly' ? 'MXN /año' : 'MXN /mes'}</span>
+                  <span className="text-xs text-text-3 font-bold"> {selectedCycle === 'yearly' ? 'MXN /año' : 'MXN /mes'}</span>
                 </div>
-                <ul className="space-y-1.5 text-xs font-semibold text-slate-600">
-                  <li className="flex items-center gap-1.5"><Check size={12} className="text-purple-500"/> Todo lo del Plan PRO</li>
-                  <li className="flex items-center gap-1.5"><Check size={12} className="text-purple-500"/> Academia 360 & LMS Ilimitado</li>
-                  <li className="flex items-center gap-1.5"><Check size={12} className="text-purple-500"/> Portal Web de Empleo Corporativo</li>
-                  <li className="flex items-center gap-1.5"><Check size={12} className="text-purple-500"/> Expedientes Digitales Avanzados</li>
+                <ul className="space-y-1.5 text-xs font-semibold text-text-2">
+                  <li className="flex items-center gap-1.5"><Check size={12} className="text-accent"/> Todo lo del Plan PRO</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} className="text-accent"/> Academia 360 & LMS Ilimitado</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} className="text-accent"/> Portal Web de Empleo Corporativo</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} className="text-accent"/> Expedientes Digitales Avanzados</li>
                 </ul>
               </div>
             </div>
 
             {/* Resumen y Botón de Pago */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+            <div className="pt-4 border-t border-border flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs text-slate-400 font-bold uppercase">Total a Pagar</p>
                 {/* Exactamente lo que va a cobrar la caja: misma cuenta, mismo tabulador. */}
-                <p className="text-xl font-black text-slate-900">
+                <p className="text-xl font-black text-text-1">
                   {cotizacionUpgrade ? `$${pesos(cotizacionUpgrade.totalACobrar)} MXN` : 'Precio no disponible'}
                 </p>
               </div>

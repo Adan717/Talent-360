@@ -206,7 +206,7 @@ export const SaaSLandingPage = () => {
 
       const { user, token } = response.data;
       localStorage.setItem('talent_auth_token', token);
-      
+
       // Pre-registered state - proceed to step 2 (Company Details)
       setGoogleUser({
         name: user.name,
@@ -217,13 +217,13 @@ export const SaaSLandingPage = () => {
 
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || err.response?.data?.error || '';
-      const isDup = errorMsg.toLowerCase().includes('registrado') || 
-                    errorMsg.toLowerCase().includes('already') || 
-                    errorMsg.toLowerCase().includes('taken') || 
+      const isDup = errorMsg.toLowerCase().includes('registrado') ||
+                    errorMsg.toLowerCase().includes('already') ||
+                    errorMsg.toLowerCase().includes('taken') ||
                     errorMsg.toLowerCase().includes('duplicate') ||
                     err.response?.status === 422 ||
                     err.response?.status === 409;
-      
+
       if (isDup) {
         setIsEmailDuplicated(true);
         setError('El correo electrónico ya está registrado en la plataforma.');
@@ -240,7 +240,7 @@ export const SaaSLandingPage = () => {
     e.preventDefault();
     setIsProcessing(true);
     setError('');
-    
+
     try {
       const response = await axiosInstance.post('/subscriptions/create-preference', {
         company_name: formData.company_name,
@@ -297,46 +297,46 @@ export const SaaSLandingPage = () => {
   const cotizacionEnterprise = cotizar(planEnterprise, proEmployeesCount, billingCycle);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-blue-100 selection:text-blue-900">
-      
+    <div className="min-h-screen bg-page font-sans text-text-1 selection:bg-accent-soft selection:text-brand-dark">
+
       {/* NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-lg shadow-accent/20">
               <span className="text-white font-black text-xl">T</span>
             </div>
-            <h1 className="text-xl font-extrabold tracking-tight text-slate-900">
-              Talent <span className="text-blue-600">360</span>
+            <h1 className="text-xl font-extrabold tracking-tight text-text-1">
+              Talent <span className="text-accent">360</span>
             </h1>
           </div>
-          
+
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex gap-8 text-sm font-bold text-slate-500">
-            <a href="#features" className="hover:text-slate-900 transition-colors">Plataforma</a>
-            <a href="#pricing" className="hover:text-slate-900 transition-colors">Precios</a>
-            <a href="#simulador" className="hover:text-slate-900 transition-colors">Simulador</a>
+          <div className="hidden md:flex gap-8 text-sm font-bold text-text-3">
+            <a href="#features" className="hover:text-text-1 transition-colors">Plataforma</a>
+            <a href="#pricing" className="hover:text-text-1 transition-colors">Precios</a>
+            <a href="#simulador" className="hover:text-text-1 transition-colors">Simulador</a>
           </div>
-          
+
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-4">
-            <button onClick={() => navigate('/login')} className="text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">
+            <button onClick={() => navigate('/login')} className="text-sm font-bold text-text-2 hover:text-text-1 transition-colors">
               Iniciar Sesión
             </button>
-            <button onClick={() => handleBuy('Freemium')} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-black hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:scale-98">
+            <button onClick={() => handleBuy('Freemium')} className="bg-accent text-white px-5 py-2.5 rounded-xl text-sm font-black hover:bg-accent-hover transition-all shadow-md hover:shadow-lg active:scale-98">
               Crear Cuenta Gratis
             </button>
           </div>
 
           {/* Mobile Right Controls */}
           <div className="flex md:hidden items-center gap-2">
-            <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-              className="p-2.5 text-slate-700 bg-slate-100/80 hover:bg-slate-200/80 rounded-2xl transition-all active:scale-95 border border-slate-200/50 flex items-center gap-2 font-bold text-xs"
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2.5 text-text-2 bg-page/80 hover:bg-slate-200/80 rounded-2xl transition-all active:scale-95 border border-border/50 flex items-center gap-2 font-bold text-xs"
               aria-label="Abrir menú"
             >
-              <span className="text-slate-600 font-extrabold text-[11px] uppercase tracking-wider pl-1">Menú</span>
-              {isMobileMenuOpen ? <X size={20} className="text-blue-600" /> : <Menu size={20} className="text-slate-700" />}
+              <span className="text-text-2 font-extrabold text-[11px] uppercase tracking-wider pl-1">Menú</span>
+              {isMobileMenuOpen ? <X size={20} className="text-accent" /> : <Menu size={20} className="text-text-2" />}
             </button>
           </div>
         </div>
@@ -346,7 +346,7 @@ export const SaaSLandingPage = () => {
       {isMobileMenuOpen && (
         <>
           {/* Dark Backdrop Overlay */}
-          <div 
+          <div
             className="md:hidden fixed inset-0 top-[80px] bg-slate-950/75 backdrop-blur-md z-40 animate-in fade-in duration-200"
             onClick={() => setIsMobileMenuOpen(false)}
           />
@@ -357,88 +357,88 @@ export const SaaSLandingPage = () => {
               <div className="space-y-6">
                 <div className="flex items-center justify-between px-1 pb-3 border-b border-slate-800">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-black text-xs text-white">T</div>
+                    <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center font-black text-xs text-white">T</div>
                     <span className="font-extrabold text-sm text-slate-200">Menú de Navegación</span>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <span className="text-[10px] font-bold text-success-text bg-success-icon/10 px-2 py-0.5 rounded-full border border-success-text/20">
                     SaaS Online
                   </span>
                 </div>
 
                 <nav className="flex flex-col gap-3">
-                  <a 
-                    href="#features" 
+                  <a
+                    href="#features"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-blue-600/20 hover:border-blue-500/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
+                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-accent/20 hover:border-accent/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                      <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-navy-300 group-hover:scale-110 transition-transform">
                         <Zap size={20} />
                       </div>
                       <div className="text-left">
-                        <div className="font-extrabold text-sm text-white group-hover:text-blue-400 transition-colors">Plataforma 360</div>
+                        <div className="font-extrabold text-sm text-white group-hover:text-navy-300 transition-colors">Plataforma 360</div>
                         <div className="text-[11px] text-slate-400 font-medium">Módulos de RRHH & Asistencia</div>
                       </div>
                     </div>
-                    <ChevronRight size={18} className="text-slate-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-text-3 group-hover:text-navy-300 group-hover:translate-x-1 transition-all" />
                   </a>
 
-                  <a 
-                    href="#pricing" 
+                  <a
+                    href="#pricing"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-emerald-600/20 hover:border-emerald-500/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
+                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-success-text/20 hover:border-success-text/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                      <div className="w-10 h-10 rounded-xl bg-success-icon/10 border border-success-text/20 flex items-center justify-center text-success-text group-hover:scale-110 transition-transform">
                         <Tag size={20} />
                       </div>
                       <div className="text-left">
-                        <div className="font-extrabold text-sm text-white group-hover:text-emerald-400 transition-colors">Precios y Planes</div>
+                        <div className="font-extrabold text-sm text-white group-hover:text-success-text transition-colors">Precios y Planes</div>
                         <div className="text-[11px] text-slate-400 font-medium">Freemium, Pro & Enterprise</div>
                       </div>
                     </div>
-                    <ChevronRight size={18} className="text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-text-3 group-hover:text-success-text group-hover:translate-x-1 transition-all" />
                   </a>
 
-                  <a 
-                    href="#simulador" 
+                  <a
+                    href="#simulador"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-purple-600/20 hover:border-purple-500/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
+                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-accent/20 hover:border-accent/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                      <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-navy-300 group-hover:scale-110 transition-transform">
                         <Sparkles size={20} />
                       </div>
                       <div className="text-left">
-                        <div className="font-extrabold text-sm text-white group-hover:text-purple-400 transition-colors">Simulador de Nómina</div>
+                        <div className="font-extrabold text-sm text-white group-hover:text-navy-300 transition-colors">Simulador de Nómina</div>
                         <div className="text-[11px] text-slate-400 font-medium">Calculadora de Ley LFT</div>
                       </div>
                     </div>
-                    <ChevronRight size={18} className="text-slate-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-text-3 group-hover:text-navy-300 group-hover:translate-x-1 transition-all" />
                   </a>
                 </nav>
               </div>
 
               <div className="mt-8 pt-6 border-t border-slate-800/80 flex flex-col gap-3.5 shrink-0">
                 {/* Single Auth Entry Point inside Drawer */}
-                <button 
-                  onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }} 
+                <button
+                  onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }}
                   className="w-full py-4 rounded-2xl font-black text-slate-100 bg-slate-800 hover:bg-slate-750 border border-slate-700/80 transition-all text-center text-sm flex items-center justify-center gap-2.5 active:scale-98 shadow-md"
                 >
-                  <Lock size={16} className="text-blue-400" />
+                  <Lock size={16} className="text-navy-300" />
                   <span>Iniciar Sesión en tu Cuenta</span>
                 </button>
 
-                <button 
-                  onClick={() => { setIsMobileMenuOpen(false); handleBuy('Freemium'); }} 
-                  className="w-full py-4 rounded-2xl font-black text-white bg-blue-600 hover:bg-blue-500 shadow-xl shadow-blue-600/30 active:scale-98 transition-all text-center text-sm flex items-center justify-center gap-2"
+                <button
+                  onClick={() => { setIsMobileMenuOpen(false); handleBuy('Freemium'); }}
+                  className="w-full py-4 rounded-2xl font-black text-white bg-accent hover:bg-accent shadow-xl shadow-accent/30 active:scale-98 transition-all text-center text-sm flex items-center justify-center gap-2"
                 >
                   <span>Crear Cuenta Gratis</span>
                   <ArrowRight size={16} />
                 </button>
 
-                <div className="mt-2 text-center text-[11px] font-semibold text-slate-500 flex items-center justify-center gap-1.5">
-                  <ShieldCheck size={14} className="text-emerald-400" />
+                <div className="mt-2 text-center text-[11px] font-semibold text-text-3 flex items-center justify-center gap-1.5">
+                  <ShieldCheck size={14} className="text-success-text" />
                   <span>Conexión Segura SSL 256-Bit</span>
                 </div>
               </div>
@@ -448,24 +448,24 @@ export const SaaSLandingPage = () => {
       )}
 
       {/* HERO SECTION */}
-      <section className="relative pt-36 pb-24 px-6 overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-slate-50">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[300px] bg-gradient-to-r from-blue-200/20 to-purple-200/20 rounded-full blur-[120px] opacity-60 pointer-events-none"></div>
+      <section className="relative pt-36 pb-24 px-6 overflow-hidden bg-gradient-to-b from-navy-50/50 via-white to-slate-50">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[300px] bg-gradient-to-r from-accent-soft/20 to-accent-soft/20 rounded-full blur-[120px] opacity-60 pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto relative z-10 animate-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
+
             {/* Bloque 1: Propuesta de Valor */}
             <div className="col-span-1 lg:col-span-5 text-left space-y-6 order-1">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-[11px] font-bold text-blue-600 shadow-sm">
-                <Sparkles size={12} className="text-blue-500" /> Registro con correo, Google o Apple
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-50 border border-border text-[11px] font-bold text-accent shadow-sm">
+                <Sparkles size={12} className="text-accent" /> Registro con correo, Google o Apple
               </div>
-              
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-text-1 leading-tight">
                 El sistema operativo para <br className="hidden sm:block"/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600">tu Capital Humano</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-accent to-accent">tu Capital Humano</span>
               </h2>
-              
-              <p className="text-sm md:text-base text-slate-500 font-medium leading-relaxed max-w-lg">
+
+              <p className="text-sm md:text-base text-text-3 font-medium leading-relaxed max-w-lg">
                 Optimiza la asistencia con control biométrico y GPS, gestiona expedientes, organigramas y capacitación interna. Todo desde un único panel inteligente.
               </p>
 
@@ -476,7 +476,7 @@ export const SaaSLandingPage = () => {
                   onClick={() => {
                     document.getElementById('seccion-simulador')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }}
-                  className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border-none"
+                  className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-accent via-accent to-accent text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-accent/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border-none"
                 >
                   <Play size={14} fill="currentColor" />
                   <span>Ver simulador</span>
@@ -486,41 +486,41 @@ export const SaaSLandingPage = () => {
 
             {/* Columna Derecha: Showcase Interactivo de Producto (Oculto en móvil) */}
             <div className="hidden lg:flex col-span-1 lg:col-span-7 relative flex-col md:flex-row items-center justify-center gap-6 lg:gap-8 order-2 lg:order-2 w-full">
-              <div className="absolute inset-0 bg-gradient-to-tr from-blue-300/10 via-purple-300/5 to-transparent rounded-[32px] blur-2xl opacity-75 pointer-events-none"></div>
-              
+              <div className="absolute inset-0 bg-gradient-to-tr from-navy-300/10 via-navy-300/5 to-transparent rounded-[32px] blur-2xl opacity-75 pointer-events-none"></div>
+
               {activeTab === 'checador' && (
                 <div className="flex items-center gap-2 max-w-sm w-full mx-auto mb-4 order-2 md:absolute md:-top-16 md:left-1/2 md:-translate-x-1/2 md:z-20 justify-center">
-                  <div className="flex p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200 shadow-sm flex-1">
-                    <button 
-                      type="button" 
+                  <div className="flex p-1.5 bg-page/90 rounded-2xl border border-border shadow-sm flex-1">
+                    <button
+                      type="button"
                       onClick={() => setSimulatedTier('free')}
                       className={`flex-1 py-2.5 px-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
-                        simulatedTier === 'free' 
-                          ? 'bg-white text-slate-800 shadow-md shadow-slate-200/50' 
-                          : 'text-slate-400 hover:text-slate-650 font-bold'
+                        simulatedTier === 'free'
+                          ? 'bg-white text-text-1 shadow-md shadow-slate-200/50'
+                          : 'text-slate-400 hover:text-text-2 font-bold'
                       }`}
                     >
                       <span>🔓</span> Básica
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setSimulatedTier('pro')}
                       className={`flex-1 py-2.5 px-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
-                        simulatedTier === 'pro' 
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/10' 
-                          : 'text-slate-400 hover:text-slate-650 font-bold'
+                        simulatedTier === 'pro'
+                          ? 'bg-gradient-to-r from-accent to-accent text-white shadow-md shadow-accent/10'
+                          : 'text-slate-400 hover:text-text-2 font-bold'
                       }`}
                     >
                       <span>👑</span> Pro
                     </button>
                   </div>
-                  
+
                   {/* Botón de Reinicio Rápido */}
                   <button
                     type="button"
                     title="Reiniciar Simulación"
                     onClick={() => setSimKey(prev => prev + 1)}
-                    className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl shadow-sm text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center cursor-pointer active:scale-95 outline-none shrink-0"
+                    className="p-2.5 bg-white hover:bg-page border border-border rounded-2xl shadow-sm text-text-3 hover:text-text-1 transition-all flex items-center justify-center cursor-pointer active:scale-95 outline-none shrink-0"
                   >
                     <RotateCcw size={15} />
                   </button>
@@ -531,7 +531,7 @@ export const SaaSLandingPage = () => {
                 <div className="flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-10 w-full animate-in fade-in duration-300 mt-14 md:mt-8">
 
                   {/* SMARTPHONE FRAME (Utiliza el RelojVisual clon real en modo simulado) */}
-                  <div 
+                  <div
                     className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0 order-2 transition-transform duration-300"
                     style={{ transform: `scale(${simSettings.scale / 100})`, transformOrigin: 'top center' }}
                   >
@@ -542,7 +542,7 @@ export const SaaSLandingPage = () => {
                     </div>
 
                     <div className="flex-grow bg-white flex flex-col justify-between overflow-hidden select-none">
-                      <RelojSimuladoLanding 
+                      <RelojSimuladoLanding
                         key={simKey}
                         tier={simulatedTier}
                         setTier={setSimulatedTier}
@@ -557,57 +557,57 @@ export const SaaSLandingPage = () => {
                   </div>
 
                   {/* Right Side: Comparative Detail Card */}
-                  <div className="flex-1 max-w-sm text-left bg-white border border-slate-200/80 p-6 rounded-3xl shadow-xl shadow-slate-100/50 space-y-4 order-3">
+                  <div className="flex-1 max-w-sm text-left bg-white border border-border/80 p-6 rounded-3xl shadow-xl shadow-slate-100/50 space-y-4 order-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">{simulatedTier === 'pro' ? '👑' : '🔓'}</span>
-                      <h4 className="text-sm font-black text-slate-800 tracking-tight uppercase">
+                      <h4 className="text-sm font-black text-text-1 tracking-tight uppercase">
                         {simulatedTier === 'pro' ? 'Reloj Checador Pro' : 'Reloj Checador Básico'}
                       </h4>
                     </div>
-                    <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                      {simulatedTier === 'pro' 
+                    <p className="text-xs text-text-3 font-semibold leading-relaxed">
+                      {simulatedTier === 'pro'
                         ? 'Ideal para empresas que requieren un control operacional riguroco, pases de lista automáticos y checklists de tareas vinculados al checador.'
                         : 'Pensado para microempresas que solo necesitan que sus empleados marquen entrada y salida, sin pases de lista ni geolocalización GPS.'}
                     </p>
-                    
-                    <div className="border-t border-slate-100 pt-3 space-y-2.5">
+
+                    <div className="border-t border-border pt-3 space-y-2.5">
                       <h5 className="text-[9px] font-black uppercase tracking-wider text-slate-400">Características de esta versión</h5>
                       <ul className="space-y-2">
                         {simulatedTier === 'pro' ? (
                           <>
-                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-700">
-                              <span className="text-emerald-500 font-extrabold text-xs">✓</span>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-2">
+                              <span className="text-success-text font-extrabold text-xs">✓</span>
                               <span><strong>Barra de Progreso y Badges</strong>: Timeline dinámico con colores de entrada, descansos y comidas.</span>
                             </li>
-                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-700">
-                              <span className="text-emerald-500 font-extrabold text-xs">✓</span>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-2">
+                              <span className="text-success-text font-extrabold text-xs">✓</span>
                               <span><strong>Auditoría de Ubicación GPS</strong>: Valida que el colaborador esté en sucursal al checar.</span>
                             </li>
-                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-700">
-                              <span className="text-emerald-500 font-extrabold text-xs">✓</span>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-2">
+                              <span className="text-success-text font-extrabold text-xs">✓</span>
                               <span><strong>Checklist de Tareas Integrado</strong>: Lista de pendientes operativas del día directo en la app.</span>
                             </li>
-                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-700">
-                              <span className="text-emerald-500 font-extrabold text-xs">✓</span>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-2">
+                              <span className="text-success-text font-extrabold text-xs">✓</span>
                               <span><strong>Academia LMS e Incidencias</strong>: Cursos de inducción y solicitud de vacaciones/permisos.</span>
                             </li>
                           </>
                         ) : (
                           <>
-                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-600">
-                              <span className="text-emerald-500 font-extrabold text-xs">✓</span>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-2">
+                              <span className="text-success-text font-extrabold text-xs">✓</span>
                               <span><strong>Fichaje Básico de Turnos</strong>: Registro tradicional de entradas y salidas por PIN.</span>
                             </li>
                             <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-400/80">
-                              <span className="text-rose-500 font-extrabold text-xs">✗</span>
+                              <span className="text-danger-text font-extrabold text-xs">✗</span>
                               <span className="line-through">Sin geolocalización (fichajes fuera de sucursal permitidos).</span>
                             </li>
                             <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-400/80">
-                              <span className="text-rose-500 font-extrabold text-xs">✗</span>
+                              <span className="text-danger-text font-extrabold text-xs">✗</span>
                               <span className="line-through">Sin barra cronológica interactiva de colores de estado.</span>
                             </li>
                             <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-400/80">
-                              <span className="text-rose-500 font-extrabold text-xs">✗</span>
+                              <span className="text-danger-text font-extrabold text-xs">✗</span>
                               <span className="line-through">Pestañas de Tareas, LMS y Herramientas bloqueadas.</span>
                             </li>
                           </>
@@ -619,48 +619,48 @@ export const SaaSLandingPage = () => {
                 </div>
               ) : (
                 /* SIMULACIÓN ESCRITORIO (BROWSER FRAME) PARA ATS Y ORGANIGRAMA */
-                <div className="relative w-full bg-white rounded-3xl border border-slate-200/80 shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col min-h-[460px] transition-all animate-in fade-in duration-300">
+                <div className="relative w-full bg-white rounded-3xl border border-border/80 shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col min-h-[460px] transition-all animate-in fade-in duration-300">
                   {/* Top Browser Bar */}
-                  <div className="bg-slate-50/80 border-b border-slate-200/60 px-4 py-3 flex items-center gap-3 shrink-0">
+                  <div className="bg-page/80 border-b border-border/60 px-4 py-3 flex items-center gap-3 shrink-0">
                     <div className="flex gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-danger-icon"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-warning-icon"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-success-icon"></div>
                     </div>
-                    <div className="flex-1 max-w-sm mx-auto bg-slate-100 rounded-lg py-1 px-3 text-[10px] font-bold text-slate-400 flex items-center gap-1.5 shadow-inner">
+                    <div className="flex-1 max-w-sm mx-auto bg-page rounded-lg py-1 px-3 text-[10px] font-bold text-slate-400 flex items-center gap-1.5 shadow-inner">
                       <Lock size={10} className="text-slate-400" />
                       <span>https://talent360.com.mx/app?module={activeTab === 'rrhh' ? 'rrhh' : 'ats'}</span>
                     </div>
                   </div>
 
                   {/* Main Viewport Content */}
-                  <div className="p-6 flex-1 bg-slate-50/50 flex flex-col justify-center overflow-x-auto">
+                  <div className="p-6 flex-1 bg-page/50 flex flex-col justify-center overflow-x-auto">
                     {activeTab === 'rrhh' && (
                       <div className="w-full text-center flex flex-col justify-center min-w-[500px]">
                         <ul className="flex flex-col items-center relative">
                           {/* Nodo Raíz: Administrador General */}
-                          <li 
+                          <li
                             className="relative pb-6"
                             onMouseEnter={() => setHoveredNodeId(1)}
                             onMouseLeave={() => setHoveredNodeId(null)}
                           >
                             <div className={`inline-block bg-white border-2 rounded-3xl p-4 text-center min-w-[210px] shadow-sm transition-all duration-300 relative z-10 ${
-                              hoveredNodeId === 1 ? 'border-indigo-500 ring-4 ring-indigo-500/20 scale-102 shadow-indigo-100/50' : hoveredNodeId !== null && (hoveredNodeId === 2 || hoveredNodeId === 3) ? 'border-emerald-500 ring-2 ring-emerald-500/10' : 'border-amber-450 bg-amber-50/5'
+                              hoveredNodeId === 1 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId !== null && (hoveredNodeId === 2 || hoveredNodeId === 3) ? 'border-success-text ring-2 ring-success-text/10' : 'border-warning-text bg-warning-bg/5'
                             }`}>
                               <div className="mb-1.5">
-                                <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-amber-300 bg-amber-50 text-amber-600">
+                                <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-warning-text/20 bg-warning-bg text-warning-text">
                                   Dirección General (Nivel 1)
                                 </span>
                               </div>
-                              <div className="font-black text-xs text-slate-800 uppercase tracking-widest mb-0.5">ADMINISTRADOR GENERAL</div>
-                              <div className="text-[8px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md inline-block mb-2">Administración</div>
-                              
-                              <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-2xl">
-                                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 font-black text-xs flex items-center justify-center flex-shrink-0">
+                              <div className="font-black text-xs text-text-1 uppercase tracking-widest mb-0.5">ADMINISTRADOR GENERAL</div>
+                              <div className="text-[8px] font-bold text-slate-400 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Administración</div>
+
+                              <div className="flex items-center gap-2 bg-page border border-border p-1.5 rounded-2xl">
+                                <div className="w-7 h-7 rounded-full bg-accent-soft text-accent font-black text-xs flex items-center justify-center flex-shrink-0">
                                   FV
                                 </div>
                                 <div className="text-left overflow-hidden">
-                                  <div className="text-[10px] font-black text-slate-800 truncate leading-tight">Francisco Vega</div>
+                                  <div className="text-[10px] font-black text-text-1 truncate leading-tight">Francisco Vega</div>
                                   <div className="text-[7.5px] font-medium text-slate-400 truncate">francisco@decorarte360.com</div>
                                 </div>
                               </div>
@@ -673,28 +673,28 @@ export const SaaSLandingPage = () => {
                           {/* Nivel 2: Hijas */}
                           <li className="flex justify-center gap-8 relative">
                             {/* Nodo Hijo 1: Supervisor */}
-                            <div 
+                            <div
                               className="flex flex-col items-center"
                               onMouseEnter={() => setHoveredNodeId(2)}
                               onMouseLeave={() => setHoveredNodeId(null)}
                             >
                               <div className={`inline-block bg-white border-2 rounded-3xl p-4 text-center min-w-[210px] shadow-sm transition-all duration-300 relative z-10 ${
-                                hoveredNodeId === 2 ? 'border-indigo-500 ring-4 ring-indigo-500/20 scale-102 shadow-indigo-100/50' : hoveredNodeId === 1 ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-blue-400 bg-blue-50/5'
+                                hoveredNodeId === 2 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId === 1 ? 'border-accent ring-2 ring-focus-ring/10' : 'border-navy-300 bg-navy-50/5'
                               }`}>
                                 <div className="mb-1.5">
-                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-blue-300 bg-blue-50 text-blue-650">
+                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-navy-300 bg-navy-50 text-accent">
                                     Supervisión (Nivel 2)
                                   </span>
                                 </div>
-                                <div className="font-black text-xs text-slate-800 uppercase tracking-widest mb-0.5">SUPERVISOR DE VENTAS</div>
-                                <div className="text-[8px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md inline-block mb-2">Ventas</div>
-                                
-                                <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-2xl">
-                                  <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-650 font-black text-xs flex items-center justify-center flex-shrink-0">
+                                <div className="font-black text-xs text-text-1 uppercase tracking-widest mb-0.5">SUPERVISOR DE VENTAS</div>
+                                <div className="text-[8px] font-bold text-slate-400 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Ventas</div>
+
+                                <div className="flex items-center gap-2 bg-page border border-border p-1.5 rounded-2xl">
+                                  <div className="w-7 h-7 rounded-full bg-accent-soft text-accent font-black text-xs flex items-center justify-center flex-shrink-0">
                                     LC
                                   </div>
                                   <div className="text-left overflow-hidden">
-                                    <div className="text-[10px] font-black text-slate-800 truncate leading-tight">Liz Camacho</div>
+                                    <div className="text-[10px] font-black text-text-1 truncate leading-tight">Liz Camacho</div>
                                     <div className="text-[7.5px] font-medium text-slate-400 truncate">liz@decorarte360.com</div>
                                   </div>
                                 </div>
@@ -702,28 +702,28 @@ export const SaaSLandingPage = () => {
                             </div>
 
                             {/* Nodo Hijo 2: Operario */}
-                            <div 
+                            <div
                               className="flex flex-col items-center"
                               onMouseEnter={() => setHoveredNodeId(3)}
                               onMouseLeave={() => setHoveredNodeId(null)}
                             >
                               <div className={`inline-block bg-white border-2 rounded-3xl p-4 text-center min-w-[210px] shadow-sm transition-all duration-300 relative z-10 ${
-                                hoveredNodeId === 3 ? 'border-indigo-500 ring-4 ring-indigo-500/20 scale-102 shadow-indigo-100/50' : hoveredNodeId === 1 ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-emerald-400 bg-emerald-50/5'
+                                hoveredNodeId === 3 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId === 1 ? 'border-accent ring-2 ring-focus-ring/10' : 'border-success-text bg-success-bg/5'
                               }`}>
                                 <div className="mb-1.5">
-                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-650">
+                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-success-text/20 bg-success-bg text-success-text">
                                     Operaciones (Nivel 3)
                                   </span>
                                 </div>
-                                <div className="font-black text-xs text-slate-800 uppercase tracking-widest mb-0.5">AYUDANTE GENERAL</div>
-                                <div className="text-[8px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md inline-block mb-2">Producción</div>
-                                
-                                <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-2xl">
-                                  <div className="w-7 h-7 rounded-full bg-violet-100 text-violet-650 font-black text-xs flex items-center justify-center flex-shrink-0">
+                                <div className="font-black text-xs text-text-1 uppercase tracking-widest mb-0.5">AYUDANTE GENERAL</div>
+                                <div className="text-[8px] font-bold text-slate-400 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Producción</div>
+
+                                <div className="flex items-center gap-2 bg-page border border-border p-1.5 rounded-2xl">
+                                  <div className="w-7 h-7 rounded-full bg-accent-soft text-accent font-black text-xs flex items-center justify-center flex-shrink-0">
                                     HC
                                   </div>
                                   <div className="text-left overflow-hidden">
-                                    <div className="text-[10px] font-black text-slate-800 truncate leading-tight">Hiraym Castillo</div>
+                                    <div className="text-[10px] font-black text-text-1 truncate leading-tight">Hiraym Castillo</div>
                                     <div className="text-[7.5px] font-medium text-slate-400 truncate">hiraym@decorarte360.com</div>
                                   </div>
                                 </div>
@@ -737,15 +737,15 @@ export const SaaSLandingPage = () => {
                     {activeTab === 'reclutamiento' && (
                       <div className="w-full text-center flex flex-col justify-center min-w-[500px]">
                         <div className="flex justify-between items-center mb-4 px-2">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-violet-650">Tablero ATS (Vacantes)</span>
+                          <span className="text-[10px] font-black uppercase tracking-wider text-accent">Tablero ATS (Vacantes)</span>
                           <span className="text-[9px] font-bold text-slate-400">Puesto: Agente de Ventas</span>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                           {/* Col 1: Prospectos */}
-                          <div className="flex flex-col bg-slate-100/70 border border-slate-200/50 rounded-2xl p-2.5">
+                          <div className="flex flex-col bg-page/70 border border-border/50 rounded-2xl p-2.5">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
                               <span>Prospecto</span>
-                              <span className="bg-white text-slate-500 font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
+                              <span className="bg-white text-text-3 font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
                                 {atsCandidates.filter(c => c.status === 'prospect').length}
                               </span>
                             </p>
@@ -755,16 +755,16 @@ export const SaaSLandingPage = () => {
                                   type="button"
                                   key={c.id}
                                   onClick={() => handleCandidateClick(c.id)}
-                                  className="w-full text-left bg-white border border-slate-200/80 rounded-2xl p-3 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all active:scale-98"
+                                  className="w-full text-left bg-white border border-border/80 rounded-2xl p-3 shadow-sm hover:border-navy-300 hover:shadow-md transition-all active:scale-98"
                                 >
                                   <div className="flex justify-between items-start mb-1.5">
-                                    <h5 className="text-[10.5px] font-black text-slate-800 leading-none">{c.name}</h5>
-                                    <span className="text-[7.5px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded-md">CV</span>
+                                    <h5 className="text-[10.5px] font-black text-text-1 leading-none">{c.name}</h5>
+                                    <span className="text-[7.5px] bg-page text-text-3 font-bold px-1.5 py-0.5 rounded-md">CV</span>
                                   </div>
                                   <p className="text-[8px] text-slate-450 font-bold mb-2.5">{c.vacancy}</p>
-                                  <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                                  <div className="flex items-center justify-between border-t border-border pt-2">
                                     <span className="text-[7.5px] text-slate-400 font-medium">{c.time}</span>
-                                    <span className="text-[8px] font-black text-blue-600 flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
+                                    <span className="text-[8px] font-black text-accent flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
                                   </div>
                                 </button>
                               ))}
@@ -772,10 +772,10 @@ export const SaaSLandingPage = () => {
                           </div>
 
                           {/* Col 2: Entrevista */}
-                          <div className="flex flex-col bg-slate-100/70 border border-slate-200/50 rounded-2xl p-2.5">
-                            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
+                          <div className="flex flex-col bg-page/70 border border-border/50 rounded-2xl p-2.5">
+                            <p className="text-[9px] font-black text-accent uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
                               <span>Entrevista</span>
-                              <span className="bg-white text-indigo-500 font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
+                              <span className="bg-white text-accent font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
                                 {atsCandidates.filter(c => c.status === 'interview').length}
                               </span>
                             </p>
@@ -785,16 +785,16 @@ export const SaaSLandingPage = () => {
                                   type="button"
                                   key={c.id}
                                   onClick={() => handleCandidateClick(c.id)}
-                                  className="w-full text-left bg-white border border-slate-200/80 rounded-2xl p-3 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all active:scale-98"
+                                  className="w-full text-left bg-white border border-border/80 rounded-2xl p-3 shadow-sm hover:border-navy-300 hover:shadow-md transition-all active:scale-98"
                                 >
                                   <div className="flex justify-between items-start mb-1.5">
-                                    <h5 className="text-[10.5px] font-black text-slate-800 leading-none">{c.name}</h5>
-                                    <span className="text-[7.5px] bg-indigo-50 text-indigo-650 font-bold px-1.5 py-0.5 rounded-md">Cita</span>
+                                    <h5 className="text-[10.5px] font-black text-text-1 leading-none">{c.name}</h5>
+                                    <span className="text-[7.5px] bg-navy-50 text-accent font-bold px-1.5 py-0.5 rounded-md">Cita</span>
                                   </div>
                                   <p className="text-[8px] text-slate-450 font-bold mb-2.5">{c.vacancy}</p>
-                                  <div className="flex items-center justify-between border-t border-slate-100 pt-2">
-                                    <span className="text-[7.5px] text-indigo-500 font-bold">{c.time}</span>
-                                    <span className="text-[8px] font-black text-blue-600 flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
+                                  <div className="flex items-center justify-between border-t border-border pt-2">
+                                    <span className="text-[7.5px] text-accent font-bold">{c.time}</span>
+                                    <span className="text-[8px] font-black text-accent flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
                                   </div>
                                 </button>
                               ))}
@@ -802,10 +802,10 @@ export const SaaSLandingPage = () => {
                           </div>
 
                           {/* Col 3: Contratados */}
-                          <div className="flex flex-col bg-slate-100/70 border border-slate-200/50 rounded-2xl p-2.5">
-                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
+                          <div className="flex flex-col bg-page/70 border border-border/50 rounded-2xl p-2.5">
+                            <p className="text-[9px] font-black text-success-text uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
                               <span>Contratados</span>
-                              <span className="bg-white text-emerald-600 font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
+                              <span className="bg-white text-success-text font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
                                 {atsCandidates.filter(c => c.status === 'hired').length}
                               </span>
                             </p>
@@ -815,16 +815,16 @@ export const SaaSLandingPage = () => {
                                   type="button"
                                   key={c.id}
                                   onClick={() => handleCandidateClick(c.id)}
-                                  className="w-full text-left bg-white border border-l-2 border-l-emerald-500 border-slate-200/80 rounded-2xl p-3 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all active:scale-98"
+                                  className="w-full text-left bg-white border border-l-2 border-l-success-text border-border/80 rounded-2xl p-3 shadow-sm hover:border-navy-300 hover:shadow-md transition-all active:scale-98"
                                 >
                                   <div className="flex justify-between items-start mb-1.5">
-                                    <h5 className="text-[10.5px] font-black text-slate-800 leading-none">{c.name}</h5>
-                                    <span className="text-[7.5px] bg-emerald-50 text-emerald-650 font-bold px-1.5 py-0.5 rounded-md">Contratado</span>
+                                    <h5 className="text-[10.5px] font-black text-text-1 leading-none">{c.name}</h5>
+                                    <span className="text-[7.5px] bg-success-bg text-success-text font-bold px-1.5 py-0.5 rounded-md">Contratado</span>
                                   </div>
                                   <p className="text-[8px] text-slate-450 font-bold mb-2.5">{c.vacancy}</p>
-                                  <div className="flex items-center justify-between border-t border-slate-100 pt-2">
-                                    <span className="text-[7.5px] text-emerald-600 font-black">{c.time}</span>
-                                    <span className="text-[8px] font-black text-blue-600 flex items-center gap-0.5">Reciclar <ChevronRight size={8} /></span>
+                                  <div className="flex items-center justify-between border-t border-border pt-2">
+                                    <span className="text-[7.5px] text-success-text font-black">{c.time}</span>
+                                    <span className="text-[8px] font-black text-accent flex items-center gap-0.5">Reciclar <ChevronRight size={8} /></span>
                                   </div>
                                 </button>
                               ))}
@@ -841,26 +841,26 @@ export const SaaSLandingPage = () => {
             {/* Bloque 3: Controles y Selector de Pestañas (Oculto en móvil) */}
             <div className="hidden lg:block col-span-1 lg:col-span-5 text-left space-y-6 order-3 lg:order-2">
               <div className="flex flex-wrap gap-4">
-                <button 
+                <button
                   onClick={() => {
                     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-                  }} 
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs shadow-lg shadow-blue-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+                  }}
+                  className="px-6 py-3 bg-accent hover:bg-accent-hover text-white rounded-2xl font-black text-xs shadow-lg shadow-accent/20 active:scale-98 transition-all flex items-center justify-center gap-2"
                 >
                   Ver Planes y Precios <ChevronRight size={14} />
                 </button>
               </div>
 
               {/* Selector de Pestañas Interactivas */}
-              <div className="space-y-2.5 border-t border-slate-100 pt-6">
+              <div className="space-y-2.5 border-t border-border pt-6">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Explora las interfaces clave (Toca para interactuar)</p>
                 <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory scroll-smooth">
                   <button
                     type="button"
                     onClick={() => setActiveTab('checador')}
-                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'checador' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-650 hover:bg-slate-50'}`}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'checador' ? 'bg-white border-border shadow-md text-accent' : 'border-transparent text-text-2 hover:bg-page'}`}
                   >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'checador' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'checador' ? 'bg-navy-50 text-accent' : 'bg-page text-text-3'}`}>
                       <Clock size={15} />
                     </div>
                     <div>
@@ -872,9 +872,9 @@ export const SaaSLandingPage = () => {
                   <button
                     type="button"
                     onClick={() => setActiveTab('rrhh')}
-                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'rrhh' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'rrhh' ? 'bg-white border-border shadow-md text-accent' : 'border-transparent text-text-2 hover:bg-page'}`}
                   >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'rrhh' ? 'bg-indigo-50 text-indigo-650' : 'bg-slate-100 text-slate-500'}`}>
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'rrhh' ? 'bg-navy-50 text-accent' : 'bg-page text-text-3'}`}>
                       <Users size={15} />
                     </div>
                     <div>
@@ -886,9 +886,9 @@ export const SaaSLandingPage = () => {
                   <button
                     type="button"
                     onClick={() => setActiveTab('reclutamiento')}
-                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'reclutamiento' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'reclutamiento' ? 'bg-white border-border shadow-md text-accent' : 'border-transparent text-text-2 hover:bg-page'}`}
                   >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'reclutamiento' ? 'bg-violet-50 text-violet-650' : 'bg-slate-100 text-slate-500'}`}>
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'reclutamiento' ? 'bg-navy-50 text-accent' : 'bg-page text-text-3'}`}>
                       <UserPlus size={15} />
                     </div>
                     <div>
@@ -904,63 +904,63 @@ export const SaaSLandingPage = () => {
       </section>
 
       {/* SECCIÓN DEL SIMULADOR EXCLUSIVA PARA MÓVILES */}
-      <section 
-        id="seccion-simulador" 
-        className="block lg:hidden bg-slate-50/50 py-16 px-4 border-b border-slate-150"
+      <section
+        id="seccion-simulador"
+        className="block lg:hidden bg-page/50 py-16 px-4 border-b border-border"
       >
         <div className="max-w-md mx-auto flex flex-col items-center text-center space-y-6">
           <div className="space-y-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-indigo-655 bg-indigo-50 border border-indigo-100">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-accent bg-navy-50 border border-border">
               <Sparkles size={10} /> Demo Interactiva
             </span>
-            <h3 className="text-2xl font-black text-slate-900 leading-tight">
+            <h3 className="text-2xl font-black text-text-1 leading-tight">
               Prueba el Reloj Checador
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold px-4 max-w-sm">
+            <p className="text-xs text-text-3 dark:text-slate-400 font-semibold px-4 max-w-sm">
               Experimenta el registro de asistencia en tiempo real. Cambia de versión para ver las diferencias.
             </p>
           </div>
 
           {/* Selector de versión + Botón de reinicio para móviles */}
           <div className="flex items-center gap-2 w-full max-w-[290px] justify-center">
-            <div className="flex p-1 bg-slate-150 rounded-2xl border border-slate-200 flex-1">
-              <button 
-                type="button" 
+            <div className="flex p-1 bg-slate-150 rounded-2xl border border-border flex-1">
+              <button
+                type="button"
                 onClick={() => setSimulatedTier('free')}
                 className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
-                  simulatedTier === 'free' 
-                    ? 'bg-white text-slate-800 shadow-md' 
-                    : 'text-slate-400 hover:text-slate-650 bg-transparent'
+                  simulatedTier === 'free'
+                    ? 'bg-white text-text-1 shadow-md'
+                    : 'text-slate-400 hover:text-text-2 bg-transparent'
                 }`}
               >
                 <span>🔓</span> Básica
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setSimulatedTier('pro')}
                 className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
-                  simulatedTier === 'pro' 
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' 
-                    : 'text-slate-400 hover:text-slate-655 bg-transparent'
+                  simulatedTier === 'pro'
+                    ? 'bg-gradient-to-r from-accent to-accent text-white shadow-md'
+                    : 'text-slate-400 hover:text-text-2 bg-transparent'
                 }`}
               >
                 <span>👑</span> Pro
               </button>
             </div>
-            
+
             {/* Botón de Reinicio Rápido */}
             <button
               type="button"
               title="Reiniciar Simulación"
               onClick={() => setSimKey(prev => prev + 1)}
-              className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl shadow-sm text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center cursor-pointer active:scale-95 outline-none shrink-0"
+              className="p-2.5 bg-white hover:bg-page border border-border rounded-2xl shadow-sm text-text-3 hover:text-text-1 transition-all flex items-center justify-center cursor-pointer active:scale-95 outline-none shrink-0"
             >
               <RotateCcw size={14} />
             </button>
           </div>
 
           {/* SMARTPHONE FRAME (Perfectamente centrado en celulares) */}
-          <div 
+          <div
             className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0 transition-transform duration-300"
             style={{ transform: `scale(${simSettings.scale / 100})`, transformOrigin: 'top center' }}
           >
@@ -971,7 +971,7 @@ export const SaaSLandingPage = () => {
             </div>
 
             <div className="flex-grow bg-white flex flex-col justify-between overflow-hidden select-none">
-              <RelojSimuladoLanding 
+              <RelojSimuladoLanding
                 key={simKey}
                 tier={simulatedTier}
                 setTier={setSimulatedTier}
@@ -988,19 +988,19 @@ export const SaaSLandingPage = () => {
       </section>
 
       {/* DEMO SECTION */}
-      <section id="simulador" className="py-24 px-6 bg-white border-y border-slate-100">
+      <section id="simulador" className="py-24 px-6 bg-white border-y border-border">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
-            <h3 className="text-3xl md:text-5xl font-black text-slate-900 mb-4">Módulos en Acción</h3>
-            <p className="text-slate-500 font-medium max-w-2xl mx-auto">Explora el ecosistema operativo diseñado para dar la mejor experiencia a tus equipos.</p>
+            <h3 className="text-3xl md:text-5xl font-black text-text-1 mb-4">Módulos en Acción</h3>
+            <p className="text-text-3 font-medium max-w-2xl mx-auto">Explora el ecosistema operativo diseñado para dar la mejor experiencia a tus equipos.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Card 1 */}
-            <div className="group bg-slate-50 border border-slate-200/60 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all duration-300">
+            <div className="group bg-page border border-border/60 rounded-3xl overflow-hidden hover:border-navy-300 hover:shadow-xl transition-all duration-300">
               <div className="aspect-video bg-slate-200 relative overflow-hidden flex items-center justify-center">
-                <div className="absolute inset-0 bg-blue-600/5 mix-blend-overlay group-hover:bg-blue-600/10 transition-colors"></div>
-                <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
+                <div className="absolute inset-0 bg-accent/5 mix-blend-overlay group-hover:bg-accent/10 transition-colors"></div>
+                <div className="w-14 h-14 bg-white border border-border rounded-full flex items-center justify-center text-accent relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
                   <span className="text-xl ml-1">▶</span>
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-black text-6xl select-none tracking-widest opacity-35">
@@ -1008,19 +1008,19 @@ export const SaaSLandingPage = () => {
                 </div>
               </div>
               <div className="p-6 text-left">
-                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Configuración Rápida</span>
-                <h4 className="font-bold text-slate-800 text-base mt-1 mb-2">Onboarding y Cuentas</h4>
-                <p className="text-slate-500 text-xs leading-relaxed">
+                <span className="text-[10px] font-black text-accent uppercase tracking-widest">Configuración Rápida</span>
+                <h4 className="font-bold text-text-1 text-base mt-1 mb-2">Onboarding y Cuentas</h4>
+                <p className="text-text-3 text-xs leading-relaxed">
                   Configura tu sucursal, áreas de trabajo y puestos en pocos pasos a través de nuestro asistente inteligente.
                 </p>
               </div>
             </div>
 
             {/* Card 2 */}
-            <div className="group bg-slate-50 border border-slate-200/60 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all duration-300">
+            <div className="group bg-page border border-border/60 rounded-3xl overflow-hidden hover:border-navy-300 hover:shadow-xl transition-all duration-300">
               <div className="aspect-video bg-slate-200 relative overflow-hidden flex items-center justify-center">
-                <div className="absolute inset-0 bg-blue-600/5 mix-blend-overlay group-hover:bg-blue-600/10 transition-colors"></div>
-                <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
+                <div className="absolute inset-0 bg-accent/5 mix-blend-overlay group-hover:bg-accent/10 transition-colors"></div>
+                <div className="w-14 h-14 bg-white border border-border rounded-full flex items-center justify-center text-accent relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
                   <span className="text-xl ml-1">▶</span>
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-black text-6xl select-none tracking-widest opacity-35">
@@ -1028,19 +1028,19 @@ export const SaaSLandingPage = () => {
                 </div>
               </div>
               <div className="p-6 text-left">
-                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Asistencia</span>
-                <h4 className="font-bold text-slate-800 text-base mt-1 mb-2">Reloj Checador Biométrico</h4>
-                <p className="text-slate-500 text-xs leading-relaxed">
+                <span className="text-[10px] font-black text-accent uppercase tracking-widest">Asistencia</span>
+                <h4 className="font-bold text-text-1 text-base mt-1 mb-2">Reloj Checador Biométrico</h4>
+                <p className="text-text-3 text-xs leading-relaxed">
                   Control de horarios con acceso personal o kiosco con PIN, validación de ubicación y registro en tiempo real.
                 </p>
               </div>
             </div>
 
             {/* Card 3 */}
-            <div className="group bg-slate-50 border border-slate-200/60 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all duration-300">
+            <div className="group bg-page border border-border/60 rounded-3xl overflow-hidden hover:border-navy-300 hover:shadow-xl transition-all duration-300">
               <div className="aspect-video bg-slate-200 relative overflow-hidden flex items-center justify-center">
-                <div className="absolute inset-0 bg-blue-600/5 mix-blend-overlay group-hover:bg-blue-600/10 transition-colors"></div>
-                <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
+                <div className="absolute inset-0 bg-accent/5 mix-blend-overlay group-hover:bg-accent/10 transition-colors"></div>
+                <div className="w-14 h-14 bg-white border border-border rounded-full flex items-center justify-center text-accent relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
                   <span className="text-xl ml-1">▶</span>
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-black text-6xl select-none tracking-widest opacity-35">
@@ -1048,9 +1048,9 @@ export const SaaSLandingPage = () => {
                 </div>
               </div>
               <div className="p-6 text-left">
-                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Reclutamiento</span>
-                <h4 className="font-bold text-slate-800 text-base mt-1 mb-2">Portal de Empleos Integrado</h4>
-                <p className="text-slate-500 text-xs leading-relaxed">
+                <span className="text-[10px] font-black text-accent uppercase tracking-widest">Reclutamiento</span>
+                <h4 className="font-bold text-text-1 text-base mt-1 mb-2">Portal de Empleos Integrado</h4>
+                <p className="text-text-3 text-xs leading-relaxed">
                   Publica vacantes de forma pública, gestiona candidatos y califica postulantes de forma inteligente.
                 </p>
               </div>
@@ -1060,32 +1060,32 @@ export const SaaSLandingPage = () => {
       </section>
 
       {/* PRICING SECTION WITH SLIDER */}
-      <section id="pricing" className="py-24 px-6 bg-slate-50">
+      <section id="pricing" className="py-24 px-6 bg-page">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <h3 className="text-3xl md:text-5xl font-black text-slate-900 mb-4">Planes Transparentes y Flexibles</h3>
-            <p className="text-slate-500 font-medium">Comienza gratis o escala tu plan según el volumen de colaboradores.</p>
+            <h3 className="text-3xl md:text-5xl font-black text-text-1 mb-4">Planes Transparentes y Flexibles</h3>
+            <p className="text-text-3 font-medium">Comienza gratis o escala tu plan según el volumen de colaboradores.</p>
           </div>
 
           {/* Billing Cycle Switch/Toggle */}
           <div className="flex justify-center items-center gap-3 mb-16 select-none">
-            <span className={`text-sm font-extrabold transition-colors duration-200 ${billingCycle === 'monthly' ? 'text-blue-600' : 'text-slate-500'}`}>Facturación Mensual</span>
-            <button 
+            <span className={`text-sm font-extrabold transition-colors duration-200 ${billingCycle === 'monthly' ? 'text-accent' : 'text-text-3'}`}>Facturación Mensual</span>
+            <button
               type="button"
               onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
               className="w-14 h-8 bg-slate-200 hover:bg-slate-300 rounded-full p-1 transition-all duration-300 relative focus:outline-none"
               aria-label="Alternar ciclo de facturación"
             >
-              <div 
-                className={`w-6 h-6 bg-blue-600 rounded-full transition-all duration-300 transform shadow-md ${billingCycle === 'yearly' ? 'translate-x-6' : 'translate-x-0'}`}
+              <div
+                className={`w-6 h-6 bg-accent rounded-full transition-all duration-300 transform shadow-md ${billingCycle === 'yearly' ? 'translate-x-6' : 'translate-x-0'}`}
               />
             </button>
-            <span className={`text-sm font-extrabold flex items-center gap-1.5 transition-colors duration-200 ${billingCycle === 'yearly' ? 'text-blue-600' : 'text-slate-500'}`}>
+            <span className={`text-sm font-extrabold flex items-center gap-1.5 transition-colors duration-200 ${billingCycle === 'yearly' ? 'text-accent' : 'text-text-3'}`}>
               Facturación Anual
               {/* El ahorro sale de las dos tarifas del servidor. Este "20%" estaba escrito a
                   mano y era falso para PRO, cuyo ahorro real es 17.2% ($29 → $24). */}
               {tarifario && tarifario.descuento_anual_maximo_pct > 0 && (
-                <span className="text-[9px] font-black text-white bg-emerald-500 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                <span className="text-[9px] font-black text-white bg-success-icon px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
                   Ahorra hasta {tarifario.descuento_anual_maximo_pct}%
                 </span>
               )}
@@ -1093,14 +1093,14 @@ export const SaaSLandingPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-            
+
             {/* FREE PLAN CARD */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-8 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all text-left">
-              <h4 className="text-2xl font-black text-slate-900 mb-2">Plan Gratuito</h4>
-              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Para micro-empresas y startups que buscan automatizar la asistencia y expediente sin costo.</p>
-              <div className="mb-8 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 flex flex-col justify-center min-h-[106px]">
+            <div className="bg-white border border-border/80 rounded-3xl p-8 flex flex-col hover:border-navy-300 hover:shadow-lg transition-all text-left">
+              <h4 className="text-2xl font-black text-text-1 mb-2">Plan Gratuito</h4>
+              <p className="text-text-3 text-sm mb-6 min-h-[40px]">Para micro-empresas y startups que buscan automatizar la asistencia y expediente sin costo.</p>
+              <div className="mb-8 bg-page p-5 rounded-2xl border border-border/50 flex flex-col justify-center min-h-[106px]">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-black text-slate-900">$0</span>
+                  <span className="text-5xl font-black text-text-1">$0</span>
                   <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
                   <span className="text-slate-400 font-bold">/mes</span>
                 </div>
@@ -1109,14 +1109,14 @@ export const SaaSLandingPage = () => {
               <ul className="space-y-3.5 mb-8 flex-1">
                 {/* El tope sale del tarifario del servidor: el backend caía a 5 y esta línea
                     anunciaba 10, sin que ninguno de los dos mandara sobre el otro. */}
-                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> {planFreemium?.tope_colaboradores ? `Hasta ${planFreemium.tope_colaboradores} Colaboradores Activos` : 'Colaboradores Activos'}</li>
-                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Reloj Checador Básico (PIN, Web y Móvil)</li>
-                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Directorio Digital de Empleados y Puestos</li>
-                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Control de Entradas y Salidas en Tiempo Real</li>
-                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Opción de Desbloqueo PRO por Difusión Social</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-success-text shrink-0" size={18}/> {planFreemium?.tope_colaboradores ? `Hasta ${planFreemium.tope_colaboradores} Colaboradores Activos` : 'Colaboradores Activos'}</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-success-text shrink-0" size={18}/> Reloj Checador Básico (PIN, Web y Móvil)</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-success-text shrink-0" size={18}/> Directorio Digital de Empleados y Puestos</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-success-text shrink-0" size={18}/> Control de Entradas y Salidas en Tiempo Real</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-success-text shrink-0" size={18}/> Opción de Desbloqueo PRO por Difusión Social</li>
               </ul>
-              <button 
-                onClick={() => handleBuy('Freemium')} 
+              <button
+                onClick={() => handleBuy('Freemium')}
                 className="w-full font-bold py-3.5 bg-slate-950 text-white hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-98 text-center"
               >
                 Comenzar Gratis
@@ -1124,34 +1124,34 @@ export const SaaSLandingPage = () => {
             </div>
 
             {/* PROFESSIONAL PLAN CARD WITH SLIDER */}
-            <div className="bg-white border-2 border-blue-600 rounded-3xl p-8 flex flex-col relative shadow-[0_10px_35px_rgba(37,99,235,0.08)] text-left transform md:-translate-y-4">
-              <div className="absolute top-0 right-8 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md flex items-center gap-1">
+            <div className="bg-white border-2 border-accent rounded-3xl p-8 flex flex-col relative shadow-[0_10px_35px_rgba(37,99,235,0.08)] text-left transform md:-translate-y-4">
+              <div className="absolute top-0 right-8 -translate-y-1/2 bg-accent text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md flex items-center gap-1">
                 <Sparkles size={12} /> Plan Recomendado
               </div>
-              <h4 className="text-2xl font-black text-slate-900 mb-1">Plan Profesional</h4>
-              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Supervisión operativa completa, geolocalización y control de equipos en tiempo real.</p>
-              
+              <h4 className="text-2xl font-black text-text-1 mb-1">Plan Profesional</h4>
+              <p className="text-text-3 text-sm mb-6 min-h-[40px]">Supervisión operativa completa, geolocalización y control de equipos en tiempo real.</p>
+
               {/* Dynamic Price Display */}
-              <div className="mb-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 transition-all duration-300">
+              <div className="mb-6 bg-page p-5 rounded-2xl border border-border/50 transition-all duration-300">
                 <div className="flex justify-between items-baseline mb-2">
-                  <span className="text-slate-505 text-xs font-bold uppercase tracking-wider">
+                  <span className="text-text-3 text-xs font-bold uppercase tracking-wider">
                     {billingCycle === 'yearly' ? 'Costo Equivalente' : 'Costo Mensual'}
                   </span>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-blue-600 transition-all">
+                    <span className="text-4xl font-black text-accent transition-all">
                       {cotizacionPro ? `$${pesos(billingCycle === 'yearly' ? cotizacionPro.equivalenteMensualAnual : cotizacionPro.totalMensual)}` : '—'}
                     </span>
                     <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
                     <span className="text-slate-400 text-xs font-bold">/mes</span>
                   </div>
                 </div>
-                <div className="flex justify-between items-baseline text-xs border-t border-slate-200/60 pt-2 mt-2">
-                  <span className="text-emerald-600 font-bold">
+                <div className="flex justify-between items-baseline text-xs border-t border-border/60 pt-2 mt-2">
+                  <span className="text-success-text font-bold">
                     {billingCycle === 'yearly' ? 'Facturado anualmente:' : `Ahorra ${planPro?.descuento_anual_pct ?? 0}% en Plan Anual:`}
                   </span>
                   {/* EL MISMO número en los dos ciclos. Antes el anual valía $288 con el
                       interruptor en anual y $278.40 con el interruptor en mensual. */}
-                  <span className="text-slate-700 font-bold whitespace-nowrap">
+                  <span className="text-text-2 font-bold whitespace-nowrap">
                     {cotizacionPro ? `$${pesos(cotizacionPro.totalAnual)} MXN/año` : 'Consultar'}
                   </span>
                 </div>
@@ -1159,18 +1159,18 @@ export const SaaSLandingPage = () => {
 
               {/* Slider Controller */}
               <div className="mb-6">
-                <div className="flex justify-between text-xs font-bold text-slate-650 mb-2">
+                <div className="flex justify-between text-xs font-bold text-text-2 mb-2">
                   <span>Colaboradores:</span>
-                  <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md font-black">{proEmployeesCount} activos</span>
+                  <span className="text-accent bg-navy-50 px-2 py-0.5 rounded-md font-black">{proEmployeesCount} activos</span>
                 </div>
-                <input 
-                  type="range" 
-                  min="6" 
-                  max="50" 
+                <input
+                  type="range"
+                  min="6"
+                  max="50"
                   step="1"
-                  value={proEmployeesCount} 
+                  value={proEmployeesCount}
                   onChange={e => setProEmployeesCount(parseInt(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-focus-ring focus:outline-none"
                 />
                 <div className="flex justify-between text-[10px] text-slate-400 font-bold mt-1">
                   <span>6 colab.</span>
@@ -1180,68 +1180,68 @@ export const SaaSLandingPage = () => {
               </div>
 
               <ul className="space-y-3.5 mb-8 flex-1">
-                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-blue-500 shrink-0" size={18}/> Todo lo del Plan Gratuito +</li>
-                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-blue-500 shrink-0" size={18}/> Reloj Checador Avanzado (GPS / Geocercas + Foto)</li>
-                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-blue-500 shrink-0" size={18}/> Centro de Mando Operativo en Vivo (Monitor Live)</li>
-                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-blue-500 shrink-0" size={18}/> Tareas por Día & Checklists Operativos</li>
-                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-blue-500 shrink-0" size={18}/> Reportes & Exportaciones Avanzadas (Excel / PDF)</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={18}/> Todo lo del Plan Gratuito +</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={18}/> Reloj Checador Avanzado (GPS / Geocercas + Foto)</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={18}/> Centro de Mando Operativo en Vivo (Monitor Live)</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={18}/> Tareas por Día & Checklists Operativos</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={18}/> Reportes & Exportaciones Avanzadas (Excel / PDF)</li>
               </ul>
-              <button 
-                onClick={() => handleBuy('PRO')} 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl transition-all shadow-md active:scale-98 text-center"
+              <button
+                onClick={() => handleBuy('PRO')}
+                className="w-full bg-accent hover:bg-accent-hover text-white font-black py-4 rounded-xl transition-all shadow-md active:scale-98 text-center"
               >
                 Suscribirse Profesional
               </button>
             </div>
 
             {/* ENTERPRISE PLAN CARD */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-8 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all text-left">
-              <h4 className="text-2xl font-black text-slate-900 mb-2">Plan Enterprise</h4>
-              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Suite HR & Legal integral para corporativos con cálculo de nómina y desarrollo de personal.</p>
-              
+            <div className="bg-white border border-border/80 rounded-3xl p-8 flex flex-col hover:border-navy-300 hover:shadow-lg transition-all text-left">
+              <h4 className="text-2xl font-black text-text-1 mb-2">Plan Enterprise</h4>
+              <p className="text-text-3 text-sm mb-6 min-h-[40px]">Suite HR & Legal integral para corporativos con cálculo de nómina y desarrollo de personal.</p>
+
               {/* Dynamic Price Display */}
-              <div className="mb-8 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 transition-all duration-300">
+              <div className="mb-8 bg-page p-5 rounded-2xl border border-border/50 transition-all duration-300">
                 <div className="flex justify-between items-baseline mb-2">
-                  <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">
+                  <span className="text-text-3 text-xs font-bold uppercase tracking-wider">
                     {billingCycle === 'yearly' ? 'Costo Equivalente' : 'Costo Mensual'}
                   </span>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-slate-900 transition-all">
+                    <span className="text-4xl font-black text-text-1 transition-all">
                       {cotizacionEnterprise ? `$${pesos(billingCycle === 'yearly' ? cotizacionEnterprise.equivalenteMensualAnual : cotizacionEnterprise.totalMensual)}` : '—'}
                     </span>
                     <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
                     <span className="text-slate-400 text-xs font-bold">/mes</span>
                   </div>
                 </div>
-                <div className="flex justify-between items-baseline text-xs border-t border-slate-200/60 pt-2 mt-2">
-                  <span className="text-emerald-600 font-bold">
+                <div className="flex justify-between items-baseline text-xs border-t border-border/60 pt-2 mt-2">
+                  <span className="text-success-text font-bold">
                     {billingCycle === 'yearly' ? 'Facturado anualmente:' : `Ahorra ${planEnterprise?.descuento_anual_pct ?? 0}% en Plan Anual:`}
                   </span>
-                  <span className="text-slate-700 font-bold whitespace-nowrap">
+                  <span className="text-text-2 font-bold whitespace-nowrap">
                     {cotizacionEnterprise ? `$${pesos(cotizacionEnterprise.totalAnual)} MXN/año` : 'Consultar'}
                   </span>
                 </div>
               </div>
 
               <ul className="space-y-3 mb-8 flex-1">
-                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Todo lo del Plan PRO +</li>
-                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Pre-Nómina Inteligente & Cálculo de Incidencias</li>
-                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Bolsa de Trabajo ATS & Flyers de Reclutamiento</li>
-                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Talent360 Academy (Capacitación LMS & Cursos)</li>
-                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Archivo Digital 360 & Módulo Ley Federal del Trabajo (LFT)</li>
-                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Colaboradores Ilimitados</li>
-                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Base de datos Dedicada y Aislada</li>
-                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Subdominio Corporativo Propio</li>
-                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Soporte Técnico 24/7 Dedicado</li>
+                <li className="flex items-start gap-2.5 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={16}/> Todo lo del Plan PRO +</li>
+                <li className="flex items-start gap-2.5 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={16}/> Pre-Nómina Inteligente & Cálculo de Incidencias</li>
+                <li className="flex items-start gap-2.5 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={16}/> Bolsa de Trabajo ATS & Flyers de Reclutamiento</li>
+                <li className="flex items-start gap-2.5 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={16}/> Talent360 Academy (Capacitación LMS & Cursos)</li>
+                <li className="flex items-start gap-2.5 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={16}/> Archivo Digital 360 & Módulo Ley Federal del Trabajo (LFT)</li>
+                <li className="flex items-start gap-2.5 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={16}/> Colaboradores Ilimitados</li>
+                <li className="flex items-start gap-2.5 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={16}/> Base de datos Dedicada y Aislada</li>
+                <li className="flex items-start gap-2.5 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={16}/> Subdominio Corporativo Propio</li>
+                <li className="flex items-start gap-2.5 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={16}/> Soporte Técnico 24/7 Dedicado</li>
               </ul>
-              <button 
-                onClick={() => handleBuy('Enterprise')} 
+              <button
+                onClick={() => handleBuy('Enterprise')}
                 className="w-full font-bold py-3.5 bg-slate-900 text-white hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-98 text-center"
               >
                 Aprovisionar Enterprise
               </button>
             </div>
-            
+
           </div>
         </div>
       </section>
@@ -1255,20 +1255,20 @@ export const SaaSLandingPage = () => {
       {/* REGISTRATION STEP WIZARD MODAL */}
       {showCheckout && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative text-slate-900 my-auto border border-slate-100 animate-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
-            
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative text-text-1 my-auto border border-border animate-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+
             {/* Header */}
-            <div className="bg-slate-50 p-6 border-b border-slate-200 flex justify-between items-center shrink-0">
+            <div className="bg-page p-6 border-b border-border flex justify-between items-center shrink-0">
               <div className="flex items-center gap-2">
-                <Building2 className="text-blue-600" size={22} />
-                <span className="font-extrabold text-slate-800 text-base">Crear Cuenta Talent 360</span>
+                <Building2 className="text-accent" size={22} />
+                <span className="font-extrabold text-text-1 text-base">Crear Cuenta Talent 360</span>
               </div>
-              <button onClick={() => setShowCheckout(false)} className="text-slate-400 hover:text-slate-600 font-bold text-xl p-1 bg-slate-200/50 rounded-full w-7 h-7 flex items-center justify-center transition-colors">&times;</button>
+              <button onClick={() => setShowCheckout(false)} className="text-slate-400 hover:text-text-2 font-bold text-xl p-1 bg-slate-200/50 rounded-full w-7 h-7 flex items-center justify-center transition-colors">&times;</button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
               {error && (
-                <div className="mb-4 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold p-3 rounded-xl flex gap-1.5 items-start">
+                <div className="mb-4 bg-danger-bg border border-danger-text/20 text-danger-text text-xs font-bold p-3 rounded-xl flex gap-1.5 items-start">
                   <span>⚠️</span> <span>{error}</span>
                 </div>
               )}
@@ -1276,31 +1276,31 @@ export const SaaSLandingPage = () => {
               {/* Progress Steps Indicator */}
               <div className="flex items-center justify-center gap-4 mb-6">
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${registrationStep === 1 ? 'bg-blue-600 text-white' : 'bg-emerald-100 text-emerald-600'}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${registrationStep === 1 ? 'bg-accent text-white' : 'bg-success-bg text-success-text'}`}>
                     {registrationStep === 1 ? '1' : '✓'}
                   </div>
-                  <span className={`text-xs font-bold ${registrationStep === 1 ? 'text-blue-600' : 'text-slate-500'}`}>Identidad</span>
+                  <span className={`text-xs font-bold ${registrationStep === 1 ? 'text-accent' : 'text-text-3'}`}>Identidad</span>
                 </div>
                 <div className="w-10 h-0.5 bg-slate-200"></div>
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${registrationStep === 2 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${registrationStep === 2 ? 'bg-accent text-white' : 'bg-page text-slate-400'}`}>
                     2
                   </div>
-                  <span className={`text-xs font-bold ${registrationStep === 2 ? 'text-blue-600' : 'text-slate-400'}`}>Empresa</span>
+                  <span className={`text-xs font-bold ${registrationStep === 2 ? 'text-accent' : 'text-slate-400'}`}>Empresa</span>
                 </div>
               </div>
 
               {/* STEP 1: GOOGLE OAUTH FORCED */}
               {registrationStep === 1 && (
                 <div className="text-center py-4 space-y-6 animate-in fade-in duration-200">
-                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                  <div className="w-16 h-16 bg-navy-50 text-accent rounded-2xl flex items-center justify-center mx-auto shadow-inner">
                     <Lock size={28} />
                   </div>
-                  
+
 
                       <div className="space-y-1">
-                        <h4 className="font-extrabold text-slate-800 text-lg">Crea tu cuenta de Administrador</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+                        <h4 className="font-extrabold text-text-1 text-lg">Crea tu cuenta de Administrador</h4>
+                        <p className="text-xs text-text-3 leading-relaxed max-w-xs mx-auto">
                           Usa Google, Apple o completa tus datos para registrar tu cuenta.
                         </p>
                       </div>
@@ -1309,62 +1309,62 @@ export const SaaSLandingPage = () => {
 
                       {/* Divisor */}
                       <div className="relative flex py-2 items-center w-full max-w-xs mx-auto">
-                        <div className="flex-grow border-t border-slate-200"></div>
+                        <div className="flex-grow border-t border-border"></div>
                         <span className="flex-shrink mx-3 text-[10px] text-slate-400 font-black uppercase tracking-wider">o regístrate con tu correo</span>
-                        <div className="flex-grow border-t border-slate-200"></div>
+                        <div className="flex-grow border-t border-border"></div>
                       </div>
 
                       {/* Formulario tradicional */}
                       <form onSubmit={handleTraditionalRegister} className="space-y-4 text-left w-full max-w-xs mx-auto">
                         <div>
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Tu Nombre Completo</label>
-                          <input 
-                            type="text" 
-                            required 
+                          <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Tu Nombre Completo</label>
+                          <input
+                            type="text"
+                            required
                             value={googleName}
                             onChange={e => setGoogleName(e.target.value)}
-                            placeholder="Ej. Francisco Vega" 
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" 
+                            placeholder="Ej. Francisco Vega"
+                            className="w-full bg-page border border-border rounded-xl px-4 py-2.5 text-xs font-semibold text-text-1 focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white transition-all"
                           />
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Tu Correo de Registro</label>
-                          <input 
-                            type="email" 
-                            required 
+                          <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Tu Correo de Registro</label>
+                          <input
+                            type="email"
+                            required
                             value={googleEmail}
                             onChange={e => setGoogleEmail(e.target.value.toLowerCase().trim())}
-                            placeholder="usuario@dominio.com" 
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" 
+                            placeholder="usuario@dominio.com"
+                            className="w-full bg-page border border-border rounded-xl px-4 py-2.5 text-xs font-semibold text-text-1 focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white transition-all"
                           />
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Contraseña</label>
-                          <input 
-                            type="password" 
-                            required 
+                          <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Contraseña</label>
+                          <input
+                            type="password"
+                            required
                             value={signUpPassword}
                             onChange={e => setSignUpPassword(e.target.value)}
-                            placeholder="Mínimo 6 caracteres" 
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" 
+                            placeholder="Mínimo 6 caracteres"
+                            className="w-full bg-page border border-border rounded-xl px-4 py-2.5 text-xs font-semibold text-text-1 focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white transition-all"
                           />
                         </div>
-                        
+
                         {isEmailDuplicated && (
-                          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-2 mt-2">
+                          <div className="bg-warning-bg border border-warning-text/20 rounded-xl p-3 text-xs text-warning-text space-y-2 mt-2">
                             <p className="font-bold flex items-center gap-1">
-                              <AlertCircle size={14} className="text-amber-600 shrink-0" />
+                              <AlertCircle size={14} className="text-warning-text shrink-0" />
                               Esta cuenta ya existe
                             </p>
-                            <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                            <p className="text-[10px] text-text-3 font-medium leading-relaxed">
                               La dirección de correo electrónico ya está registrada. Puedes iniciar sesión directamente.
                             </p>
                             <button
                               type="button"
                               onClick={() => navigate(`/login?email=${encodeURIComponent(googleEmail)}`)}
-                              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-2 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1 shadow-sm"
+                              className="w-full bg-warning-text hover:bg-warning-text text-white font-black py-2 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1 shadow-sm"
                             >
                               <LogIn size={11} /> Iniciar Sesión Ahora
                             </button>
@@ -1374,7 +1374,7 @@ export const SaaSLandingPage = () => {
                         <button
                           type="submit"
                           disabled={isProcessing}
-                          className="w-full mt-2 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl text-xs transition-all shadow-lg shadow-blue-600/10 flex items-center justify-center gap-1.5"
+                          className="w-full mt-2 py-3.5 bg-accent hover:bg-accent-hover text-white font-black rounded-2xl text-xs transition-all shadow-lg shadow-accent/10 flex items-center justify-center gap-1.5"
                         >
                           {isProcessing ? 'Procesando...' : 'Crear Cuenta y Continuar'}
                         </button>
@@ -1386,14 +1386,14 @@ export const SaaSLandingPage = () => {
               {/* STEP 2: COMPANY DETAILS & SIMULATED CHECKOUT */}
               {registrationStep === 2 && googleUser && (
                 <form onSubmit={processPayment} className="space-y-5">
-                  
+
                   {/* Google Authenticated profile badge */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-base shadow-sm">
+                  <div className="bg-page border border-border rounded-2xl p-3.5 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-accent-soft text-accent flex items-center justify-center font-bold text-base shadow-sm">
                       {googleUser.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="text-left">
-                      <p className="text-xs font-black text-slate-800">{googleUser.name}</p>
+                      <p className="text-xs font-black text-text-1">{googleUser.name}</p>
                       <p className="text-[10px] text-slate-400 font-semibold">{googleUser.email}</p>
                     </div>
                     {/* 2026-07-26 (auditoría en vivo): esta insignia decía siempre "Cuenta social",
@@ -1402,32 +1402,32 @@ export const SaaSLandingPage = () => {
                         el registro por correo deja `google_id` vacío, el de Google lo llena. */}
                     <div className={`ml-auto text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
                       googleUser.google_id
-                        ? 'bg-blue-50 text-blue-600 border-blue-100'
-                        : 'bg-slate-100 text-slate-500 border-slate-200'
+                        ? 'bg-navy-50 text-accent border-border'
+                        : 'bg-page text-text-3 border-border'
                     }`}>
                       {googleUser.google_id ? 'Google OK' : 'Correo'}
                     </div>
                   </div>
 
                   {/* Summary of the selected plan */}
-                  <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-2xl text-left flex justify-between items-center">
+                  <div className="bg-navy-50/50 border border-border p-4 rounded-2xl text-left flex justify-between items-center">
                     <div>
-                      <p className="text-xs text-blue-800 font-extrabold uppercase">Plan Seleccionado</p>
-                      <h5 className="text-sm font-black text-slate-900 mt-0.5">
+                      <p className="text-xs text-navy-800 font-extrabold uppercase">Plan Seleccionado</p>
+                      <h5 className="text-sm font-black text-text-1 mt-0.5">
                         {selectedPlan === 'PRO' ? `Profesional (${proEmployeesCount} colab.)` : selectedPlan === 'Enterprise' ? `Enterprise (${proEmployeesCount} colab.)` : 'Plan Gratuito'}
                       </h5>
                     </div>
                     <div className="text-right">
                       {/* Lo que la caja va a cobrar, calculado por el servidor con la misma
                           fórmula que `SubscriptionController`. */}
-                      <span className="text-lg font-black text-blue-600">
+                      <span className="text-lg font-black text-accent">
                         ${selectedPlan === 'PRO'
                           ? (cotizacionPro ? pesos(cotizacionPro.totalACobrar) : '—')
                           : selectedPlan === 'Enterprise'
                             ? (cotizacionEnterprise ? pesos(cotizacionEnterprise.totalACobrar) : '—')
                             : '0'}
                       </span>
-                      <span className="block text-[9px] text-blue-500 font-bold uppercase">
+                      <span className="block text-[9px] text-accent font-bold uppercase">
                         {billingCycle === 'yearly' ? 'MXN / año (Pago Anual)' : 'MXN / mes'}
                       </span>
                     </div>
@@ -1436,10 +1436,10 @@ export const SaaSLandingPage = () => {
                   {/* Fields */}
                   <div className="space-y-4 text-left">
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Nombre de la Empresa</label>
-                      <input 
-                        type="text" 
-                        value={formData.company_name} 
+                      <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Nombre de la Empresa</label>
+                      <input
+                        type="text"
+                        value={formData.company_name}
                         onChange={e => {
                           const val = e.target.value;
                           const autoSub = val.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9-]/g, '').slice(0, 30);
@@ -1448,57 +1448,57 @@ export const SaaSLandingPage = () => {
                             company_name: val,
                             subdomain: isSubdomainManual ? prev.subdomain : autoSub
                           }));
-                        }} 
-                        required 
-                        placeholder="Ej. DashComputer" 
-                        className="w-full bg-white px-4 py-3 border border-slate-200 rounded-xl font-medium outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
+                        }}
+                        required
+                        placeholder="Ej. DashComputer"
+                        className="w-full bg-white px-4 py-3 border border-border rounded-xl font-medium outline-none focus:ring-2 focus-visible:ring-focus-ring text-sm"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Identificador único de tu empresa</label>
-                      <div className="flex border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
-                        <input 
-                          type="text" 
-                          value={formData.subdomain} 
+                      <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Identificador único de tu empresa</label>
+                      <div className="flex border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-focus-ring bg-white">
+                        <input
+                          type="text"
+                          value={formData.subdomain}
                           onChange={e => {
                             setIsSubdomainManual(true);
                             setFormData({...formData, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')});
-                          }} 
-                          required 
-                          placeholder="dashcomputer" 
-                          className="w-full bg-white px-4 py-3 font-medium outline-none text-sm text-slate-800" 
+                          }}
+                          required
+                          placeholder="dashcomputer"
+                          className="w-full bg-white px-4 py-3 font-medium outline-none text-sm text-text-1"
                         />
                       </div>
-                      <p className="text-[9.5px] text-blue-600 bg-blue-50/70 border border-blue-100 rounded-xl p-2.5 mt-2 font-bold flex items-start gap-1.5 leading-normal">
+                      <p className="text-[9.5px] text-accent bg-navy-50/70 border border-border rounded-xl p-2.5 mt-2 font-bold flex items-start gap-1.5 leading-normal">
                         <span className="text-xs">🌐</span>
-                        <span>Este identificador separa los datos de tu empresa. El acceso real para administradores y empleados es <strong className="font-black text-blue-800">https://talent360.com.mx/login</strong>.</span>
+                        <span>Este identificador separa los datos de tu empresa. El acceso real para administradores y empleados es <strong className="font-black text-navy-800">https://talent360.com.mx/login</strong>.</span>
                       </p>
                     </div>
 
                     {/* Aceptación de Términos y Privacidad */}
-                    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex items-start gap-2 text-left">
-                      <input 
-                        type="checkbox" 
+                    <div className="bg-page border border-border/80 rounded-xl p-3 flex items-start gap-2 text-left">
+                      <input
+                        type="checkbox"
                         id="accept_terms"
                         checked={acceptedTerms}
                         onChange={e => setAcceptedTerms(e.target.checked)}
-                        className="mt-0.5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        className="mt-0.5 rounded text-accent focus-visible:ring-focus-ring cursor-pointer"
                         required
                       />
-                      <label htmlFor="accept_terms" className="text-[10.5px] text-slate-600 leading-tight font-medium cursor-pointer">
+                      <label htmlFor="accept_terms" className="text-[10.5px] text-text-2 leading-tight font-medium cursor-pointer">
                         Acepto los{' '}
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }}
-                          className="text-blue-600 font-bold hover:underline"
+                          className="text-accent font-bold hover:underline"
                         >
                           Términos del Servicio (SLA)
                         </button>{' '}
                         y el{' '}
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }}
-                          className="text-blue-600 font-bold hover:underline"
+                          className="text-accent font-bold hover:underline"
                         >
                           Aviso de Privacidad
                         </button>{' '}
@@ -1507,10 +1507,10 @@ export const SaaSLandingPage = () => {
                     </div>
                   </div>
 
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={isProcessing || !acceptedTerms}
-                    className={`w-full text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all flex justify-center items-center gap-2 text-sm ${isProcessing || !acceptedTerms ? 'bg-slate-400 cursor-not-allowed opacity-60' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    className={`w-full text-white font-black py-4 rounded-2xl shadow-lg shadow-accent/20 transition-all flex justify-center items-center gap-2 text-sm ${isProcessing || !acceptedTerms ? 'bg-slate-400 cursor-not-allowed opacity-60' : 'bg-accent hover:bg-accent-hover'}`}
                   >
                     {isProcessing ? (
                       <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Creando Instancia...</>
@@ -1529,47 +1529,47 @@ export const SaaSLandingPage = () => {
       <footer className="bg-slate-950 text-slate-400 py-12 px-6 border-t border-slate-800">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3 text-left">
-            <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xs">360</div>
+            <div className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center text-white font-black text-xs">360</div>
             <div>
               <span className="text-sm font-black text-white tracking-tight">Talent360</span>
-              <p className="text-[10px] text-slate-500 font-semibold">Plataforma SaaS de Asistencia, RRHH y Operaciones</p>
+              <p className="text-[10px] text-text-3 font-semibold">Plataforma SaaS de Asistencia, RRHH y Operaciones</p>
             </div>
           </div>
 
           <div className="flex flex-wrap justify-center items-center gap-6 text-xs font-bold text-slate-400">
-            <button 
-              onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }} 
+            <button
+              onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }}
               className="hover:text-white transition cursor-pointer"
             >
               Aviso de Privacidad
             </button>
-            <span className="text-slate-800">•</span>
-            <button 
-              onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }} 
+            <span className="text-text-1">•</span>
+            <button
+              onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }}
               className="hover:text-white transition cursor-pointer"
             >
               Términos del Servicio (SLA)
             </button>
-            <span className="text-slate-800">•</span>
-            <button 
-              onClick={() => { setLegalModalTab('arco'); setIsLegalModalOpen(true); }} 
+            <span className="text-text-1">•</span>
+            <button
+              onClick={() => { setLegalModalTab('arco'); setIsLegalModalOpen(true); }}
               className="hover:text-white transition cursor-pointer"
             >
               Derechos ARCO & Biométricos
             </button>
           </div>
 
-          <div className="text-[10px] text-slate-600 font-medium text-center md:text-right">
+          <div className="text-[10px] text-text-2 font-medium text-center md:text-right">
             © {new Date().getFullYear()} Talent360. Todos los derechos reservados.
           </div>
         </div>
       </footer>
 
       {/* MODAL LEGAL */}
-      <LegalModal 
-        isOpen={isLegalModalOpen} 
-        onClose={() => setIsLegalModalOpen(false)} 
-        defaultTab={legalModalTab} 
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+        defaultTab={legalModalTab}
       />
 
     </div>

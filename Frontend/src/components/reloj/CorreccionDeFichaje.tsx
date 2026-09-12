@@ -53,7 +53,7 @@ export const EtiquetaCorregido: React.FC<{ onVerHistoria?: () => void; compacta?
   );
 
   const clases =
-    'inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 font-bold text-amber-700 ' +
+    'inline-flex items-center gap-1 rounded-full border border-warning-text/20 bg-warning-bg font-bold text-warning-text ' +
     (compacta ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]');
 
   if (!onVerHistoria) {
@@ -68,7 +68,7 @@ export const EtiquetaCorregido: React.FC<{ onVerHistoria?: () => void; compacta?
     <button
       type="button"
       onClick={onVerHistoria}
-      className={clases + ' cursor-pointer hover:bg-amber-100 transition-colors'}
+      className={clases + ' cursor-pointer hover:bg-warning-bg transition-colors'}
       title="Ver quién lo corrigió, cuándo y por qué"
     >
       {contenido}
@@ -115,14 +115,14 @@ export const HistoriaDeFichaje: React.FC<HistoriaProps> = ({ fichajeId, onCerrar
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4" onClick={onCerrar}>
       <div
         className={`w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl p-5 shadow-2xl ${
-          isDark ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-800'
+          isDark ? 'bg-slate-900 text-slate-100' : 'bg-white text-text-1'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="font-black text-base">Historia de este registro</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-text-3 mt-0.5">
               Todo cambio queda registrado: es la evidencia con la que la empresa responde.
             </p>
           </div>
@@ -130,14 +130,14 @@ export const HistoriaDeFichaje: React.FC<HistoriaProps> = ({ fichajeId, onCerrar
             type="button"
             onClick={onCerrar}
             aria-label="Cerrar"
-            className="text-slate-400 hover:text-slate-600 text-xl leading-none border-none bg-transparent cursor-pointer"
+            className="text-slate-400 hover:text-text-2 text-xl leading-none border-none bg-transparent cursor-pointer"
           >
             ×
           </button>
         </div>
 
-        {cargando && <p className="text-xs text-slate-500 py-6 text-center">Cargando…</p>}
-        {error && <p className="text-xs text-rose-600 py-6 text-center">{error}</p>}
+        {cargando && <p className="text-xs text-text-3 py-6 text-center">Cargando…</p>}
+        {error && <p className="text-xs text-danger-text py-6 text-center">{error}</p>}
 
         {!cargando && !error && datos && (
           <ol className="space-y-3">
@@ -150,20 +150,20 @@ export const HistoriaDeFichaje: React.FC<HistoriaProps> = ({ fichajeId, onCerrar
                   key={f.id}
                   className={`rounded-xl border p-3 ${
                     f.vigente
-                      ? 'border-emerald-300 bg-emerald-50/60'
+                      ? 'border-success-text/20 bg-success-bg/60'
                       : isDark
                         ? 'border-slate-700 bg-slate-800/50'
-                        : 'border-slate-200 bg-slate-50'
+                        : 'border-border bg-page'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-black text-sm">
                       {String(f.time).slice(0, 5)}{' '}
-                      <span className="font-medium text-slate-500 text-xs">{f.type}</span>
+                      <span className="font-medium text-text-3 text-xs">{f.type}</span>
                     </span>
                     <span
                       className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                        f.vigente ? 'bg-emerald-600 text-white' : 'bg-slate-400 text-white'
+                        f.vigente ? 'bg-success-text text-white' : 'bg-slate-400 text-white'
                       }`}
                     >
                       {f.vigente ? 'VIGENTE' : 'anulado'}
@@ -179,7 +179,7 @@ export const HistoriaDeFichaje: React.FC<HistoriaProps> = ({ fichajeId, onCerrar
                   )}
 
                   {murio && (
-                    <p className="text-[11px] mt-2 leading-relaxed text-slate-500">
+                    <p className="text-[11px] mt-2 leading-relaxed text-text-3">
                       <span className="font-bold">Se anuló.</span>{' '}
                       {murio.autorizado_por_nombre ? `Autorizó ${murio.autorizado_por_nombre}. ` : ''}
                       Motivo: <span className="italic">{murio.motivo}</span>
@@ -187,7 +187,7 @@ export const HistoriaDeFichaje: React.FC<HistoriaProps> = ({ fichajeId, onCerrar
                   )}
 
                   {!nacio && !murio && (
-                    <p className="text-[11px] mt-2 text-slate-500">Registro original del reloj, sin correcciones.</p>
+                    <p className="text-[11px] mt-2 text-text-3">Registro original del reloj, sin correcciones.</p>
                   )}
                 </li>
               );
@@ -245,7 +245,7 @@ export const BotonCorregirFichaje: React.FC<BotonProps> = ({ fichaje, onCorregid
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline border-none bg-transparent cursor-pointer px-1"
+        className="text-[10px] font-bold text-accent hover:text-navy-800 underline border-none bg-transparent cursor-pointer px-1"
       >
         Corregir
       </button>
@@ -256,11 +256,11 @@ export const BotonCorregirFichaje: React.FC<BotonProps> = ({ fichaje, onCorregid
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
       <div
         className={`w-full max-w-md rounded-2xl p-5 shadow-2xl ${
-          isDark ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-800'
+          isDark ? 'bg-slate-900 text-slate-100' : 'bg-white text-text-1'
         }`}
       >
         <h3 className="font-black text-base mb-1">Corregir registro de asistencia</h3>
-        <p className="text-[11px] text-slate-500 mb-4 leading-relaxed">
+        <p className="text-[11px] text-text-3 mb-4 leading-relaxed">
           El registro original <strong>no se borra</strong>: queda archivado junto al motivo, y al
           colaborador se le avisa. Así es como esto sirve de prueba.
         </p>
@@ -285,7 +285,7 @@ export const BotonCorregirFichaje: React.FC<BotonProps> = ({ fichaje, onCorregid
         )}
 
         <label className="block text-xs font-bold mb-1">
-          Motivo <span className="font-normal text-slate-500">(obligatorio, mínimo 10 caracteres)</span>
+          Motivo <span className="font-normal text-text-3">(obligatorio, mínimo 10 caracteres)</span>
           <textarea
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}
@@ -296,11 +296,11 @@ export const BotonCorregirFichaje: React.FC<BotonProps> = ({ fichaje, onCorregid
             }`}
           />
         </label>
-        <p className="text-[10px] text-slate-500 mb-3">
+        <p className="text-[10px] text-text-3 mb-3">
           Esto lo va a leer quien audite esta nómina. “ok” o “error” no explican nada.
         </p>
 
-        {error && <p className="text-[11px] text-rose-600 mb-3">{error}</p>}
+        {error && <p className="text-[11px] text-danger-text mb-3">{error}</p>}
 
         <div className="flex justify-end gap-2">
           <button
@@ -314,7 +314,7 @@ export const BotonCorregirFichaje: React.FC<BotonProps> = ({ fichaje, onCorregid
             type="button"
             onClick={enviar}
             disabled={enviando || motivoCorto}
-            className="px-4 py-2 rounded-xl text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer"
+            className="px-4 py-2 rounded-xl text-xs font-black text-white bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer"
           >
             {enviando ? 'Guardando…' : anular ? 'Anular registro' : 'Corregir registro'}
           </button>

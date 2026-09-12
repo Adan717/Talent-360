@@ -77,7 +77,7 @@ const porQue = (f: FichajeMarcado): string => {
 const InsigniaAnuladas = ({ cuantas }: { cuantas: number }) => {
   if (!(Number(cuantas) > 0)) return null;
   return (
-    <span className="ml-1 px-1.5 py-0.5 rounded bg-rose-100 text-rose-900 font-extrabold">
+    <span className="ml-1 px-1.5 py-0.5 rounded bg-danger-bg text-danger-text font-extrabold">
       {cuantas} anulad{Number(cuantas) === 1 ? 'a' : 'as'}
     </span>
   );
@@ -130,31 +130,31 @@ export const FichajesPorRevisarPanel = () => {
   const visibles = expandido ? fichajes : fichajes.slice(0, 5);
 
   return (
-    <div className="bg-white border border-rose-200 rounded-2xl p-4 shadow-sm mb-3 flex flex-col gap-3 text-left">
+    <div className="bg-white border border-danger-text/20 rounded-2xl p-4 shadow-sm mb-3 flex flex-col gap-3 text-left">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xl">🚩</span>
           <div>
-            <p className="font-black text-xs sm:text-sm text-slate-900">Fichajes por revisar</p>
-            <p className="text-[9px] sm:text-[10px] text-slate-500 leading-tight">
+            <p className="font-black text-xs sm:text-sm text-text-1">Fichajes por revisar</p>
+            <p className="text-[9px] sm:text-[10px] text-text-3 leading-tight">
               Aceptados pero marcados: hora puesta por el cliente con deriva grande, o entrada sin foto
             </p>
           </div>
         </div>
         {fichajes.length > 0 && (
-          <span className="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-extrabold">
+          <span className="px-2.5 py-1 rounded-xl bg-danger-bg text-danger-text border border-danger-text/20 text-xs font-extrabold">
             {fichajes.length}
           </span>
         )}
       </div>
 
       {reincidentes.length > 0 && (
-        <div className="rounded-xl bg-rose-50 border border-rose-200 p-2.5">
-          <p className="text-[10px] font-bold text-rose-800 uppercase tracking-wider mb-1">
+        <div className="rounded-xl bg-danger-bg border border-danger-text/20 p-2.5">
+          <p className="text-[10px] font-bold text-danger-text uppercase tracking-wider mb-1">
             Reincidencia (últimos 90 días)
           </p>
           {reincidentes.some(r => Number(r.anulados) > 0) && (
-            <p className="text-[10px] text-rose-700 mb-1.5 leading-tight">
+            <p className="text-[10px] text-danger-text mb-1.5 leading-tight">
               Anuladas = la marca sigue contando aunque una corrección la haya retirado. Quién la
               retiró, abajo.
             </p>
@@ -163,7 +163,7 @@ export const FichajesPorRevisarPanel = () => {
             {reincidentes.map(r => (
               <span
                 key={r.user_id}
-                className="px-2 py-1 rounded-lg bg-white border border-rose-200 text-[11px] font-semibold text-rose-800"
+                className="px-2 py-1 rounded-lg bg-white border border-danger-text/20 text-[11px] font-semibold text-danger-text"
                 title={`Del ${r.desde} al ${r.hasta}` + (Number(r.anulados) > 0 ? ` · ${r.vigentes} vigentes, ${r.anulados} retiradas por una corrección` : '')}
               >
                 {r.nombre ?? `Usuario ${r.user_id}`} · {r.veces} veces en {r.dias} {Number(r.dias) === 1 ? 'día' : 'días'}
@@ -175,11 +175,11 @@ export const FichajesPorRevisarPanel = () => {
       )}
 
       {diferidosReincidentes.length > 0 && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5">
-          <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">
+        <div className="rounded-xl bg-warning-bg border border-warning-text/20 p-2.5">
+          <p className="text-[10px] font-bold text-warning-text uppercase tracking-wider mb-1">
             Fichajes diferidos (sincronizados sin red, últimos 90 días)
           </p>
-          <p className="text-[10px] text-amber-700 mb-1.5 leading-tight">
+          <p className="text-[10px] text-warning-text mb-1.5 leading-tight">
             No son un señalamiento: un corte de red real es normal. Lo que importa es quien ficha
             así muchos días distintos.
           </p>
@@ -187,7 +187,7 @@ export const FichajesPorRevisarPanel = () => {
             {diferidosReincidentes.map(d => (
               <span
                 key={d.user_id}
-                className="px-2 py-1 rounded-lg bg-white border border-amber-200 text-[11px] font-semibold text-amber-900"
+                className="px-2 py-1 rounded-lg bg-white border border-warning-text/20 text-[11px] font-semibold text-warning-text"
                 title={`Del ${d.desde} al ${d.hasta}` + (Number(d.anulados) > 0 ? ` · ${d.vigentes} vigentes, ${d.anulados} retiradas por una corrección` : '')}
               >
                 {d.nombre ?? `Usuario ${d.user_id}`} · {d.veces} en {d.dias} {Number(d.dias) === 1 ? 'día' : 'días'}
@@ -199,11 +199,11 @@ export const FichajesPorRevisarPanel = () => {
       )}
 
       {correctoresActivos.length > 0 && (
-        <div className="rounded-xl bg-slate-50 border border-slate-300 p-2.5">
-          <p className="text-[10px] font-bold text-slate-800 uppercase tracking-wider mb-1">
+        <div className="rounded-xl bg-page border border-slate-300 p-2.5">
+          <p className="text-[10px] font-bold text-text-1 uppercase tracking-wider mb-1">
             Quién corrige fichajes (últimos 90 días)
           </p>
-          <p className="text-[10px] text-slate-600 mb-1.5 leading-tight">
+          <p className="text-[10px] text-text-2 mb-1.5 leading-tight">
             Anular un duplicado es higiene; dar de alta un fichaje lo CREA. Corregir la propia
             asistencia se marca aparte.
           </p>
@@ -211,26 +211,26 @@ export const FichajesPorRevisarPanel = () => {
             {correctoresActivos.map(c => (
               <div
                 key={c.autorizado_por}
-                className="flex items-start justify-between gap-2 text-[11px] bg-white border border-slate-200 rounded-lg px-2 py-1.5"
+                className="flex items-start justify-between gap-2 text-[11px] bg-white border border-border rounded-lg px-2 py-1.5"
               >
                 <div>
-                  <span className="font-bold text-slate-900">
+                  <span className="font-bold text-text-1">
                     {c.nombre ?? `Usuario ${c.autorizado_por}`}
                   </span>
-                  <span className="text-slate-500">
+                  <span className="text-text-3">
                     {' '}· {c.total} correcci{Number(c.total) === 1 ? 'ón' : 'ones'} sobre{' '}
                     {c.empleados_distintos} {Number(c.empleados_distintos) === 1 ? 'persona' : 'personas'}
                   </span>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
+                  <div className="text-[10px] text-text-3 mt-0.5">
                     {c.anulaciones} anulaci{Number(c.anulaciones) === 1 ? 'ón' : 'ones'} ·{' '}
                     {c.sustituciones} sustituci{Number(c.sustituciones) === 1 ? 'ón' : 'ones'} ·{' '}
-                    <span className={Number(c.altas) > 0 ? 'font-bold text-slate-800' : ''}>
+                    <span className={Number(c.altas) > 0 ? 'font-bold text-text-1' : ''}>
                       {c.altas} alta{Number(c.altas) === 1 ? '' : 's'}
                     </span>
                   </div>
                 </div>
                 {Number(c.a_si_mismo) > 0 && (
-                  <span className="px-2 py-0.5 rounded-lg bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-extrabold whitespace-nowrap">
+                  <span className="px-2 py-0.5 rounded-lg bg-danger-bg text-danger-text border border-danger-text/20 text-[10px] font-extrabold whitespace-nowrap">
                     {c.a_si_mismo} a sí mismo
                   </span>
                 )}
@@ -242,10 +242,10 @@ export const FichajesPorRevisarPanel = () => {
 
       <div className="space-y-1.5">
         {visibles.map(f => (
-          <div key={f.id} className="flex items-start justify-between gap-2 text-xs p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+          <div key={f.id} className="flex items-start justify-between gap-2 text-xs p-2 rounded-xl bg-page border border-border/80">
             <div>
-              <span className="font-bold text-slate-900">{f.employee_name_at_time ?? `Usuario ${f.user_id}`}</span>
-              <span className="text-slate-500"> — {porQue(f)}</span>
+              <span className="font-bold text-text-1">{f.employee_name_at_time ?? `Usuario ${f.user_id}`}</span>
+              <span className="text-text-3"> — {porQue(f)}</span>
             </div>
             <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
               {f.date} {String(f.time).slice(0, 5)}
@@ -258,7 +258,7 @@ export const FichajesPorRevisarPanel = () => {
         <button
           type="button"
           onClick={() => setExpandido(v => !v)}
-          className="text-[11px] font-bold text-slate-500 hover:text-slate-700 underline border-none bg-transparent cursor-pointer self-start px-0"
+          className="text-[11px] font-bold text-text-3 hover:text-text-2 underline border-none bg-transparent cursor-pointer self-start px-0"
         >
           {expandido ? 'Ver menos' : `Ver los ${fichajes.length}`}
         </button>

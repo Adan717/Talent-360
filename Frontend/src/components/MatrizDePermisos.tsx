@@ -138,8 +138,8 @@ export default function MatrizDePermisos() {
 
   if (cargando) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-        <RefreshCw size={22} className="animate-spin mb-3 text-indigo-500" />
+      <div className="flex flex-col items-center justify-center py-16 text-text-3">
+        <RefreshCw size={22} className="animate-spin mb-3 text-accent" />
         <span className="text-xs font-bold">Cargando permisos por puesto...</span>
       </div>
     );
@@ -147,13 +147,13 @@ export default function MatrizDePermisos() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-slate-100 pb-4">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <ShieldCheck className="text-indigo-600" size={24} />
+          <h3 className="text-xl font-black text-text-1 tracking-tight flex items-center gap-2">
+            <ShieldCheck className="text-accent" size={24} />
             Permisos por puesto
           </h3>
-          <p className="text-xs text-slate-500 font-medium mt-0.5 max-w-2xl">
+          <p className="text-xs text-text-3 font-medium mt-0.5 max-w-2xl">
             Qué puede hacer cada puesto dentro de la empresa. El administrador dueño lo puede todo;
             aquí decides qué le delegas a cada puesto (por ejemplo, que un encargado valide tareas
             o vea reportes). Los cambios aplican a todas las personas con ese puesto.
@@ -163,7 +163,7 @@ export default function MatrizDePermisos() {
           <button
             type="button"
             onClick={cargar}
-            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl border-none cursor-pointer"
+            className="p-2.5 bg-page hover:bg-slate-200 text-text-2 rounded-xl border-none cursor-pointer"
             title="Recargar"
           >
             <RefreshCw size={16} />
@@ -172,7 +172,7 @@ export default function MatrizDePermisos() {
             type="button"
             onClick={guardar}
             disabled={!hayCambios || guardando || !!error}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black flex items-center gap-2 border-none cursor-pointer"
+            className="px-4 py-2.5 bg-accent hover:bg-accent-hover disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black flex items-center gap-2 border-none cursor-pointer"
           >
             {guardando ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
             {guardando ? 'Guardando...' : 'Guardar cambios'}
@@ -181,21 +181,21 @@ export default function MatrizDePermisos() {
       </div>
 
       {error && (
-        <div role="alert" className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-center gap-3 text-xs font-bold">
-          <AlertTriangle size={18} className="shrink-0 text-rose-600" />
+        <div role="alert" className="p-4 bg-danger-bg border border-danger-text/20 text-danger-text rounded-2xl flex items-center gap-3 text-xs font-bold">
+          <AlertTriangle size={18} className="shrink-0 text-danger-text" />
           {error}
         </div>
       )}
 
       {aviso && (
-        <div role="status" className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center gap-3 text-xs font-bold">
-          <CheckCircle2 size={18} className="shrink-0 text-emerald-600" />
+        <div role="status" className="p-4 bg-success-bg border border-success-text/20 text-success-text rounded-2xl flex items-center gap-3 text-xs font-bold">
+          <CheckCircle2 size={18} className="shrink-0 text-success-text" />
           {aviso}
         </div>
       )}
 
       {notas.length > 0 && (
-        <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs space-y-1">
+        <div className="p-4 bg-warning-bg border border-warning-text/20 text-warning-text rounded-2xl text-xs space-y-1">
           <div className="font-black flex items-center gap-2"><AlertTriangle size={14} /> El servidor ignoró algo:</div>
           <ul className="list-disc pl-5">
             {notas.map((n, i) => <li key={i}>{n}</li>)}
@@ -204,24 +204,24 @@ export default function MatrizDePermisos() {
       )}
 
       {!error && puestos.length === 0 && (
-        <div className="p-8 text-center text-slate-500 text-xs font-bold bg-slate-50 rounded-2xl border border-slate-200">
+        <div className="p-8 text-center text-text-3 text-xs font-bold bg-page rounded-2xl border border-border">
           Todavía no hay puestos en la empresa. Crea los puestos en Directorio Digital → Puestos y vuelve aquí.
         </div>
       )}
 
       {!error && puestos.length > 0 && (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200">
+        <div className="overflow-x-auto rounded-2xl border border-border">
           <table className="w-full border-collapse text-left text-xs">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="py-3 px-4 font-black text-slate-500 uppercase tracking-wider min-w-[260px]">Capacidad</th>
+              <tr className="bg-page border-b border-border">
+                <th className="py-3 px-4 font-black text-text-3 uppercase tracking-wider min-w-[260px]">Capacidad</th>
                 {puestos.map(p => (
-                  <th key={p.id} className="py-3 px-3 font-black text-slate-700 text-center align-bottom min-w-[120px]">
+                  <th key={p.id} className="py-3 px-3 font-black text-text-2 text-center align-bottom min-w-[120px]">
                     <div className="mb-1">{p.name}</div>
                     <button
                       type="button"
                       onClick={() => aplicarBaseSupervisor(p.id)}
-                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-transparent border-none cursor-pointer underline"
+                      className="text-[10px] font-bold text-accent hover:text-navy-800 bg-transparent border-none cursor-pointer underline"
                       title={'Deja a "' + p.name + '" con la base de un supervisor: ' + baseSupervisor.join(', ')}
                     >
                       base de supervisor
@@ -230,11 +230,11 @@ export default function MatrizDePermisos() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {capacidades.map(cap => (
-                <tr key={cap.name} className="hover:bg-slate-50/60">
+                <tr key={cap.name} className="hover:bg-page/60">
                   <td className="py-3 px-4 align-top">
-                    <div className="font-bold text-slate-800">{cap.description}</div>
+                    <div className="font-bold text-text-1">{cap.description}</div>
                     <div className="text-[10px] text-slate-400 font-mono">{cap.name}</div>
                   </td>
                   {puestos.map(p => (
@@ -244,14 +244,14 @@ export default function MatrizDePermisos() {
                         aria-label={cap.name + ' para ' + p.name}
                         checked={tiene(p.id, cap.name)}
                         onChange={() => alternar(p.id, cap.name)}
-                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 cursor-pointer"
+                        className="w-4 h-4 rounded border-slate-300 text-accent cursor-pointer"
                       />
                     </td>
                   ))}
                 </tr>
               ))}
               {indelegables.map(cap => (
-                <tr key={cap.name} className="bg-slate-50/80 text-slate-400">
+                <tr key={cap.name} className="bg-page/80 text-slate-400">
                   <td className="py-3 px-4 align-top">
                     <div className="font-bold flex items-center gap-1.5"><Lock size={12} /> {cap.description}</div>
                     <div className="text-[10px] font-mono">{cap.name} · sólo el administrador dueño</div>
@@ -264,7 +264,7 @@ export default function MatrizDePermisos() {
                         checked={false}
                         disabled
                         readOnly
-                        className="w-4 h-4 rounded border-slate-200 cursor-not-allowed"
+                        className="w-4 h-4 rounded border-border cursor-not-allowed"
                       />
                     </td>
                   ))}

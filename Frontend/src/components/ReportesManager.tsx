@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FileText, Download, Filter, Calendar, BarChart3, 
+import {
+  FileText, Download, Filter, Calendar, BarChart3,
   Lock, Zap, Table, FileSpreadsheet, FileOutput, CheckCircle2, AlertCircle, Bot, DollarSign
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
@@ -34,18 +34,18 @@ const TIPO_MIME: Record<Formato, string> = {
 
 // Sólo el adorno vive en el cliente; si llega un reporte nuevo, se pinta con el ícono neutro.
 const ADORNO: Record<string, { color: string; Icono: any }> = {
-  asistencia:    { color: 'bg-blue-50 text-blue-600',     Icono: Table },
-  retardos:      { color: 'bg-rose-50 text-rose-600',     Icono: AlertCircle },
-  horas:         { color: 'bg-amber-50 text-amber-600',   Icono: Calendar },
-  rutinas:       { color: 'bg-violet-50 text-violet-600', Icono: CheckCircle2 },
-  tareas:        { color: 'bg-purple-50 text-purple-600', Icono: FileSpreadsheet },
-  justificantes: { color: 'bg-cyan-50 text-cyan-600',     Icono: FileText },
-  aperturas:     { color: 'bg-emerald-50 text-emerald-600', Icono: Calendar },
-  comedor:       { color: 'bg-orange-50 text-orange-600', Icono: Table },
-  academia:      { color: 'bg-indigo-50 text-indigo-600', Icono: CheckCircle2 },
-  expedientes:   { color: 'bg-slate-100 text-slate-600',  Icono: FileText },
-  reclutamiento: { color: 'bg-pink-50 text-pink-600',     Icono: BarChart3 },
-  monedero:      { color: 'bg-yellow-50 text-yellow-700', Icono: DollarSign },
+  asistencia:    { color: 'bg-navy-50 text-accent',     Icono: Table },
+  retardos:      { color: 'bg-danger-bg text-danger-text',     Icono: AlertCircle },
+  horas:         { color: 'bg-warning-bg text-warning-text',   Icono: Calendar },
+  rutinas:       { color: 'bg-navy-50 text-accent', Icono: CheckCircle2 },
+  tareas:        { color: 'bg-navy-50 text-accent', Icono: FileSpreadsheet },
+  justificantes: { color: 'bg-navy-50 text-accent',     Icono: FileText },
+  aperturas:     { color: 'bg-success-bg text-success-text', Icono: Calendar },
+  comedor:       { color: 'bg-warning-bg text-warning-text', Icono: Table },
+  academia:      { color: 'bg-navy-50 text-accent', Icono: CheckCircle2 },
+  expedientes:   { color: 'bg-page text-text-2',  Icono: FileText },
+  reclutamiento: { color: 'bg-navy-50 text-accent',     Icono: BarChart3 },
+  monedero:      { color: 'bg-warning-bg text-warning-text', Icono: DollarSign },
 };
 
 export default function ReportesManager() {
@@ -202,8 +202,8 @@ export default function ReportesManager() {
         responseType: 'blob'
       });
       const blob = new Blob([response.data], {
-        type: format === 'xlsx' 
-          ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+        type: format === 'xlsx'
+          ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
           : 'application/pdf'
       });
       const url = window.URL.createObjectURL(blob);
@@ -232,32 +232,32 @@ export default function ReportesManager() {
   }, [activeTab, tieneAvanzados]);
 
   return (
-    <div className="h-full flex flex-col bg-white border border-slate-200 shadow-sm rounded-2xl animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden relative">
-      
+    <div className="h-full flex flex-col bg-white border border-border shadow-sm rounded-2xl animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden relative">
+
       {/* El conmutador "DEMO TIER" (Freemium/PRO) vivía aquí, en la pantalla del cliente:
           cualquiera podía fingir el plan y, peor, arrancaba en 'freemium' para todos. El
           plan sale del tenant. */}
 
       {/* Header (Escritorio) */}
-      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+        <div className="bg-white rounded-3xl p-6 border border-border shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl">
+            <div className="p-3 bg-success-bg text-success-text rounded-xl">
               <FileText size={24} />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Módulo de Reportes IA</h1>
+              <h1 className="text-xl font-bold text-text-1">Módulo de Reportes IA</h1>
               {/* Decía "cálculo inteligente de pagos": el cálculo es determinista (asistencia
                   + reglamento de la empresa), no hay ninguna IA de por medio en este módulo. */}
-              <p className="text-sm text-slate-500">Exportación de datos y prenómina calculada con tu reglamento</p>
+              <p className="text-sm text-text-3">Exportación de datos y prenómina calculada con tu reglamento</p>
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-2 border-b border-slate-200 mt-4 overflow-x-auto whitespace-nowrap scrollbar-none">
-            <button 
+          <div className="flex items-center gap-2 border-b border-border mt-4 overflow-x-auto whitespace-nowrap scrollbar-none">
+            <button
               onClick={() => setActiveTab('basicos')}
-              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'basicos' ? 'border-emerald-600 text-emerald-700 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'basicos' ? 'border-success-text text-success-text font-bold' : 'border-transparent text-text-3 hover:text-text-2 hover:border-slate-300'}`}
             >
               {/* Decía "(Gratis)", pero el módulo entero exige plan PRO (minTier en App.tsx):
                   la única pestaña rotulada como gratuita solo la ve quien ya pagó. */}
@@ -266,10 +266,10 @@ export default function ReportesManager() {
             {esAdmin && (
               <button
                 onClick={() => setActiveTab('avanzados')}
-                className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'avanzados' ? 'border-amber-500 text-amber-700 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'avanzados' ? 'border-warning-text text-warning-text font-bold' : 'border-transparent text-text-3 hover:text-text-2 hover:border-slate-300'}`}
               >
                 Nómina y Avanzados
-                {!tieneAvanzados && <Lock size={14} className="text-amber-500" />}
+                {!tieneAvanzados && <Lock size={14} className="text-warning-text" />}
               </button>
             )}
           </div>
@@ -291,8 +291,8 @@ export default function ReportesManager() {
       />
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 bg-slate-50 pb-24 sm:pb-6">
-        
+      <div className="flex-1 overflow-y-auto p-6 bg-page pb-24 sm:pb-6">
+
         {/* TABS: FREEMIUM */}
         {activeTab === 'basicos' && (
           <div className="max-w-4xl space-y-6">
@@ -300,12 +300,12 @@ export default function ReportesManager() {
             {/* Bloque 6: asistente por frase. Llena el formulario; el humano confirma y
                 descarga por la puerta de siempre. Sin llave configurada, no existe. */}
             {asistenteDisponible && (
-              <div className="bg-white p-6 rounded-xl border border-indigo-200 shadow-sm">
+              <div className="bg-white p-6 rounded-xl border border-border shadow-sm">
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg"><Bot size={24} /></div>
+                  <div className="p-3 bg-navy-50 text-accent rounded-lg"><Bot size={24} /></div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-slate-800">Pídelo con tus palabras</h3>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <h3 className="font-bold text-text-1">Pídelo con tus palabras</h3>
+                    <p className="text-sm text-text-3 mt-1">
                       Ej. “quién llega tarde seguido este mes”, “horas trabajadas de la semana
                       pasada” o “cumplimiento de rutinas de julio”. La nómina se consulta en su pestaña.
                     </p>
@@ -320,42 +320,42 @@ export default function ReportesManager() {
                     onChange={e => setFrase(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleInterpretar()}
                     placeholder="Escribe qué reporte necesitas…"
-                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                    className="flex-1 px-4 py-2.5 bg-page border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white"
                   />
                   <button
                     onClick={handleInterpretar}
                     disabled={interpretando || !frase.trim()}
-                    className="px-4 py-2.5 bg-indigo-600 text-white font-bold rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="px-4 py-2.5 bg-accent text-white font-bold rounded-lg text-sm hover:bg-accent-hover disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     <Zap size={15} /> {interpretando ? 'Interpretando…' : 'Interpretar'}
                   </button>
                 </div>
 
                 {asistenteError && (
-                  <p className="mt-3 text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">{asistenteError}</p>
+                  <p className="mt-3 text-sm text-danger-text bg-danger-bg border border-danger-text/20 rounded-lg px-3 py-2">{asistenteError}</p>
                 )}
 
                 {propuesta && (
-                  <div className="mt-4 bg-indigo-50/60 border border-indigo-100 rounded-xl p-4">
-                    <p className="text-sm font-bold text-slate-700 mb-3">
-                      Entendí: <span className="text-indigo-700">{catalogo.find(r => r.id === propuesta.reporte)?.titulo || propuesta.reporte}</span>{' '}
+                  <div className="mt-4 bg-navy-50/60 border border-border rounded-xl p-4">
+                    <p className="text-sm font-bold text-text-2 mb-3">
+                      Entendí: <span className="text-accent">{catalogo.find(r => r.id === propuesta.reporte)?.titulo || propuesta.reporte}</span>{' '}
                       {/* Si el humano editó las fechas, la etiqueta original ya no aplica y
                           mentiría (ronda adversarial): se cambia por el rango literal. */}
-                      de <span className="text-indigo-700">{propuesta.etiqueta || `del ${propuesta.desde} al ${propuesta.hasta}`}</span>. Revisa y confirma:
+                      de <span className="text-accent">{propuesta.etiqueta || `del ${propuesta.desde} al ${propuesta.hasta}`}</span>. Revisa y confirma:
                     </p>
                     <div className="flex flex-col sm:flex-row sm:items-end gap-3">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Del</label>
-                        <input type="date" value={propuesta.desde} onChange={e => setPropuesta({ ...propuesta, desde: e.target.value, etiqueta: '' })} className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                        <label className="text-[10px] font-bold text-text-3 uppercase block mb-1">Del</label>
+                        <input type="date" value={propuesta.desde} onChange={e => setPropuesta({ ...propuesta, desde: e.target.value, etiqueta: '' })} className="px-3 py-2 border border-border rounded-lg text-sm bg-white" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Al</label>
-                        <input type="date" value={propuesta.hasta} onChange={e => setPropuesta({ ...propuesta, hasta: e.target.value, etiqueta: '' })} className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                        <label className="text-[10px] font-bold text-text-3 uppercase block mb-1">Al</label>
+                        <input type="date" value={propuesta.hasta} onChange={e => setPropuesta({ ...propuesta, hasta: e.target.value, etiqueta: '' })} className="px-3 py-2 border border-border rounded-lg text-sm bg-white" />
                       </div>
                       <button
                         onClick={() => handleDescargar(propuesta.reporte, 'xlsx', { from: propuesta.desde, to: propuesta.hasta })}
                         disabled={!!descargando}
-                        className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
+                        className="px-4 py-2 bg-success-text text-white font-bold rounded-lg text-sm hover:bg-success-text disabled:opacity-50 flex items-center gap-2"
                       >
                         <Download size={15} /> {descargando === `${propuesta.reporte}:xlsx` ? 'Generando…' : 'Descargar Excel'}
                       </button>
@@ -365,7 +365,7 @@ export default function ReportesManager() {
                           onClick={() => handleDescargar(propuesta.reporte, f.id, { from: propuesta.desde, to: propuesta.hasta })}
                           disabled={!!descargando}
                           title={f.ayuda}
-                          className="px-3 py-2 bg-white border border-slate-300 text-slate-600 font-bold rounded-lg text-sm hover:bg-slate-50 disabled:opacity-50"
+                          className="px-3 py-2 bg-white border border-slate-300 text-text-2 font-bold rounded-lg text-sm hover:bg-page disabled:opacity-50"
                         >
                           {descargando === `${propuesta.reporte}:${f.id}` ? '…' : f.etiqueta}
                         </button>
@@ -384,14 +384,14 @@ export default function ReportesManager() {
             )}
 
             {catalogo.map(({ id, titulo, descripcion }) => {
-              const { color, Icono } = ADORNO[id] || { color: 'bg-slate-100 text-slate-600', Icono: FileText };
+              const { color, Icono } = ADORNO[id] || { color: 'bg-page text-text-2', Icono: FileText };
               return (
-              <div key={id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-blue-200 transition-colors">
+              <div key={id} className="bg-white p-6 rounded-xl border border-border shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-border transition-colors">
                 <div className="flex items-start gap-4">
                   <div className={`p-3 rounded-lg shrink-0 ${color}`}><Icono size={24} /></div>
                   <div>
-                    <h3 className="font-bold text-slate-800">{titulo}</h3>
-                    <p className="text-sm text-slate-500 mt-1 leading-relaxed">{descripcion}</p>
+                    <h3 className="font-bold text-text-1">{titulo}</h3>
+                    <p className="text-sm text-text-3 mt-1 leading-relaxed">{descripcion}</p>
                   </div>
                 </div>
                 {/* Tres formatos, un mismo contenido: Excel para trabajarlo, CSV para cargarlo
@@ -401,7 +401,7 @@ export default function ReportesManager() {
                     onClick={() => handleDescargar(id, 'xlsx')}
                     disabled={!!descargando}
                     title={FORMATOS[0].ayuda}
-                    className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50"
+                    className="px-4 py-2 bg-white border border-border text-text-2 font-medium rounded-lg hover:bg-page flex items-center justify-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50"
                   >
                     <Download size={16} /> {descargando === `${id}:xlsx` ? 'Generando…' : 'Descargar Excel'}
                   </button>
@@ -411,7 +411,7 @@ export default function ReportesManager() {
                       onClick={() => handleDescargar(id, f.id)}
                       disabled={!!descargando}
                       title={f.ayuda}
-                      className="px-3 py-2 bg-white border border-slate-200 text-slate-500 font-medium rounded-lg hover:bg-slate-50 hover:text-slate-700 text-sm transition-colors shadow-sm disabled:opacity-50"
+                      className="px-3 py-2 bg-white border border-border text-text-3 font-medium rounded-lg hover:bg-page hover:text-text-2 text-sm transition-colors shadow-sm disabled:opacity-50"
                     >
                       {descargando === `${id}:${f.id}` ? '…' : f.etiqueta}
                     </button>
@@ -426,38 +426,38 @@ export default function ReportesManager() {
         {/* TABS: AVANZADOS (FREEMIUM VIEW -> UPSELL) */}
         {activeTab === 'avanzados' && !tieneAvanzados && (
           <div className="h-full flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-500 pb-10">
-            <div className="max-w-lg w-full bg-white rounded-2xl border border-amber-200 shadow-xl overflow-hidden relative">
-              <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-amber-400 to-yellow-500"></div>
-              
+            <div className="max-w-lg w-full bg-white rounded-2xl border border-warning-text/20 shadow-xl overflow-hidden relative">
+              <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-warning-icon to-warning-icon"></div>
+
               <div className="p-8 text-center">
-                <div className="w-20 h-20 mx-auto bg-amber-50 rounded-full flex items-center justify-center mb-6 border border-amber-100">
-                  <BarChart3 size={40} className="text-amber-500" />
+                <div className="w-20 h-20 mx-auto bg-warning-bg rounded-full flex items-center justify-center mb-6 border border-warning-text/20">
+                  <BarChart3 size={40} className="text-warning-text" />
                 </div>
-                
-                <h3 className="text-2xl font-black text-slate-800 mb-2">Reportes analíticos y pre-nómina</h3>
+
+                <h3 className="text-2xl font-black text-text-1 mb-2">Reportes analíticos y pre-nómina</h3>
                 {/* La promesa decía "genera la prenómina con IA y timbra (CFDI) a un clic".
                     El cálculo de nómina es determinista (reglamento + asistencia), no IA, y
                     el timbrado exige dar de alta al PAC antes. Se describe lo que hace. */}
-                <p className="text-slate-500 mb-8 leading-relaxed">
+                <p className="text-text-3 mb-8 leading-relaxed">
                   Prenómina calculada con la asistencia y el reglamento de tu empresa, exportable
                   a Excel y PDF, con recibos y timbrado CFDI una vez conectado tu PAC.
                 </p>
 
                 <div className="space-y-3 mb-8 text-left max-w-sm mx-auto">
-                  <div className="flex items-center gap-3 text-sm font-medium text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                    <FileOutput size={18} className="text-emerald-500 shrink-0" /> Prenómina en Excel y PDF.
+                  <div className="flex items-center gap-3 text-sm font-medium text-text-2 bg-page p-2.5 rounded-lg border border-border">
+                    <FileOutput size={18} className="text-success-text shrink-0" /> Prenómina en Excel y PDF.
                   </div>
-                  <div className="flex items-center gap-3 text-sm font-medium text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                    <Zap size={18} className="text-emerald-500 shrink-0" /> Descuentos por retardos y faltas según tu reglamento.
+                  <div className="flex items-center gap-3 text-sm font-medium text-text-2 bg-page p-2.5 rounded-lg border border-border">
+                    <Zap size={18} className="text-success-text shrink-0" /> Descuentos por retardos y faltas según tu reglamento.
                   </div>
-                  <div className="flex items-center gap-3 text-sm font-medium text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                    <CheckCircle2 size={18} className="text-emerald-500 shrink-0" /> Timbrado CFDI (requiere conectar tu PAC).
+                  <div className="flex items-center gap-3 text-sm font-medium text-text-2 bg-page p-2.5 rounded-lg border border-border">
+                    <CheckCircle2 size={18} className="text-success-text shrink-0" /> Timbrado CFDI (requiere conectar tu PAC).
                   </div>
                 </div>
 
                 {/* El botón era "[DEMO] Simular Mejora a PRO" y solo cambiaba un estado local:
                     fingía la contratación. La adopción de módulos ya vive en el tablero. */}
-                <div className="w-full py-3.5 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 font-medium flex items-center justify-center gap-2">
+                <div className="w-full py-3.5 px-4 bg-page border border-border rounded-xl text-sm text-text-2 font-medium flex items-center justify-center gap-2">
                   <Lock size={16} className="text-slate-400 shrink-0" />
                   Actívalo en el tablero, en "Nuevos Módulos Disponibles".
                 </div>
@@ -470,16 +470,16 @@ export default function ReportesManager() {
         {activeTab === 'avanzados' && tieneAvanzados && (
           <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
             {isLoading ? (
-               <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-16 text-center flex flex-col items-center justify-center min-h-[300px]">
-                  <div className="w-12 h-12 border-4 border-slate-200 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
-                  <p className="text-slate-600 font-bold text-sm">Cargando registros operativos y calculando nómina...</p>
+               <div className="bg-white border border-border shadow-sm rounded-2xl p-16 text-center flex flex-col items-center justify-center min-h-[300px]">
+                  <div className="w-12 h-12 border-4 border-border border-t-success-text rounded-full animate-spin mb-4"></div>
+                  <p className="text-text-2 font-bold text-sm">Cargando registros operativos y calculando nómina...</p>
                </div>
             ) : error ? (
-               <div className="bg-rose-50 border border-rose-200 rounded-2xl p-8 text-center max-w-lg mx-auto shadow-sm my-10">
-                  <AlertCircle className="text-rose-600 mx-auto mb-4" size={40} />
-                  <h3 className="text-lg font-bold text-rose-900 mb-2">Error de Conexión</h3>
-                  <p className="text-sm text-rose-700/80 mb-6">{error}</p>
-                  <button onClick={fetchPayroll} className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors shadow-sm">
+               <div className="bg-danger-bg border border-danger-text/20 rounded-2xl p-8 text-center max-w-lg mx-auto shadow-sm my-10">
+                  <AlertCircle className="text-danger-text mx-auto mb-4" size={40} />
+                  <h3 className="text-lg font-bold text-danger-text mb-2">Error de Conexión</h3>
+                  <p className="text-sm text-danger-text/80 mb-6">{error}</p>
+                  <button onClick={fetchPayroll} className="bg-danger-text hover:bg-danger-text text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors shadow-sm">
                      Reintentar Petición
                   </button>
                </div>
@@ -487,24 +487,24 @@ export default function ReportesManager() {
               <div className="space-y-6 animate-in zoom-in-95 duration-500">
                 {/* Resumen Superior */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-sm font-bold text-slate-500 mb-1">Pre-nómina bruta del periodo</p>
-                    <h4 className="text-3xl font-black text-slate-800">${totalBase.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</h4>
+                  <div className="bg-white p-6 rounded-2xl border border-border shadow-sm">
+                    <p className="text-sm font-bold text-text-3 mb-1">Pre-nómina bruta del periodo</p>
+                    <h4 className="text-3xl font-black text-text-1">${totalBase.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</h4>
                     {totalBonos > 0 && (
                       <p className="text-[11px] text-slate-400 font-semibold mt-1">
                         + ${totalBonos.toLocaleString('es-MX', { maximumFractionDigits: 2 })} en bonos de cumplimiento
                       </p>
                     )}
                   </div>
-                  <div className="bg-rose-50 p-6 rounded-2xl border border-rose-100 shadow-sm">
-                    <p className="text-sm font-bold text-rose-600 mb-1 flex items-center gap-2"><AlertCircle size={14}/> Deducciones (Retardos y Faltas)</p>
-                    <h4 className="text-3xl font-black text-rose-700">-${totalPenalties.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</h4>
+                  <div className="bg-danger-bg p-6 rounded-2xl border border-danger-text/20 shadow-sm">
+                    <p className="text-sm font-bold text-danger-text mb-1 flex items-center gap-2"><AlertCircle size={14}/> Deducciones (Retardos y Faltas)</p>
+                    <h4 className="text-3xl font-black text-danger-text">-${totalPenalties.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</h4>
                   </div>
-                  <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 shadow-sm">
-                    <p className="text-sm font-bold text-emerald-600 mb-1">Total a Pagar (Neto)</p>
-                    <h4 className="text-3xl font-black text-emerald-700">${totalNet.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</h4>
+                  <div className="bg-success-bg p-6 rounded-2xl border border-success-text/20 shadow-sm">
+                    <p className="text-sm font-bold text-success-text mb-1">Total a Pagar (Neto)</p>
+                    <h4 className="text-3xl font-black text-success-text">${totalNet.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</h4>
                     {pendientesDeSalario > 0 && (
-                      <p className="text-[11px] text-amber-700 font-bold mt-1">
+                      <p className="text-[11px] text-warning-text font-bold mt-1">
                         No incluye {pendientesDeSalario} colaborador{pendientesDeSalario === 1 ? '' : 'es'} sin sueldo capturado
                       </p>
                     )}
@@ -512,16 +512,16 @@ export default function ReportesManager() {
                 </div>
 
                 {/* Tabla de Detalle */}
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                     <h3 className="font-bold text-slate-800 flex items-center gap-2"><Table size={18}/> Desglose Analítico por Empleado</h3>
-                     <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase tracking-wider">
+                <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 border-b border-border bg-page flex items-center justify-between">
+                     <h3 className="font-bold text-text-1 flex items-center gap-2"><Table size={18}/> Desglose Analítico por Empleado</h3>
+                     <span className="px-3 py-1 bg-accent-soft text-accent text-xs font-bold rounded-full uppercase tracking-wider">
                        {period ? `Periodo del ${period.start_date} al ${period.end_date}` : 'Cargando periodo...'}
                      </span>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
-                      <thead className="bg-white text-slate-400 font-medium border-b border-slate-100">
+                      <thead className="bg-white text-slate-400 font-medium border-b border-border">
                         <tr>
                           <th className="px-6 py-4">Colaborador</th>
                           <th className="px-6 py-4">Puesto</th>
@@ -529,18 +529,18 @@ export default function ReportesManager() {
                           <th className="px-6 py-4 text-center">Faltas</th>
                           <th className="px-6 py-4 text-right">Salario Base</th>
                           <th className="px-6 py-4 text-right">Penalización</th>
-                          <th className="px-6 py-4 text-right font-bold text-slate-900">Neto a Pagar</th>
+                          <th className="px-6 py-4 text-right font-bold text-text-1">Neto a Pagar</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-50">
+                      <tbody className="divide-y divide-border">
                         {/* Sin esta fila, "cero empleados" se veía IGUAL que una nómina
                             calculada que da cero: tres tarjetas en $0 y una tabla vacía. El
                             dueño podía concluir que su semana valía cero y autorizarla. */}
                         {payrollData.length === 0 && (
                           <tr>
                             <td colSpan={7} className="px-6 py-10 text-center">
-                              <p className="text-sm font-bold text-slate-700">No hay colaboradores en este periodo de nómina.</p>
-                              <p className="text-xs text-slate-500 mt-1">
+                              <p className="text-sm font-bold text-text-2">No hay colaboradores en este periodo de nómina.</p>
+                              <p className="text-xs text-text-3 mt-1">
                                 Da de alta a tu equipo en Recursos Humanos; aquí no hay nada que autorizar todavía.
                               </p>
                             </td>
@@ -548,32 +548,32 @@ export default function ReportesManager() {
                         )}
                         {payrollData.map((emp) => (
                           <React.Fragment key={emp.id}>
-                            <tr 
+                            <tr
                               onClick={() => setExpandedEmpId(expandedEmpId === emp.id ? null : emp.id)}
-                              className="hover:bg-slate-50 transition-colors cursor-pointer"
+                              className="hover:bg-page transition-colors cursor-pointer"
                             >
-                              <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-2">
+                              <td className="px-6 py-4 font-bold text-text-1 flex items-center gap-2">
                                 <span className="text-[10px] text-slate-400">{expandedEmpId === emp.id ? '▼' : '▶'}</span>
                                 {emp.name}
                               </td>
-                              <td className="px-6 py-4 text-slate-500">{emp.role}</td>
+                              <td className="px-6 py-4 text-text-3">{emp.role}</td>
                               <td className="px-6 py-4 text-center">
-                                {emp.lates > 0 ? <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold">{emp.lates}</span> : <span className="text-slate-300">-</span>}
+                                {emp.lates > 0 ? <span className="bg-warning-bg text-warning-text px-2 py-0.5 rounded font-bold">{emp.lates}</span> : <span className="text-slate-300">-</span>}
                               </td>
                               <td className="px-6 py-4 text-center">
-                                {emp.absences > 0 ? <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold">{emp.absences}</span> : <span className="text-slate-300">-</span>}
+                                {emp.absences > 0 ? <span className="bg-danger-bg text-danger-text px-2 py-0.5 rounded font-bold">{emp.absences}</span> : <span className="text-slate-300">-</span>}
                               </td>
-                              <td className="px-6 py-4 text-right text-slate-600">
+                              <td className="px-6 py-4 text-right text-text-2">
                                 {emp.salary_pending ? (
-                                  <span className="text-rose-500 font-semibold text-xs bg-rose-50 px-2 py-1 rounded">Pendiente</span>
+                                  <span className="text-danger-text font-semibold text-xs bg-danger-bg px-2 py-1 rounded">Pendiente</span>
                                 ) : (
                                   `$${emp.base?.toLocaleString('es-MX')}`
                                 )}
                               </td>
-                              <td className="px-6 py-4 text-right text-rose-600 font-medium">
+                              <td className="px-6 py-4 text-right text-danger-text font-medium">
                                 {emp.salary_pending ? '-' : (emp.penalty > 0 ? `-$${emp.penalty.toLocaleString('es-MX')}` : '-')}
                               </td>
-                              <td className="px-6 py-4 text-right font-black text-emerald-600 text-base">
+                              <td className="px-6 py-4 text-right font-black text-success-text text-base">
                                 {emp.salary_pending ? (
                                   <span className="text-slate-400 text-xs italic">Ajustar Salario</span>
                                 ) : (
@@ -583,27 +583,27 @@ export default function ReportesManager() {
                             </tr>
                             {expandedEmpId === emp.id && emp.days_details && (
                               <tr>
-                                <td colSpan={7} className="px-8 py-5 bg-slate-50/50 border-t border-b border-slate-100">
+                                <td colSpan={7} className="px-8 py-5 bg-page/50 border-t border-b border-border">
                                   <div className="space-y-4">
                                     <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-                                      <Bot size={14} className="text-emerald-500 animate-pulse" /> Detalle Diario de Asistencia LFT
+                                      <Bot size={14} className="text-success-text animate-pulse" /> Detalle Diario de Asistencia LFT
                                     </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                       {emp.days_details.map((day: any) => {
                                         const hasCheckIn = day.entries.some((e: any) => e.type === 'check_in');
                                         const hasCheckOut = day.entries.some((e: any) => e.type === 'check_out');
                                         return (
-                                          <div key={day.date} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-xs space-y-3">
-                                            <div className="flex justify-between items-center border-b border-slate-50 pb-2">
-                                              <span className="font-extrabold text-slate-700 capitalize">{day.day_name}</span>
+                                          <div key={day.date} className="bg-white p-4 rounded-2xl border border-border shadow-sm text-xs space-y-3">
+                                            <div className="flex justify-between items-center border-b border-border pb-2">
+                                              <span className="font-extrabold text-text-2 capitalize">{day.day_name}</span>
                                               <span className="text-[10px] text-slate-400 font-bold">{day.date}</span>
                                             </div>
-                                            
+
                                             {day.is_rest_day ? (
-                                              <div className="text-[10.5px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded inline-block">Día de Descanso</div>
+                                              <div className="text-[10.5px] text-success-text font-bold bg-success-bg px-2 py-0.5 rounded inline-block">Día de Descanso</div>
                                             ) : hasCheckIn ? (
                                               <div className="space-y-1.5">
-                                                <div className="flex flex-col gap-1 text-slate-500 text-[10.5px]">
+                                                <div className="flex flex-col gap-1 text-text-3 text-[10.5px]">
                                                   <span>🕒 Entrada: <strong>{day.entries.find((e: any) => e.type === 'check_in')?.time || '-'}</strong></span>
                                                   <span>🕒 Salida: <strong>{day.entries.find((e: any) => e.type === 'check_out')?.time || 'Faltante'}</strong></span>
                                                 </div>
@@ -616,23 +616,23 @@ export default function ReportesManager() {
                                                     que YA calcula la nómina, con los minutos de
                                                     comida del empleado y la tolerancia de la LFT. */}
                                                 {day.meal_makeup_minutes > 0 && (
-                                                  <div className="text-[9.5px] text-rose-500 font-bold bg-rose-50/50 p-1.5 rounded-lg border border-rose-100">
+                                                  <div className="text-[9.5px] text-danger-text font-bold bg-danger-bg/50 p-1.5 rounded-lg border border-danger-text/20">
                                                     ⚠️ Exceso de comida: {day.meal_makeup_minutes} min
                                                     {day.required_exit_time && <> · salida requerida {day.required_exit_time}</>}
                                                   </div>
                                                 )}
                                               </div>
                                             ) : day.day_over ? (
-                                              <div className="text-[10.5px] text-rose-500 font-bold bg-rose-50 px-2 py-0.5 rounded inline-block">Falta / Inasistencia</div>
+                                              <div className="text-[10.5px] text-danger-text font-bold bg-danger-bg px-2 py-0.5 rounded inline-block">Falta / Inasistencia</div>
                                             ) : (
                                               /* N3: día aún no terminado — no es falta */
-                                              <div className="text-[10.5px] text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded inline-block">Sin registro aún</div>
+                                              <div className="text-[10.5px] text-slate-400 font-bold bg-page px-2 py-0.5 rounded inline-block">Sin registro aún</div>
                                             )}
-                                            
-                                            <div className="flex justify-between items-center text-[10px] pt-2 border-t border-slate-100">
+
+                                            <div className="flex justify-between items-center text-[10px] pt-2 border-t border-border">
                                               <span className="text-slate-400">Firma Diaria:</span>
                                               <span className={`font-extrabold px-2 py-0.5 rounded-full ${
-                                                day.approval_status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                                day.approval_status === 'approved' ? 'bg-success-bg text-success-text' : 'bg-warning-bg text-warning-text'
                                               }`}>
                                                 {day.approval_status === 'approved' ? 'Firmado' : 'Pendiente'}
                                               </span>
@@ -654,24 +654,24 @@ export default function ReportesManager() {
 
                 {/* Actions */}
                 <div className="flex justify-end gap-4 mt-6">
-                  <button 
+                  <button
                     onClick={() => handleExport('xlsx')}
-                    className="px-5 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 flex items-center gap-2 transition-colors shadow-sm"
+                    className="px-5 py-3 bg-white border border-border text-text-2 font-bold rounded-xl hover:bg-page flex items-center gap-2 transition-colors shadow-sm"
                   >
-                    <FileSpreadsheet size={18} className="text-emerald-600" /> Exportar Excel
+                    <FileSpreadsheet size={18} className="text-success-text" /> Exportar Excel
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleExport('pdf')}
-                    className="px-5 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 flex items-center gap-2 transition-colors shadow-sm"
+                    className="px-5 py-3 bg-white border border-border text-text-2 font-bold rounded-xl hover:bg-page flex items-center gap-2 transition-colors shadow-sm"
                   >
-                    <FileText size={18} className="text-rose-600" /> Exportar PDF
+                    <FileText size={18} className="text-danger-text" /> Exportar PDF
                   </button>
                   {/* Sin nada calculado no hay nada que autorizar: el botón estaba activo
                       sobre una tabla vacía. */}
                   <button
                     onClick={handleApprovePayroll}
                     disabled={payrollData.length === 0}
-                    className="px-8 py-3 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                    className="px-8 py-3 bg-success-text text-white font-black rounded-xl hover:bg-success-text shadow-md shadow-success-text/20 flex items-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
                     <DollarSign size={20} /> Autorizar Pago de Nómina
                   </button>
@@ -689,18 +689,18 @@ export default function ReportesManager() {
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
            <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-500">
               <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${
-                approveResult.approved > 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+                approveResult.approved > 0 ? 'bg-success-bg text-success-text' : 'bg-warning-bg text-warning-text'
               }`}>
                 {approveResult.approved > 0 ? <CheckCircle2 size={48} /> : <AlertCircle size={48} />}
               </div>
-              <h2 className="text-2xl font-black text-slate-800 mb-2">
+              <h2 className="text-2xl font-black text-text-1 mb-2">
                 {approveResult.approved > 0 ? 'Pago Autorizado' : 'Nada que Autorizar'}
               </h2>
-              <p className="text-slate-500 mb-2 text-sm">
+              <p className="text-text-3 mb-2 text-sm">
                 {approveResult.approved} nómina(s) autorizada(s) para pago.
               </p>
               {approveResult.pending > 0 && (
-                <p className="text-amber-600 mb-2 text-xs font-bold">
+                <p className="text-warning-text mb-2 text-xs font-bold">
                   {approveResult.pending} sin autorizar: el colaborador aún no firma de conformidad.
                 </p>
               )}

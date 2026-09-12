@@ -68,12 +68,12 @@ export const LateAuthorizationsPanel = () => {
   if (requests.length === 0) return null;
 
   return (
-    <div className="bg-sky-700 text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-sky-500/20">
+    <div className="bg-accent-hover text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-accent/20">
       <div className="flex items-center gap-2">
         <span className="text-xl">⏰</span>
         <div>
           <p className="font-black text-xs sm:text-sm">Solicitudes de Autorización de Entrada</p>
-          <p className="text-[9px] sm:text-[10px] text-sky-100 opacity-90 leading-tight">
+          <p className="text-[9px] sm:text-[10px] text-navy-100 opacity-90 leading-tight">
             Colaboradores con retardo pidiendo autorización para registrar entrada
           </p>
         </div>
@@ -82,17 +82,17 @@ export const LateAuthorizationsPanel = () => {
         {requests.map(r => (
           <div
             key={r.id}
-            className="bg-sky-800/40 border border-sky-500/30 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5"
+            className="bg-navy-800/40 border border-accent/30 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5"
           >
             <div className="flex flex-col text-left">
               <span className="text-xs font-black text-white">{r.employee_name || 'Colaborador'}</span>
-              <span className="text-[10px] text-sky-100">
+              <span className="text-[10px] text-navy-100">
                 Retardo de <strong className="text-white font-bold">{r.requested_late_minutes ?? '—'} min</strong>
               </span>
             </div>
             {Number(r.user_id) === Number(currentUser?.id) ? (
               // Tu propia solicitud: se muestra (para que sepas que está en curso) pero sin acciones.
-              <span className="text-[9.5px] font-bold text-sky-100 bg-sky-900/40 border border-sky-500/30 rounded-lg px-2.5 py-1.5 shrink-0">
+              <span className="text-[9.5px] font-bold text-navy-100 bg-brand-dark/40 border border-accent/30 rounded-lg px-2.5 py-1.5 shrink-0">
                 Tu solicitud · debe autorizarla otro admin o supervisor
               </span>
             ) : (
@@ -100,14 +100,14 @@ export const LateAuthorizationsPanel = () => {
                 <button
                   onClick={() => resolve(r.id, 'approved')}
                   disabled={resolvingId === r.id}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-success-icon hover:bg-success-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                   ✓ Autorizar
                 </button>
                 <button
                   onClick={() => resolve(r.id, 'rejected')}
                   disabled={resolvingId === r.id}
-                  className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                   ✕ Rechazar
                 </button>

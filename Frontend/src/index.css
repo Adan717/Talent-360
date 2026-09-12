@@ -1,9 +1,10 @@
 @import "tailwindcss";
+@talent360-tokens;
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-primary-500: #8b5cf6;
-  --color-primary-600: #7c3aed;
+  --color-primary-500: var(--accent);
+  --color-primary-600: var(--accent-hover);
 
   /* Custom Animations */
   --animate-fade-in-up: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -113,7 +114,29 @@ html, body {
   padding: 0;
   width: 100%;
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: var(--page);
+  color: var(--text-1);
+}
+
+::selection {
+  background-color: var(--accent-soft);
+  color: var(--text-1);
+}
+
+/* Unlayered on purpose: existing outline-none utilities must not hide keyboard focus. */
+:where(button, a, input, select, textarea, summary, [tabindex], [role="button"]):focus-visible {
+  outline: 2px solid var(--focus-ring) !important;
+  outline-offset: 2px;
+}
+
+.talent-sidebar :focus-visible {
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+@media (forced-colors: active) {
+  :where(button, a, input, select, textarea, summary, [tabindex], [role="button"]):focus-visible {
+    outline-color: Highlight !important;
+  }
 }
 
 #root {
@@ -127,7 +150,7 @@ html, body {
     size: A4 landscape;
     margin: 0;
   }
-  
+
   body * {
     visibility: hidden;
   }

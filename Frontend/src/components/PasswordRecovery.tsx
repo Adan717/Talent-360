@@ -21,9 +21,9 @@ export function PasswordRecovery({ reset = false }: { reset?: boolean }) {
   return <main className="min-h-screen bg-slate-950 flex items-center justify-center p-5">
     <section className="bg-white rounded-2xl p-7 w-full max-w-md shadow-xl">
       <h1 className="text-xl font-bold mb-3">{reset ? 'Elige una nueva contraseña' : 'Recuperar acceso'}</h1>
-      <p className="text-sm text-slate-600 mb-5">{reset ? 'El enlace es de un solo uso y vence en 60 minutos.' : 'Introduce el correo de tu cuenta para recibir un enlace de recuperación.'}</p>
-      {message && <p role="status" className="p-3 mb-4 rounded-lg bg-emerald-50 text-emerald-800 text-sm">{message}</p>}
-      {error && <p role="alert" className="p-3 mb-4 rounded-lg bg-rose-50 text-rose-800 text-sm">{error}</p>}
+      <p className="text-sm text-text-2 mb-5">{reset ? 'El enlace es de un solo uso y vence en 60 minutos.' : 'Introduce el correo de tu cuenta para recibir un enlace de recuperación.'}</p>
+      {message && <p role="status" className="p-3 mb-4 rounded-lg bg-success-bg text-success-text text-sm">{message}</p>}
+      {error && <p role="alert" className="p-3 mb-4 rounded-lg bg-danger-bg text-danger-text text-sm">{error}</p>}
       {!done && <form className="space-y-4" onSubmit={async e => {
         e.preventDefault(); setError('');
         if (reset && !token) { setError('Falta el enlace de recuperación. Solicita uno nuevo.'); return; }
@@ -41,9 +41,9 @@ export function PasswordRecovery({ reset = false }: { reset?: boolean }) {
           <label className="block text-sm font-semibold">Nueva contraseña<input type="password" autoComplete="new-password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)} className="block border rounded-lg p-3 w-full mt-1" /></label>
           <label className="block text-sm font-semibold">Confirmar contraseña<input type="password" autoComplete="new-password" required minLength={8} value={confirmation} onChange={e => setConfirmation(e.target.value)} className="block border rounded-lg p-3 w-full mt-1" /></label>
         </>}
-        <button disabled={busy} className="w-full bg-blue-600 text-white rounded-lg p-3 font-bold disabled:opacity-60">{busy ? 'Procesando…' : reset ? 'Guardar contraseña' : 'Enviar enlace'}</button>
+        <button disabled={busy} className="w-full bg-accent text-white rounded-lg p-3 font-bold disabled:opacity-60">{busy ? 'Procesando…' : reset ? 'Guardar contraseña' : 'Enviar enlace'}</button>
       </form>}
-      <div className="flex justify-between gap-3 mt-5 text-sm text-blue-700"><Link to="/login">Volver al inicio de sesión</Link>{reset && <Link to="/forgot-password">Solicitar otro enlace</Link>}</div>
+      <div className="flex justify-between gap-3 mt-5 text-sm text-accent"><Link to="/login">Volver al inicio de sesión</Link>{reset && <Link to="/forgot-password">Solicitar otro enlace</Link>}</div>
     </section>
   </main>;
 }

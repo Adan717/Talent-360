@@ -18,6 +18,7 @@ import {
   Network, Edit3, Plus
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { tokens } from '../design/theme';
 
 // ============================================================
 // TYPES
@@ -40,7 +41,7 @@ function OrgCard({ emp, depth = 0, isDragging = false }: { emp: OrgEmployee; dep
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: emp.id });
 
   const initials = emp.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??';
-  const roleColor = emp.job_role?.color || '#6366f1';
+  const roleColor = tokens.color.brand[200];
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -56,7 +57,7 @@ function OrgCard({ emp, depth = 0, isDragging = false }: { emp: OrgEmployee; dep
       <div className={`
         flex items-center gap-3 p-3 rounded-xl border transition-all duration-200
         ${isDragging
-          ? 'border-violet-500 bg-violet-500/20 shadow-xl shadow-violet-500/20'
+          ? 'border-accent bg-accent/20 shadow-xl shadow-accent/20'
           : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
         }
       `}>
@@ -113,7 +114,7 @@ function DropZone({
 
       <div
         ref={setNodeRef}
-        className={`rounded-2xl transition-all duration-150 mb-2 ${dndIsOver ? 'ring-2 ring-violet-500 bg-violet-500/5' : ''}`}
+        className={`rounded-2xl transition-all duration-150 mb-2 ${dndIsOver ? 'ring-2 ring-focus-ring bg-accent/5' : ''}`}
       >
         <div className="flex items-center gap-1">
           {/* Expand toggle */}
@@ -134,7 +135,7 @@ function DropZone({
 
         {/* Drop indicator */}
         {dndIsOver && (
-          <div className="mx-3 mt-1 mb-2 h-1 rounded-full bg-violet-500/60 animate-pulse" />
+          <div className="mx-3 mt-1 mb-2 h-1 rounded-full bg-accent/60 animate-pulse" />
         )}
       </div>
 
@@ -341,8 +342,8 @@ export default function OrganigramaInteractivo() {
       {/* ── HEADER ── */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
-            <Network size={20} className="text-violet-400" />
+          <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
+            <Network size={20} className="text-navy-300" />
           </div>
           <div>
             <h1 className="font-bold text-xl leading-tight">Organigrama</h1>
@@ -371,7 +372,7 @@ export default function OrganigramaInteractivo() {
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-all flex items-center gap-1.5 disabled:opacity-50"
+                className="px-4 py-1.5 rounded-lg bg-accent hover:bg-accent text-white text-sm font-semibold transition-all flex items-center gap-1.5 disabled:opacity-50"
               >
                 {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                 Guardar ({pendingChanges.length})
@@ -384,9 +385,9 @@ export default function OrganigramaInteractivo() {
       {/* ── STATS ── */}
       <div className="flex gap-4 px-6 py-3 border-b border-white/5 flex-shrink-0">
         {[
-          { label: 'Colaboradores', value: activeCount, icon: Users, color: 'text-violet-400' },
-          { label: 'Líderes raíz', value: rootCount, icon: Crown, color: 'text-amber-400' },
-          { label: 'Puestos únicos', value: rolesCount, icon: Briefcase, color: 'text-emerald-400' },
+          { label: 'Colaboradores', value: activeCount, icon: Users, color: 'text-navy-300' },
+          { label: 'Líderes raíz', value: rootCount, icon: Crown, color: 'text-warning-text' },
+          { label: 'Puestos únicos', value: rolesCount, icon: Briefcase, color: 'text-success-text' },
         ].map(stat => (
           <div key={stat.label} className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-1.5">
             <stat.icon size={14} className={stat.color} />
@@ -398,12 +399,12 @@ export default function OrganigramaInteractivo() {
 
       {/* ── MESSAGES ── */}
       {error && (
-        <div className="mx-6 mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-sm text-red-400 flex items-center gap-2 flex-shrink-0">
+        <div className="mx-6 mt-3 p-3 rounded-xl bg-danger-icon/10 border border-danger-text/30 text-sm text-danger-text flex items-center gap-2 flex-shrink-0">
           <AlertCircle size={15} className="flex-shrink-0" /> {error}
         </div>
       )}
       {success && (
-        <div className="mx-6 mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-sm text-emerald-400 flex items-center gap-2 flex-shrink-0">
+        <div className="mx-6 mt-3 p-3 rounded-xl bg-success-icon/10 border border-success-text/30 text-sm text-success-text flex items-center gap-2 flex-shrink-0">
           <CheckCircle size={15} className="flex-shrink-0" /> {success}
         </div>
       )}
@@ -413,10 +414,10 @@ export default function OrganigramaInteractivo() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center">
-                <Network size={28} className="text-violet-400" />
+              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
+                <Network size={28} className="text-navy-300" />
               </div>
-              <div className="absolute inset-0 rounded-2xl border-2 border-violet-500/30 animate-ping" />
+              <div className="absolute inset-0 rounded-2xl border-2 border-accent/30 animate-ping" />
             </div>
             <p className="text-white/40 text-sm animate-pulse">Cargando organigrama...</p>
           </div>
@@ -462,12 +463,12 @@ export default function OrganigramaInteractivo() {
 
       {/* ── PENDING BANNER ── */}
       {pendingChanges.length > 0 && !isSaving && (
-        <div className="px-6 py-3 border-t border-amber-500/20 bg-amber-500/5 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2 text-amber-400 text-sm">
+        <div className="px-6 py-3 border-t border-warning-text/20 bg-warning-icon/5 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2 text-warning-text text-sm">
             <AlertCircle size={15} />
             <span>{pendingChanges.length} cambio(s) sin guardar en la estructura</span>
           </div>
-          <button onClick={handleSave} className="text-xs px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-colors">
+          <button onClick={handleSave} className="text-xs px-3 py-1.5 rounded-lg bg-warning-icon/20 text-warning-text hover:bg-warning-icon/30 transition-colors">
             Guardar ahora
           </button>
         </div>

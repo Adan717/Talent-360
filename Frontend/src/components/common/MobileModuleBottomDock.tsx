@@ -30,76 +30,16 @@ export interface MobileModuleBottomDockProps {
   fabTitle?: string;
 }
 
-const themeStyles: Record<ColorTheme, {
-  stroke: string;
-  activeBg: string;
-  activeBorder: string;
-  activeShadow: string;
-  activeText: string;
-  fabGradient: string;
-  fabShadow: string;
-  fabGlowBg: string;
-}> = {
-  blue: {
-    stroke: 'stroke-blue-500 dark:stroke-blue-400',
-    activeBg: 'bg-blue-500/15',
-    activeBorder: 'border-blue-500',
-    activeShadow: 'shadow-blue-500/20',
-    activeText: 'text-blue-600 dark:text-blue-400',
-    fabGradient: 'from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-500 hover:to-indigo-500',
-    fabShadow: 'shadow-[0_0_35px_rgba(37,99,235,0.7)]',
-    fabGlowBg: 'bg-blue-600/40'
-  },
-  indigo: {
-    stroke: 'stroke-indigo-500 dark:stroke-indigo-400',
-    activeBg: 'bg-indigo-500/15',
-    activeBorder: 'border-indigo-500',
-    activeShadow: 'shadow-indigo-500/20',
-    activeText: 'text-indigo-600 dark:text-indigo-400',
-    fabGradient: 'from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500',
-    fabShadow: 'shadow-[0_0_35px_rgba(99,102,241,0.7)]',
-    fabGlowBg: 'bg-indigo-600/40'
-  },
-  purple: {
-    stroke: 'stroke-purple-500 dark:stroke-purple-400',
-    activeBg: 'bg-purple-500/15',
-    activeBorder: 'border-purple-500',
-    activeShadow: 'shadow-purple-500/20',
-    activeText: 'text-purple-600 dark:text-purple-400',
-    fabGradient: 'from-purple-600 via-purple-500 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500',
-    fabShadow: 'shadow-[0_0_35px_rgba(168,85,247,0.7)]',
-    fabGlowBg: 'bg-purple-600/40'
-  },
-  sky: {
-    stroke: 'stroke-sky-500 dark:stroke-sky-400',
-    activeBg: 'bg-sky-500/15',
-    activeBorder: 'border-sky-500',
-    activeShadow: 'shadow-sky-500/20',
-    activeText: 'text-sky-600 dark:text-sky-400',
-    fabGradient: 'from-sky-500 via-blue-500 to-cyan-600 hover:from-sky-400 hover:to-cyan-500',
-    fabShadow: 'shadow-[0_0_35px_rgba(14,165,233,0.7)]',
-    fabGlowBg: 'bg-sky-500/40'
-  },
-  amber: {
-    stroke: 'stroke-amber-500 dark:stroke-amber-400',
-    activeBg: 'bg-amber-500/15',
-    activeBorder: 'border-amber-500',
-    activeShadow: 'shadow-amber-500/20',
-    activeText: 'text-amber-600 dark:text-amber-400',
-    fabGradient: 'from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500',
-    fabShadow: 'shadow-[0_0_35px_rgba(245,158,11,0.7)]',
-    fabGlowBg: 'bg-amber-500/40'
-  },
-  emerald: {
-    stroke: 'stroke-emerald-500 dark:stroke-emerald-400',
-    activeBg: 'bg-emerald-500/15',
-    activeBorder: 'border-emerald-500',
-    activeShadow: 'shadow-emerald-500/20',
-    activeText: 'text-emerald-600 dark:text-emerald-400',
-    fabGradient: 'from-emerald-600 via-teal-500 to-emerald-500 hover:from-emerald-500 hover:to-teal-400',
-    fabShadow: 'shadow-[0_0_35px_rgba(16,185,129,0.7)]',
-    fabGlowBg: 'bg-emerald-600/40'
-  }
+// Navigation and primary actions share one functional palette, including legacy theme props.
+const navyTheme = {
+  stroke: 'stroke-accent dark:stroke-navy-200',
+  activeBg: 'bg-accent-soft',
+  activeBorder: 'border-navy-300',
+  activeShadow: 'shadow-accent/10',
+  activeText: 'text-navy-800',
+  fabGradient: 'from-accent via-accent to-accent hover:from-accent-hover hover:to-accent-hover',
+  fabShadow: 'shadow-lg shadow-accent/20',
+  fabGlowBg: 'bg-transparent',
 };
 
 export function MobileModuleBottomDock({
@@ -113,7 +53,7 @@ export function MobileModuleBottomDock({
   fabTitle = 'Acciones rápidas'
 }: MobileModuleBottomDockProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const theme = themeStyles[colorTheme] || themeStyles.indigo;
+  const theme = navyTheme;
   const hasSubActions = subActions && subActions.length > 0;
 
   const handleFabPress = () => {
@@ -128,14 +68,14 @@ export function MobileModuleBottomDock({
     <>
       {/* Full-screen Glassmorphism Backdrop when subActions menu is open */}
       {isMenuOpen && createPortal(
-        <div 
-          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-md transition-all duration-300 animate-in fade-in cursor-pointer pointer-events-auto" 
+        <div
+          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-md transition-all duration-300 animate-in fade-in cursor-pointer pointer-events-auto"
           onClick={() => setIsMenuOpen(false)}
         />,
         document.body
       )}
 
-      <div 
+      <div
         className="fixed bottom-1 inset-x-0 z-40 shrink-0 flex items-center justify-center px-2 sm:hidden pointer-events-none"
         style={{ transform: 'scale(0.92)', transformOrigin: 'bottom center' }}
       >
@@ -170,11 +110,11 @@ export function MobileModuleBottomDock({
                 className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1 shrink-0"
               >
                 <div className={`w-9 h-9 xs:w-10 xs:h-10 rounded-full flex items-center justify-center transition-all ${
-                  isActive 
-                    ? `${theme.activeBg} border-2 ${theme.activeBorder} shadow-md ${theme.activeShadow} scale-105` 
-                    : 'bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
+                  isActive
+                    ? `${theme.activeBg} border-2 ${theme.activeBorder} shadow-md ${theme.activeShadow} scale-105`
+                    : 'bg-page/80 dark:bg-slate-900 border border-border/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
                 }`}>
-                  {React.isValidElement(item.icon) 
+                  {React.isValidElement(item.icon)
                     ? React.cloneElement(item.icon as React.ReactElement<any>, {
                         size: 19,
                         className: isActive ? `animate-pulse ${theme.activeText} font-bold` : 'text-slate-400 dark:text-slate-500'
@@ -194,7 +134,7 @@ export function MobileModuleBottomDock({
         {/* Floating Action Button (FAB) nested right in the concave SVG notch */}
         {(onFabClick || hasSubActions) && (
           <div className="absolute right-[2px] bottom-[2px] z-40">
-            
+
             {/* Popover Menu with Sub-Actions */}
             {isMenuOpen && subActions && (
               <div className="absolute bottom-[80px] right-1 flex flex-col items-end gap-2.5 z-50 animate-in fade-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
@@ -206,10 +146,10 @@ export function MobileModuleBottomDock({
                       setIsMenuOpen(false);
                       action.onClick();
                     }}
-                    className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-xl border border-slate-200/80 dark:border-slate-700 active:scale-95 transition-all text-xs font-bold whitespace-nowrap cursor-pointer"
+                    className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-white dark:bg-slate-800 text-text-1 dark:text-slate-100 shadow-xl border border-border/80 dark:border-slate-700 active:scale-95 transition-all text-xs font-bold whitespace-nowrap cursor-pointer"
                   >
                     <span>{action.label}</span>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${action.colorClass || 'bg-indigo-100 text-indigo-600'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${action.colorClass || 'bg-accent-soft text-accent'}`}>
                       {action.icon}
                     </div>
                   </button>

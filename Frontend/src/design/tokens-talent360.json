@@ -1,0 +1,89 @@
+{
+  "color": {
+    "brand": {
+      "50": "#F0F3F8",
+      "100": "#DCE3EE",
+      "200": "#B9C6DC",
+      "300": "#8FA3C4",
+      "400": "#5F7AA6",
+      "500": "#3E5C8A",
+      "600": "#33507E",
+      "700": "#243B63",
+      "800": "#1B2A4A",
+      "900": "#121E35"
+    },
+    "neutral": {
+      "bg": "#F6F7F9",
+      "surface": "#FFFFFF",
+      "border": "#E4E7EC",
+      "text-primary": "#101828",
+      "text-secondary": "#475467",
+      "text-tertiary": "#667085"
+    },
+    "semantic": {
+      "success": {
+        "bg": "#EAF6EE",
+        "text": "#157347",
+        "icon": "#1E7A3C"
+      },
+      "warning": {
+        "bg": "#FDF3E3",
+        "text": "#A05A00",
+        "icon": "#B45309"
+      },
+      "danger": {
+        "bg": "#FDECEC",
+        "text": "#B42318",
+        "icon": "#D92D20"
+      },
+      "info": {
+        "bg": "#EAF1FB",
+        "text": "#2E5AAC",
+        "icon": "#3B5BDB"
+      },
+      "error": {
+        "bg": "#FEF3F2",
+        "text": "#B42318",
+        "icon": "#B42318"
+      }
+    },
+    "functional": {
+      "accent": "#33507E",
+      "accent-hover": "#243B63",
+      "accent-soft": "#DCE3EE",
+      "brand-dark": "#121E35",
+      "focus-ring": "#33507E"
+    }
+  },
+  "usage": {
+    "sidebar-bg": "brand.900",
+    "sidebar-text": "brand.100",
+    "sidebar-active-bg": "brand.800",
+    "button-primary": "functional.accent",
+    "button-primary-hover": "brand.700",
+    "link": "brand.600",
+    "login-panel": "brand.900",
+    "logo-on-dark": "#FFFFFF",
+    "logo-on-light": "brand.900",
+    "card-bg": "neutral.surface",
+    "card-border": "neutral.border",
+    "kpi-icon": "brand.600",
+    "kpi-value": "neutral.text-primary",
+    "state-pattern": "tinted-bg + 700 text, never plain colored text on white",
+    "logo": "functional.brand-dark",
+    "tab-selected": "functional.accent text + functional.accent-soft counter",
+    "menu-active-bg": "functional.accent-soft",
+    "focus-indicator": "2px outline functional.focus-ring, offset 2px (keyboard only)"
+  },
+  "rules": [
+    "Una sola familia de marca (navy). Prohibido teal/petroleo y azul royal.",
+    "Los estados SIEMPRE van en badge: fondo tenue + texto 700.",
+    "Las cards van blancas con border; nunca fondo gris dentro de la card.",
+    "Texto <14px: minimo contraste 4.5:1.",
+    "Los deltas de KPIs (+3%, +12%) usan el mismo patron badge semantico.",
+    "Migrar por funcion: boton=--accent, seleccion=--accent-soft, logo=--brand-dark. Nunca 'todo por --accent'.",
+    "Estados llevan siempre icono + etiqueta junto al color (nunca color solo).",
+    "Seleccion: ademas del borde #E4E7EC->navy-300, indicador adicional (check, etiqueta o fondo navy-50).",
+    "Focus de teclado: anillo 2px #33507E offset 2px, visible solo con navegacion por teclado."
+  ]
+}

@@ -29,7 +29,7 @@ const CATEGORY_LABELS: Record<Task['category'], string> = {
 
 export function PanelTareasRutinas() {
     const { tasks, routines, addTask, addRoutine, updateTask, updateRoutine } = useTaskStore();
-    
+
     const { globalRoles } = useAppStore();
 
     // Los fallbacks de IDs fijos (1=Gerente, 5=Cajero, 6=Ayudante...) asumían la estructura de
@@ -42,7 +42,7 @@ export function PanelTareasRutinas() {
         if (found) return found.name;
         return `Rol #${id}`;
     };
-    
+
     // UI States
     const [activeTab, setActiveTab] = useState<'tareas'|'rutinas'>('tareas');
     const [showFabMenu, setShowFabMenu] = useState(false);
@@ -52,7 +52,7 @@ export function PanelTareasRutinas() {
     const [showMobileSearch, setShowMobileSearch] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
-    
+
     // Mismo criterio que getRoleName arriba: sin IDs fijos adivinados, para no asignar al
     // puesto equivocado en un tenant que no tenga esos mismos nombres/IDs.
     const getRoleIdFromRoleName = (roleName: string): number => {
@@ -75,7 +75,7 @@ export function PanelTareasRutinas() {
 
     const filteredTasks = tasks.filter(t => {
         const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
-        
+
         let matchesRole = true;
         if (selectedRoleFilter !== 'all') {
             if (selectedRoleFilter === 'pool') {
@@ -84,7 +84,7 @@ export function PanelTareasRutinas() {
                 matchesRole = t.targetType === 'role' && String(t.targetId) === String(selectedRoleFilter);
             }
         }
-        
+
         let matchesStatus = true;
         if (selectedStatusFilter !== 'all') {
             const isValidated = t.is_validated ?? false;
@@ -94,10 +94,10 @@ export function PanelTareasRutinas() {
                 matchesStatus = isValidated === false;
             }
         }
-        
+
         return matchesSearch && matchesRole && matchesStatus;
     });
-    
+
     const filteredRoutines = routines.filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const { currentTier, isFeatureUnlocked } = useAppStore();
@@ -308,7 +308,7 @@ export function PanelTareasRutinas() {
 
     const handleSaveTask = () => {
         if (!newTaskTitle) return;
-        
+
         const executorRole = newTaskExecutorRoleId;
         const targetType = executorRole === 0 ? 'pool' : 'role';
         const targetId = executorRole === 0 ? 0 : executorRole;
@@ -416,41 +416,41 @@ export function PanelTareasRutinas() {
     return (
         <div className="max-w-7xl mx-auto space-y-6 font-sans pb-24 sm:pb-6">
               {/* Tarjeta Superior: Menú de Pestañas (Escritorio) */}
-              <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
-                  <div className="bg-white rounded-3xl p-2 shadow-sm border border-slate-200">
-                      <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
-                          <button 
-                              onClick={() => setActiveTab('tareas')} 
+              <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+                  <div className="bg-white rounded-3xl p-2 shadow-sm border border-border">
+                      <div className="flex items-center gap-2 bg-page p-1.5 rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
+                          <button
+                              onClick={() => setActiveTab('tareas')}
                               className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all relative ${
-                                  activeTab === 'tareas' 
-                                      ? 'bg-white text-blue-700 shadow-sm border border-slate-100' 
-                                      : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                                  activeTab === 'tareas'
+                                      ? 'bg-white text-accent shadow-sm border border-border'
+                                      : 'bg-transparent border-transparent text-text-3 hover:text-text-2 hover:bg-page'
                               }`}
                           >
-                              <LayoutList size={18} className={activeTab === 'tareas' ? 'text-blue-600' : 'text-slate-400'} />
+                              <LayoutList size={18} className={activeTab === 'tareas' ? 'text-accent' : 'text-slate-400'} />
                               <span className="whitespace-nowrap text-center leading-tight">Tareas</span>
                               <span className={`relative px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
-                                  activeTab === 'tareas' 
-                                      ? 'bg-blue-100 text-blue-800 border border-blue-200' 
-                                      : 'bg-slate-200 text-slate-600 border border-slate-300'
+                                  activeTab === 'tareas'
+                                      ? 'bg-accent-soft text-navy-800 border border-border'
+                                      : 'bg-slate-200 text-text-2 border border-slate-300'
                               }`}>
                                   {tasks.length}
                               </span>
                           </button>
-                          <button 
-                              onClick={() => setActiveTab('rutinas')} 
+                          <button
+                              onClick={() => setActiveTab('rutinas')}
                               className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all relative ${
-                                  activeTab === 'rutinas' 
-                                      ? 'bg-white text-blue-700 shadow-sm border border-slate-100' 
-                                      : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                                  activeTab === 'rutinas'
+                                      ? 'bg-white text-accent shadow-sm border border-border'
+                                      : 'bg-transparent border-transparent text-text-3 hover:text-text-2 hover:bg-page'
                               }`}
                           >
-                              <Workflow size={18} className={activeTab === 'rutinas' ? 'text-blue-600' : 'text-slate-400'} />
+                              <Workflow size={18} className={activeTab === 'rutinas' ? 'text-accent' : 'text-slate-400'} />
                               <span className="whitespace-nowrap text-center leading-tight">Rutinas</span>
                               <span className={`relative px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
-                                  activeTab === 'rutinas' 
-                                      ? 'bg-blue-100 text-blue-800 border border-blue-200' 
-                                      : 'bg-slate-200 text-slate-600 border border-slate-300'
+                                  activeTab === 'rutinas'
+                                      ? 'bg-accent-soft text-navy-800 border border-border'
+                                      : 'bg-slate-200 text-text-2 border border-slate-300'
                               }`}>
                                   {routines.length}
                               </span>
@@ -475,14 +475,14 @@ export function PanelTareasRutinas() {
                       setShowMobileSearch(!showMobileSearch);
                       setTimeout(() => searchInputRef.current?.focus(), 300);
                     },
-                    colorClass: 'bg-slate-100 text-slate-700'
+                    colorClass: 'bg-page text-text-2'
                   },
                   {
                     id: 'create',
                     label: 'Crear',
                     icon: <Plus size={18} />,
                     onClick: handleOpenCreator,
-                    colorClass: 'bg-blue-100 text-blue-600'
+                    colorClass: 'bg-accent-soft text-accent'
                   }
                 ]}
                 items={[
@@ -492,28 +492,28 @@ export function PanelTareasRutinas() {
               />
 
               {/* Tarjeta Inferior: Contenido principal */}
-              <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-sm border border-slate-200 min-h-[500px]">
+              <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-sm border border-border min-h-[500px]">
                   {/* Encabezado Interno y Controles (Buscador & Crear) - Oculto en móvil */}
-                  <div className="hidden sm:flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 pb-4 w-full">
+                  <div className="hidden sm:flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-border pb-4 w-full">
                       <div className="flex items-center gap-2">
-                          <h2 className="text-slate-800 font-extrabold text-base sm:text-lg">
+                          <h2 className="text-text-1 font-extrabold text-base sm:text-lg">
                               {activeTab === 'tareas' ? 'Catálogo de Tareas' : 'Rutinas Automatizadas'}
                           </h2>
                       </div>
-                      
+
                       <div className="flex items-center gap-3 w-full md:w-auto shrink-0 justify-between md:justify-end">
                           <div className="relative w-full md:w-64">
                               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                              <input 
-                                  ref={searchInputRef} 
-                                  type="text" 
-                                  placeholder={activeTab === 'tareas' ? "Buscar tarea..." : "Buscar rutina..."} 
-                                  value={searchQuery} 
-                                  onChange={(e) => setSearchQuery(e.target.value)} 
-                                  className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" 
+                              <input
+                                  ref={searchInputRef}
+                                  type="text"
+                                  placeholder={activeTab === 'tareas' ? "Buscar tarea..." : "Buscar rutina..."}
+                                  value={searchQuery}
+                                  onChange={(e) => setSearchQuery(e.target.value)}
+                                  className="w-full pl-9 pr-4 py-2 bg-white border border-border rounded-xl text-sm focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent outline-none transition-all"
                               />
                           </div>
-                          <button onClick={handleOpenCreator} className="flex justify-center bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm items-center gap-2 shrink-0">
+                          <button onClick={handleOpenCreator} className="flex justify-center bg-accent text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-accent-hover transition-colors shadow-sm items-center gap-2 shrink-0">
                               <Plus size={16} /> Crear Nuevo
                           </button>
                       </div>
@@ -528,7 +528,7 @@ export function PanelTareasRutinas() {
                               value={searchQuery}
                               onChange={e => setSearchQuery(e.target.value)}
                               placeholder={activeTab === 'tareas' ? "Buscar tarea..." : "Buscar rutina..."}
-                              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white"
+                              className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl focus:ring-2 focus-visible:ring-focus-ring outline-none text-sm bg-white"
                           />
                           <div className="absolute left-3.5 top-3.5 text-slate-400">
                               <Search size={16} />
@@ -540,17 +540,17 @@ export function PanelTareasRutinas() {
                  {activeTab === 'tareas' && (
                      <div className="space-y-6">
                         {/* Barra de Filtros Rápidos (Puesto y Estado) */}
-                        <div className="flex flex-wrap items-center gap-3 bg-slate-50/60 p-3.5 rounded-2xl border border-slate-200">
+                        <div className="flex flex-wrap items-center gap-3 bg-page/60 p-3.5 rounded-2xl border border-border">
                             <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Filtrar por:</span>
+                                <span className="text-[10px] font-bold text-text-3 uppercase tracking-wider">Filtrar por:</span>
                             </div>
-                            
+
                             {/* Selector de Puesto / Rol */}
                             <div className="relative">
                                 <select
                                     value={selectedRoleFilter}
                                     onChange={(e) => setSelectedRoleFilter(e.target.value)}
-                                    className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                                    className="pl-3 pr-8 py-1.5 bg-white border border-border rounded-xl text-xs font-bold text-text-2 focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent outline-none transition-all appearance-none cursor-pointer shadow-sm"
                                 >
                                     <option value="all">💼 Todos los Puestos</option>
                                     <option value="pool">🌐 Bolsa de Trabajo (Pool)</option>
@@ -568,7 +568,7 @@ export function PanelTareasRutinas() {
                                 <select
                                     value={selectedStatusFilter}
                                     onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                                    className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                                    className="pl-3 pr-8 py-1.5 bg-white border border-border rounded-xl text-xs font-bold text-text-2 focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent outline-none transition-all appearance-none cursor-pointer shadow-sm"
                                 >
                                     <option value="all">📝 Todos los Estados</option>
                                     <option value="validated">✓ Validadas</option>
@@ -581,7 +581,7 @@ export function PanelTareasRutinas() {
                             {(selectedRoleFilter !== 'all' || selectedStatusFilter !== 'all') && (
                                 <button
                                     onClick={() => { setSelectedRoleFilter('all'); setSelectedStatusFilter('all'); }}
-                                    className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 sm:ml-auto"
+                                    className="text-xs text-accent hover:text-navy-800 font-bold flex items-center gap-1 sm:ml-auto"
                                 >
                                     <X size={12} /> Limpiar
                                 </button>
@@ -590,65 +590,65 @@ export function PanelTareasRutinas() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pb-6">
                         {filteredTasks.length === 0 && (
-                            <div className="col-span-full text-center py-10 text-slate-500 text-sm font-medium">No se encontraron tareas con esa búsqueda.</div>
+                            <div className="col-span-full text-center py-10 text-text-3 text-sm font-medium">No se encontraron tareas con esa búsqueda.</div>
                         )}
                         {filteredTasks.map(t => (
-                            <div key={t.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-lg transition-all group relative">
+                            <div key={t.id} className="bg-white p-6 rounded-3xl border border-border shadow-sm hover:shadow-lg transition-all group relative">
                                 {t.priority === 'bloqueante' && (
-                                    <div className="absolute top-0 left-0 w-full h-1.5 bg-rose-500 rounded-t-3xl"></div>
+                                    <div className="absolute top-0 left-0 w-full h-1.5 bg-danger-icon rounded-t-3xl"></div>
                                 )}
                                 <div className="flex justify-between items-start mb-4">
-                                    <h3 className="font-bold text-slate-800 text-lg leading-tight">{t.title}</h3>
-                                    <button onClick={() => handleEditTaskClick(t)} className="text-slate-400 hover:text-blue-600 transition-colors" title="Editar Tarea"><Settings size={18}/></button>
+                                    <h3 className="font-bold text-text-1 text-lg leading-tight">{t.title}</h3>
+                                    <button onClick={() => handleEditTaskClick(t)} className="text-slate-400 hover:text-accent transition-colors" title="Editar Tarea"><Settings size={18}/></button>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mb-4">
-                                    <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md flex items-center gap-1">
+                                    <span className="px-2.5 py-1 bg-page text-text-2 text-[10px] font-bold rounded-md flex items-center gap-1">
                                         <Clock size={12}/> {t.estimatedMins} min
                                     </span>
                                     {t.priority === 'bloqueante' && (
-                                        <span className="px-2.5 py-1 bg-rose-50 text-rose-600 text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-danger-bg text-danger-text text-[10px] font-bold rounded-md flex items-center gap-1">
                                             <Lock size={12}/> Bloqueante
                                         </span>
                                     )}
                                     {t.isAutoCapture && (
-                                        <span className="px-2.5 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-bold rounded-md flex items-center gap-1">
                                             <Brain size={12}/> Autocaptura
                                         </span>
                                     )}
                                     {t.canBeDoneSitting && (
-                                        <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-bold rounded-md flex items-center gap-1">
                                             <Armchair size={12}/> Ley Silla (Sentado)
                                         </span>
                                     )}
                                     {t.assistantType !== 'ninguno' && (
-                                        <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-[10px] font-bold rounded-md flex items-center gap-1">
                                             <Bot size={12}/> Asistente
                                         </span>
                                     )}
                                     {t.validationMode === 'auto' ? (
-                                        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-bold rounded-md flex items-center gap-1">
                                             ⚡ Auto-Aprobación
                                         </span>
                                     ) : t.validationMode === 'dynamic' ? (
-                                        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-bold rounded-md flex items-center gap-1">
                                             📊 Supervisión Dinámica
                                         </span>
                                     ) : (
-                                        <span className="px-2.5 py-1 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-page text-text-2 text-[10px] font-bold rounded-md flex items-center gap-1">
                                             🔒 Supervisión Forzada
                                         </span>
                                     )}
                                     {t.is_validated ? (
-                                        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md flex items-center gap-1 border border-emerald-100/50">
+                                        <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-bold rounded-md flex items-center gap-1 border border-success-text/50">
                                             ✓ Validada
                                         </span>
                                     ) : (
-                                        <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md flex items-center gap-1 border border-amber-100/50">
+                                        <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-[10px] font-bold rounded-md flex items-center gap-1 border border-warning-text/50">
                                             ⚠️ Pendiente
                                         </span>
                                     )}
                                 </div>
-                                <div className="text-xs text-slate-400 border-t border-slate-100 pt-4 flex justify-between">
+                                <div className="text-xs text-slate-400 border-t border-border pt-4 flex justify-between">
                                     <span>{t.subTasks?.length || 0} pasos internos</span>
                                     {t.historicalMins.length > 0 && <span>{t.historicalMins.length} datos reales</span>}
                                 </div>
@@ -661,11 +661,11 @@ export function PanelTareasRutinas() {
                 {/* Contenido Rutinas */}
                 {activeTab === 'rutinas' && !isFeatureUnlocked('routines_management') && (
                     <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-500 max-w-2xl mx-auto text-center pb-20">
-                        <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-6 border border-amber-100">
-                            <Workflow size={40} className="text-amber-500" />
+                        <div className="w-20 h-20 bg-warning-bg rounded-full flex items-center justify-center mb-6 border border-warning-text/20">
+                            <Workflow size={40} className="text-warning-text" />
                         </div>
-                        <h3 className="text-2xl font-black text-slate-800 mb-4">Automatización de Rutinas</h3>
-                        <p className="text-slate-500 mb-8 leading-relaxed">
+                        <h3 className="text-2xl font-black text-text-1 mb-4">Automatización de Rutinas</h3>
+                        <p className="text-text-3 mb-8 leading-relaxed">
                             Deja de asignar tareas manualmente. Con Talent 360 PRO puedes empaquetar tareas en "Rutinas Inteligentes" que se disparan automáticamente cuando el empleado ficha su entrada, o en horarios programados.
                         </p>
                         <button className="py-3 px-8 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 group">
@@ -678,32 +678,32 @@ export function PanelTareasRutinas() {
                 {activeTab === 'rutinas' && isFeatureUnlocked('routines_management') && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
                         {filteredRoutines.length === 0 && (
-                            <div className="col-span-full text-center py-10 text-slate-500 text-sm font-medium">No se encontraron rutinas con esa búsqueda.</div>
+                            <div className="col-span-full text-center py-10 text-text-3 text-sm font-medium">No se encontraron rutinas con esa búsqueda.</div>
                         )}
                         {filteredRoutines.map(r => (
-                            <div key={r.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-lg transition-all relative">
+                            <div key={r.id} className="bg-white p-6 rounded-3xl border border-border shadow-sm hover:shadow-lg transition-all relative">
                                 <div className="flex justify-between items-start gap-2 mb-1">
-                                    <h3 className="font-black text-slate-900 text-xl leading-tight">{r.title}</h3>
-                                    <button onClick={() => handleEditRoutineClick(r)} className="text-slate-400 hover:text-blue-600 transition-colors" title="Editar Rutina"><Settings size={18}/></button>
+                                    <h3 className="font-black text-text-1 text-xl leading-tight">{r.title}</h3>
+                                    <button onClick={() => handleEditRoutineClick(r)} className="text-slate-400 hover:text-accent transition-colors" title="Editar Rutina"><Settings size={18}/></button>
                                 </div>
-                                <p className="text-sm font-bold text-slate-500 mb-4">Para: <span className="text-blue-600">{getRoleName(r.targetRoleId)}</span></p>
-                                
+                                <p className="text-sm font-bold text-text-3 mb-4">Para: <span className="text-accent">{getRoleName(r.targetRoleId)}</span></p>
+
                                 <div className="space-y-2 mb-6">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 p-2.5 rounded-lg">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-text-2 bg-page p-2.5 rounded-lg">
                                         <Settings size={14} className="text-slate-400"/>
-                                        <span className="text-slate-700">Modo:</span>
-                                        <span className="text-emerald-600">{r.assignMode.toUpperCase()}</span>
+                                        <span className="text-text-2">Modo:</span>
+                                        <span className="text-success-text">{r.assignMode.toUpperCase()}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 p-2.5 rounded-lg">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-text-2 bg-page p-2.5 rounded-lg">
                                         <Rocket size={14} className="text-slate-400"/>
-                                        <span className="text-slate-700">Disparador:</span>
-                                        <span className="text-emerald-600">{r.trigger === 'on_checkin' ? 'Al fichar entrada' : 'Horario fijo'}</span>
+                                        <span className="text-text-2">Disparador:</span>
+                                        <span className="text-success-text">{r.trigger === 'on_checkin' ? 'Al fichar entrada' : 'Horario fijo'}</span>
                                     </div>
                                 </div>
 
-                                <div className="border-t border-slate-100 pt-4">
+                                <div className="border-t border-border pt-4">
                                     <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">{r.taskIds.length} Tareas Incluidas</p>
-                                    <ul className="text-sm text-slate-600 space-y-1">
+                                    <ul className="text-sm text-text-2 space-y-1">
                                         {r.taskIds.map(tid => {
                                             const tsk = tasks.find(t => t.id === tid);
                                             return <li key={tid} className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>{tsk?.title || 'Tarea desconocida'}</li>
@@ -719,53 +719,53 @@ export function PanelTareasRutinas() {
             {/* Modal Creador */}
             {showCreator && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-6 md:p-8 animate-fade-in overflow-y-auto">
-                    <div className="bg-white rounded-3xl shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col border border-slate-100">
-                        <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col gap-3 sm:gap-4 sticky top-0 bg-white/90 backdrop-blur-md z-10">
+                    <div className="bg-white rounded-3xl shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col border border-border">
+                        <div className="p-4 sm:p-6 border-b border-border flex flex-col gap-3 sm:gap-4 sticky top-0 bg-white/90 backdrop-blur-md z-10">
                             <div className="flex justify-between items-center">
-                                <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                                    {editingTask 
-                                        ? 'Editar Tarea (Catálogo)' 
-                                        : editingRoutine 
-                                            ? 'Editar Rutina' 
-                                            : !isFeatureUnlocked('routines_management') 
-                                                ? 'Crear Nueva Tarea (Bolsa de Trabajo)' 
+                                <h2 className="text-lg sm:text-xl font-bold text-text-1">
+                                    {editingTask
+                                        ? 'Editar Tarea (Catálogo)'
+                                        : editingRoutine
+                                            ? 'Editar Rutina'
+                                            : !isFeatureUnlocked('routines_management')
+                                                ? 'Crear Nueva Tarea (Bolsa de Trabajo)'
                                                 : 'Constructor de Operaciones'
                                     }
                                 </h2>
-                                <button onClick={() => setShowCreator(false)} className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 font-bold hover:text-slate-600 flex items-center justify-center"><X size={18}/></button>
+                                <button onClick={() => setShowCreator(false)} className="w-8 h-8 rounded-full bg-page text-slate-400 font-bold hover:text-text-2 flex items-center justify-center"><X size={18}/></button>
                             </div>
                             {isFeatureUnlocked('routines_management') && (
-                                <div className="flex bg-slate-100 p-1 rounded-xl flex-col sm:flex-row gap-1">
-                                    <button onClick={() => setCreatorMode('tarea')} className={`flex-1 py-2 font-bold text-xs sm:text-sm rounded-lg transition-colors flex items-center justify-center gap-2 ${creatorMode === 'tarea' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}><Plus size={16}/> Crear Tarea (Catálogo)</button>
-                                    <button 
-                                        onClick={() => setCreatorMode('rutina')} 
-                                        className={`flex-1 py-2 font-bold text-xs sm:text-sm rounded-lg transition-colors flex items-center justify-center gap-2 ${creatorMode === 'rutina' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                <div className="flex bg-page p-1 rounded-xl flex-col sm:flex-row gap-1">
+                                    <button onClick={() => setCreatorMode('tarea')} className={`flex-1 py-2 font-bold text-xs sm:text-sm rounded-lg transition-colors flex items-center justify-center gap-2 ${creatorMode === 'tarea' ? 'bg-white shadow text-accent' : 'text-text-3 hover:text-text-2'}`}><Plus size={16}/> Crear Tarea (Catálogo)</button>
+                                    <button
+                                        onClick={() => setCreatorMode('rutina')}
+                                        className={`flex-1 py-2 font-bold text-xs sm:text-sm rounded-lg transition-colors flex items-center justify-center gap-2 ${creatorMode === 'rutina' ? 'bg-white shadow text-accent' : 'text-text-3 hover:text-text-2'}`}
                                     >
                                         <Settings size={16}/> Ensamblar Rutina
                                     </button>
                                 </div>
                             )}
                         </div>
-                        
+
                         <div className="p-4 sm:p-6 md:p-8 flex-1 overflow-y-auto custom-scrollbar">
                             {creatorMode === 'tarea' ? (
                                 <div className="space-y-5 max-w-2xl mx-auto">
                                     {/* Asistente de voz/IA: dicta o escribe la tarea y se pre-llenan los campos de abajo */}
-                                    <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/50 flex items-center gap-2">
-                                        <Sparkles size={16} className="text-blue-600 shrink-0" />
+                                    <div className="p-3.5 rounded-xl border border-border bg-navy-50/50 flex items-center gap-2">
+                                        <Sparkles size={16} className="text-accent shrink-0" />
                                         <input
                                             value={aiQuickInput}
                                             onChange={e => setAiQuickInput(e.target.value)}
                                             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAiQuickGenerate(); } }}
                                             type="text"
-                                            className="flex-1 min-w-0 bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            className="flex-1 min-w-0 bg-white border border-border rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:ring-1 focus-visible:ring-focus-ring"
                                             placeholder="Describe o dicta la tarea: ej. Rellenar góndola de refrescos, 20 min, con foto de evidencia"
                                         />
                                         <button
                                             type="button"
                                             onClick={handleAiQuickMic}
                                             aria-label="Dictar por voz"
-                                            className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${aiQuickListening ? 'bg-rose-100 text-rose-600 animate-pulse' : 'bg-white border border-blue-200 text-blue-600 hover:bg-blue-100'}`}
+                                            className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${aiQuickListening ? 'bg-danger-bg text-danger-text animate-pulse' : 'bg-white border border-border text-accent hover:bg-accent-soft'}`}
                                         >
                                             <Mic size={16} />
                                         </button>
@@ -773,7 +773,7 @@ export function PanelTareasRutinas() {
                                             type="button"
                                             onClick={handleAiQuickGenerate}
                                             disabled={aiQuickLoading || !aiQuickInput.trim()}
-                                            className="shrink-0 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 px-3 py-2 rounded-lg transition-colors"
+                                            className="shrink-0 text-xs font-bold text-white bg-accent hover:bg-accent-hover disabled:opacity-40 px-3 py-2 rounded-lg transition-colors"
                                         >
                                             {aiQuickLoading ? '...' : 'Generar'}
                                         </button>
@@ -788,10 +788,10 @@ export function PanelTareasRutinas() {
                                                     onClick={() => setCreatorStep(s.step)}
                                                     className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
                                                         creatorStep === s.step
-                                                            ? 'bg-blue-600 text-white'
+                                                            ? 'bg-accent text-white'
                                                             : creatorStep > s.step
-                                                                ? 'bg-emerald-50 text-emerald-700'
-                                                                : 'bg-slate-100 text-slate-400'
+                                                                ? 'bg-success-bg text-success-text'
+                                                                : 'bg-page text-slate-400'
                                                     }`}
                                                 >
                                                     {creatorStep > s.step ? <Check size={12} /> : <span>{s.step}</span>}
@@ -803,16 +803,16 @@ export function PanelTareasRutinas() {
                                     </div>
 
                                     {/* Vista previa en vivo: así la verá el colaborador en su lista de tareas */}
-                                    <div className="p-3.5 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 flex items-center justify-between gap-3">
+                                    <div className="p-3.5 rounded-xl border border-dashed border-slate-300 bg-page/60 flex items-center justify-between gap-3">
                                         <div className="min-w-0">
                                             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Vista previa para el colaborador</p>
-                                            <p className="text-sm font-extrabold text-slate-800 truncate">{newTaskTitle || 'Título de la tarea…'}</p>
+                                            <p className="text-sm font-extrabold text-text-1 truncate">{newTaskTitle || 'Título de la tarea…'}</p>
                                         </div>
                                         <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-500">{newTaskMins} min</span>
-                                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-700">{CATEGORY_LABELS[effectiveCategory]}</span>
+                                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-white border border-border text-text-3">{newTaskMins} min</span>
+                                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-navy-50 border border-border text-accent">{CATEGORY_LABELS[effectiveCategory]}</span>
                                             {newTaskPriority === 'bloqueante' && (
-                                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-600">Bloqueante</span>
+                                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-danger-bg border border-danger-text/20 text-danger-text">Bloqueante</span>
                                             )}
                                         </div>
                                     </div>
@@ -821,13 +821,13 @@ export function PanelTareasRutinas() {
                                     <div className="space-y-4 sm:space-y-6">
                                         {/* Título de la Tarea */}
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">Título de la Tarea</label>
-                                            <input value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-medium" placeholder="Ej. Limpiar cristales frontales" />
+                                            <label className="block text-sm font-bold text-text-2 mb-2">Título de la Tarea</label>
+                                            <input value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm font-medium" placeholder="Ej. Limpiar cristales frontales" />
                                         </div>
 
                                         {/* Categoría: se detecta sola por el título, pero queda visible y es editable con un clic */}
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-xs font-bold text-slate-500 shrink-0">Categoría:</span>
+                                            <span className="text-xs font-bold text-text-3 shrink-0">Categoría:</span>
                                             {(Object.keys(CATEGORY_LABELS) as Task['category'][]).map(cat => (
                                                 <button
                                                     key={cat}
@@ -835,8 +835,8 @@ export function PanelTareasRutinas() {
                                                     onClick={() => setNewTaskCategoryOverride(cat)}
                                                     className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors ${
                                                         effectiveCategory === cat
-                                                            ? 'bg-blue-600 text-white border-blue-600'
-                                                            : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'
+                                                            ? 'bg-accent text-white border-accent'
+                                                            : 'bg-white text-text-3 border-border hover:border-navy-300'
                                                     }`}
                                                 >
                                                     {CATEGORY_LABELS[cat]}
@@ -849,11 +849,11 @@ export function PanelTareasRutinas() {
 
                                         {/* Objetivo de la Tarea */}
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">Objetivo / Propósito (Obsidian Callout)</label>
+                                            <label className="block text-sm font-bold text-text-2 mb-2">Objetivo / Propósito (Obsidian Callout)</label>
                                             <textarea
                                                 value={newTaskObjective}
                                                 onChange={e => setNewTaskObjective(e.target.value)}
-                                                className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm min-h-[70px] leading-relaxed"
+                                                className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm min-h-[70px] leading-relaxed"
                                                 placeholder="¿Cuál es el fin último de esta tarea?"
                                             />
                                         </div>
@@ -861,11 +861,11 @@ export function PanelTareasRutinas() {
                                         {/* Puesto Ejecutor y Frecuencia */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                             <div>
-                                                <label className="block text-sm font-bold text-slate-700 mb-2">Puesto Ejecutor</label>
+                                                <label className="block text-sm font-bold text-text-2 mb-2">Puesto Ejecutor</label>
                                                 <select
                                                     value={newTaskExecutorRoleId}
                                                     onChange={e => setNewTaskExecutorRoleId(Number(e.target.value))}
-                                                    className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white"
+                                                    className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm bg-white"
                                                 >
                                                     <option value={0}>🌐 Bolsa de Trabajo (Pool General)</option>
                                                     {globalRoles?.map((r: any) => (
@@ -878,8 +878,8 @@ export function PanelTareasRutinas() {
                                                 disparador, no la tarea). Escribir "cada tercer día" no cambiaba nada.
                                                 Se retira y se dice la verdad. */}
                                             <div>
-                                                <label className="block text-sm font-bold text-slate-700 mb-2">¿Cuándo se reparte?</label>
-                                                <p className="w-full p-3.5 sm:p-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-600 leading-relaxed">
+                                                <label className="block text-sm font-bold text-text-2 mb-2">¿Cuándo se reparte?</label>
+                                                <p className="w-full p-3.5 sm:p-4 rounded-xl border border-dashed border-slate-300 bg-page text-xs text-text-2 leading-relaxed">
                                                     Lo decide la <strong>rutina</strong> en la que metas esta tarea (al fichar entrada, al abrir/cerrar la sucursal o a una hora). Una tarea que no está en ninguna rutina <strong>no le llega a nadie</strong>. Si quieres una hora fija dentro del día, usa "Hora Programada" en el paso 2.
                                                 </p>
                                             </div>
@@ -895,16 +895,16 @@ export function PanelTareasRutinas() {
                                             la evidencia real: foto / número / texto). Se retira. */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                             <div>
-                                                <label className="block text-sm font-bold text-slate-700 mb-2">Tiempo Estimado (Mins)</label>
-                                                <input value={newTaskMins} onChange={e => setNewTaskMins(parseInt(e.target.value) || 15)} type="number" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-semibold text-slate-700" />
+                                                <label className="block text-sm font-bold text-text-2 mb-2">Tiempo Estimado (Mins)</label>
+                                                <input value={newTaskMins} onChange={e => setNewTaskMins(parseInt(e.target.value) || 15)} type="number" className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm font-semibold text-text-2" />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-bold text-slate-700 mb-2">Hora Programada</label>
+                                                <label className="block text-sm font-bold text-text-2 mb-2">Hora Programada</label>
                                                 <input
                                                     value={newTaskScheduledTime}
                                                     onChange={e => setNewTaskScheduledTime(e.target.value)}
                                                     type="time"
-                                                    className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+                                                    className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm"
                                                 />
                                                 <p className="text-[10px] text-slate-400 mt-1">Opcional — ordena el plan de trabajo del día por hora.</p>
                                             </div>
@@ -912,8 +912,8 @@ export function PanelTareasRutinas() {
 
                                         {/* Prioridad */}
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">Nivel de Prioridad</label>
-                                            <select value={newTaskPriority} onChange={e => setNewTaskPriority(e.target.value as any)} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white">
+                                            <label className="block text-sm font-bold text-text-2 mb-2">Nivel de Prioridad</label>
+                                            <select value={newTaskPriority} onChange={e => setNewTaskPriority(e.target.value as any)} className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm bg-white">
                                                 <option value="normal">Normal</option>
                                                 <option value="bloqueante">Bloqueante (Evita Fichaje de Salida)</option>
                                             </select>
@@ -921,20 +921,20 @@ export function PanelTareasRutinas() {
 
                                         {/* Modos (Autocaptura y Ley Silla) */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <label className="flex items-center gap-3 p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl cursor-pointer hover:bg-blue-100/50 transition-colors">
-                                                <input type="checkbox" checked={newTaskAutoCap} onChange={e => setNewTaskAutoCap(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-300" />
+                                            <label className="flex items-center gap-3 p-3.5 bg-navy-50/50 border border-border rounded-xl cursor-pointer hover:bg-accent-soft/50 transition-colors">
+                                                <input type="checkbox" checked={newTaskAutoCap} onChange={e => setNewTaskAutoCap(e.target.checked)} className="w-5 h-5 text-accent rounded border-slate-300" />
                                                 <div>
                                                     {/* Decía "(IA)": no hay IA aquí. Solo guarda cuánto tardó cada quien
                                                         de verdad para afinar el tiempo estimado con datos reales. */}
-                                                    <span className="font-bold text-blue-900 block text-xs flex items-center gap-1"><Brain size={14}/> Medir tiempo real</span>
-                                                    <span className="text-[10px] text-blue-700">Guarda cuánto tardó cada quien para afinar el estimado.</span>
+                                                    <span className="font-bold text-brand-dark block text-xs flex items-center gap-1"><Brain size={14}/> Medir tiempo real</span>
+                                                    <span className="text-[10px] text-accent">Guarda cuánto tardó cada quien para afinar el estimado.</span>
                                                 </div>
                                             </label>
-                                            <label className="flex items-center gap-3 p-3.5 bg-purple-50/50 border border-purple-200 rounded-xl cursor-pointer hover:bg-purple-100/50 transition-colors">
-                                                <input type="checkbox" checked={newTaskCanBeDoneSitting} onChange={e => setNewTaskCanBeDoneSitting(e.target.checked)} className="w-5 h-5 text-purple-600 rounded border-slate-400" />
+                                            <label className="flex items-center gap-3 p-3.5 bg-navy-50/50 border border-border rounded-xl cursor-pointer hover:bg-accent-soft/50 transition-colors">
+                                                <input type="checkbox" checked={newTaskCanBeDoneSitting} onChange={e => setNewTaskCanBeDoneSitting(e.target.checked)} className="w-5 h-5 text-accent rounded border-slate-400" />
                                                 <div>
-                                                    <span className="font-bold text-purple-900 block text-xs flex items-center gap-1"><Armchair size={14}/> Tarea Sentada (Ley Silla)</span>
-                                                    <span className="text-[10px] text-purple-700">Apta para tomar sentado.</span>
+                                                    <span className="font-bold text-brand-dark block text-xs flex items-center gap-1"><Armchair size={14}/> Tarea Sentada (Ley Silla)</span>
+                                                    <span className="text-[10px] text-accent">Apta para tomar sentado.</span>
                                                 </div>
                                             </label>
                                         </div>
@@ -945,7 +945,7 @@ export function PanelTareasRutinas() {
                                     <div className="space-y-4 sm:space-y-6">
                                         {/* Modo de Supervisión */}
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">Modo de Supervisión</label>
+                                            <label className="block text-sm font-bold text-text-2 mb-2">Modo de Supervisión</label>
                                             <div className={`grid gap-2 ${newTaskAssistant === 'evidencia_foto' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
                                                 {([
                                                     { value: 'forced' as const, label: 'Forzosa', hint: 'Siempre valida', Icon: Lock },
@@ -961,11 +961,11 @@ export function PanelTareasRutinas() {
                                                             onClick={() => setNewTaskValidationMode(opt.value)}
                                                             className={`flex flex-col items-center justify-center gap-1 p-2.5 sm:p-3 rounded-xl border text-center transition-colors ${
                                                                 active
-                                                                    ? 'bg-blue-50 border-blue-500 text-blue-700'
-                                                                    : 'bg-white border-slate-200 text-slate-500 hover:border-blue-200'
+                                                                    ? 'bg-navy-50 border-accent text-accent'
+                                                                    : 'bg-white border-border text-text-3 hover:border-border'
                                                             }`}
                                                         >
-                                                            <opt.Icon size={18} className={active ? 'text-blue-600' : 'text-slate-400'} />
+                                                            <opt.Icon size={18} className={active ? 'text-accent' : 'text-slate-400'} />
                                                             <span className="text-[11px] font-bold">{opt.label}</span>
                                                             <span className="text-[8.5px] text-slate-400 leading-tight">{opt.hint}</span>
                                                         </button>
@@ -973,30 +973,30 @@ export function PanelTareasRutinas() {
                                                 })}
                                             </div>
                                             {newTaskValidationMode === 'ai_comparison' && newTaskAssistant !== 'evidencia_foto' && (
-                                                <p className="text-[10px] text-amber-600 font-bold mt-1.5">La Comparación (IA) requiere que el Mini-Asistente sea "Evidencia Fotográfica" (más abajo).</p>
+                                                <p className="text-[10px] text-warning-text font-bold mt-1.5">La Comparación (IA) requiere que el Mini-Asistente sea "Evidencia Fotográfica" (más abajo).</p>
                                             )}
                                         </div>
 
                                         {/* Configuración de Comparación (IA): imágenes de referencia + tolerancia */}
                                         {newTaskValidationMode === 'ai_comparison' && newTaskAssistant === 'evidencia_foto' && (
-                                            <div className="p-4 sm:p-5 bg-indigo-50/50 rounded-2xl border border-indigo-200 space-y-3">
-                                                <label className="text-sm font-bold text-indigo-900 flex items-center gap-2"><Bot size={16} /> Imágenes de Referencia (3-5)</label>
-                                                <p className="text-[10px] text-indigo-600">La IA comparará la foto del empleado contra estas imágenes al completar la tarea.</p>
+                                            <div className="p-4 sm:p-5 bg-navy-50/50 rounded-2xl border border-border space-y-3">
+                                                <label className="text-sm font-bold text-brand-dark flex items-center gap-2"><Bot size={16} /> Imágenes de Referencia (3-5)</label>
+                                                <p className="text-[10px] text-accent">La IA comparará la foto del empleado contra estas imágenes al completar la tarea.</p>
                                                 <div className="flex flex-wrap gap-2">
                                                     {newTaskAiReferenceImages.map((img, idx) => (
-                                                        <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-indigo-200">
+                                                        <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-border">
                                                             <img src={img} alt={`Referencia ${idx + 1}`} className="w-full h-full object-cover" />
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setNewTaskAiReferenceImages(prev => prev.filter((_, i) => i !== idx))}
-                                                                className="absolute top-0 right-0 w-4 h-4 bg-rose-600 text-white rounded-bl-md flex items-center justify-center text-[9px] border-none cursor-pointer"
+                                                                className="absolute top-0 right-0 w-4 h-4 bg-danger-text text-white rounded-bl-md flex items-center justify-center text-[9px] border-none cursor-pointer"
                                                             >
                                                                 ✕
                                                             </button>
                                                         </div>
                                                     ))}
                                                     {newTaskAiReferenceImages.length < 5 && (
-                                                        <label className="w-16 h-16 rounded-lg border-2 border-dashed border-indigo-300 flex items-center justify-center cursor-pointer hover:bg-indigo-100/40 text-indigo-500 text-xl font-black">
+                                                        <label className="w-16 h-16 rounded-lg border-2 border-dashed border-navy-300 flex items-center justify-center cursor-pointer hover:bg-accent-soft/40 text-accent text-xl font-black">
                                                             +
                                                             <input
                                                                 type="file"
@@ -1020,22 +1020,22 @@ export function PanelTareasRutinas() {
                                                     )}
                                                 </div>
                                                 {newTaskAiReferenceImages.length > 0 && newTaskAiReferenceImages.length < 3 && (
-                                                    <p className="text-[10px] text-amber-600 font-bold">Se recomiendan al menos 3 imágenes para una comparación confiable.</p>
+                                                    <p className="text-[10px] text-warning-text font-bold">Se recomiendan al menos 3 imágenes para una comparación confiable.</p>
                                                 )}
-                                                <label className="text-sm font-bold text-indigo-900 block mt-2">Descripción de Tolerancia</label>
+                                                <label className="text-sm font-bold text-brand-dark block mt-2">Descripción de Tolerancia</label>
                                                 <textarea
                                                     value={newTaskAiTolerance}
                                                     onChange={e => setNewTaskAiTolerance(e.target.value)}
                                                     rows={2}
                                                     placeholder='Ej: "Debe haber al menos 8 de las 10 piezas visibles en el anaquel"'
-                                                    className="w-full p-3 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm bg-white"
+                                                    className="w-full p-3 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm bg-white"
                                                 />
                                             </div>
                                         )}
 
                                         {/* Mini-Asistente */}
-                                        <div className="p-4 sm:p-5 bg-slate-50 rounded-2xl border border-slate-200">
-                                            <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2"><Bot size={18} className="text-blue-600"/> Mini-Asistente Acoplado</label>
+                                        <div className="p-4 sm:p-5 bg-page rounded-2xl border border-border">
+                                            <label className="text-sm font-bold text-text-1 mb-2 flex items-center gap-2"><Bot size={18} className="text-accent"/> Mini-Asistente Acoplado</label>
                                             <select value={newTaskAssistant} onChange={e => {
                                                 const val = e.target.value as any;
                                                 setNewTaskAssistant(val);
@@ -1043,24 +1043,24 @@ export function PanelTareasRutinas() {
                                                 if (val !== 'evidencia_foto' && newTaskValidationMode === 'ai_comparison') {
                                                     setNewTaskValidationMode('forced');
                                                 }
-                                            }} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none mb-3 bg-white mt-2 text-sm">
+                                            }} className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none mb-3 bg-white mt-2 text-sm">
                                                 <option value="ninguno">Ninguno</option>
                                                 <option value="evidencia_foto">Evidencia Fotográfica</option>
                                                 <option value="captura_numero">Captura de Cantidad / Número</option>
                                                 <option value="texto">Nota de Texto Corta</option>
                                             </select>
                                             {newTaskAssistant !== 'ninguno' && (
-                                                <input value={newTaskPrompt} onChange={e => setNewTaskPrompt(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white" placeholder="¿Qué le preguntará el asistente al empleado?" />
+                                                <input value={newTaskPrompt} onChange={e => setNewTaskPrompt(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm bg-white" placeholder="¿Qué le preguntará el asistente al empleado?" />
                                             )}
                                         </div>
 
                                         {/* Vincular con lección de la Academia: muestra el video antes de que el colaborador empiece */}
-                                        <div className="p-4 sm:p-5 bg-slate-50 rounded-2xl border border-slate-200">
-                                            <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">🎓 Lección de la Academia (opcional)</label>
+                                        <div className="p-4 sm:p-5 bg-page rounded-2xl border border-border">
+                                            <label className="text-sm font-bold text-text-1 mb-2 flex items-center gap-2">🎓 Lección de la Academia (opcional)</label>
                                             <select
                                                 value={newTaskAcademyLessonId}
                                                 onChange={e => setNewTaskAcademyLessonId(e.target.value ? Number(e.target.value) : '')}
-                                                className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white mt-2 text-sm"
+                                                className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none bg-white mt-2 text-sm"
                                             >
                                                 <option value="">Sin lección vinculada</option>
                                                 {academyCourses.map(c => (
@@ -1075,9 +1075,9 @@ export function PanelTareasRutinas() {
                                     {creatorStep === 4 && (
                                     <div className="space-y-4 sm:space-y-6">
                                         {/* Pasos del Proceso (SOP) */}
-                                        <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200 space-y-4">
-                                            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                                                <label className="text-sm font-bold text-slate-800 flex items-center gap-2">📋 Pasos del Proceso (SOP)</label>
+                                        <div className="bg-page p-4 sm:p-6 rounded-2xl border border-border space-y-4">
+                                            <div className="flex justify-between items-center border-b border-border pb-2">
+                                                <label className="text-sm font-bold text-text-1 flex items-center gap-2">📋 Pasos del Proceso (SOP)</label>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -1091,20 +1091,20 @@ export function PanelTareasRutinas() {
                                                             }
                                                         ]);
                                                     }}
-                                                    className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 font-bold transition-all"
+                                                    className="text-xs bg-accent text-white px-3 py-1.5 rounded-lg hover:bg-accent-hover font-bold transition-all"
                                                 >
                                                     + Añadir paso
                                                 </button>
                                             </div>
 
                                             {newTaskProcedureSteps.length === 0 ? (
-                                                <p className="text-xs text-slate-500 italic text-center py-2">No hay pasos definidos. Añade el primer paso del SOP.</p>
+                                                <p className="text-xs text-text-3 italic text-center py-2">No hay pasos definidos. Añade el primer paso del SOP.</p>
                                             ) : (
                                                 <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                                                     {newTaskProcedureSteps.map((step, idx) => (
-                                                        <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-2 relative">
+                                                        <div key={idx} className="bg-white p-3 rounded-xl border border-border flex flex-col gap-2 relative">
                                                             <div className="flex items-center gap-2 justify-between">
-                                                                <span className="text-xs font-bold text-blue-600 bg-blue-50 w-5 h-5 rounded-full flex items-center justify-center shrink-0">{idx + 1}</span>
+                                                                <span className="text-xs font-bold text-accent bg-navy-50 w-5 h-5 rounded-full flex items-center justify-center shrink-0">{idx + 1}</span>
                                                                 <input
                                                                     value={step.title}
                                                                     onChange={e => {
@@ -1113,7 +1113,7 @@ export function PanelTareasRutinas() {
                                                                         setNewTaskProcedureSteps(updated);
                                                                     }}
                                                                     type="text"
-                                                                    className="w-full px-2.5 py-1 text-xs border border-slate-200 rounded-lg font-bold focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                                    className="w-full px-2.5 py-1 text-xs border border-border rounded-lg font-bold focus:ring-1 focus-visible:ring-focus-ring focus:outline-none"
                                                                     placeholder="Título del paso"
                                                                 />
                                                                 <button
@@ -1123,7 +1123,7 @@ export function PanelTareasRutinas() {
                                                                             .map((s, newIdx) => ({ ...s, step_number: newIdx + 1 }));
                                                                         setNewTaskProcedureSteps(updated);
                                                                     }}
-                                                                    className="text-slate-400 hover:text-rose-600 transition-colors"
+                                                                    className="text-slate-400 hover:text-danger-text transition-colors"
                                                                 >
                                                                     🗑️
                                                                 </button>
@@ -1135,7 +1135,7 @@ export function PanelTareasRutinas() {
                                                                     updated[idx].detailed_instruction = e.target.value;
                                                                     setNewTaskProcedureSteps(updated);
                                                                 }}
-                                                                className="w-full p-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:outline-none min-h-[50px]"
+                                                                className="w-full p-2 text-xs border border-border rounded-lg focus:ring-1 focus-visible:ring-focus-ring focus:outline-none min-h-[50px]"
                                                                 placeholder="Descripción detallada de la instrucción..."
                                                             />
                                                         </div>
@@ -1145,27 +1145,27 @@ export function PanelTareasRutinas() {
                                         </div>
 
                                         {/* Checklist de Validación */}
-                                        <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200 space-y-4">
-                                            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                                                <label className="text-sm font-bold text-slate-800 flex items-center gap-2">✅ Checklist de Validación</label>
+                                        <div className="bg-page p-4 sm:p-6 rounded-2xl border border-border space-y-4">
+                                            <div className="flex justify-between items-center border-b border-border pb-2">
+                                                <label className="text-sm font-bold text-text-1 flex items-center gap-2">✅ Checklist de Validación</label>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
                                                         setNewTaskValidationCriteria([...newTaskValidationCriteria, '']);
                                                     }}
-                                                    className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 font-bold transition-all"
+                                                    className="text-xs bg-success-text text-white px-3 py-1.5 rounded-lg hover:bg-success-text font-bold transition-all"
                                                 >
                                                     + Añadir criterio
                                                 </button>
                                             </div>
 
                                             {newTaskValidationCriteria.length === 0 ? (
-                                                <p className="text-xs text-slate-500 italic text-center py-2">No hay criterios de validación definidos.</p>
+                                                <p className="text-xs text-text-3 italic text-center py-2">No hay criterios de validación definidos.</p>
                                             ) : (
                                                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                                                     {newTaskValidationCriteria.map((crit, idx) => (
                                                         <div key={idx} className="flex items-center gap-2">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-success-icon shrink-0"></span>
                                                             <input
                                                                 value={crit}
                                                                 onChange={e => {
@@ -1174,7 +1174,7 @@ export function PanelTareasRutinas() {
                                                                     setNewTaskValidationCriteria(updated);
                                                                 }}
                                                                 type="text"
-                                                                className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                                                className="w-full px-2.5 py-1.5 text-xs border border-border rounded-lg focus:ring-1 focus-visible:ring-success-text focus:outline-none"
                                                                 placeholder="Ej. La selladora está apagada y limpia."
                                                             />
                                                             <button
@@ -1183,7 +1183,7 @@ export function PanelTareasRutinas() {
                                                                     const updated = newTaskValidationCriteria.filter((_, i) => i !== idx);
                                                                     setNewTaskValidationCriteria(updated);
                                                                 }}
-                                                                className="text-slate-400 hover:text-rose-600 transition-colors"
+                                                                className="text-slate-400 hover:text-danger-text transition-colors"
                                                             >
                                                                 🗑️
                                                             </button>
@@ -1201,7 +1201,7 @@ export function PanelTareasRutinas() {
                                             type="button"
                                             onClick={() => setCreatorStep((s) => (s > 1 ? ((s - 1) as any) : s))}
                                             disabled={creatorStep === 1}
-                                            className="flex items-center gap-1 text-xs font-bold text-slate-500 disabled:opacity-30 px-3 py-2"
+                                            className="flex items-center gap-1 text-xs font-bold text-text-3 disabled:opacity-30 px-3 py-2"
                                         >
                                             <ChevronLeft size={14} /> Atrás
                                         </button>
@@ -1209,7 +1209,7 @@ export function PanelTareasRutinas() {
                                             <button
                                                 type="button"
                                                 onClick={() => setCreatorStep((s) => (s < 4 ? ((s + 1) as any) : s))}
-                                                className="flex items-center gap-1 text-xs font-bold text-blue-600 px-3 py-2"
+                                                className="flex items-center gap-1 text-xs font-bold text-accent px-3 py-2"
                                             >
                                                 Siguiente <ChevronRight size={14} />
                                             </button>
@@ -1219,14 +1219,14 @@ export function PanelTareasRutinas() {
                             ) : (
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                                     <div className="space-y-4 sm:space-y-6">
-                                        <h3 className="text-lg font-bold text-slate-900 border-b pb-2 text-left">Paso 1: Configuración</h3>
+                                        <h3 className="text-lg font-bold text-text-1 border-b pb-2 text-left">Paso 1: Configuración</h3>
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">Nombre de la Rutina</label>
-                                            <input value={newRoutineTitle} onChange={e => setNewRoutineTitle(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" placeholder="Ej. Protocolo de Cierre" />
+                                            <label className="block text-sm font-bold text-text-2 mb-2">Nombre de la Rutina</label>
+                                            <input value={newRoutineTitle} onChange={e => setNewRoutineTitle(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm" placeholder="Ej. Protocolo de Cierre" />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">Rol Destino</label>
-                                            <select value={newRoutineRole} onChange={e => setNewRoutineRole(e.target.value)} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white">
+                                            <label className="block text-sm font-bold text-text-2 mb-2">Rol Destino</label>
+                                            <select value={newRoutineRole} onChange={e => setNewRoutineRole(e.target.value)} className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm bg-white">
                                                 {globalRoles && globalRoles.length > 0 ? (
                                                     <>
                                                         {globalRoles.map((r: any) => (
@@ -1246,15 +1246,15 @@ export function PanelTareasRutinas() {
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-bold text-slate-700 mb-2">Momento (Disparador)</label>
-                                                <select value={newRoutineTrigger} onChange={e => setNewRoutineTrigger(e.target.value as any)} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white">
+                                                <label className="block text-sm font-bold text-text-2 mb-2">Momento (Disparador)</label>
+                                                <select value={newRoutineTrigger} onChange={e => setNewRoutineTrigger(e.target.value as any)} className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm bg-white">
                                                     <option value="on_checkin">Al Fichar Entrada</option>
                                                     <option value="scheduled">Horario Fijo / Programado</option>
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-bold text-slate-700 mb-2">Modo Ejecución</label>
-                                                <select value={newRoutineAssignMode} onChange={e => setNewRoutineAssignMode(e.target.value as any)} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white">
+                                                <label className="block text-sm font-bold text-text-2 mb-2">Modo Ejecución</label>
+                                                <select value={newRoutineAssignMode} onChange={e => setNewRoutineAssignMode(e.target.value as any)} className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm bg-white">
                                                     <option value="checklist">Checklist Personal</option>
                                                     <option value="equitativo">Equitativo (Se reparte)</option>
                                                     <option value="bolsa_trabajo">A la Bolsa de Trabajo</option>
@@ -1263,43 +1263,43 @@ export function PanelTareasRutinas() {
                                         </div>
                                     </div>
                                     <div className="space-y-4">
-                                        <h3 className="text-lg font-bold text-slate-900 border-b pb-2 text-left">Paso 2: Seleccionar Tareas</h3>
-                                        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 sm:p-4 h-64 sm:h-80 overflow-y-auto space-y-2 custom-scrollbar">
+                                        <h3 className="text-lg font-bold text-text-1 border-b pb-2 text-left">Paso 2: Seleccionar Tareas</h3>
+                                        <div className="bg-page border border-border rounded-2xl p-3 sm:p-4 h-64 sm:h-80 overflow-y-auto space-y-2 custom-scrollbar">
                                             {tasks.map(t => (
-                                                <label key={t.id} className={`flex items-start gap-3 p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-colors ${selectedTasks.includes(t.id) ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-100 hover:border-blue-100'}`}>
-                                                    <input 
-                                                        type="checkbox" 
-                                                        checked={selectedTasks.includes(t.id)} 
+                                                <label key={t.id} className={`flex items-start gap-3 p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-colors ${selectedTasks.includes(t.id) ? 'bg-navy-50 border-border' : 'bg-white border-border hover:border-border'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedTasks.includes(t.id)}
                                                         onChange={(e) => {
                                                             if (e.target.checked) setSelectedTasks([...selectedTasks, t.id]);
                                                             else setSelectedTasks(selectedTasks.filter(id => id !== t.id));
                                                         }}
-                                                        className="mt-1 w-4 h-4 text-blue-600 rounded border-slate-300" 
+                                                        className="mt-1 w-4 h-4 text-accent rounded border-slate-300"
                                                     />
                                                     <div className="text-left">
-                                                        <span className="block font-bold text-xs sm:text-sm text-slate-800">{t.title}</span>
-                                                        <span className="text-[10px] sm:text-xs text-slate-500 flex items-center gap-1 mt-1"><Clock size={10}/> {t.estimatedMins} min {t.priority === 'bloqueante' && '• Bloqueante'}</span>
+                                                        <span className="block font-bold text-xs sm:text-sm text-text-1">{t.title}</span>
+                                                        <span className="text-[10px] sm:text-xs text-text-3 flex items-center gap-1 mt-1"><Clock size={10}/> {t.estimatedMins} min {t.priority === 'bloqueante' && '• Bloqueante'}</span>
                                                     </div>
                                                 </label>
                                             ))}
                                         </div>
-                                        <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center text-xs sm:text-sm font-bold text-slate-500 bg-slate-100 p-3 sm:p-4 rounded-xl">
+                                        <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center text-xs sm:text-sm font-bold text-text-3 bg-page p-3 sm:p-4 rounded-xl">
                                             <span>Tareas Seleccionadas: {selectedTasks.length}</span>
-                                            <span className="text-blue-600">Tiempo Aprox: {selectedTasks.reduce((acc, tid) => acc + (tasks.find(t => t.id === tid)?.estimatedMins || 0), 0)} min</span>
+                                            <span className="text-accent">Tiempo Aprox: {selectedTasks.reduce((acc, tid) => acc + (tasks.find(t => t.id === tid)?.estimatedMins || 0), 0)} min</span>
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 sticky bottom-0 z-10">
-                            <button onClick={() => setShowCreator(false)} className="w-full sm:w-auto px-6 py-3 font-bold text-slate-500 hover:text-slate-700 text-center text-sm">Cancelar</button>
+                        <div className="p-4 sm:p-6 border-t border-border bg-page rounded-b-3xl flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 sticky bottom-0 z-10">
+                            <button onClick={() => setShowCreator(false)} className="w-full sm:w-auto px-6 py-3 font-bold text-text-3 hover:text-text-2 text-center text-sm">Cancelar</button>
                             {creatorMode === 'tarea' ? (
-                                <button onClick={handleSaveTask} className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 shadow-md text-center text-sm">
+                                <button onClick={handleSaveTask} className="w-full sm:w-auto px-8 py-3 bg-accent text-white font-black rounded-xl hover:bg-accent-hover shadow-md text-center text-sm">
                                     {editingTask ? 'Guardar Cambios' : 'Guardar Tarea'}
                                 </button>
                             ) : (
-                                <button onClick={handleSaveRoutine} disabled={selectedTasks.length === 0 || !newRoutineTitle} className="w-full sm:w-auto px-8 py-3 bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-xl hover:bg-blue-700 shadow-md text-center text-sm">
+                                <button onClick={handleSaveRoutine} disabled={selectedTasks.length === 0 || !newRoutineTitle} className="w-full sm:w-auto px-8 py-3 bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-xl hover:bg-accent-hover shadow-md text-center text-sm">
                                     {editingRoutine ? 'Guardar Cambios' : 'Ensamblar y Guardar Rutina'}
                                 </button>
                             )}

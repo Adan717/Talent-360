@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  LogIn, LogOut, Armchair, Utensils, Clock, Briefcase, 
+import {
+  LogIn, LogOut, Armchair, Utensils, Clock, Briefcase,
   GraduationCap, Settings, MapPin, Camera, Lock, Check,
-  AlertTriangle, Star, ShieldCheck, HeartHandshake, Award, 
-  Send, Sparkles, CheckSquare, ClipboardList, Network, Bot, 
+  AlertTriangle, Star, ShieldCheck, HeartHandshake, Award,
+  Send, Sparkles, CheckSquare, ClipboardList, Network, Bot,
   Play, MessageSquare, AlertOctagon, HelpCircle, X, ChevronRight, User,
   DollarSign, FileText, CheckCircle2
 } from 'lucide-react';
@@ -198,15 +198,15 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
     if (tier === 'pro') {
       setIsVerifying(true);
       setVerifyingStep('gps');
-      
+
       // Pasar a Selfie tras 1.0 segundos
       setTimeout(() => {
         setVerifyingStep('selfie');
-        
+
         // Pasar a éxito tras 1.0 segundos
         setTimeout(() => {
           setVerifyingStep('success');
-          
+
           // Terminar validación y proceder tras 1.2 segundos
           setTimeout(() => {
             setIsVerifying(false);
@@ -401,38 +401,38 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         desc = 'Control de Asistencia';
         icon = <Clock className="text-[#2dce89] animate-spin-once" />;
         badgeText = tier === 'pro' ? 'v4.3-pro' : 'Gratuito';
-        badgeColorClass = tier === 'pro' 
-          ? 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20' 
-          : 'bg-slate-100 text-slate-600 border border-slate-200';
+        badgeColorClass = tier === 'pro'
+          ? 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20'
+          : 'bg-page text-text-2 border border-border';
         break;
       case 'tareas':
         title = 'Tareas y Rutinas';
         desc = 'Gestión operativa';
-        icon = <CheckSquare className="text-blue-600 animate-wiggle-once" />;
+        icon = <CheckSquare className="text-accent animate-wiggle-once" />;
         badgeText = 'Tareas';
-        badgeColorClass = 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30';
+        badgeColorClass = 'bg-navy-50 dark:bg-brand-dark/40 text-accent dark:text-navy-300 border border-border dark:border-navy-800/30';
         break;
       case 'academia':
         title = 'Academia';
         desc = 'Desarrollo de personal';
-        icon = <GraduationCap className="text-violet-500 animate-bounce-twice" />;
+        icon = <GraduationCap className="text-accent animate-bounce-twice" />;
         badgeText = 'Cursos';
-        badgeColorClass = 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/30';
+        badgeColorClass = 'bg-navy-50 dark:bg-brand-dark/40 text-accent dark:text-navy-300 border border-border dark:border-navy-800/30';
         break;
       case 'nomina':
       case 'cuenta':
         title = 'Pre-nómina y Mi Perfil';
         desc = 'Recibos y Asistencia';
-        icon = <DollarSign className="text-rose-500 animate-pulse" />;
+        icon = <DollarSign className="text-danger-text animate-pulse" />;
         badgeText = 'Pre-nómina';
-        badgeColorClass = 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30';
+        badgeColorClass = 'bg-danger-bg dark:bg-danger-text/40 text-danger-text dark:text-rose-400 border border-danger-text/20 dark:border-danger-text/30';
         break;
       case 'herramientas':
         title = 'Herramientas';
         desc = 'Bitácoras rápidas';
-        icon = <Settings className="text-slate-500 animate-spin-once" />;
+        icon = <Settings className="text-text-3 animate-spin-once" />;
         badgeText = 'Menú';
-        badgeColorClass = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700';
+        badgeColorClass = 'bg-page dark:bg-slate-800 text-text-2 dark:text-slate-400 border border-border dark:border-slate-700';
         break;
       default:
         title = 'Reloj Checador';
@@ -443,19 +443,19 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
     }
 
     return (
-      <div 
+      <div
         className={`absolute top-2.5 left-2.5 right-2.5 z-[75] flex items-center justify-between px-3 py-2.5 text-left rounded-xl border transition-all duration-200 select-none ${
-          isDark 
-            ? 'bg-slate-900/90 backdrop-blur-md border-slate-800 shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-slate-100' 
-            : 'bg-white/95 backdrop-blur-md border-slate-100 shadow-[0_8px_32px_rgba(0,0,0,0.05)] text-slate-900'
+          isDark
+            ? 'bg-slate-900/90 backdrop-blur-md border-slate-800 shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-slate-100'
+            : 'bg-white/95 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)] text-text-1'
         }`}
         style={{ transform: 'scale(1.05)', transformOrigin: 'top center' }}
       >
         <div className="flex items-center gap-2 min-w-0">
           <div className="shrink-0 flex items-center justify-center">
-            {icon && React.cloneElement(icon, { 
+            {icon && React.cloneElement(icon, {
               key: phoneTab,
-              className: `${icon.props.className || ''} w-6 h-6` 
+              className: `${icon.props.className || ''} w-6 h-6`
             })}
           </div>
           <div className="flex flex-col min-w-0 justify-center text-left">
@@ -480,7 +480,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         <div className="flex items-center gap-2 shrink-0 min-w-0">
           <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
             <span className={`text-[8.5px] font-black uppercase tracking-wider ${
-              isDark ? 'text-indigo-400' : 'text-[#8a2be2]'
+              isDark ? 'text-navy-300' : 'text-accent'
             }`}>
               Decorarte 365
             </span>
@@ -488,12 +488,12 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               {currentUser.name}
             </span>
           </div>
-          <img 
-            src={currentUser.avatar} 
-            alt="Avatar" 
+          <img
+            src={currentUser.avatar}
+            alt="Avatar"
             className={`w-[28px] h-[28px] rounded-full object-cover border-2 shadow-sm ${
-              isDark ? 'border-slate-700' : 'border-slate-200'
-            }`} 
+              isDark ? 'border-slate-700' : 'border-border'
+            }`}
           />
         </div>
       </div>
@@ -503,23 +503,23 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   const renderBarraCronologica = () => {
     if (tier === 'free') {
       return (
-        <div className="py-2 px-1 text-left w-full select-none shrink-0 border-b border-slate-100 dark:border-slate-800 pb-3 mb-2">
+        <div className="py-2 px-1 text-left w-full select-none shrink-0 border-b border-border dark:border-slate-800 pb-3 mb-2">
           <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-[9px] px-1">
             <div className="flex items-center select-none">
-              <span className="text-emerald-600 dark:text-emerald-400 font-black flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span className="text-success-text dark:text-emerald-400 font-black flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-success-icon animate-ping"></span>
                 <span>🏪 Sucursal Abierta</span>
               </span>
             </div>
 
             <div className="flex items-center select-none">
               {hasCheckedOut ? (
-                <span className="text-emerald-600 dark:text-emerald-500 font-black flex items-center gap-1.5">
+                <span className="text-success-text dark:text-success-text font-black flex items-center gap-1.5">
                   <span>Turno Finalizado ✓</span>
                 </span>
               ) : hasCheckedIn ? (
-                <span className="text-emerald-600 dark:text-emerald-500 font-black flex items-center gap-1.5 animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span className="text-success-text dark:text-success-text font-black flex items-center gap-1.5 animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success-icon"></span>
                   <span>Turno Activo ✓</span>
                 </span>
               ) : (
@@ -578,20 +578,20 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       <div className="py-1 px-1 text-left w-full select-none shrink-0">
         <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-[9px] mb-1.5 px-1">
           <div className="flex items-center select-none">
-            <span className="text-emerald-600 dark:text-emerald-400 font-black flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+            <span className="text-success-text dark:text-emerald-400 font-black flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-success-icon animate-ping"></span>
               <span>🏪 Sucursal Abierta</span>
             </span>
           </div>
 
           <div className="flex items-center select-none">
             {hasCheckedOut ? (
-              <span className="text-emerald-600 dark:text-emerald-400 font-black flex items-center gap-1.5">
+              <span className="text-success-text dark:text-emerald-400 font-black flex items-center gap-1.5">
                 <span>Turno Finalizado ✓</span>
               </span>
             ) : hasCheckedIn ? (
-              <span className="text-emerald-600 dark:text-emerald-500 font-black flex items-center gap-1.5 animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span className="text-success-text dark:text-success-text font-black flex items-center gap-1.5 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-success-icon"></span>
                 <span>Turno Activo ✓</span>
               </span>
             ) : (
@@ -606,18 +606,18 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         {/* Nodos de Fichaje Interactivos */}
         <div className="flex w-full z-10 relative px-0 mb-0 mt-1">
           {/* Entrada Node */}
-          <div 
+          <div
             onClick={() => setActiveModal('entry')}
             className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
           >
-            <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-indigo-600 dark:text-indigo-400">Entrada</span>
+            <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-accent dark:text-navy-300">Entrada</span>
             <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
-              hasCheckedIn 
-                ? 'border-indigo-500 bg-indigo-500 text-white font-extrabold shadow-indigo-500/20' 
-                : 'border-slate-200 bg-white text-slate-400'
+              hasCheckedIn
+                ? 'border-accent bg-accent text-white font-extrabold shadow-accent/20'
+                : 'border-border bg-white text-slate-400'
             }`}>
               <LogIn size={18} className={!hasCheckedIn ? "animate-pulse" : ""} />
-              {hasCheckedIn && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+              {hasCheckedIn && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
             </div>
           </div>
 
@@ -626,18 +626,18 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             const isDone = breaksTaken[99] !== undefined;
             const isActive = clockState === 'short_break';
             return (
-              <div 
+              <div
                 onClick={() => setActiveModal('break')}
                 className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
               >
-                <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-purple-600 dark:text-purple-400">Descanso</span>
+                <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-accent dark:text-navy-300">Descanso</span>
                 <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
                   isDone || isActive
-                    ? 'border-purple-500 bg-purple-500 text-white font-extrabold shadow-purple-500/20' 
-                    : 'border-slate-200 bg-white text-slate-400'
+                    ? 'border-accent bg-accent text-white font-extrabold shadow-accent/20'
+                    : 'border-border bg-white text-slate-400'
                 }`}>
                   <Armchair size={18} className={isActive ? "animate-bounce" : ""} />
-                  {isDone && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+                  {isDone && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
                 </div>
               </div>
             );
@@ -648,36 +648,36 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             const isDone = mealEndTimes[99] !== undefined;
             const isActive = clockState === 'meal';
             return (
-              <div 
+              <div
                 onClick={() => setActiveModal('meal')}
                 className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
               >
-                <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-amber-600 dark:text-amber-400">Comida</span>
+                <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-warning-text dark:text-amber-400">Comida</span>
                 <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
                   isDone || isActive
-                    ? 'border-amber-500 bg-amber-500 text-white font-extrabold shadow-amber-500/20' 
-                    : 'border-slate-200 bg-white text-slate-400'
+                    ? 'border-warning-text bg-warning-icon text-white font-extrabold shadow-warning-text/20'
+                    : 'border-border bg-white text-slate-400'
                 }`}>
                   <Utensils size={18} className={isActive ? "animate-bounce" : ""} />
-                  {isDone && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+                  {isDone && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
                 </div>
               </div>
             );
           })()}
 
           {/* Salida Node */}
-          <div 
+          <div
             onClick={() => setActiveModal('exit')}
             className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
           >
-            <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-emerald-600 dark:text-emerald-400">Salida</span>
+            <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-success-text dark:text-emerald-400">Salida</span>
             <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
-              hasCheckedOut 
-                ? 'border-emerald-500 bg-emerald-500 text-white font-extrabold shadow-emerald-500/20' 
-                : 'border-slate-200 bg-white text-slate-400'
+              hasCheckedOut
+                ? 'border-success-text bg-success-icon text-white font-extrabold shadow-success-text/20'
+                : 'border-border bg-white text-slate-400'
             }`}>
               <LogOut size={18} />
-              {hasCheckedOut && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+              {hasCheckedOut && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
             </div>
           </div>
         </div>
@@ -686,16 +686,16 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         <div className="relative w-full z-0 px-1 mb-2 mt-2">
           <div className="relative w-full h-4 bg-slate-200/50 dark:bg-slate-800/50 rounded-2xl border border-slate-300/20 shadow-inner overflow-hidden">
             {hasCheckedIn && elapsedTotal > 0 && (
-              <div 
+              <div
                 className="absolute top-0 left-0 h-full rounded-2xl overflow-hidden flex transition-all duration-750 ease-out"
                 style={{ width: `${progressPercent}%` }}
               >
                 {segmentsList.map((seg, sIdx) => {
-                  let segBg = 'bg-gradient-to-r from-emerald-400 to-teal-500';
-                  if (seg.type === 'break') segBg = 'bg-gradient-to-r from-purple-500 to-indigo-600';
-                  if (seg.type === 'meal') segBg = 'bg-gradient-to-r from-amber-500 to-orange-500';
+                  let segBg = 'bg-gradient-to-r from-success-icon to-accent';
+                  if (seg.type === 'break') segBg = 'bg-gradient-to-r from-accent to-accent';
+                  if (seg.type === 'meal') segBg = 'bg-gradient-to-r from-warning-icon to-warning-icon';
                   return (
-                    <div 
+                    <div
                       key={sIdx}
                       style={{ width: `${(seg.mins / elapsedTotal) * 100}%` }}
                       className={`h-full ${segBg} shrink-0`}
@@ -705,7 +705,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               </div>
             )}
 
-            <div className="absolute inset-0 flex justify-between items-center px-3 pointer-events-none z-10 text-[9px] font-mono font-bold text-slate-500 dark:text-slate-400">
+            <div className="absolute inset-0 flex justify-between items-center px-3 pointer-events-none z-10 text-[9px] font-mono font-bold text-text-3 dark:text-slate-400">
               <span>
                 {hasCheckedIn ? formatMinsToTimeClean(545) : '09:00 am'}
               </span>
@@ -740,14 +740,14 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   };
 
   return (
-    <div className={`w-full h-full flex flex-col justify-between overflow-hidden relative ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
-      
+    <div className={`w-full h-full flex flex-col justify-between overflow-hidden relative ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-page text-text-1'}`}>
+
       {/* RENDER UNIFIED MOBILE HEADER */}
       {renderUnifiedMobileHeader()}
 
       {/* ZONA DE CONTENIDO MÓVIL (Con padding incrementado para dar holgura y no encimarse con el header) */}
       <div className="flex-1 overflow-y-auto px-4 pt-[84px] pb-[92px] flex flex-col justify-between gap-2 scrollbar-none relative z-10">
-        
+
         {phoneTab === 'checador' && (
           <div className="flex-grow flex flex-col h-full justify-between gap-1 py-0.5">
             {/* 1. SECCIÓN SUPERIOR: Barra Cronológica con mayor altura y margin-top para airear */}
@@ -795,13 +795,13 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   {/* Alerta de Entrada Registrada */}
                   {hasCheckedIn && (
                     <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                      isDark ? 'bg-emerald-950/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/60 border-emerald-100 text-emerald-900'
+                      isDark ? 'bg-success-text/20 border-success-text/40 text-success-text' : 'bg-success-bg/60 border-success-text/20 text-success-text'
                     }`}>
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 text-sm animate-pulse">
+                      <div className="w-8 h-8 rounded-xl bg-success-icon/15 flex items-center justify-center text-success-text dark:text-emerald-400 shrink-0 text-sm animate-pulse">
                         ✅
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 leading-none">Fichaje Registrado</p>
+                        <p className="text-[8px] font-black uppercase tracking-wider text-success-text dark:text-emerald-400 leading-none">Fichaje Registrado</p>
                         <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
                           Entrada: {formatMinsToTimeClean(checkInTimes[99] || 545)} (Retardo de 5 min)
                         </p>
@@ -812,13 +812,13 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   {/* Alerta de Descanso Registrado */}
                   {breaksTaken[99] !== undefined && (
                     <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                      isDark ? 'bg-purple-950/20 border-purple-900/40 text-purple-300' : 'bg-purple-50/60 border-purple-100 text-purple-900'
+                      isDark ? 'bg-brand-dark/20 border-navy-800/40 text-navy-100' : 'bg-navy-50/60 border-border text-brand-dark'
                     }`}>
-                      <div className="w-8 h-8 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 text-sm animate-pulse">
+                      <div className="w-8 h-8 rounded-xl bg-accent/15 flex items-center justify-center text-accent dark:text-navy-300 shrink-0 text-sm animate-pulse">
                         ☕
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 leading-none">Descanso Tomado</p>
+                        <p className="text-[8px] font-black uppercase tracking-wider text-accent dark:text-navy-300 leading-none">Descanso Tomado</p>
                         <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
                           Salida: {formatMinsToTimeClean(breakStartTimes[99] || 720)} | Regreso: {formatMinsToTimeClean(breakEndTimes[99] || 735)}
                         </p>
@@ -829,13 +829,13 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   {/* Alerta de Comida Registrada */}
                   {mealEndTimes[99] !== undefined && (
                     <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                      isDark ? 'bg-amber-950/20 border-amber-900/40 text-amber-300' : 'bg-amber-50/60 border-amber-100 text-amber-900'
+                      isDark ? 'bg-warning-text/20 border-warning-text/40 text-warning-text' : 'bg-warning-bg/60 border-warning-text/20 text-warning-text'
                     }`}>
-                      <div className="w-8 h-8 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 text-sm animate-pulse">
+                      <div className="w-8 h-8 rounded-xl bg-warning-icon/15 flex items-center justify-center text-warning-text dark:text-amber-400 shrink-0 text-sm animate-pulse">
                         🍱
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 leading-none">Comida Completada</p>
+                        <p className="text-[8px] font-black uppercase tracking-wider text-warning-text dark:text-amber-400 leading-none">Comida Completada</p>
                         <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
                           Salida: {formatMinsToTimeClean(mealStartTimes[99] || 840)} | Regreso: {formatMinsToTimeClean(mealEndTimes[99] || 885)}
                         </p>
@@ -846,13 +846,13 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   {/* Alerta de Salida Registrada */}
                   {hasCheckedOut && (
                     <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                      isDark ? 'bg-rose-950/20 border-rose-900/40 text-rose-300' : 'bg-rose-50/60 border-rose-100 text-rose-900'
+                      isDark ? 'bg-danger-text/20 border-danger-text/40 text-danger-text' : 'bg-danger-bg/60 border-danger-text/20 text-danger-text'
                     }`}>
-                      <div className="w-8 h-8 rounded-xl bg-rose-500/15 flex items-center justify-center text-rose-600 dark:text-rose-500 shrink-0 text-sm animate-pulse">
+                      <div className="w-8 h-8 rounded-xl bg-danger-icon/15 flex items-center justify-center text-danger-text dark:text-danger-text shrink-0 text-sm animate-pulse">
                         🚪
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-500 leading-none">Jornada Finalizada</p>
+                        <p className="text-[8px] font-black uppercase tracking-wider text-danger-text dark:text-danger-text leading-none">Jornada Finalizada</p>
                         <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
                           Salida registrada a las {formatMinsToTimeClean(checkOutTimes[99] || 1080)}
                         </p>
@@ -861,25 +861,25 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   )}
 
                   <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all ${
-                    isDark ? 'bg-indigo-950/20 border-indigo-900/40 text-indigo-300' : 'bg-indigo-50/60 border-indigo-100 text-indigo-900'
+                    isDark ? 'bg-brand-dark/20 border-navy-800/40 text-navy-100' : 'bg-navy-50/60 border-border text-brand-dark'
                   }`}>
-                    <div className="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 text-sm">
+                    <div className="w-8 h-8 rounded-xl bg-accent/15 flex items-center justify-center text-accent dark:text-navy-300 shrink-0 text-sm">
                       📋
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[8px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 leading-none">Tablero Operativo</p>
+                      <p className="text-[8px] font-black uppercase tracking-wider text-accent dark:text-navy-300 leading-none">Tablero Operativo</p>
                       <p className="text-[10px] font-bold mt-0.5 dark:text-slate-300 truncate">¡1 tarea pendiente por completar hoy!</p>
                     </div>
                   </div>
 
                   <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all ${
-                    isDark ? 'bg-violet-950/20 border-violet-900/40 text-violet-300' : 'bg-violet-50/60 border-violet-100 text-violet-900'
+                    isDark ? 'bg-brand-dark/20 border-navy-800/40 text-navy-100' : 'bg-navy-50/60 border-border text-brand-dark'
                   }`}>
-                    <div className="w-8 h-8 rounded-xl bg-violet-500/15 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 text-sm animate-pulse">
+                    <div className="w-8 h-8 rounded-xl bg-accent/15 flex items-center justify-center text-accent dark:text-navy-300 shrink-0 text-sm animate-pulse">
                       🎓
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[8px] font-black uppercase tracking-wider text-violet-600 dark:text-violet-400 leading-none">Capacitación Activa</p>
+                      <p className="text-[8px] font-black uppercase tracking-wider text-accent dark:text-navy-300 leading-none">Capacitación Activa</p>
                       <p className="text-[10.5px] font-black mt-0.5 dark:text-slate-200 leading-tight">
                         ¡Capacítate en la academia para subir de puesto y ganar más!
                       </p>
@@ -895,13 +895,13 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           <div className="flex-1 flex flex-col justify-between py-2 text-left overflow-y-auto scrollbar-none">
             {tier === 'free' ? (
               <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200 my-auto">
-                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
-                  <Lock size={22} className="text-rose-500" />
+                <div className="w-12 h-12 bg-danger-bg dark:bg-danger-text/20 border border-danger-text/20 dark:border-danger-text/30 rounded-2xl flex items-center justify-center text-danger-text shadow-sm shrink-0">
+                  <Lock size={22} className="text-danger-text" />
                 </div>
                 <div className="space-y-1">
-                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-500 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
-                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
-                  <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
+                  <h5 className="text-[9px] font-black text-danger-text dark:text-danger-text uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h4 className="text-[11px] font-black text-text-1 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
+                  <p className="text-[8.5px] text-text-3 font-semibold leading-relaxed max-w-[170px] mx-auto">
                     La gestión de Tareas requiere la Versión Pro del Reloj Checador.
                   </p>
                 </div>
@@ -927,13 +927,13 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           <div className="flex-1 flex flex-col justify-between py-2 text-left">
             {tier === 'free' ? (
               <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200 my-auto">
-                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
-                  <Lock size={22} className="text-rose-500" />
+                <div className="w-12 h-12 bg-danger-bg dark:bg-danger-text/20 border border-danger-text/20 dark:border-danger-text/30 rounded-2xl flex items-center justify-center text-danger-text shadow-sm shrink-0">
+                  <Lock size={22} className="text-danger-text" />
                 </div>
                 <div className="space-y-1">
-                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-500 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
-                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
-                  <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
+                  <h5 className="text-[9px] font-black text-danger-text dark:text-danger-text uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h4 className="text-[11px] font-black text-text-1 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
+                  <p className="text-[8.5px] text-text-3 font-semibold leading-relaxed max-w-[170px] mx-auto">
                     La gestión de Academia requiere la Versión Pro del Reloj Checador.
                   </p>
                 </div>
@@ -949,41 +949,41 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               </div>
             ) : (
               <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-grow overflow-y-auto scrollbar-none">
-                <div className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-3 rounded-2xl shadow-sm space-y-1">
-                  <p className="text-[8px] font-bold text-violet-200 uppercase tracking-widest">Capacitación Operativa</p>
+                <div className="bg-gradient-to-r from-accent to-accent text-white p-3 rounded-2xl shadow-sm space-y-1">
+                  <p className="text-[8px] font-bold text-navy-100 uppercase tracking-widest">Capacitación Operativa</p>
                   <h4 className="text-[11px] font-black">Cursos Asignados para Tu Puesto</h4>
-                  <p className="text-[8px] text-violet-100 font-medium">¡Completa lecciones para ganar insignias y aumentos!</p>
+                  <p className="text-[8px] text-navy-100 font-medium">¡Completa lecciones para ganar insignias y aumentos!</p>
                 </div>
 
-                <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Plan de Aprendizaje</h5>
-                
+                <h5 className="text-[9.5px] font-black uppercase text-text-1 dark:text-slate-200 tracking-wider">Plan de Aprendizaje</h5>
+
                 {/* Curso 1 */}
-                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-2">
+                <div className="bg-page dark:bg-slate-900/40 border border-border dark:border-slate-800 p-2.5 rounded-xl space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Inducción Básica 360</span>
-                    <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md border border-emerald-200/40">75%</span>
+                    <span className="text-[9px] font-black text-text-1 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Inducción Básica 360</span>
+                    <span className="text-[8px] font-bold text-success-text bg-success-bg dark:bg-success-text/40 px-1.5 py-0.5 rounded-md border border-success-text/40">75%</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }}></div>
+                    <div className="h-full bg-success-icon rounded-full" style={{ width: '75%' }}></div>
                   </div>
-                  <div className="flex justify-between items-center text-[8px] text-slate-500 pt-0.5">
+                  <div className="flex justify-between items-center text-[8px] text-text-3 pt-0.5">
                     <span>3 de 4 lecciones completadas</span>
-                    <button className="text-violet-600 dark:text-violet-400 font-bold hover:underline bg-transparent border-none p-0 cursor-pointer">Continuar →</button>
+                    <button className="text-accent dark:text-navy-300 font-bold hover:underline bg-transparent border-none p-0 cursor-pointer">Continuar →</button>
                   </div>
                 </div>
 
                 {/* Curso 2 */}
-                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-2">
+                <div className="bg-page dark:bg-slate-900/40 border border-border dark:border-slate-800 p-2.5 rounded-xl space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Atención & Caja Registradora</span>
-                    <span className="text-[8px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded-md border border-blue-200/40">20%</span>
+                    <span className="text-[9px] font-black text-text-1 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Atención & Caja Registradora</span>
+                    <span className="text-[8px] font-bold text-accent bg-navy-50 dark:bg-brand-dark/40 px-1.5 py-0.5 rounded-md border border-border/40">20%</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '20%' }}></div>
+                    <div className="h-full bg-accent rounded-full" style={{ width: '20%' }}></div>
                   </div>
-                  <div className="flex justify-between items-center text-[8px] text-slate-500 pt-0.5">
+                  <div className="flex justify-between items-center text-[8px] text-text-3 pt-0.5">
                     <span>1 de 5 lecciones completadas</span>
-                    <button className="text-blue-600 dark:text-blue-400 font-bold hover:underline bg-transparent border-none p-0 cursor-pointer">Iniciar →</button>
+                    <button className="text-accent dark:text-navy-300 font-bold hover:underline bg-transparent border-none p-0 cursor-pointer">Iniciar →</button>
                   </div>
                 </div>
               </div>
@@ -995,13 +995,13 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           <div className="flex-1 flex flex-col justify-between py-2 text-left">
             {tier === 'free' ? (
               <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200 my-auto">
-                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
-                  <Lock size={22} className="text-rose-500" />
+                <div className="w-12 h-12 bg-danger-bg dark:bg-danger-text/20 border border-danger-text/20 dark:border-danger-text/30 rounded-2xl flex items-center justify-center text-danger-text shadow-sm shrink-0">
+                  <Lock size={22} className="text-danger-text" />
                 </div>
                 <div className="space-y-1">
-                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-500 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
-                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
-                  <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
+                  <h5 className="text-[9px] font-black text-danger-text dark:text-danger-text uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h4 className="text-[11px] font-black text-text-1 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
+                  <p className="text-[8.5px] text-text-3 font-semibold leading-relaxed max-w-[170px] mx-auto">
                     La gestión de Nómina requiere la Versión Pro del Reloj Checador.
                   </p>
                 </div>
@@ -1017,44 +1017,44 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               </div>
             ) : (
               <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-grow overflow-y-auto scrollbar-none">
-                <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-3 rounded-2xl shadow-sm space-y-2">
+                <div className="bg-gradient-to-r from-success-text to-accent-hover text-white p-3 rounded-2xl shadow-sm space-y-2">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-[8px] font-bold text-emerald-200 uppercase tracking-widest">Nómina Quincenal Calculada</p>
+                      <p className="text-[8px] font-bold text-success-text uppercase tracking-widest">Nómina Quincenal Calculada</p>
                       <h4 className="text-sm font-black mt-0.5">$4,800.00 MXN</h4>
                     </div>
-                    <span className="px-2 py-0.5 bg-emerald-500/30 text-white text-[8px] font-bold rounded-full border border-emerald-300/30">
+                    <span className="px-2 py-0.5 bg-success-icon/30 text-white text-[8px] font-bold rounded-full border border-success-text/30">
                       ✓ Pago Estimado
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[8.5px] pt-1 border-t border-emerald-500/40 text-emerald-100 font-medium">
+                  <div className="flex items-center justify-between text-[8.5px] pt-1 border-t border-success-text/40 text-success-text font-medium">
                     <span>Horas laboradas: <strong>44 hrs</strong></span>
                     <span>Puntualidad: <strong>98%</strong></span>
                   </div>
                 </div>
 
-                <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider pt-1">Desglose de Pago</h5>
-                
-                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5 text-[9px]">
-                  <div className="flex justify-between items-center text-slate-700 dark:text-slate-300">
+                <h5 className="text-[9.5px] font-black uppercase text-text-1 dark:text-slate-200 tracking-wider pt-1">Desglose de Pago</h5>
+
+                <div className="bg-page dark:bg-slate-900/40 border border-border dark:border-slate-800 p-2.5 rounded-xl space-y-1.5 text-[9px]">
+                  <div className="flex justify-between items-center text-text-2 dark:text-slate-300">
                     <span>Sueldo Base (15 días)</span>
-                    <span className="font-bold text-slate-900 dark:text-white">$4,500.00</span>
+                    <span className="font-bold text-text-1 dark:text-white">$4,500.00</span>
                   </div>
-                  <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
+                  <div className="flex justify-between items-center text-success-text dark:text-emerald-400">
                     <span>Bono Puntualidad & Tareas</span>
                     <span className="font-bold">+$350.00</span>
                   </div>
-                  <div className="flex justify-between items-center text-rose-500">
+                  <div className="flex justify-between items-center text-danger-text">
                     <span>Retardo (1 incidencia 5m)</span>
                     <span className="font-bold">-$50.00</span>
                   </div>
-                  <div className="border-t border-slate-200 dark:border-slate-800 pt-1.5 flex justify-between items-center font-black text-slate-900 dark:text-white text-[9.5px]">
+                  <div className="border-t border-border dark:border-slate-800 pt-1.5 flex justify-between items-center font-black text-text-1 dark:text-white text-[9.5px]">
                     <span>Total Neto</span>
-                    <span className="text-emerald-600 dark:text-emerald-400">$4,800.00</span>
+                    <span className="text-success-text dark:text-emerald-400">$4,800.00</span>
                   </div>
                 </div>
 
-                <button 
+                <button
                   onClick={() => alert("Simulación: Descargando Recibo Digital PDF de Francisco Vega")}
                   className="w-full py-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer border-none"
                 >
@@ -1093,9 +1093,9 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             <button
               type="button"
               onClick={() => setIsFabSheetOpen(prev => !prev)}
-              className="w-[72px] h-[72px] bg-gradient-to-tr from-violet-600 via-[#8a2be2] to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white rounded-full shadow-[0_0_35px_rgba(138,43,226,0.7)] flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-2 border-white/60 cursor-pointer outline-none relative shrink-0"
+              className="w-[72px] h-[72px] bg-gradient-to-tr from-accent via-accent to-accent-hover hover:from-accent hover:to-accent text-white rounded-full shadow-lg shadow-accent/20 flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-2 border-white/60 cursor-pointer outline-none relative shrink-0"
             >
-              <span className="absolute -inset-1.5 rounded-full bg-purple-600/40 blur-md animate-pulse pointer-events-none"></span>
+              <span className="absolute -inset-1.5 rounded-full bg-accent/40 blur-md animate-pulse pointer-events-none"></span>
               {isFabSheetOpen ? <X size={28} className="relative z-10" /> : <Sparkles size={30} className="text-white relative z-10 animate-pulse" />}
             </button>
           </div>
@@ -1111,7 +1111,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           ></div>
 
           <div className={`relative w-full rounded-t-3xl border-t shadow-2xl z-10 flex flex-col pb-6 max-h-[80%] animate-slide-up backdrop-blur-md ${
-            isDark ? 'bg-slate-900/70 border-slate-800 text-white' : 'bg-white/70 border-slate-100 text-slate-800'
+            isDark ? 'bg-slate-900/70 border-slate-800 text-white' : 'bg-white/70 border-border text-text-1'
           }`}>
             <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-2.5 shrink-0"></div>
 
@@ -1122,7 +1122,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               </div>
               <button
                 onClick={() => setIsFabSheetOpen(false)}
-                className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-none cursor-pointer text-xs"
+                className="w-6 h-6 rounded-full bg-page dark:bg-slate-800 flex items-center justify-center border-none cursor-pointer text-xs"
               >
                 ✕
               </button>
@@ -1136,10 +1136,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                     setIsCopilotOpen(true);
                   }}
                   className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer border-none ${
-                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-800'
+                    isDark ? 'bg-slate-950/40 text-white' : 'bg-page text-text-1'
                   }`}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-accent to-accent text-white flex items-center justify-center">
                     <Bot size={16} />
                   </div>
                   <span className="font-bold text-[10px]">Copiloto AI</span>
@@ -1151,10 +1151,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                     setPhoneTab('tareas');
                   }}
                   className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer border-none ${
-                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-800'
+                    isDark ? 'bg-slate-950/40 text-white' : 'bg-page text-text-1'
                   }`}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-warning-icon to-warning-icon text-white flex items-center justify-center">
                     <Play size={16} />
                   </div>
                   <span className="font-bold text-[10px]">Ver Tareas</span>
@@ -1166,10 +1166,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                     setPhoneTab('nomina');
                   }}
                   className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer border-none ${
-                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-800'
+                    isDark ? 'bg-slate-950/40 text-white' : 'bg-page text-text-1'
                   }`}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-success-icon to-accent text-white flex items-center justify-center">
                     <DollarSign size={16} />
                   </div>
                   <span className="font-bold text-[10px]">Recibo Nómina</span>
@@ -1181,10 +1181,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                     setPhoneTab('academia');
                   }}
                   className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer border-none ${
-                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-800'
+                    isDark ? 'bg-slate-950/40 text-white' : 'bg-page text-text-1'
                   }`}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-accent to-accent text-white flex items-center justify-center">
                     <GraduationCap size={16} />
                   </div>
                   <span className="font-bold text-[10px]">Capacitación</span>
@@ -1199,18 +1199,18 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       {isCopilotOpen && (
         <div className="absolute inset-0 z-50 flex items-end justify-center">
           <div onClick={() => setIsCopilotOpen(false)} className="absolute inset-0 bg-black/40 backdrop-blur-xs"></div>
-          
+
           <div className={`relative w-full h-[75%] rounded-t-3xl border-t shadow-2xl z-10 flex flex-col pb-4 ${
-            isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'
+            isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-border text-text-1'
           }`}>
             <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-2.5 shrink-0"></div>
-            
+
             <div className="px-4 pb-2 border-b dark:border-slate-800 text-left flex justify-between items-center shrink-0">
               <div className="flex items-center gap-2">
-                <Bot size={18} className="text-indigo-500" />
+                <Bot size={18} className="text-accent" />
                 <h3 className="text-xs font-black">Copiloto AI de Turno</h3>
               </div>
-              <button onClick={() => setIsCopilotOpen(false)} className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-none cursor-pointer text-xs">✕</button>
+              <button onClick={() => setIsCopilotOpen(false)} className="w-6 h-6 rounded-full bg-page dark:bg-slate-800 flex items-center justify-center border-none cursor-pointer text-xs">✕</button>
             </div>
 
             {/* Chat Body */}
@@ -1218,9 +1218,9 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               {chatMessages.map((msg, mIdx) => (
                 <div key={mIdx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[75%] p-2.5 rounded-2xl text-[10.5px] leading-relaxed ${
-                    msg.sender === 'user' 
-                      ? 'bg-indigo-600 text-white rounded-tr-none' 
-                      : (isDark ? 'bg-slate-800 text-slate-200 rounded-tl-none' : 'bg-slate-100 text-slate-800 rounded-tl-none')
+                    msg.sender === 'user'
+                      ? 'bg-accent text-white rounded-tr-none'
+                      : (isDark ? 'bg-slate-800 text-slate-200 rounded-tl-none' : 'bg-page text-text-1 rounded-tl-none')
                   }`}>
                     {msg.text}
                   </div>
@@ -1230,19 +1230,19 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
             {/* Chat Input */}
             <div className="p-3 border-t dark:border-slate-800 flex gap-2 shrink-0">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={newMsg}
                 onChange={e => setNewMsg(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSendMsg()}
                 placeholder="Escribe al asistente..."
                 className={`flex-1 px-3 py-1.5 text-xs rounded-xl border outline-none ${
-                  isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'
+                  isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-page border-border'
                 }`}
               />
-              <button 
+              <button
                 onClick={handleSendMsg}
-                className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center border-none cursor-pointer"
+                className="p-1.5 bg-accent hover:bg-accent-hover text-white rounded-xl flex items-center justify-center border-none cursor-pointer"
               >
                 <Send size={14} />
               </button>
@@ -1257,43 +1257,43 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       {activeModal && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center p-4">
           <div onClick={() => setActiveModal(null)} className="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
-          
-          <div 
+
+          <div
             className={`relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up ${
-              isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
+              isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-border text-text-1'
             }`}
             style={{ transform: 'scale(0.85)', transformOrigin: 'center' }}
           >
-            <button 
+            <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent font-bold text-sm"
+              className="absolute top-3 right-3 text-slate-400 hover:text-text-2 cursor-pointer border-none bg-transparent font-bold text-sm"
             >
               ✕
             </button>
 
             {activeModal === 'entry' && (
               <div className="space-y-4 text-left">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between pb-2 border-b border-border dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <LogIn className="w-5 h-5 text-indigo-600 shrink-0" />
-                    <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                    <LogIn className="w-5 h-5 text-accent shrink-0" />
+                    <h3 className="font-black text-text-1 dark:text-slate-200 text-sm">
                       Registro de Entrada
                     </h3>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                    hasCheckedIn ? 'bg-rose-50 border-rose-100 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/30 dark:text-rose-400' : 'bg-slate-100 border-slate-200 text-slate-500'
+                    hasCheckedIn ? 'bg-danger-bg border-danger-text/20 text-danger-text dark:bg-danger-text/20 dark:border-danger-text/30 dark:text-rose-400' : 'bg-page border-border text-text-3'
                   }`}>
                     {hasCheckedIn ? '⚠️ Retardo' : '📅 Pendiente'}
                   </span>
                 </div>
 
                 <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
-                  hasCheckedIn ? 'bg-rose-50/40 border-rose-100/60 text-rose-900 dark:bg-slate-900/40 dark:border-slate-800' : 'bg-slate-50 border-slate-100 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                  hasCheckedIn ? 'bg-danger-bg/40 border-danger-text/60 text-danger-text dark:bg-slate-900/40 dark:border-slate-800' : 'bg-page border-border text-text-2 dark:bg-slate-900/40 dark:border-slate-800'
                 }`}>
                   {hasCheckedIn ? (
-                    <>Entrada registrada a las <strong className="text-rose-600 dark:text-rose-500 font-bold">09:05 AM</strong> (Retardo de 5 minutos).</>
+                    <>Entrada registrada a las <strong className="text-danger-text dark:text-danger-text font-bold">09:05 AM</strong> (Retardo de 5 minutos).</>
                   ) : (
-                    <>Entrada pendiente de registrar. Tu horario de ingreso es a las <strong className="text-slate-800 dark:text-white font-bold">09:00 AM</strong>.</>
+                    <>Entrada pendiente de registrar. Tu horario de ingreso es a las <strong className="text-text-1 dark:text-white font-bold">09:00 AM</strong>.</>
                   )}
                 </div>
               </div>
@@ -1304,31 +1304,31 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               const isActive = clockState === 'short_break';
               return (
                 <div className="space-y-4 text-left">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between pb-2 border-b border-border dark:border-slate-800">
                     <div className="flex items-center gap-2">
-                      <Armchair className="w-5 h-5 text-purple-600 shrink-0" />
-                      <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                      <Armchair className="w-5 h-5 text-accent shrink-0" />
+                      <h3 className="font-black text-text-1 dark:text-slate-200 text-sm">
                         Registro de Descanso
                       </h3>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                      isActive ? 'bg-purple-50 border-purple-100 text-purple-600' :
-                      isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/30' :
-                      'bg-slate-100 border-slate-200 text-slate-500'
+                      isActive ? 'bg-navy-50 border-border text-accent' :
+                      isDone ? 'bg-success-bg border-success-text/20 text-success-text dark:bg-success-text/20 dark:border-success-text/30' :
+                      'bg-page border-border text-text-3'
                     }`}>
                       {isActive ? '⏳ En curso' : isDone ? '✓ Cumplido' : '📅 Pendiente'}
                     </span>
                   </div>
 
                   <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
-                    isActive ? 'bg-purple-50/40 border-purple-100/60 text-purple-900 dark:bg-slate-900/40 dark:border-slate-800' :
-                    isDone ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:bg-slate-900/40' :
-                    'bg-slate-50 border-slate-100 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                    isActive ? 'bg-navy-50/40 border-border/60 text-brand-dark dark:bg-slate-900/40 dark:border-slate-800' :
+                    isDone ? 'bg-success-bg/40 border-success-text/60 text-success-text dark:bg-slate-900/40' :
+                    'bg-page border-border text-text-2 dark:bg-slate-900/40 dark:border-slate-800'
                   }`}>
                     {isActive ? (
-                      <>Descanso iniciado a las <strong className="text-purple-600 font-bold">12:00 PM</strong> (Tolerancia: 15 min).</>
+                      <>Descanso iniciado a las <strong className="text-accent font-bold">12:00 PM</strong> (Tolerancia: 15 min).</>
                     ) : isDone ? (
-                      <>Descanso completado: <strong className="text-emerald-600 dark:text-emerald-500 font-bold">12:00 PM - 12:15 PM</strong> (15 minutos).</>
+                      <>Descanso completado: <strong className="text-success-text dark:text-success-text font-bold">12:00 PM - 12:15 PM</strong> (15 minutos).</>
                     ) : (
                       <>Descanso de Ley Silla pendiente (Tolerancia regular: 15 minutos).</>
                     )}
@@ -1342,31 +1342,31 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               const isActive = clockState === 'meal';
               return (
                 <div className="space-y-4 text-left">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between pb-2 border-b border-border dark:border-slate-800">
                     <div className="flex items-center gap-2">
-                      <Utensils className="w-5 h-5 text-amber-600 shrink-0" />
-                      <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                      <Utensils className="w-5 h-5 text-warning-text shrink-0" />
+                      <h3 className="font-black text-text-1 dark:text-slate-200 text-sm">
                         Horario de Almuerzo
                       </h3>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                      isActive ? 'bg-amber-50 border-amber-100 text-amber-600' :
-                      isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/30' :
-                      'bg-slate-100 border-slate-200 text-slate-500'
+                      isActive ? 'bg-warning-bg border-warning-text/20 text-warning-text' :
+                      isDone ? 'bg-success-bg border-success-text/20 text-success-text dark:bg-success-text/20 dark:border-success-text/30' :
+                      'bg-page border-border text-text-3'
                     }`}>
                       {isActive ? '⏳ En curso' : isDone ? '✓ Cumplido' : '📅 Pendiente'}
                     </span>
                   </div>
 
                   <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
-                    isActive ? 'bg-amber-50/40 border-amber-100/60 text-amber-900 dark:bg-slate-900/40' :
-                    isDone ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:bg-slate-900/40' :
-                    'bg-slate-50 border-slate-100 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                    isActive ? 'bg-warning-bg/40 border-warning-text/60 text-warning-text dark:bg-slate-900/40' :
+                    isDone ? 'bg-success-bg/40 border-success-text/60 text-success-text dark:bg-slate-900/40' :
+                    'bg-page border-border text-text-2 dark:bg-slate-900/40 dark:border-slate-800'
                   }`}>
                     {isActive ? (
-                      <>Almuerzo iniciado a las <strong className="text-amber-600 font-bold">02:00 PM</strong> (Tolerancia: 45 min).</>
+                      <>Almuerzo iniciado a las <strong className="text-warning-text font-bold">02:00 PM</strong> (Tolerancia: 45 min).</>
                     ) : isDone ? (
-                      <>Almuerzo completado: <strong className="text-emerald-600 dark:text-emerald-500 font-bold">02:00 PM - 02:45 PM</strong> (45 minutos).</>
+                      <>Almuerzo completado: <strong className="text-success-text dark:text-success-text font-bold">02:00 PM - 02:45 PM</strong> (45 minutos).</>
                     ) : (
                       <>Almuerzo pendiente de tomar (Tolerancia regular: 45 minutos).</>
                     )}
@@ -1377,35 +1377,35 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
             {activeModal === 'exit' && (
               <div className="space-y-4 text-left">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between pb-2 border-b border-border dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <LogOut className="w-5 h-5 text-teal-600 shrink-0" />
-                    <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                    <LogOut className="w-5 h-5 text-accent shrink-0" />
+                    <h3 className="font-black text-text-1 dark:text-slate-200 text-sm">
                       Resumen de Turno
                     </h3>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                    hasCheckedOut ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/30' : 'bg-slate-100 border-slate-200 text-slate-500'
+                    hasCheckedOut ? 'bg-success-bg border-success-text/20 text-success-text dark:bg-success-text/20 dark:border-success-text/30' : 'bg-page border-border text-text-3'
                   }`}>
                     {hasCheckedOut ? '✓ Cumplido' : '📅 Pendiente'}
                   </span>
                 </div>
 
                 <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
-                  hasCheckedOut ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:bg-slate-900/40' : 'bg-slate-50 border-slate-100 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                  hasCheckedOut ? 'bg-success-bg/40 border-success-text/60 text-success-text dark:bg-slate-900/40' : 'bg-page border-border text-text-2 dark:bg-slate-900/40 dark:border-slate-800'
                 }`}>
                   {hasCheckedOut ? (
-                    <>Jornada finalizada: <strong className="text-emerald-600 dark:text-emerald-500 font-bold">06:00 PM</strong> (8h 55m laborados sin desvíos).</>
+                    <>Jornada finalizada: <strong className="text-success-text dark:text-success-text font-bold">06:00 PM</strong> (8h 55m laborados sin desvíos).</>
                   ) : (
-                    <>Salida pendiente de registrar. Tu horario regular de salida es a las <strong className="text-slate-800 dark:text-white font-bold">06:00 PM</strong>.</>
+                    <>Salida pendiente de registrar. Tu horario regular de salida es a las <strong className="text-text-1 dark:text-white font-bold">06:00 PM</strong>.</>
                   )}
                 </div>
               </div>
             )}
 
-            <button 
+            <button
               onClick={() => setActiveModal(null)}
-              className="mt-4 w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
+              className="mt-4 w-full py-1.5 bg-accent hover:bg-accent-hover text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
             >
               Entendido
             </button>
@@ -1417,12 +1417,12 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       {showPromoGancho && (
         <div className="absolute inset-0 z-[120] flex items-center justify-center p-4">
           <div onClick={() => setShowPromoGancho(false)} className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs"></div>
-          
-          <div 
-            className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-violet-800 text-white shadow-violet-500/10"
+
+          <div
+            className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-navy-800 text-white shadow-accent/10"
             style={{ transform: 'scale(0.85)', transformOrigin: 'center' }}
           >
-            <button 
+            <button
               onClick={() => setShowPromoGancho(false)}
               className="absolute top-3 right-3 text-slate-400 hover:text-slate-200 cursor-pointer border-none bg-transparent font-bold text-sm"
             >
@@ -1431,13 +1431,13 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
             <div className="flex flex-col items-center gap-3">
               {/* Icono de Escudo de Seguridad / Validación */}
-              <div className="w-12 h-12 rounded-full bg-violet-950 border border-violet-800 flex items-center justify-center text-violet-400 relative">
-                <ShieldCheck size={26} className="text-violet-400 animate-[pulse_2s_infinite]" />
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full"></span>
+              <div className="w-12 h-12 rounded-full bg-brand-dark border border-navy-800 flex items-center justify-center text-navy-300 relative">
+                <ShieldCheck size={26} className="text-navy-300 animate-[pulse_2s_infinite]" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-success-icon rounded-full"></span>
               </div>
 
               <div>
-                <h3 className="text-xs font-black uppercase tracking-wider text-violet-300">
+                <h3 className="text-xs font-black uppercase tracking-wider text-navy-100">
                   ¡Fichaje Seguro Activo!
                 </h3>
                 <p className="text-[9.5px] font-bold text-slate-400 mt-1 leading-normal">
@@ -1447,19 +1447,19 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
               <div className="w-full text-left space-y-2 border-y border-slate-800/80 py-3 my-1">
                 <div className="flex items-start gap-2">
-                  <span className="text-[10px] text-emerald-400 shrink-0">✓</span>
+                  <span className="text-[10px] text-success-text shrink-0">✓</span>
                   <span className="text-[8.5px] font-semibold text-slate-300 leading-normal">
                     <strong>Reconocimiento Facial (Selfie):</strong> Previene que un compañero cheque por otro.
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-[10px] text-emerald-400 shrink-0">✓</span>
+                  <span className="text-[10px] text-success-text shrink-0">✓</span>
                   <span className="text-[8.5px] font-semibold text-slate-300 leading-normal">
                     <strong>Geolocalización GPS:</strong> Bloquea registros fuera del perímetro permitido.
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-[10px] text-emerald-400 shrink-0">✓</span>
+                  <span className="text-[10px] text-success-text shrink-0">✓</span>
                   <span className="text-[8.5px] font-semibold text-slate-300 leading-normal">
                     <strong>Reportes Automatizados:</strong> Calcula retardos y horas extras al instante.
                   </span>
@@ -1472,11 +1472,11 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                     setShowPromoGancho(false);
                     if (onActionClick) onActionClick();
                   }}
-                  className="w-full py-2 bg-gradient-to-tr from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-violet-500/10 cursor-pointer border-none"
+                  className="w-full py-2 bg-gradient-to-tr from-accent to-accent hover:from-accent-hover hover:to-accent-hover text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-accent/10 cursor-pointer border-none"
                 >
                   Probar 14 días Gratis
                 </button>
-                
+
                 <button
                   onClick={handleResetSim}
                   className="w-full py-1.5 bg-slate-800/60 hover:bg-slate-800 text-slate-400 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none"
@@ -1493,12 +1493,12 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       {showBlockProModal && (
         <div className="absolute inset-0 z-[120] flex items-center justify-center p-4">
           <div onClick={() => setShowBlockProModal(null)} className="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
-          
-          <div 
-            className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-violet-800 text-white shadow-violet-500/10"
+
+          <div
+            className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-navy-800 text-white shadow-accent/10"
             style={{ transform: 'scale(0.85)', transformOrigin: 'center' }}
           >
-            <button 
+            <button
               onClick={() => setShowBlockProModal(null)}
               className="absolute top-3 right-3 text-slate-400 hover:text-slate-200 cursor-pointer border-none bg-transparent font-bold text-sm"
             >
@@ -1506,12 +1506,12 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             </button>
 
             <div className="flex flex-col items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-violet-950 border border-violet-800 flex items-center justify-center text-violet-400">
-                <Lock size={22} className="text-violet-400" />
+              <div className="w-12 h-12 rounded-full bg-brand-dark border border-navy-800 flex items-center justify-center text-navy-300">
+                <Lock size={22} className="text-navy-300" />
               </div>
 
               <div>
-                <h3 className="text-xs font-black uppercase tracking-wider text-violet-300">
+                <h3 className="text-xs font-black uppercase tracking-wider text-navy-100">
                   Módulo Exclusivo PRO
                 </h3>
                 <p className="text-[9.5px] font-bold text-slate-400 mt-1 leading-normal">
@@ -1525,11 +1525,11 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                     setShowBlockProModal(null);
                     if (onActionClick) onActionClick();
                   }}
-                  className="w-full py-2 bg-gradient-to-tr from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
+                  className="w-full py-2 bg-gradient-to-tr from-accent to-accent hover:from-accent-hover hover:to-accent-hover text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
                 >
                   Mejorar a PRO (14 días gratis)
                 </button>
-                
+
                 <button
                   onClick={() => setShowBlockProModal(null)}
                   className="w-full py-1.5 bg-slate-800/60 hover:bg-slate-800 text-slate-400 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none"

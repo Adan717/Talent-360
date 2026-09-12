@@ -69,12 +69,12 @@ export const LateJustificationsPanel = () => {
   if (requests.length === 0) return null;
 
   return (
-    <div className="bg-amber-600 text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-amber-400/20">
+    <div className="bg-warning-text text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-warning-text/20">
       <div className="flex items-center gap-2">
         <span className="text-xl">📝</span>
         <div>
           <p className="font-black text-xs sm:text-sm">Justificantes de Retardo</p>
-          <p className="text-[9px] sm:text-[10px] text-amber-50 opacity-90 leading-tight">
+          <p className="text-[9px] sm:text-[10px] text-warning-text opacity-90 leading-tight">
             Aprobar exime el descuento de ese retardo en la nómina
           </p>
         </div>
@@ -83,20 +83,20 @@ export const LateJustificationsPanel = () => {
         {requests.map(r => (
           <div
             key={r.id}
-            className="bg-amber-700/40 border border-amber-400/30 rounded-xl p-2.5 flex flex-col gap-2"
+            className="bg-warning-text/40 border border-warning-text/30 rounded-xl p-2.5 flex flex-col gap-2"
           >
             <div className="flex flex-col text-left">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-black text-white">{r.employee_name || 'Colaborador'}</span>
-                <span className="text-[9px] text-amber-100 shrink-0">
+                <span className="text-[9px] text-warning-text shrink-0">
                   {r.date}
                   {r.requested_late_minutes != null && <> · {r.requested_late_minutes} min</>}
                 </span>
               </div>
-              <span className="text-[10px] text-amber-50 italic leading-snug mt-0.5">"{r.reason}"</span>
+              <span className="text-[10px] text-warning-text italic leading-snug mt-0.5">"{r.reason}"</span>
             </div>
             {Number(r.user_id) === Number(currentUser?.id) ? (
-              <span className="text-[9.5px] font-bold text-amber-50 bg-amber-800/40 border border-amber-400/30 rounded-lg px-2.5 py-1.5">
+              <span className="text-[9.5px] font-bold text-warning-text bg-warning-text/40 border border-warning-text/30 rounded-lg px-2.5 py-1.5">
                 Tu justificante · debe resolverlo otro admin o supervisor
               </span>
             ) : (
@@ -104,14 +104,14 @@ export const LateJustificationsPanel = () => {
                 <button
                   onClick={() => resolve(r.id, 'approved')}
                   disabled={resolvingId === r.id}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-success-icon hover:bg-success-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                   ✓ Aprobar
                 </button>
                 <button
                   onClick={() => resolve(r.id, 'rejected')}
                   disabled={resolvingId === r.id}
-                  className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                   ✕ Rechazar
                 </button>

@@ -19,13 +19,13 @@ class PhoneErrorBoundary extends React.Component<{ children: React.ReactNode }, 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center h-full bg-slate-950 p-6 text-center select-none border border-rose-500/20 overflow-y-auto">
+        <div className="flex flex-col items-center justify-center h-full bg-slate-950 p-6 text-center select-none border border-danger-text/20 overflow-y-auto">
           <span className="text-2xl mb-2">📱💥</span>
-          <h4 className="text-[10px] font-black uppercase tracking-wider text-rose-400">Error de Celular</h4>
-          <p className="text-[10px] text-rose-300 mt-2 font-mono leading-normal max-w-[240px] break-words">
+          <h4 className="text-[10px] font-black uppercase tracking-wider text-danger-text">Error de Celular</h4>
+          <p className="text-[10px] text-danger-text mt-2 font-mono leading-normal max-w-[240px] break-words">
             {this.state.error?.message || String(this.state.error)}
           </p>
-          <pre className="text-[8px] text-slate-500 mt-4 font-mono text-left max-w-full overflow-x-auto leading-tight p-2 bg-slate-900 rounded border border-slate-800">
+          <pre className="text-[8px] text-text-3 mt-4 font-mono text-left max-w-full overflow-x-auto leading-tight p-2 bg-slate-900 rounded border border-slate-800">
             {this.state.error?.stack || 'No stack trace available'}
           </pre>
         </div>
@@ -40,7 +40,7 @@ function MiniaturaCelular({ user, scale }: { user: any; scale: number }) {
 
   // Sincronizar estado local simulado hacia la store global para la tabla dinámica
   const { setGlobalClockState, setGlobalCheckInTime, setGlobalArrivalTime } = useAppStore();
-  
+
   useEffect(() => {
     if (user?.id && engine.clockState !== undefined) {
       setGlobalClockState(user.id, engine.clockState);
@@ -63,7 +63,7 @@ function MiniaturaCelular({ user, scale }: { user: any; scale: number }) {
 
   if (engine.isGlobalLoading) {
     return (
-      <div className="flex items-center justify-center h-full bg-slate-900 text-slate-500 text-xs">
+      <div className="flex items-center justify-center h-full bg-slate-900 text-text-3 text-xs">
         <span className="animate-pulse">Cargando cel...</span>
       </div>
     );
@@ -71,7 +71,7 @@ function MiniaturaCelular({ user, scale }: { user: any; scale: number }) {
 
   if (engine.dbEmpty) {
     return (
-      <div className="flex items-center justify-center h-full bg-slate-900 text-rose-500 text-xs">
+      <div className="flex items-center justify-center h-full bg-slate-900 text-danger-text text-xs">
         <span>Error: BD vacía</span>
       </div>
     );
@@ -82,12 +82,12 @@ function MiniaturaCelular({ user, scale }: { user: any; scale: number }) {
       {/* Simulation Controls Overlay (Not Scaled) */}
       <div className="bg-slate-800 border-b border-slate-700/80 p-2 flex justify-between items-center text-xs shrink-0 z-20">
         {/* Offline Simulation Toggle */}
-        <button 
+        <button
           onClick={() => engine.setIsSimulatedOffline(!engine.isSimulatedOffline)}
           className={`px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-wider transition-all active:scale-95 ${
-            engine.isSimulatedOffline 
-              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse' 
-              : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/35'
+            engine.isSimulatedOffline
+              ? 'bg-danger-icon/20 text-danger-text border border-danger-text/40 animate-pulse'
+              : 'bg-success-icon/20 text-success-text border border-success-text/35'
           }`}
         >
           {engine.isSimulatedOffline ? '📡 Offline' : '📶 Online'}
@@ -119,7 +119,7 @@ function MiniaturaCelular({ user, scale }: { user: any; scale: number }) {
       {/* Scaled Cellphone frame */}
       <div className="flex-grow overflow-hidden relative">
         <ClockContext.Provider value={engine}>
-          <div 
+          <div
             className="w-[400px] h-[850px] transform origin-top-left pointer-events-auto"
             style={{ transform: `scale(${scale})` }}
           >
@@ -142,10 +142,10 @@ export default function PanelSimulador() {
     simulated_date: null,
     status: null,
   });
-  const { 
-    globalUsers, 
-    storeStatus, 
-    setStoreStatus, 
+  const {
+    globalUsers,
+    storeStatus,
+    setStoreStatus,
     fetchState,
     globalSimTime,
     setGlobalSimTime,
@@ -300,14 +300,14 @@ export default function PanelSimulador() {
       interval = setInterval(() => {
         setGlobalSimTime((prev: number) => {
           const nextTime = prev + globalSimSpeed;
-          
+
           // Watchdog: Alerta de retraso de apertura basado en storeSchedule.openTime (tolerancia de 15 minutos)
           const rawOpenTime = useAppStore.getState().systemSettings?.storeSchedule?.openTime;
           const storeOpenTime = (typeof rawOpenTime === 'string' && rawOpenTime.includes(':')) ? rawOpenTime : '08:00';
           const openTimeParts = storeOpenTime.split(':');
           const openTimeMins = parseInt(openTimeParts[0]) * 60 + parseInt(openTimeParts[1]);
           const alertTimeMins = openTimeMins + 15; // 15 minutos de tolerancia
-          
+
           if (!hasAlertedStoreDelay && nextTime >= alertTimeMins && storeStatus === 'closed') {
              addMatrixEvent(
                'Alerta Crítica: Retraso de Apertura',
@@ -432,7 +432,7 @@ export default function PanelSimulador() {
   return (
     <div className="flex flex-col gap-4">
       {(!isSandboxMode || isProduction) && (
-        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 px-5 flex items-center gap-3 text-xs text-rose-400 font-bold shadow-inner">
+        <div className="bg-danger-icon/10 border border-danger-text/30 rounded-2xl p-4 px-5 flex items-center gap-3 text-xs text-danger-text font-bold shadow-inner">
           <span className="text-xl select-none">⚠️</span>
           <span>
             <strong>ADVERTENCIA — MODO PRODUCCIÓN EN VIVO ACTIVO:</strong> El modo Sandbox está apagado para {currentUser?.tenant?.name || 'tu empresa'}. Cualquier fichaje, retardo, comida o apertura de tienda que realices en estos celulares virtuales escribirá directamente en la base de datos de producción real en PostgreSQL.
@@ -440,24 +440,24 @@ export default function PanelSimulador() {
         </div>
       )}
       <div className="flex flex-col xl:flex-row h-[90vh] bg-slate-900 rounded-3xl overflow-hidden border border-slate-700 shadow-2xl gap-4">
-      
+
       {/* PANEL IZQUIERDO: CONTROLES MATRIX Y CELULARES */}
       <div className="flex-1 flex flex-col min-w-0 border-r border-slate-700">
         {/* HEADER MATRIX & TIME MACHINE */}
         <div className="bg-slate-800 border-b border-slate-700 p-6 flex flex-col gap-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-black text-emerald-400 flex items-center gap-2">
+              <h2 className="text-2xl font-black text-success-text flex items-center gap-2">
                 <span className="text-3xl">🖥️</span> Matrix QA (Multi-Celular)
               </h2>
               <p className="text-slate-400 text-sm">Pruebas simultáneas en tiempo real</p>
             </div>
-            
+
             <div className="flex gap-4">
-              <div className="px-6 py-3 rounded-xl font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-2">
+              <div className="px-6 py-3 rounded-xl font-bold bg-success-icon/20 text-success-text border border-success-text/30 flex items-center gap-2">
                 <span>🟢 BD REAL: POSTGRES</span>
                 {simSession.simulated_date && (
-                  <span className="text-[10px] font-black uppercase text-emerald-300/80 border-l border-emerald-500/30 pl-2 ml-1">
+                  <span className="text-[10px] font-black uppercase text-success-text/80 border-l border-success-text/30 pl-2 ml-1">
                     Día simulado: {simSession.simulated_date}
                   </span>
                 )}
@@ -467,17 +467,17 @@ export default function PanelSimulador() {
                 🔄 Iniciar Nueva Sesión
               </button>
 
-              <button onClick={handlePurgeTestData} className="px-6 py-3 rounded-xl font-bold transition-colors bg-rose-950/40 text-rose-400 border border-rose-800/60 hover:bg-rose-900/40">
+              <button onClick={handlePurgeTestData} className="px-6 py-3 rounded-xl font-bold transition-colors bg-danger-text/40 text-danger-text border border-danger-text/60 hover:bg-danger-text/40">
                 🗑️ Purgar Datos de Prueba
               </button>
 
               {(currentUser?.system_role === 'platform_admin' || currentUser?.role === 'platform_admin') && (
-                <button onClick={handlePurgeArchive} className="px-6 py-3 rounded-xl font-bold transition-colors bg-rose-950/40 text-rose-400 border border-rose-800/60 hover:bg-rose-900/40">
+                <button onClick={handlePurgeArchive} className="px-6 py-3 rounded-xl font-bold transition-colors bg-danger-text/40 text-danger-text border border-danger-text/60 hover:bg-danger-text/40">
                   🔥 Purgar Archivo
                 </button>
               )}
 
-              <button onClick={toggleStore} className={`px-6 py-3 rounded-xl font-bold transition-colors ${storeStatus === 'open' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/50 hover:bg-rose-500/40' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-500/40'}`}>
+              <button onClick={toggleStore} className={`px-6 py-3 rounded-xl font-bold transition-colors ${storeStatus === 'open' ? 'bg-danger-icon/20 text-danger-text border border-danger-text/50 hover:bg-danger-icon/40' : 'bg-success-icon/20 text-success-text border border-success-text/50 hover:bg-success-icon/40'}`}>
                 {storeStatus === 'open' ? '🔒 Cerrar Tienda (Global)' : '🔓 Abrir Tienda (Global)'}
               </button>
             </div>
@@ -491,8 +491,8 @@ export default function PanelSimulador() {
                 <button
                   onClick={() => setSimulatedTierOverride('freemium')}
                   className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1 cursor-pointer select-none border border-transparent ${
-                    currentTier === 'freemium' 
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-md shadow-emerald-500/5' 
+                    currentTier === 'freemium'
+                      ? 'bg-success-icon/20 text-success-text border border-success-text/30 shadow-md shadow-success-text/5'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -501,8 +501,8 @@ export default function PanelSimulador() {
                 <button
                   onClick={() => setSimulatedTierOverride('pro')}
                   className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1 cursor-pointer select-none border border-transparent ${
-                    currentTier === 'pro' 
-                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-md shadow-amber-500/5' 
+                    currentTier === 'pro'
+                      ? 'bg-warning-icon/20 text-warning-text border border-warning-text/30 shadow-md shadow-warning-text/5'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -511,8 +511,8 @@ export default function PanelSimulador() {
                 <button
                   onClick={() => setSimulatedTierOverride('enterprise')}
                   className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1 cursor-pointer select-none border border-transparent ${
-                    currentTier === 'enterprise' 
-                      ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30 shadow-md shadow-violet-500/5' 
+                    currentTier === 'enterprise'
+                      ? 'bg-accent/20 text-navy-300 border border-accent/30 shadow-md shadow-accent/5'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -521,14 +521,14 @@ export default function PanelSimulador() {
                 {simulatedTierOverride && (
                   <button
                     onClick={() => setSimulatedTierOverride(null)}
-                    className="px-2.5 py-1.5 rounded-lg font-bold text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors border border-transparent cursor-pointer"
+                    className="px-2.5 py-1.5 rounded-lg font-bold text-[10px] text-navy-300 hover:text-navy-100 transition-colors border border-transparent cursor-pointer"
                     title="Restablecer al plan real de la base de datos"
                   >
                     Restablecer
                   </button>
                 )}
               </div>
-              <span className={`text-[10px] font-bold flex items-center gap-1 ${simulatedTierOverride ? 'text-indigo-400' : 'text-slate-500'}`}>
+              <span className={`text-[10px] font-bold flex items-center gap-1 ${simulatedTierOverride ? 'text-navy-300' : 'text-text-3'}`}>
                 {simulatedTierOverride ? (
                   <>🧪 Override manual activo — no refleja la BD real</>
                 ) : (
@@ -549,16 +549,16 @@ export default function PanelSimulador() {
                   { id: 'academia', name: 'Academia LMS', tier: 'pro' },
                   { id: 'documentos', name: 'Gestor Documental', tier: 'pro' }
                 ].map(mod => {
-                  const isUnlocked = currentTier === 'enterprise' || 
-                                     mod.tier === 'freemium' || 
+                  const isUnlocked = currentTier === 'enterprise' ||
+                                     mod.tier === 'freemium' ||
                                      (currentTier === 'pro' && mod.tier === 'pro');
                   return (
-                    <span 
-                      key={mod.id} 
+                    <span
+                      key={mod.id}
                       className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border flex items-center gap-1 select-none transition-all ${
-                        isUnlocked 
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                          : 'bg-slate-800/40 text-slate-500 border-slate-700/60 line-through opacity-60'
+                        isUnlocked
+                          ? 'bg-success-icon/10 text-success-text border-success-text/20'
+                          : 'bg-slate-800/40 text-text-3 border-slate-700/60 line-through opacity-60'
                       }`}
                     >
                       <span>{isUnlocked ? '🟢' : '🔴'}</span>
@@ -573,7 +573,7 @@ export default function PanelSimulador() {
           {/* TIME MACHINE CONTROLS */}
           <div className="bg-slate-900 rounded-2xl p-4 border border-slate-700 shadow-inner flex flex-col gap-4">
             <div className="flex justify-between items-center">
-              <span className="text-emerald-400 font-bold uppercase tracking-widest text-xs">Máquina del Tiempo</span>
+              <span className="text-success-text font-bold uppercase tracking-widest text-xs">Máquina del Tiempo</span>
               <div className="flex items-center gap-3">
                 <select
                   value={globalSimDay}
@@ -591,26 +591,26 @@ export default function PanelSimulador() {
                 <span className="text-2xl font-black text-white">{parseMinsToTime(globalSimTime)}</span>
               </div>
             </div>
-            
-            <input 
-              type="range" 
-              min={450} 
-              max={1140} 
+
+            <input
+              type="range"
+              min={450}
+              max={1140}
               value={globalSimTime}
               onChange={(e) => setGlobalSimTime(Number(e.target.value))}
-              className="w-full accent-emerald-500 cursor-pointer"
+              className="w-full accent-success-text cursor-pointer"
             />
-            
+
             <div className="flex justify-between items-center mt-2">
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => setGlobalSimRunning(!globalSimRunning)}
-                  className={`px-4 py-2 rounded-lg font-bold text-sm ${globalSimRunning ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}`}
+                  className={`px-4 py-2 rounded-lg font-bold text-sm ${globalSimRunning ? 'bg-danger-icon text-white' : 'bg-success-icon text-white'}`}
                 >
                   {globalSimRunning ? '⏸️ Pausar Simulación' : '▶️ Auto-Run'}
                 </button>
-                <select 
-                  value={globalSimSpeed} 
+                <select
+                  value={globalSimSpeed}
                   onChange={(e) => setGlobalSimSpeed(Number(e.target.value))}
                   className="bg-slate-800 text-slate-300 border border-slate-600 rounded-lg px-3 text-sm outline-none"
                 >
@@ -620,24 +620,24 @@ export default function PanelSimulador() {
                   <option value={15}>x15 minutos / seg</option>
                 </select>
               </div>
-              <span className="text-xs text-slate-500">7:30 AM - 7:00 PM</span>
+              <span className="text-xs text-text-3">7:30 AM - 7:00 PM</span>
             </div>
 
             <div className="flex justify-between items-center mt-2 border-t border-slate-800 pt-3">
               <div className="flex flex-col gap-1.5 w-full">
                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-400">
                   <span>Escala de Visualización</span>
-                  <span className="text-emerald-400">{Math.round(phoneScale * 100)}%</span>
+                  <span className="text-success-text">{Math.round(phoneScale * 100)}%</span>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-                  <input 
-                    type="range" 
-                    min="0.35" 
-                    max="1.0" 
+                  <input
+                    type="range"
+                    min="0.35"
+                    max="1.0"
                     step="0.05"
                     value={phoneScale}
                     onChange={(e) => setPhoneScale(Number(e.target.value))}
-                    className="w-full sm:w-28 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    className="w-full sm:w-28 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-success-text"
                   />
                   <div className="flex gap-1 flex-wrap justify-center sm:justify-start">
                     {[
@@ -647,12 +647,12 @@ export default function PanelSimulador() {
                       { l: 'Gde.', v: 0.8 },
                       { l: '100%', v: 1.0 }
                     ].map(btn => (
-                      <button 
+                      <button
                         key={btn.l}
-                        onClick={() => setPhoneScale(btn.v)} 
+                        onClick={() => setPhoneScale(btn.v)}
                         className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all active:scale-95 border ${
-                          phoneScale === btn.v 
-                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-inner font-bold' 
+                          phoneScale === btn.v
+                            ? 'bg-success-icon/20 text-success-text border-success-text/40 shadow-inner font-bold'
                             : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700/60 font-bold'
                         }`}
                       >
@@ -686,25 +686,25 @@ export default function PanelSimulador() {
               })
               .map(user => (
               <div key={`${user.id}-${resetKey}-${assignmentsVersion}`} className="flex flex-col items-center transition-all duration-300">
-                <div 
+                <div
                   className="bg-slate-800 px-3 py-1.5 rounded-t-2xl border-t border-l border-r border-slate-700 text-center z-10 transition-all duration-300 truncate"
                   style={{ width: `${400 * phoneScale}px` }}
                 >
-                  <p 
-                    className="text-emerald-400 font-bold truncate" 
+                  <p
+                    className="text-success-text font-bold truncate"
                     style={{ fontSize: `${Math.max(10, Math.min(14, 14 * (phoneScale / 0.65)))}px` }}
                   >
                     {user.name}{getUserKeysIcon(user.id)}
                   </p>
-                  <p 
-                    className="text-slate-500 uppercase font-black tracking-widest truncate" 
+                  <p
+                    className="text-text-3 uppercase font-black tracking-widest truncate"
                     style={{ fontSize: `${Math.max(8, Math.min(10, 10 * (phoneScale / 0.65)))}px` }}
                   >
                     {user.role}
                   </p>
                 </div>
                 {/* Contenedor wrapper con dimensiones exactas que enmascara el escalado */}
-                <div 
+                <div
                   className="bg-slate-800 rounded-b-2xl rounded-t-none border border-slate-700 shadow-2xl overflow-hidden relative transition-all duration-300"
                   style={{ width: `${400 * phoneScale}px`, height: `${(850 * phoneScale) + 38}px` }}
                 >
@@ -726,14 +726,14 @@ export default function PanelSimulador() {
            </h3>
            <p className="text-slate-400 text-xs mt-1">Línea de tiempo cronológica ({parseMinsToTime(globalSimTime)})</p>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-6 bg-slate-900/50">
           <div className="flex flex-col gap-4 relative">
             {/* Línea conectora */}
             <div className="absolute left-[21px] top-4 bottom-4 w-px bg-slate-700"></div>
 
             {!matrixTimeline || matrixTimeline.length === 0 ? (
-              <div className="text-center py-10 text-slate-500 text-sm animate-pulse">
+              <div className="text-center py-10 text-text-3 text-sm animate-pulse">
                 La bitácora está vacía. Avanza el tiempo o interactúa con los celulares.
               </div>
             ) : (
@@ -741,11 +741,11 @@ export default function PanelSimulador() {
                 .sort((a, b) => b.simTime - a.simTime)
                 .map((event) => {
                   let icon = '🔔';
-                  let colorClass = 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30';
-                  
-                  if (event.type === 'success') { icon = '✅'; colorClass = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'; }
-                  if (event.type === 'warning') { icon = '⚠️'; colorClass = 'bg-amber-500/20 text-amber-400 border-amber-500/30'; }
-                  if (event.type === 'error') { icon = '🛑'; colorClass = 'bg-rose-500/20 text-rose-400 border-rose-500/30'; }
+                  let colorClass = 'bg-accent/20 text-navy-300 border-accent/30';
+
+                  if (event.type === 'success') { icon = '✅'; colorClass = 'bg-success-icon/20 text-success-text border-success-text/30'; }
+                  if (event.type === 'warning') { icon = '⚠️'; colorClass = 'bg-warning-icon/20 text-warning-text border-warning-text/30'; }
+                  if (event.type === 'error') { icon = '🛑'; colorClass = 'bg-danger-icon/20 text-danger-text border-danger-text/30'; }
                   if (event.type === 'system') { icon = '⚙️'; colorClass = 'bg-slate-500/20 text-slate-300 border-slate-500/30'; }
 
                   const actor = (globalUsers || []).find(u => Number(u.id) === Number(event.actorId));

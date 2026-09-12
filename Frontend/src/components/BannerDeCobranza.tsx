@@ -25,8 +25,8 @@ export const BannerDeCobranza: React.FC<{ aviso?: AvisoDeCobranza | null }> = ({
       data-testid="banner-de-cobranza"
       className={`px-4 lg:px-8 py-3 border-b flex items-start gap-3 ${
         esApagon
-          ? 'bg-red-50 border-red-200 text-red-900'
-          : 'bg-amber-50 border-amber-200 text-amber-900'
+          ? 'bg-danger-bg border-danger-text/20 text-danger-text'
+          : 'bg-warning-bg border-warning-text/20 text-warning-text'
       }`}
     >
       <div className="shrink-0 mt-0.5">

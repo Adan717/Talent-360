@@ -44,9 +44,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         title: 'Plan Enterprise Activado ⚡',
         subtitle: 'Acceso Total Ilimitado a la Suite Completa 360',
         badge: 'ENTERPRISE',
-        badgeColor: 'bg-amber-100 text-amber-800 border-amber-300',
-        iconBg: 'bg-amber-50 text-amber-600',
-        borderColor: 'border-amber-200',
+        badgeColor: 'bg-warning-bg text-warning-text border-warning-text/20',
+        iconBg: 'bg-warning-bg text-warning-text',
+        borderColor: 'border-warning-text/20',
         features: [
           'Matriz de Aperturas & Jerarquía de Llaves Nivel 1 a Nivel 5',
           'Asistente IA para Evidencia Fotográfica y Captura de Números',
@@ -59,9 +59,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         title: 'Plan Pro Activado 🚀',
         subtitle: 'Módulos Avanzados, Inteligencia Artificial & Analítica',
         badge: 'PLAN PRO',
-        badgeColor: 'bg-blue-100 text-blue-800 border-blue-300',
-        iconBg: 'bg-blue-50 text-blue-600',
-        borderColor: 'border-blue-200',
+        badgeColor: 'bg-accent-soft text-navy-800 border-navy-300',
+        iconBg: 'bg-navy-50 text-accent',
+        borderColor: 'border-border',
         features: [
           'IA Asistente Operativo para Validación de Tareas y Fotos',
           'Control de Llaves & Protocolos de Apertura de Sucursal',
@@ -74,9 +74,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         title: 'Plan Standard Activado 💼',
         subtitle: 'Gestión Operativa Profesional & Reloj Checador PWA',
         badge: 'STANDARD',
-        badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-        iconBg: 'bg-emerald-50 text-emerald-600',
-        borderColor: 'border-emerald-200',
+        badgeColor: 'bg-success-bg text-success-text border-success-text/20',
+        iconBg: 'bg-success-bg text-success-text',
+        borderColor: 'border-success-text/20',
         features: [
           'Reloj Checador PWA en Kiosko Móvil con PIN de Seguridad',
           'Asignación de Tareas y Rutinas Operativas Diarias',
@@ -89,9 +89,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         title: 'Prueba Premium / Plan Inicial 🎁',
         subtitle: '30 Días de Evaluación Completa de la Suite 360',
         badge: 'DEMO PRO',
-        badgeColor: 'bg-purple-100 text-purple-800 border-purple-300',
-        iconBg: 'bg-purple-50 text-purple-600',
-        borderColor: 'border-purple-200',
+        badgeColor: 'bg-accent-soft text-navy-800 border-navy-300',
+        iconBg: 'bg-navy-50 text-accent',
+        borderColor: 'border-border',
         features: [
           'Acceso completo a todos los módulos durante el periodo de prueba',
           'Sin necesidad de ingresar tarjeta durante la evaluación',
@@ -510,13 +510,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   const togglePuestoSelection = (name: string) => {
-    setSelectedPuestos(prev => 
+    setSelectedPuestos(prev =>
       prev.includes(name) ? prev.filter(p => p !== name) : [...prev, name]
     );
   };
 
   const toggleTareaSelection = (title: string) => {
-    setSelectedTareas(prev => 
+    setSelectedTareas(prev =>
       prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title]
     );
   };
@@ -624,7 +624,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         welcomeImageUrl: '',
         welcomeVideoUrl: ''
       });
-      
+
       // 2. Guardar en system_settings del Tenant para coherencia
       await Promise.all([
         updateSetting('company_name', companyName),
@@ -704,10 +704,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         // convención automática, que es justo lo que la regla viene a evitar.
         organigrama_confirmado: selectedNicho !== 'custom'
       });
-      
+
       // Refrescar el estado para traer los puestos recién inyectados en Postgres
       await fetchState();
-      
+
       const updatedRoles = useAppStore.getState().globalRoles;
       if (updatedRoles && updatedRoles.length > 0) {
         setSelectedRoleId(updatedRoles[0].id);
@@ -721,7 +721,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       setLoading(false);
     }
   };
- 
+
   const handleCreateEmployee = async () => {
     if (!selectedRoleId) {
       setErrorMsg("Debes seleccionar un puesto de trabajo para el colaborador.");
@@ -803,10 +803,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         console.error("Error al actualizar el teléfono en la BD:", e);
       }
     }
-    
+
     const inviteUrl = `${getQrOrigin(qrIpOverride)}/invite?pin=${createdEmpPin}`;
     const message = `*TALENT 360* | ¡Bienvenido al Equipo! 👋\n\nHola, *${empName}*, te damos la más cordial bienvenida a *${companyName}*. 🏢\n\nTu cuenta ha sido registrada con éxito en nuestra plataforma de asistencia y gestión laboral. Para activar tu Reloj Checador móvil (PWA) de forma segura y configurar tu perfil, haz clic en el enlace de invitación:\n\n🔑 *Tu PIN temporal de acceso es:* ${createdEmpPin}\n\n¡Mucho éxito en tu jornada laboral! 🚀\n\n${inviteUrl}`;
-    
+
     const waUrl = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank');
   };
@@ -835,9 +835,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         console.error("Error al actualizar tu teléfono en la BD:", e);
       }
     }
-    
+
     const adminMessage = `¡Hola, *${currentUser?.name || 'Administrador'}*! 👋 Gracias por crear tu cuenta de empresa con nosotros en nuestra plataforma.\n\nTu entorno de control ya está listo para operar, te compartimos tu acceso rápido al panel administrativo para gestionar a tus colaboradores en tiempo real:\n\n👤 *Usuario/Email:* ${currentUser?.email || ''}\n🔑 *PIN de prueba del empleado:* ${createdEmpPin} (${empName})\n\n¡Hagamos crecer tu negocio juntos! 🚀\n\n${window.location.origin}`;
-    
+
     const waUrl = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(adminMessage)}`;
     window.open(waUrl, '_blank');
   };
@@ -898,14 +898,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md overflow-y-auto">
-      <div className="bg-white w-full max-w-2xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl relative border border-slate-100 flex flex-col my-auto max-h-[92vh] sm:max-h-none">
-        
+      <div className="bg-white w-full max-w-2xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl relative border border-border flex flex-col my-auto max-h-[92vh] sm:max-h-none">
+
         {/* Progress Bar */}
-        <div className="h-2 bg-slate-100 w-full flex-shrink-0 flex">
+        <div className="h-2 bg-page w-full flex-shrink-0 flex">
           {[1, 2, 3, 4, 5].map((s) => (
-            <div 
-              key={s} 
-              className={`h-full flex-1 transition-all duration-300 ${s <= step ? 'bg-blue-600' : 'bg-slate-200'}`}
+            <div
+              key={s}
+              className={`h-full flex-1 transition-all duration-300 ${s <= step ? 'bg-accent' : 'bg-slate-200'}`}
             />
           ))}
         </div>
@@ -913,7 +913,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         {/* Wizard Content */}
         <div className="p-5 sm:p-8 md:p-10 flex-1 flex flex-col overflow-y-auto sm:overflow-y-visible">
           {errorMsg && (
-            <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-3 text-rose-700 text-sm animate-in fade-in">
+            <div className="mb-6 p-4 bg-danger-bg border border-danger-text/20 rounded-2xl flex items-start gap-3 text-danger-text text-sm animate-in fade-in">
               <AlertCircle size={20} className="shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold">Hubo un problema: </span>
@@ -926,14 +926,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             <div className="text-center py-4 sm:py-6 animate-in fade-in">
               {/* Contenedor flotante de icono de bienvenida */}
               <div className="relative w-20 h-20 mx-auto mb-6">
-                <div className="absolute inset-0 bg-blue-100 rounded-3xl blur-xl opacity-50 animate-pulse"></div>
-                <div className="relative w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 text-white rounded-3xl flex items-center justify-center shadow-lg transform rotate-6 hover:rotate-0 transition-transform duration-300">
+                <div className="absolute inset-0 bg-accent-soft rounded-3xl blur-xl opacity-50 animate-pulse"></div>
+                <div className="relative w-20 h-20 bg-gradient-to-tr from-accent to-accent text-white rounded-3xl flex items-center justify-center shadow-lg transform rotate-6 hover:rotate-0 transition-transform duration-300">
                   <Sparkles size={36} className="animate-pulse" />
                 </div>
               </div>
 
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-800 mb-2 tracking-tight">¡Bienvenido a Talent 360!</h2>
-              <p className="text-slate-600 text-xs sm:text-sm max-w-md mx-auto leading-relaxed mb-6 px-4">
+              <h2 className="text-2xl sm:text-3xl font-black text-text-1 mb-2 tracking-tight">¡Bienvenido a Talent 360!</h2>
+              <p className="text-text-2 text-xs sm:text-sm max-w-md mx-auto leading-relaxed mb-6 px-4">
                 Configura tu sucursal en 4 sencillos pasos y ponla a funcionar en menos de 2 minutos.
               </p>
 
@@ -941,46 +941,46 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               {(() => {
                 const planInfo = getPlanBadgeInfo();
                 return (
-                  <div className={`bg-slate-50 border ${planInfo.borderColor} rounded-2xl sm:rounded-3xl p-4 sm:p-5 mb-6 text-left max-w-xl mx-auto shadow-sm relative overflow-hidden transition-all duration-300`}>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl -mr-10 -mt-10 opacity-70"></div>
-                    
+                  <div className={`bg-page border ${planInfo.borderColor} rounded-2xl sm:rounded-3xl p-4 sm:p-5 mb-6 text-left max-w-xl mx-auto shadow-sm relative overflow-hidden transition-all duration-300`}>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-navy-50 rounded-full blur-3xl -mr-10 -mt-10 opacity-70"></div>
+
                     <div className="flex items-start gap-3 relative z-10 mb-3">
-                      <div className={`w-11 h-11 rounded-2xl ${planInfo.iconBg} flex items-center justify-center shrink-0 shadow-sm border border-slate-200/50`}>
+                      <div className={`w-11 h-11 rounded-2xl ${planInfo.iconBg} flex items-center justify-center shrink-0 shadow-sm border border-border/50`}>
                         <Crown size={22} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h4 className="font-black text-slate-800 text-sm sm:text-base tracking-tight">{planInfo.title}</h4>
+                          <h4 className="font-black text-text-1 text-sm sm:text-base tracking-tight">{planInfo.title}</h4>
                           <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border shrink-0 ${planInfo.badgeColor}`}>
                             {planInfo.badge}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                        <p className="text-xs text-text-3 font-medium leading-relaxed">
                           {planInfo.subtitle}
                         </p>
                       </div>
                     </div>
 
                     {/* Bloque Destacado de Funciones Clave Incluidas */}
-                    <div className="bg-white/80 backdrop-blur-sm border border-slate-200/80 rounded-2xl p-3 sm:p-4 relative z-10 mb-4 shadow-inner">
-                      <p className="text-[11px] font-black uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-1.5">
-                        <Zap size={13} className="text-amber-500 fill-amber-500" /> Funciones Clave Activadas en tu Cuenta:
+                    <div className="bg-white/80 backdrop-blur-sm border border-border/80 rounded-2xl p-3 sm:p-4 relative z-10 mb-4 shadow-inner">
+                      <p className="text-[11px] font-black uppercase tracking-wider text-text-2 mb-2 flex items-center gap-1.5">
+                        <Zap size={13} className="text-warning-text fill-warning-text" /> Funciones Clave Activadas en tu Cuenta:
                       </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-text-2">
                         {planInfo.features.map((feat, idx) => (
                           <div key={idx} className="flex items-start gap-1.5 leading-tight">
-                            <span className="text-emerald-500 font-bold shrink-0">✓</span>
-                            <span className="font-semibold text-slate-700 text-[11px]">{feat}</span>
+                            <span className="text-success-text font-bold shrink-0">✓</span>
+                            <span className="font-semibold text-text-2 text-[11px]">{feat}</span>
                           </div>
                         ))}
                       </div>
                     </div>
 
                     {/* Acordeón de Catálogo Completo de 10 Módulos */}
-                    <div className="pt-2 border-t border-slate-200/80 relative z-10 flex flex-col gap-2.5">
+                    <div className="pt-2 border-t border-border/80 relative z-10 flex flex-col gap-2.5">
                       <button
                         onClick={() => setShowPlanDetails(!showPlanDetails)}
-                        className="flex items-center justify-between w-full text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors focus:outline-none py-1"
+                        className="flex items-center justify-between w-full text-xs font-bold text-accent hover:text-accent transition-colors focus:outline-none py-1"
                       >
                         <span className="flex items-center gap-1.5">
                           <BookOpen size={14} /> {showPlanDetails ? "Ocultar catálogo completo" : `Ver los 10 Módulos de Talent360 incluidos (${activePlanModules.length} activos)`}
@@ -995,18 +995,18 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           {allPlatformModules.map((mod) => {
                             const IconComponent = mod.icon;
                             const unlocked = isModuleUnlocked(mod.id);
-                            const badgeColor = unlocked ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500';
+                            const badgeColor = unlocked ? 'bg-success-bg text-success-text' : 'bg-page text-text-3';
                             return (
-                              <div key={mod.id} className={`p-2.5 rounded-xl border transition-all flex items-start gap-2.5 ${unlocked ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-100/50 border-slate-200/60 opacity-60'}`}>
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${unlocked ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
+                              <div key={mod.id} className={`p-2.5 rounded-xl border transition-all flex items-start gap-2.5 ${unlocked ? 'bg-white border-border shadow-sm' : 'bg-page/50 border-border/60 opacity-60'}`}>
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${unlocked ? 'bg-navy-50 text-accent' : 'bg-slate-200 text-slate-400'}`}>
                                   <IconComponent size={16} />
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center justify-between gap-1 mb-0.5">
-                                    <span className="text-[11px] font-extrabold text-slate-800 truncate">{mod.name}</span>
+                                    <span className="text-[11px] font-extrabold text-text-1 truncate">{mod.name}</span>
                                     <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${badgeColor}`}>{unlocked ? 'Activo' : mod.tag}</span>
                                   </div>
-                                  <p className="text-[10px] text-slate-500 line-clamp-1">{mod.desc}</p>
+                                  <p className="text-[10px] text-text-3 line-clamp-1">{mod.desc}</p>
                                 </div>
                               </div>
                             );
@@ -1019,9 +1019,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               })()}
 
               <div className="pt-2">
-                <button 
+                <button
                   onClick={() => setStep(1)}
-                  className="py-3 px-6 sm:py-4 sm:px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-sm sm:text-md shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 mx-auto active:scale-95"
+                  className="py-3 px-6 sm:py-4 sm:px-8 bg-accent hover:bg-accent-hover text-white rounded-2xl font-black text-sm sm:text-md shadow-lg shadow-accent/20 transition-all flex items-center gap-2 mx-auto active:scale-95"
                 >
                   Comenzar Configuración <ChevronRight size={18} />
                 </button>
@@ -1032,14 +1032,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           {step === 1 && (
             <div className="animate-in fade-in space-y-4">
               {/* Encabezado Principal de Paso 1 */}
-              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shadow-sm shrink-0">
-                    <Sparkles size={20} className="text-purple-600" />
+                  <div className="w-10 h-10 bg-navy-50 text-accent rounded-2xl flex items-center justify-center shadow-sm shrink-0">
+                    <Sparkles size={20} className="text-accent" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-black text-purple-600 tracking-wider uppercase">Paso 1 de 4 • Estructura</span>
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight">
+                    <span className="text-[10px] font-black text-accent tracking-wider uppercase">Paso 1 de 4 • Estructura</span>
+                    <h3 className="text-lg font-black text-text-1 tracking-tight">
                       {subStep === 'giro' && '1A. Giro Comercial y Especialidad'}
                       {subStep === 'puestos' && '1B. Puestos de Trabajo Sugeridos'}
                       {subStep === 'tareas' && '1C. Checklists & Rutinas Operativas'}
@@ -1049,39 +1049,39 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 </div>
 
                 {/* Mini Stepper de Bloques */}
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl shrink-0">
+                <div className="flex items-center gap-1 bg-page p-1 rounded-xl shrink-0">
                   <button
                     type="button"
                     onClick={() => setSubStep('giro')}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'giro' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'giro' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
                   >
                     1. Giro
                   </button>
                   <button
                     type="button"
                     onClick={() => setSubStep('puestos')}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'puestos' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'puestos' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
                   >
                     2. Puestos
                   </button>
                   <button
                     type="button"
                     onClick={() => setSubStep('tareas')}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'tareas' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'tareas' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
                   >
                     3. Tareas
                   </button>
                   <button
                     type="button"
                     onClick={() => setSubStep('cursos')}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'cursos' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'cursos' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
                   >
                     4. Cursos
                   </button>
                   <button
                     type="button"
                     onClick={() => setSubStep('organigrama')}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'organigrama' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'organigrama' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
                   >
                     5. Organigrama
                   </button>
@@ -1091,7 +1091,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               {/* BLOQUE 1A: ELECCIÓN DE GIRO COMERCIAL */}
               {subStep === 'giro' && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  <p className="text-xs text-slate-500 leading-relaxed">
+                  <p className="text-xs text-text-3 leading-relaxed">
                     Selecciona el giro de tu empresa. Ajustaremos la plantilla inicial para sugerirte los puestos y rutinas operativas ideales.
                   </p>
 
@@ -1100,65 +1100,65 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       type="button"
                       onClick={() => handleSelectNicho('materias_primas')}
                       className={`p-3 border rounded-2xl flex flex-col items-center gap-1.5 transition-all active:scale-98 ${
-                        selectedNicho === 'materias_primas' 
-                          ? 'border-purple-600 bg-purple-50/60 shadow-sm ring-1 ring-purple-600/30' 
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                        selectedNicho === 'materias_primas'
+                          ? 'border-accent bg-navy-50/60 shadow-sm ring-1 ring-focus-ring/30'
+                          : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
                       <span className="text-2xl">🧁</span>
-                      <span className="text-xs font-bold text-slate-700 text-center">Materias Primas / Repostería</span>
+                      <span className="text-xs font-bold text-text-2 text-center">Materias Primas / Repostería</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleSelectNicho('retail')}
                       className={`p-3 border rounded-2xl flex flex-col items-center gap-1.5 transition-all active:scale-98 ${
-                        selectedNicho === 'retail' 
-                          ? 'border-purple-600 bg-purple-50/60 shadow-sm ring-1 ring-purple-600/30' 
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                        selectedNicho === 'retail'
+                          ? 'border-accent bg-navy-50/60 shadow-sm ring-1 ring-focus-ring/30'
+                          : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
                       <span className="text-2xl">🛍️</span>
-                      <span className="text-xs font-bold text-slate-700 text-center">Retail / Tienda</span>
+                      <span className="text-xs font-bold text-text-2 text-center">Retail / Tienda</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleSelectNicho('restaurante')}
                       className={`p-3 border rounded-2xl flex flex-col items-center gap-1.5 transition-all active:scale-98 ${
-                        selectedNicho === 'restaurante' 
-                          ? 'border-purple-600 bg-purple-50/60 shadow-sm ring-1 ring-purple-600/30' 
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                        selectedNicho === 'restaurante'
+                          ? 'border-accent bg-navy-50/60 shadow-sm ring-1 ring-focus-ring/30'
+                          : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
                       <span className="text-2xl">🍔</span>
-                      <span className="text-xs font-bold text-slate-700 text-center">Restaurante</span>
+                      <span className="text-xs font-bold text-text-2 text-center">Restaurante</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleSelectNicho('oficina')}
                       className={`p-3 border rounded-2xl flex flex-col items-center gap-1.5 transition-all active:scale-98 ${
-                        selectedNicho === 'oficina' 
-                          ? 'border-purple-600 bg-purple-50/60 shadow-sm ring-1 ring-purple-600/30' 
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                        selectedNicho === 'oficina'
+                          ? 'border-accent bg-navy-50/60 shadow-sm ring-1 ring-focus-ring/30'
+                          : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
                       <span className="text-2xl">🏢</span>
-                      <span className="text-xs font-bold text-slate-700 text-center">Oficina / Servicio</span>
+                      <span className="text-xs font-bold text-text-2 text-center">Oficina / Servicio</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleSelectNicho('taller')}
                       className={`p-3 border rounded-2xl flex flex-col items-center gap-1.5 transition-all active:scale-98 ${
-                        selectedNicho === 'taller' 
-                          ? 'border-purple-600 bg-purple-50/60 shadow-sm ring-1 ring-purple-600/30' 
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                        selectedNicho === 'taller'
+                          ? 'border-accent bg-navy-50/60 shadow-sm ring-1 ring-focus-ring/30'
+                          : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
                       <span className="text-2xl">⚙️</span>
-                      <span className="text-xs font-bold text-slate-700 text-center">Taller / Fábrica</span>
+                      <span className="text-xs font-bold text-text-2 text-center">Taller / Fábrica</span>
                     </button>
 
                     <button
@@ -1166,19 +1166,19 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       onClick={() => handleSelectNicho('custom')}
                       className={`p-3 border rounded-2xl flex flex-col items-center gap-1.5 transition-all active:scale-98 ${
                         selectedNicho === 'custom'
-                          ? 'border-purple-600 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 shadow-sm ring-1 ring-purple-600/30'
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                          ? 'border-accent bg-gradient-to-r from-accent/10 to-accent/10 shadow-sm ring-1 ring-focus-ring/30'
+                          : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
                       <span className="text-2xl">🤖</span>
-                      <span className="text-xs font-bold text-slate-700 text-center">Personalizado IA</span>
+                      <span className="text-xs font-bold text-text-2 text-center">Personalizado IA</span>
                     </button>
                   </div>
 
                   {/* Sub-Giros / Especialidad */}
                   {selectedNicho !== 'custom' && SUB_NICHOS[selectedNicho] && (
-                    <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
-                      <label className="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider block mb-2">
+                    <div className="bg-page p-3.5 rounded-2xl border border-border/80">
+                      <label className="text-[11px] font-extrabold text-text-2 uppercase tracking-wider block mb-2">
                         Especialidad / Sub-Giro
                       </label>
                       <div className="flex flex-wrap gap-1.5">
@@ -1189,8 +1189,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                             onClick={() => setSelectedSubNicho(sub.id)}
                             className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-98 ${
                               selectedSubNicho === sub.id
-                                ? 'bg-purple-600 text-white shadow-sm'
-                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                                ? 'bg-accent text-white shadow-sm'
+                                : 'bg-white border border-border text-text-2 hover:bg-page'
                             }`}
                           >
                             <span>{sub.icon}</span>
@@ -1208,12 +1208,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         value={customNichoDesc}
                         onChange={(e) => setCustomNichoDesc(e.target.value)}
                         rows={2}
-                        className="peer w-full px-4 py-3 border border-slate-200 focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-xl outline-none text-slate-800 text-xs font-medium placeholder-transparent resize-none"
+                        className="peer w-full px-4 py-3 border border-border focus:border-accent focus:ring-1 focus-visible:ring-focus-ring rounded-xl outline-none text-text-1 text-xs font-medium placeholder-transparent resize-none"
                         placeholder="Describe tu giro de negocio"
                       />
                       <label
                         htmlFor="customNichoDesc"
-                        className="absolute left-4 text-[10px] font-bold text-slate-500 transition-all pointer-events-none -top-1 bg-white px-1 peer-placeholder-shown:text-xs peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3 peer-focus:-top-1 peer-focus:text-[10px] peer-focus:text-purple-600"
+                        className="absolute left-4 text-[10px] font-bold text-text-3 transition-all pointer-events-none -top-1 bg-white px-1 peer-placeholder-shown:text-xs peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3 peer-focus:-top-1 peer-focus:text-[10px] peer-focus:text-accent"
                       >
                         Describe tu giro de negocio (ej: Clínica Vet, Escuela, Gimnasio)
                       </label>
@@ -1225,7 +1225,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <button
                       type="button"
                       onClick={() => setSubStep('puestos')}
-                      className="w-full py-3.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
+                      className="w-full py-3.5 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
                     >
                       Continuar a Puestos ({activePreset.puestos.length}) <ChevronRight size={18} />
                     </button>
@@ -1237,23 +1237,23 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   backend, así que mientras no llegue (o si la red falló) se muestra el estado
                   en vez de listas vacías que parecen un giro sin contenido. */}
               {(subStep === 'puestos' || subStep === 'tareas') && !catalogo && (
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center gap-3 text-center animate-in fade-in duration-200">
+                <div className="bg-white p-6 rounded-2xl border border-border shadow-sm flex flex-col items-center gap-3 text-center animate-in fade-in duration-200">
                   {catalogoError ? (
                     <>
-                      <AlertCircle className="text-red-500" size={22} />
-                      <p className="text-xs font-bold text-slate-700">No se pudo cargar el catálogo del giro.</p>
+                      <AlertCircle className="text-danger-text" size={22} />
+                      <p className="text-xs font-bold text-text-2">No se pudo cargar el catálogo del giro.</p>
                       <button
                         type="button"
                         onClick={() => setReintentoCatalogo(r => r + 1)}
-                        className="text-[11px] font-black text-purple-600 bg-purple-50 px-3 py-1.5 rounded-lg hover:bg-purple-100"
+                        className="text-[11px] font-black text-accent bg-navy-50 px-3 py-1.5 rounded-lg hover:bg-accent-soft"
                       >
                         Reintentar
                       </button>
                     </>
                   ) : (
                     <>
-                      <Loader2 className="animate-spin text-purple-600" size={22} />
-                      <p className="text-xs font-bold text-slate-500">Cargando el catálogo del giro…</p>
+                      <Loader2 className="animate-spin text-accent" size={22} />
+                      <p className="text-xs font-bold text-text-3">Cargando el catálogo del giro…</p>
                     </>
                   )}
                 </div>
@@ -1262,27 +1262,27 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               {/* BLOQUE 1B: SELECCIÓN DE PUESTOS DE TRABAJO */}
               {subStep === 'puestos' && catalogo && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  <p className="text-xs text-slate-500 leading-relaxed">
+                  <p className="text-xs text-text-3 leading-relaxed">
                     Selecciona los puestos de trabajo para tu sucursal. Marca o desmarca según las necesidades de tu equipo.
                   </p>
 
-                  <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
+                  <div className="bg-white p-3.5 rounded-2xl border border-border shadow-sm space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                      <span className="text-xs font-extrabold text-text-1 flex items-center gap-1.5">
                         <span>📋</span> Puestos Sugeridos ({selectedPuestos.length}/{activePreset.puestos.length})
                       </span>
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => setSelectedPuestos(activePreset.puestos.map(p => p.name))}
-                          className="text-[10px] font-bold text-purple-600 hover:text-purple-700 bg-purple-50 px-2 py-1 rounded-lg"
+                          className="text-[10px] font-bold text-accent hover:text-accent bg-navy-50 px-2 py-1 rounded-lg"
                         >
                           Todos
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedPuestos([])}
-                          className="text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-slate-100 px-2 py-1 rounded-lg"
+                          className="text-[10px] font-bold text-text-3 hover:text-text-2 bg-page px-2 py-1 rounded-lg"
                         >
                           Ninguno
                         </button>
@@ -1297,23 +1297,23 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                             key={puesto.name}
                             onClick={() => togglePuestoSelection(puesto.name)}
                             className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer select-none transition-all min-h-[46px] active:scale-[0.99] ${
-                              isChecked 
-                                ? 'border-purple-300 bg-purple-50/50 text-slate-800 font-bold shadow-xs' 
-                                : 'border-slate-200 bg-slate-50/50 text-slate-400 opacity-60'
+                              isChecked
+                                ? 'border-navy-300 bg-navy-50/50 text-text-1 font-bold shadow-xs'
+                                : 'border-border bg-page/50 text-slate-400 opacity-60'
                             }`}
                           >
                             <input
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => {}}
-                              className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 shrink-0"
+                              className="w-4 h-4 rounded text-accent focus-visible:ring-focus-ring border-slate-300 shrink-0"
                             />
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-extrabold truncate">{puesto.name}</p>
-                              <span className="text-[10px] text-slate-500 font-medium">{puesto.area}</span>
+                              <span className="text-[10px] text-text-3 font-medium">{puesto.area}</span>
                             </div>
                             {puesto.esAperturador && (
-                              <span className="text-[8px] bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded font-black shrink-0">Llaves</span>
+                              <span className="text-[8px] bg-warning-bg text-warning-text border border-warning-text/20 px-1.5 py-0.5 rounded font-black shrink-0">Llaves</span>
                             )}
                           </label>
                         );
@@ -1326,7 +1326,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <button
                       type="button"
                       onClick={() => setSubStep('giro')}
-                      className="py-3 px-4 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-xs shrink-0"
+                      className="py-3 px-4 border border-border hover:bg-page text-text-2 rounded-xl font-bold text-xs shrink-0"
                     >
                       ← Giro
                     </button>
@@ -1334,7 +1334,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       type="button"
                       onClick={() => setSubStep('tareas')}
                       disabled={selectedPuestos.length === 0}
-                      className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
+                      className="flex-1 py-3.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
                     >
                       Ver Checklists y Tareas ({selectedTareas.length}) <ChevronRight size={18} />
                     </button>
@@ -1345,27 +1345,27 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               {/* BLOQUE 1C: CHECKLISTS OPERATIVAS & RUTINAS POR PUESTO */}
               {subStep === 'tareas' && catalogo && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  <p className="text-xs text-slate-500 leading-relaxed">
+                  <p className="text-xs text-text-3 leading-relaxed">
                     Filtra y selecciona las rutinas operativas para cada puesto. Se cargarán automáticamente en el sistema.
                   </p>
 
-                  <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                  <div className="bg-white p-3.5 rounded-2xl border border-border shadow-sm space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                      <span className="text-xs font-extrabold text-text-1 flex items-center gap-1.5">
                         <span>✅</span> Tareas Seleccionadas ({selectedTareas.length}/{activePreset.tareas.length})
                       </span>
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => setSelectedTareas(activePreset.tareas.map(t => t.title))}
-                          className="text-[10px] font-bold text-purple-600 hover:text-purple-700 bg-purple-50 px-2 py-1 rounded-lg"
+                          className="text-[10px] font-bold text-accent hover:text-accent bg-navy-50 px-2 py-1 rounded-lg"
                         >
                           Todas
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedTareas([])}
-                          className="text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-slate-100 px-2 py-1 rounded-lg"
+                          className="text-[10px] font-bold text-text-3 hover:text-text-2 bg-page px-2 py-1 rounded-lg"
                         >
                           Ninguna
                         </button>
@@ -1379,8 +1379,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         onClick={() => setActiveRoleFilterTab('all')}
                         className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all ${
                           activeRoleFilterTab === 'all'
-                            ? 'bg-purple-600 text-white shadow-sm'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            ? 'bg-accent text-white shadow-sm'
+                            : 'bg-page text-text-2 hover:bg-slate-200'
                         }`}
                       >
                         Todos ({activePreset.tareas.length})
@@ -1396,12 +1396,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                             onClick={() => setActiveRoleFilterTab(p.name)}
                             className={`px-2.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1 ${
                               isTabActive
-                                ? 'bg-purple-600 text-white shadow-sm'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'bg-accent text-white shadow-sm'
+                                : 'bg-page text-text-2 hover:bg-slate-200'
                             }`}
                           >
                             <span>{p.name.split(' ')[0]}</span>
-                            <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${isTabActive ? 'bg-purple-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                            <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${isTabActive ? 'bg-navy-800 text-white' : 'bg-slate-200 text-text-2'}`}>
                               {roleTaskCount}
                             </span>
                           </button>
@@ -1420,19 +1420,19 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                               key={tarea.title}
                               onClick={() => toggleTareaSelection(tarea.title)}
                               className={`p-2.5 sm:p-2 rounded-xl border flex items-center gap-3 cursor-pointer select-none transition-all min-h-[44px] active:scale-[0.99] ${
-                                isChecked 
-                                  ? 'border-purple-300 bg-purple-50/40 text-slate-800 font-semibold' 
-                                  : 'border-slate-100 bg-slate-50/40 text-slate-400 opacity-60'
+                                isChecked
+                                  ? 'border-navy-300 bg-navy-50/40 text-text-1 font-semibold'
+                                  : 'border-border bg-page/40 text-slate-400 opacity-60'
                               }`}
                             >
                               <input
                                 type="checkbox"
                                 checked={isChecked}
                                 onChange={() => {}}
-                                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 shrink-0"
+                                className="w-4 h-4 rounded text-accent focus-visible:ring-focus-ring border-slate-300 shrink-0"
                               />
                               <span className="text-xs font-medium leading-tight flex-1">{tarea.title}</span>
-                              <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-bold shrink-0">{tarea.target_role_name}</span>
+                              <span className="text-[9px] bg-page text-text-2 px-2 py-0.5 rounded-lg font-bold shrink-0">{tarea.target_role_name}</span>
                             </label>
                           );
                         })}
@@ -1441,13 +1441,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
                   {/* Resumen Final de Cursos y Vacantes */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                    <div className="bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100 flex flex-col gap-1">
-                      <span className="font-extrabold text-indigo-700 flex items-center gap-1">🎓 Cursos Incluidos</span>
-                      <span className="text-slate-600 text-[10px] truncate">{activePreset.cursos.map(c => c.title).join(' • ')}</span>
+                    <div className="bg-navy-50/50 p-2.5 rounded-xl border border-border flex flex-col gap-1">
+                      <span className="font-extrabold text-accent flex items-center gap-1">🎓 Cursos Incluidos</span>
+                      <span className="text-text-2 text-[10px] truncate">{activePreset.cursos.map(c => c.title).join(' • ')}</span>
                     </div>
-                    <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100 flex flex-col gap-1">
-                      <span className="font-extrabold text-emerald-700 flex items-center gap-1">💼 Vacantes ATS</span>
-                      <span className="text-slate-600 text-[10px] truncate">{activePreset.vacantes.map(v => v.title).join(' • ')}</span>
+                    <div className="bg-success-bg/50 p-2.5 rounded-xl border border-success-text/20 flex flex-col gap-1">
+                      <span className="font-extrabold text-success-text flex items-center gap-1">💼 Vacantes ATS</span>
+                      <span className="text-text-2 text-[10px] truncate">{activePreset.vacantes.map(v => v.title).join(' • ')}</span>
                     </div>
                   </div>
 
@@ -1456,14 +1456,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <button
                       type="button"
                       onClick={() => setSubStep('puestos')}
-                      className="py-3.5 px-4 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-xs shrink-0"
+                      className="py-3.5 px-4 border border-border hover:bg-page text-text-2 rounded-xl font-bold text-xs shrink-0"
                     >
                       ← Puestos
                     </button>
                     <button
                       type="button"
                       onClick={() => setSubStep('cursos')}
-                      className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
+                      className="flex-1 py-3.5 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
                     >
                       Ver Cursos LMS & LFT ({selectedCursos.length}) <ChevronRight size={18} />
                     </button>
@@ -1474,27 +1474,27 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               {/* BLOQUE 1D: CURSOS DE CAPACITACIÓN LMS (LFT & GIRO) */}
               {subStep === 'cursos' && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  <p className="text-xs text-slate-500 leading-relaxed">
+                  <p className="text-xs text-text-3 leading-relaxed">
                     Selecciona los cursos de inducción y capacitación que se precargarán en la <strong>Academia LMS</strong> de tus colaboradores (incluye Ley Federal del Trabajo y Ley Silla).
                   </p>
 
-                  <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                  <div className="bg-white p-3.5 rounded-2xl border border-border shadow-sm space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                      <span className="text-xs font-extrabold text-text-1 flex items-center gap-1.5">
                         <span>🎓</span> Cursos LMS a Inyectar ({selectedCursos.length}/{activePreset.cursos.length})
                       </span>
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => setSelectedCursos(activePreset.cursos.map(c => c.title))}
-                          className="text-[10px] font-bold text-purple-600 hover:text-purple-700 bg-purple-50 px-2 py-1 rounded-lg"
+                          className="text-[10px] font-bold text-accent hover:text-accent bg-navy-50 px-2 py-1 rounded-lg"
                         >
                           Todos
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedCursos([])}
-                          className="text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-slate-100 px-2 py-1 rounded-lg"
+                          className="text-[10px] font-bold text-text-3 hover:text-text-2 bg-page px-2 py-1 rounded-lg"
                         >
                           Ninguno
                         </button>
@@ -1516,25 +1516,25 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                               }
                             }}
                             className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer select-none transition-all min-h-[50px] active:scale-[0.99] ${
-                              isChecked 
-                                ? 'border-purple-300 bg-purple-50/40 text-slate-800 font-semibold' 
-                                : 'border-slate-100 bg-slate-50/40 text-slate-400 opacity-60'
+                              isChecked
+                                ? 'border-navy-300 bg-navy-50/40 text-text-1 font-semibold'
+                                : 'border-border bg-page/40 text-slate-400 opacity-60'
                             }`}
                           >
                             <input
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => {}}
-                              className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 shrink-0 mt-0.5"
+                              className="w-4 h-4 rounded text-accent focus-visible:ring-focus-ring border-slate-300 shrink-0 mt-0.5"
                             />
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-bold leading-tight mb-1">{curso.title}</p>
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className={`text-[9px] px-2 py-0.5 rounded font-black ${isLft ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-100'}`}>
+                                <span className={`text-[9px] px-2 py-0.5 rounded font-black ${isLft ? 'bg-warning-bg text-warning-text border border-warning-text/20' : 'bg-navy-50 text-accent border border-border'}`}>
                                   {isLft ? '📜 Ley Silla / LFT' : '🧁 Capacitación Giro'}
                                 </span>
                                 {curso.role && (
-                                  <span className="text-[9px] text-slate-500 font-medium">Dirigido a: {curso.role}</span>
+                                  <span className="text-[9px] text-text-3 font-medium">Dirigido a: {curso.role}</span>
                                 )}
                               </div>
                             </div>
@@ -1549,7 +1549,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <button
                       type="button"
                       onClick={() => setSubStep('tareas')}
-                      className="py-3.5 px-4 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-xs shrink-0"
+                      className="py-3.5 px-4 border border-border hover:bg-page text-text-2 rounded-xl font-bold text-xs shrink-0"
                     >
                       ← Tareas
                     </button>
@@ -1560,7 +1560,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <button
                       onClick={() => selectedNicho === 'custom' ? handleConfigureNicho() : setSubStep('organigrama')}
                       disabled={loading || (selectedNicho === 'custom' && !customNichoDesc.trim()) || (selectedNicho !== 'custom' && selectedPuestos.length === 0)}
-                      className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
+                      className="flex-1 py-3.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
                     >
                       {loading
                         ? <Loader2 size={18} className="animate-spin" />
@@ -1588,7 +1588,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   funciona con puestos que todavía no existen pasándoles un id temporal. */}
               {subStep === 'organigrama' && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  <p className="text-xs text-slate-500 leading-relaxed">
+                  <p className="text-xs text-text-3 leading-relaxed">
                     Así queda tu estructura. <strong>Revísala antes de crearla</strong>: de aquí sale
                     quién autoriza las tareas de cada quien y a quién le avisamos cuando alguien se
                     atora. Arrastra de una tarjeta a otra para cambiar a quién reporta.
@@ -1621,7 +1621,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
                     return (
                       <>
-                        <div className="h-[320px] rounded-2xl border border-slate-200 overflow-hidden bg-white">
+                        <div className="h-[320px] rounded-2xl border border-border overflow-hidden bg-white">
                           <OrganigramaPuestos
                             jobRoles={comoRoles}
                             employees={[]}
@@ -1642,7 +1642,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         </div>
 
                         {sinJefe.length > 1 && (
-                          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-800">
+                          <div className="p-3 rounded-xl bg-warning-bg border border-warning-text/20 text-[11px] font-bold text-warning-text">
                             ⚠️ Hay {sinJefe.length} puestos sin nadie por encima:{' '}
                             {sinJefe.map(r => r.name).join(', ')}. Sólo el puesto de mando debería
                             quedar así — a los demás nadie les autorizaría sus tareas.
@@ -1653,14 +1653,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           <button
                             type="button"
                             onClick={() => setSubStep('cursos')}
-                            className="py-3.5 px-4 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-xs shrink-0"
+                            className="py-3.5 px-4 border border-border hover:bg-page text-text-2 rounded-xl font-bold text-xs shrink-0"
                           >
                             ← Cursos
                           </button>
                           <button
                             onClick={handleConfigureNicho}
                             disabled={loading || selectedPuestos.length === 0}
-                            className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
+                            className="flex-1 py-3.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
                           >
                             {loading ? <Loader2 size={18} className="animate-spin" /> : <>Confirmar Organigrama y Crear Estructura <ChevronRight size={18} /></>}
                           </button>
@@ -1676,64 +1676,64 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           {step === 2 && (
             <div className="animate-in fade-in">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                <div className="w-12 h-12 bg-navy-50 text-accent rounded-xl flex items-center justify-center shadow-sm">
                   <Building2 size={24} />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-blue-600 tracking-wider uppercase">Paso 2 de 4</span>
-                  <h3 className="text-xl font-black text-slate-800">Ajustes de Sucursal</h3>
+                  <span className="text-xs font-bold text-accent tracking-wider uppercase">Paso 2 de 4</span>
+                  <h3 className="text-xl font-black text-text-1">Ajustes de Sucursal</h3>
                 </div>
               </div>
-              
+
               <div className="space-y-4 mb-6">
                 <div className="relative">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     id="companyName"
                     value={companyName}
                     onChange={(e) => { setIsCompanyNameEdited(true); setCompanyName(e.target.value); }}
-                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium placeholder-transparent"
+                    className="peer w-full px-4 pt-5 pb-1.5 border border-border focus:border-accent focus:ring-1 focus-visible:ring-focus-ring rounded-xl outline-none text-text-1 text-sm font-medium placeholder-transparent"
                     placeholder="Nombre Comercial"
                   />
-                  <label 
+                  <label
                     htmlFor="companyName"
-                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                    className="absolute left-4 text-xs font-bold text-text-3 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-accent"
                   >
                     Nombre Comercial de la Empresa
                   </label>
                 </div>
                 <div className="relative">
-                  <textarea 
+                  <textarea
                     id="welcomeMessage"
                     value={welcomeMessage}
                     onChange={(e) => setWelcomeMessage(e.target.value)}
-                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium h-20 resize-none placeholder-transparent"
+                    className="peer w-full px-4 pt-5 pb-1.5 border border-border focus:border-accent focus:ring-1 focus-visible:ring-focus-ring rounded-xl outline-none text-text-1 text-sm font-medium h-20 resize-none placeholder-transparent"
                     placeholder="Mensaje de Bienvenida"
                   />
-                  <label 
+                  <label
                     htmlFor="welcomeMessage"
-                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                    className="absolute left-4 text-xs font-bold text-text-3 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-accent"
                   >
                     Mensaje de Bienvenida del Reloj Kiosco
                   </label>
                 </div>
                 <div className="relative">
-                  <div className="flex border border-slate-200 focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 rounded-xl overflow-hidden bg-white">
-                    <div className="bg-slate-50 px-3 py-3 text-xs text-slate-500 font-bold border-r border-slate-200 flex items-center gap-1 select-none">
+                  <div className="flex border border-border focus-within:border-accent focus-within:ring-1 focus-within:ring-focus-ring rounded-xl overflow-hidden bg-white">
+                    <div className="bg-page px-3 py-3 text-xs text-text-3 font-bold border-r border-border flex items-center gap-1 select-none">
                       <span>🇲🇽</span>
                       <span>+52</span>
                     </div>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       id="adminPhone"
                       value={formatPhoneVisual(adminPhone)}
                       onChange={(e) => setAdminPhone(getCleanDbPhone(e.target.value))}
-                      className="peer w-full px-4 pt-5 pb-1.5 outline-none text-slate-800 text-sm font-medium font-mono placeholder-transparent"
+                      className="peer w-full px-4 pt-5 pb-1.5 outline-none text-text-1 text-sm font-medium font-mono placeholder-transparent"
                       placeholder="WhatsApp del Dueño/Administrador"
                     />
-                    <label 
+                    <label
                       htmlFor="adminPhone"
-                      className="absolute left-16 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                      className="absolute left-16 text-xs font-bold text-text-3 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-accent"
                     >
                       WhatsApp del Administrador (opcional)
                     </label>
@@ -1745,17 +1745,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
                 {/* Dirección de la Tienda */}
                 <div className="relative">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     id="companyAddress"
                     value={companyAddress}
                     onChange={(e) => setCompanyAddress(e.target.value)}
-                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium placeholder-transparent"
+                    className="peer w-full px-4 pt-5 pb-1.5 border border-border focus:border-accent focus:ring-1 focus-visible:ring-focus-ring rounded-xl outline-none text-text-1 text-sm font-medium placeholder-transparent"
                     placeholder="Dirección de la Tienda"
                   />
-                  <label 
+                  <label
                     htmlFor="companyAddress"
-                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                    className="absolute left-4 text-xs font-bold text-text-3 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-accent"
                   >
                     Dirección de la Tienda / Sucursal
                   </label>
@@ -1763,22 +1763,22 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
                 {/* Teléfono de la Tienda */}
                 <div className="relative">
-                  <div className="flex border border-slate-200 focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 rounded-xl overflow-hidden bg-white">
-                    <div className="bg-slate-50 px-3 py-3 text-xs text-slate-500 font-bold border-r border-slate-200 flex items-center gap-1 select-none">
+                  <div className="flex border border-border focus-within:border-accent focus-within:ring-1 focus-within:ring-focus-ring rounded-xl overflow-hidden bg-white">
+                    <div className="bg-page px-3 py-3 text-xs text-text-3 font-bold border-r border-border flex items-center gap-1 select-none">
                       <span>🇲🇽</span>
                       <span>+52</span>
                     </div>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       id="companyPhone"
                       value={formatPhoneVisual(companyPhone)}
                       onChange={(e) => setCompanyPhone(getCleanDbPhone(e.target.value))}
-                      className="peer w-full px-4 pt-5 pb-1.5 outline-none text-slate-800 text-sm font-medium font-mono placeholder-transparent"
+                      className="peer w-full px-4 pt-5 pb-1.5 outline-none text-text-1 text-sm font-medium font-mono placeholder-transparent"
                       placeholder="Teléfono de la Tienda"
                     />
-                    <label 
+                    <label
                       htmlFor="companyPhone"
-                      className="absolute left-16 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                      className="absolute left-16 text-xs font-bold text-text-3 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-accent"
                     >
                       Teléfono Fijo o Móvil de la Tienda (10 dígitos)
                     </label>
@@ -1786,25 +1786,25 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 </div>
 
                 {/* Horario de la Tienda */}
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider block mb-3">Horario de Operación (Tienda)</span>
+                <div className="bg-page p-4 rounded-xl border border-border">
+                  <span className="text-xs font-extrabold text-text-3 uppercase tracking-wider block mb-3">Horario de Operación (Tienda)</span>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hora de Apertura</label>
-                      <input 
-                        type="time" 
+                      <input
+                        type="time"
                         value={storeOpenTime}
                         onChange={(e) => setStoreOpenTime(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-600"
+                        className="w-full px-3 py-2 border border-border rounded-lg text-sm font-bold text-text-2 focus:outline-none focus:border-accent"
                       />
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hora de Cierre</label>
-                      <input 
-                        type="time" 
+                      <input
+                        type="time"
                         value={storeCloseTime}
                         onChange={(e) => setStoreCloseTime(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-600"
+                        className="w-full px-3 py-2 border border-border rounded-lg text-sm font-bold text-text-2 focus:outline-none focus:border-accent"
                       />
                     </div>
                   </div>
@@ -1812,10 +1812,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               </div>
 
               <div className="flex gap-4">
-                <button 
+                <button
                   onClick={handleSaveSettings}
                   disabled={loading || !companyName.trim()}
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98"
+                  className="flex-1 py-3 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98"
                 >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <>Guardar y Continuar <ChevronRight size={18}/></>}
                 </button>
@@ -1826,92 +1826,92 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           {step === 3 && (
             <div className="animate-in fade-in">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                <div className="w-12 h-12 bg-navy-50 text-accent rounded-xl flex items-center justify-center shadow-sm">
                   <UserPlus size={24} />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-blue-600 tracking-wider uppercase">Paso 3 de 4</span>
-                  <h3 className="text-xl font-black text-slate-800">Contratar Primer Colaborador</h3>
+                  <span className="text-xs font-bold text-accent tracking-wider uppercase">Paso 3 de 4</span>
+                  <h3 className="text-xl font-black text-text-1">Contratar Primer Colaborador</h3>
                 </div>
               </div>
 
               <div className="space-y-4 mb-6">
                 <div className="relative">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     id="empName"
                     value={empName}
                     onChange={(e) => setEmpName(e.target.value)}
-                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium placeholder-transparent"
+                    className="peer w-full px-4 pt-5 pb-1.5 border border-border focus:border-accent focus:ring-1 focus-visible:ring-focus-ring rounded-xl outline-none text-text-1 text-sm font-medium placeholder-transparent"
                     placeholder="Nombre del Colaborador"
                   />
-                  <label 
+                  <label
                     htmlFor="empName"
-                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                    className="absolute left-4 text-xs font-bold text-text-3 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-accent"
                   >
                     Nombre del Colaborador
                   </label>
                 </div>
-                
+
                 <div className="relative">
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     id="empEmail"
                     value={empEmail}
                     onChange={(e) => {
                       setEmpEmail(e.target.value);
                       setIsEmailEdited(true);
                     }}
-                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium placeholder-transparent"
+                    className="peer w-full px-4 pt-5 pb-1.5 border border-border focus:border-accent focus:ring-1 focus-visible:ring-focus-ring rounded-xl outline-none text-text-1 text-sm font-medium placeholder-transparent"
                     placeholder="Correo Electrónico"
                   />
-                  <label 
+                  <label
                     htmlFor="empEmail"
-                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                    className="absolute left-4 text-xs font-bold text-text-3 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-accent"
                   >
                     Correo electrónico (opcional)
                   </label>
                 </div>
-                <p className="text-[11px] text-slate-500 -mt-1 leading-relaxed">
+                <p className="text-[11px] text-text-3 -mt-1 leading-relaxed">
                   Sólo si la persona tiene uno <strong>real</strong>. Sirve para enviarle su
                   invitación y para que recupere su contraseña. Sin correo entra igual: con su
                   PIN en el kiosco.
                 </p>
 
                 <div className="relative">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     id="empPassword"
                     value={empPassword}
                     onChange={(e) => setEmpPassword(e.target.value)}
-                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium placeholder-transparent"
+                    className="peer w-full px-4 pt-5 pb-1.5 border border-border focus:border-accent focus:ring-1 focus-visible:ring-focus-ring rounded-xl outline-none text-text-1 text-sm font-medium placeholder-transparent"
                     placeholder="Contraseña Temporal"
                   />
-                  <label 
+                  <label
                     htmlFor="empPassword"
-                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                    className="absolute left-4 text-xs font-bold text-text-3 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-accent"
                   >
                     Contraseña Temporal
                   </label>
                 </div>
 
                 <div className="relative">
-                  <div className="flex border border-slate-200 focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 rounded-xl overflow-hidden bg-white">
-                    <div className="bg-slate-50 px-3 py-3 text-xs text-slate-500 font-bold border-r border-slate-200 flex items-center gap-1 select-none">
+                  <div className="flex border border-border focus-within:border-accent focus-within:ring-1 focus-within:ring-focus-ring rounded-xl overflow-hidden bg-white">
+                    <div className="bg-page px-3 py-3 text-xs text-text-3 font-bold border-r border-border flex items-center gap-1 select-none">
                       <span>🇲🇽</span>
                       <span>+52</span>
                     </div>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       id="empPhone"
                       value={formatPhoneVisual(empPhone)}
                       onChange={(e) => setEmpPhone(getCleanDbPhone(e.target.value))}
-                      className="peer w-full px-4 pt-5 pb-1.5 outline-none text-slate-800 text-sm font-medium font-mono placeholder-transparent"
+                      className="peer w-full px-4 pt-5 pb-1.5 outline-none text-text-1 text-sm font-medium font-mono placeholder-transparent"
                       placeholder="Número de WhatsApp"
                     />
-                    <label 
+                    <label
                       htmlFor="empPhone"
-                      className="absolute left-16 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                      className="absolute left-16 text-xs font-bold text-text-3 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-accent"
                     >
                       WhatsApp del Colaborador (Obligatorio)
                     </label>
@@ -1929,11 +1929,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     id="empHireDate"
                     value={empHireDate}
                     onChange={(e) => setEmpHireDate(e.target.value)}
-                    className="w-full px-4 pt-5 pb-1.5 outline-none text-slate-800 text-sm font-medium border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl bg-white"
+                    className="w-full px-4 pt-5 pb-1.5 outline-none text-text-1 text-sm font-medium border border-border focus:border-accent focus:ring-1 focus-visible:ring-focus-ring rounded-xl bg-white"
                   />
                   <label
                     htmlFor="empHireDate"
-                    className="absolute left-4 text-xs font-bold text-slate-500 pointer-events-none top-1.5"
+                    className="absolute left-4 text-xs font-bold text-text-3 pointer-events-none top-1.5"
                   >
                     Fecha de Ingreso (Obligatoria)
                   </label>
@@ -1943,20 +1943,20 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 </div>
 
                 <div className="relative">
-                  <select 
+                  <select
                     id="selectedRoleId"
                     value={selectedRoleId}
                     onChange={(e) => setSelectedRoleId(e.target.value)}
-                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium bg-white"
+                    className="peer w-full px-4 pt-5 pb-1.5 border border-border focus:border-accent focus:ring-1 focus-visible:ring-focus-ring rounded-xl outline-none text-text-1 text-sm font-medium bg-white"
                   >
                     <option value="">Selecciona un puesto de trabajo</option>
                     {globalRoles.map((r: any) => (
                       <option key={r.id} value={r.id}>{r.name} ({r.area})</option>
                     ))}
                   </select>
-                  <label 
+                  <label
                     htmlFor="selectedRoleId"
-                    className="absolute left-4 text-xs font-bold text-slate-500 top-1.5 pointer-events-none"
+                    className="absolute left-4 text-xs font-bold text-text-3 top-1.5 pointer-events-none"
                   >
                     Puesto del Colaborador
                   </label>
@@ -1964,17 +1964,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <button 
+                <button
                   onClick={handleCreateEmployee}
                   disabled={loading || !empName.trim() || !empPassword.trim() || !isEmpPhoneValid()}
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98"
+                  className="flex-1 py-3 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98"
                 >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <>Registrar Empleado e Ir al Paso 4 <ChevronRight size={18} /></>}
                 </button>
-                <button 
+                <button
                   onClick={() => setStep(5)}
                   disabled={loading}
-                  className="py-3 px-5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-1.5 active:scale-98"
+                  className="py-3 px-5 border border-border hover:bg-page text-text-2 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-1.5 active:scale-98"
                 >
                   Omitir (Iniciar sin colaboradores)
                 </button>
@@ -1985,31 +1985,31 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           {step === 4 && (
             <div className="animate-in fade-in animate-duration-300">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                <div className="w-12 h-12 bg-navy-50 text-accent rounded-xl flex items-center justify-center shadow-sm">
                   <Clock size={24} />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-blue-600 tracking-wider uppercase">Paso 4 de 4</span>
-                  <h3 className="text-xl font-black text-slate-800">Prueba de Fichaje del Reloj</h3>
+                  <span className="text-xs font-bold text-accent tracking-wider uppercase">Paso 4 de 4</span>
+                  <h3 className="text-xl font-black text-text-1">Prueba de Fichaje del Reloj</h3>
                 </div>
               </div>
 
               {/* QR Code and invite section */}
               {createdEmpPin && (
-                <div className="mb-6 p-5 bg-blue-50/50 border border-blue-100 rounded-2xl flex flex-col gap-4">
+                <div className="mb-6 p-5 bg-navy-50/50 border border-border rounded-2xl flex flex-col gap-4">
                   <div className="flex flex-col sm:flex-row items-center gap-5">
-                    <div className="bg-white p-2.5 rounded-xl border border-blue-100 shadow-sm flex-shrink-0">
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${getQrOrigin(qrIpOverride)}/invite?pin=${createdEmpPin}`)}`} 
-                        alt="Código QR de Invitación" 
+                    <div className="bg-white p-2.5 rounded-xl border border-border shadow-sm flex-shrink-0">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${getQrOrigin(qrIpOverride)}/invite?pin=${createdEmpPin}`)}`}
+                        alt="Código QR de Invitación"
                         className="w-24 h-24"
                       />
                     </div>
                     <div className="text-left space-y-1">
-                      <span className="text-[10px] font-bold text-blue-600 tracking-wider uppercase">Acceso Móvil Instantáneo (PWA)</span>
-                      <h4 className="font-bold text-slate-800 text-sm">Escanea para activar la cuenta de {empName}</h4>
-                      <p className="text-[11px] text-slate-500 leading-normal">
-                        Apunta la cámara de tu celular aquí para abrir la App del reloj checador en tu móvil, o usa el PIN temporal <strong className="text-blue-600 tracking-widest">{createdEmpPin}</strong>.
+                      <span className="text-[10px] font-bold text-accent tracking-wider uppercase">Acceso Móvil Instantáneo (PWA)</span>
+                      <h4 className="font-bold text-text-1 text-sm">Escanea para activar la cuenta de {empName}</h4>
+                      <p className="text-[11px] text-text-3 leading-normal">
+                        Apunta la cámara de tu celular aquí para abrir la App del reloj checador en tu móvil, o usa el PIN temporal <strong className="text-accent tracking-widest">{createdEmpPin}</strong>.
                       </p>
                       <div className="pt-1 text-[10px] text-slate-400 break-all select-all font-mono">
                         Enlace: {`${getQrOrigin(qrIpOverride)}/invite?pin=${createdEmpPin}`}
@@ -2018,21 +2018,21 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </div>
 
                   {/* Enviar invitaciones por WhatsApp (Colaborador + Administrador) */}
-                  <div className="pt-4 border-t border-blue-100/80 flex flex-col gap-3">
-                    <div className="text-xs font-bold text-slate-600 flex items-center gap-1.5 justify-center sm:justify-start">
-                      <MessageSquare size={14} className="text-emerald-600 animate-pulse" />
+                  <div className="pt-4 border-t border-border/80 flex flex-col gap-3">
+                    <div className="text-xs font-bold text-text-2 flex items-center gap-1.5 justify-center sm:justify-start">
+                      <MessageSquare size={14} className="text-success-text animate-pulse" />
                       <span>Enviar invitaciones por WhatsApp:</span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <button
                         onClick={handleSendEmployeeWhatsApp}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow active:scale-98"
+                        className="flex-1 bg-success-text hover:bg-success-text text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow active:scale-98"
                       >
                         <MessageSquare size={14} /> Enviar invitación a {empName}
                       </button>
                       <button
                         onClick={handleSendAdminWhatsApp}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow active:scale-98"
+                        className="flex-1 bg-accent hover:bg-accent-hover text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow active:scale-98"
                       >
                         <Send size={14} /> Enviar mis accesos (Admin)
                       </button>
@@ -2040,13 +2040,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </div>
 
                   {isLocalhost() && (
-                    <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl text-left">
-                      <div className="flex items-center gap-1.5 text-amber-800 font-bold text-xs mb-1">
-                        <AlertCircle size={14} className="text-amber-600" />
+                    <div className="p-3.5 bg-warning-bg border border-warning-text/80 rounded-xl text-left">
+                      <div className="flex items-center gap-1.5 text-warning-text font-bold text-xs mb-1">
+                        <AlertCircle size={14} className="text-warning-text" />
                         <span>🔌 Desarrollo Local: Configuración de QR</span>
                       </div>
-                      <p className="text-[11px] text-amber-700 leading-relaxed mb-2.5">
-                        Al desarrollar localmente, <code className="bg-amber-100/80 px-1 rounded font-mono">localhost</code> no funciona desde el navegador de tu celular. Ingresa la dirección IP local de esta computadora (ej: <code className="bg-amber-100/80 px-1 rounded font-mono">192.168.1.75:5173</code>) para actualizar el código QR y poder escanearlo:
+                      <p className="text-[11px] text-warning-text leading-relaxed mb-2.5">
+                        Al desarrollar localmente, <code className="bg-warning-bg/80 px-1 rounded font-mono">localhost</code> no funciona desde el navegador de tu celular. Ingresa la dirección IP local de esta computadora (ej: <code className="bg-warning-bg/80 px-1 rounded font-mono">192.168.1.75:5173</code>) para actualizar el código QR y poder escanearlo:
                       </p>
                       <div className="flex gap-2">
                         <input
@@ -2054,7 +2054,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           placeholder="ej: 192.168.1.75:5173"
                           value={qrIpOverride}
                           onChange={(e) => handleQrIpChange(e.target.value)}
-                          className="w-full text-xs bg-white border border-amber-300 px-3 py-1.5 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 placeholder-slate-400 font-mono shadow-sm transition-all"
+                          className="w-full text-xs bg-white border border-warning-text/20 px-3 py-1.5 rounded-lg text-text-2 focus:outline-none focus:ring-2 focus-visible:ring-warning-text focus:border-warning-text placeholder-slate-400 font-mono shadow-sm transition-all"
                         />
                       </div>
                     </div>
@@ -2062,24 +2062,24 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 </div>
               )}
 
-              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 text-center mb-8 relative overflow-hidden">
-                <h4 className="text-sm font-bold text-slate-500 mb-1">KIOSCO KI-RELOJ ACTIVO</h4>
+              <div className="bg-page border border-border rounded-2xl p-6 text-center mb-8 relative overflow-hidden">
+                <h4 className="text-sm font-bold text-text-3 mb-1">KIOSCO KI-RELOJ ACTIVO</h4>
                 <p className="text-xs text-slate-400 mb-6">{companyName}</p>
 
                 {clockInSuccess ? (
                   <div className="py-6 animate-in zoom-in-95">
-                    <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+                    <div className="w-16 h-16 bg-success-bg text-success-text rounded-full flex items-center justify-center mx-auto mb-4 border border-success-text/20">
                       <CheckCircle2 size={32} />
                     </div>
-                    <h5 className="font-bold text-slate-800">¡Fichaje Registrado!</h5>
-                    <p className="text-xs text-slate-500 mt-1">Check-in de entrada exitoso para {empName}</p>
+                    <h5 className="font-bold text-text-1">¡Fichaje Registrado!</h5>
+                    <p className="text-xs text-text-3 mt-1">Check-in de entrada exitoso para {empName}</p>
                   </div>
                 ) : (
                   <div className="py-4">
-                    <p className="text-sm text-slate-600 mb-6">
+                    <p className="text-sm text-text-2 mb-6">
                       Simula el primer registro de entrada de tu nuevo empleado para constatar cómo la Inteligencia Artificial procesa el fichaje y activa sus tareas diarias.
                     </p>
-                    <button 
+                    <button
                       onClick={handleTestClockIn}
                       disabled={loading}
                       className="py-3 px-6 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 mx-auto"
@@ -2092,9 +2092,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
               {!clockInSuccess && (
                 <div className="flex gap-4">
-                  <button 
+                  <button
                     onClick={() => setStep(5)}
-                    className="flex-1 py-3 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold transition-all"
+                    className="flex-1 py-3 border border-border hover:bg-page text-text-2 rounded-xl font-bold transition-all"
                   >
                     Omitir Prueba
                   </button>
@@ -2105,13 +2105,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
           {step === 5 && (
             <div className="text-center py-6 animate-in fade-in">
-              <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-3xl mx-auto flex items-center justify-center mb-6 shadow-sm border border-emerald-100 transform rotate-3">
+              <div className="w-20 h-20 bg-success-bg text-success-text rounded-3xl mx-auto flex items-center justify-center mb-6 shadow-sm border border-success-text/20 transform rotate-3">
                 <CheckCircle2 size={40} />
               </div>
-              <h2 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">¡Configuración Exitosa!</h2>
-              <p className="text-slate-600 text-base max-w-md mx-auto leading-relaxed mb-6">
-                {createdEmpPin 
-                  ? "Has configurado la sucursal, el puesto y registrado al primer empleado. Todo está listo para que el equipo trabaje en piloto automático." 
+              <h2 className="text-3xl font-black text-text-1 mb-2 tracking-tight">¡Configuración Exitosa!</h2>
+              <p className="text-text-2 text-base max-w-md mx-auto leading-relaxed mb-6">
+                {createdEmpPin
+                  ? "Has configurado la sucursal, el puesto y registrado al primer empleado. Todo está listo para que el equipo trabaje en piloto automático."
                   : "Has inicializado tu sucursal con éxito. Ya puedes comenzar a crear puestos y colaboradores en el panel principal o cargar datos demo abajo."}
               </p>
 
@@ -2125,12 +2125,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   pulse enviar, que es lo que hacen estos dos botones. */}
               {createdEmpPin && (
                 <div className="max-w-md mx-auto mb-8">
-                  <div className="p-5 bg-amber-50/60 border border-amber-200 rounded-2xl flex flex-col gap-3 text-left shadow-sm">
-                    <div className="flex items-center gap-2 font-bold text-amber-900 text-sm">
-                      <AlertCircle size={18} className="text-amber-600 shrink-0" />
+                  <div className="p-5 bg-warning-bg/60 border border-warning-text/20 rounded-2xl flex flex-col gap-3 text-left shadow-sm">
+                    <div className="flex items-center gap-2 font-bold text-warning-text text-sm">
+                      <AlertCircle size={18} className="text-warning-text shrink-0" />
                       <span>Falta un paso: entregar los accesos</span>
                     </div>
-                    <p className="text-xs text-amber-800 leading-relaxed pl-6">
+                    <p className="text-xs text-warning-text leading-relaxed pl-6">
                       El sistema <strong>no manda mensajes por su cuenta</strong>. Estos botones
                       abren WhatsApp con el mensaje y el PIN ya redactados; tú pulsas enviar.
                       También puedes hacerlo después desde Recursos Humanos, en la ficha de cada
@@ -2139,13 +2139,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <div className="flex flex-col sm:flex-row gap-2 pl-6">
                       <button
                         onClick={handleSendEmployeeWhatsApp}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                        className="flex-1 bg-success-text hover:bg-success-text text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
                       >
                         <MessageSquare size={14} /> Abrir WhatsApp para {empName}
                       </button>
                       <button
                         onClick={handleSendAdminWhatsApp}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                        className="flex-1 bg-accent hover:bg-accent-hover text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
                       >
                         <Send size={14} /> Enviarme mis accesos
                       </button>
@@ -2155,35 +2155,35 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               )}
 
               {/* Tarjeta de Datos Demo Opcionales */}
-              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5 max-w-md mx-auto mb-6 text-left space-y-3">
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">🛠️ ¿Deseas cargar datos de demostración?</h4>
-                <p className="text-[11px] text-slate-500 leading-normal">
+              <div className="bg-page border border-border/80 rounded-2xl p-4 sm:p-5 max-w-md mx-auto mb-6 text-left space-y-3">
+                <h4 className="text-xs font-bold text-text-2 uppercase tracking-wider">🛠️ ¿Deseas cargar datos de demostración?</h4>
+                <p className="text-[11px] text-text-3 leading-normal">
                   Explora la plataforma con puestos y colaboradores ficticios preconfigurados. Podrás eliminarlos en cualquier momento.
                 </p>
                 <div className="space-y-3 pt-1">
-                  <label className="flex items-start gap-2.5 text-xs text-slate-700 font-medium cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
+                  <label className="flex items-start gap-2.5 text-xs text-text-2 font-medium cursor-pointer select-none">
+                    <input
+                      type="checkbox"
                       checked={loadDemoRoles}
                       onChange={(e) => {
                         setLoadDemoRoles(e.target.checked);
                         if (!e.target.checked) setLoadDemoEmployees(false);
                       }}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4 mt-0.5"
+                      className="rounded border-slate-300 text-accent focus-visible:ring-focus-ring h-4 w-4 mt-0.5"
                     />
                     <div>
                       <span className="font-bold block">Puestos de trabajo de prueba</span>
                       <span className="text-[10px] text-slate-400">Inserta 4 puestos (Gerente, Cajero, etc.) con sus horarios y tareas automáticas.</span>
                     </div>
                   </label>
-                  
-                  <label className="flex items-start gap-2.5 text-xs text-slate-700 font-medium cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
+
+                  <label className="flex items-start gap-2.5 text-xs text-text-2 font-medium cursor-pointer select-none">
+                    <input
+                      type="checkbox"
                       checked={loadDemoEmployees}
                       disabled={!loadDemoRoles}
                       onChange={(e) => setLoadDemoEmployees(e.target.checked)}
-                      className="disabled:opacity-50 rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4 mt-0.5"
+                      className="disabled:opacity-50 rounded border-slate-300 text-accent focus-visible:ring-focus-ring h-4 w-4 mt-0.5"
                     />
                     <div>
                       <span className={`font-bold block ${!loadDemoRoles ? 'text-slate-400' : ''}`}>Colaboradores adicionales demo</span>
@@ -2193,10 +2193,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={handleFinishOnboarding}
                 disabled={loadingDemo}
-                className="py-4 px-8 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-2xl font-black text-md shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 mx-auto active:scale-95"
+                className="py-4 px-8 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white rounded-2xl font-black text-md shadow-lg shadow-accent/20 transition-all flex items-center gap-2 mx-auto active:scale-95"
               >
                 {loadingDemo ? <Loader2 size={18} className="animate-spin" /> : <>Ingresar al Centro de Mando</>}
               </button>

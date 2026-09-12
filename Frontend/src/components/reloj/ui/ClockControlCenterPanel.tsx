@@ -24,11 +24,11 @@ export const ClockControlCenterPanel: React.FC = () => {
   const getTierBadge = (tier: ClockFeatureTag['defaultTier']) => {
     switch (tier) {
       case 'free':
-        return <span className="px-2 py-0.5 text-xs font-semibold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">🆓 Gratuito</span>;
+        return <span className="px-2 py-0.5 text-xs font-semibold rounded bg-success-icon/10 text-success-text border border-success-text/20">🆓 Gratuito</span>;
       case 'pro':
-        return <span className="px-2 py-0.5 text-xs font-semibold rounded bg-violet-500/10 text-violet-400 border border-violet-500/20">💎 Plan Pro</span>;
+        return <span className="px-2 py-0.5 text-xs font-semibold rounded bg-accent/10 text-navy-300 border border-accent/20">💎 Plan Pro</span>;
       case 'enterprise':
-        return <span className="px-2 py-0.5 text-xs font-semibold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">🏢 Enterprise</span>;
+        return <span className="px-2 py-0.5 text-xs font-semibold rounded bg-warning-icon/10 text-warning-text border border-warning-text/20">🏢 Enterprise</span>;
     }
   };
 
@@ -66,7 +66,7 @@ export const ClockControlCenterPanel: React.FC = () => {
                       checked={isChecked}
                       disabled={tag.isMandatory}
                       onChange={() => {}}
-                      className="w-4 h-4 rounded text-violet-600 focus:ring-violet-500 bg-slate-950 border-slate-700 cursor-pointer"
+                      className="w-4 h-4 rounded text-accent focus-visible:ring-focus-ring bg-slate-950 border-slate-700 cursor-pointer"
                     />
                     <span className="font-bold text-sm text-slate-200">{tag.name}</span>
                   </div>
@@ -75,10 +75,10 @@ export const ClockControlCenterPanel: React.FC = () => {
                 <p className="text-xs text-slate-400 pl-7">{tag.description}</p>
               </div>
 
-              <div className="mt-3 pl-7 flex items-center gap-2 text-[10px] font-mono text-slate-500">
+              <div className="mt-3 pl-7 flex items-center gap-2 text-[10px] font-mono text-text-3">
                 <span>Flag:</span>
                 <code className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-slate-400">{tag.key}</code>
-                {tag.isMandatory && <span className="text-emerald-400 ml-auto font-sans font-medium">Core Intocable</span>}
+                {tag.isMandatory && <span className="text-success-text ml-auto font-sans font-medium">Core Intocable</span>}
               </div>
             </div>
           );

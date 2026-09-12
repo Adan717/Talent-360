@@ -78,36 +78,36 @@ export default function PropuestaDeReglamento({ propuesta, valoresActuales, onAp
   };
 
   const colorConfianza = (c: string) =>
-    c === 'alta' ? 'bg-emerald-100 text-emerald-800' : c === 'media' ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600';
+    c === 'alta' ? 'bg-success-bg text-success-text' : c === 'media' ? 'bg-warning-bg text-warning-text' : 'bg-slate-200 text-text-2';
 
   return (
-    <div className="mt-4 p-4 bg-white border border-amber-200 rounded-2xl space-y-3 text-left text-[11px]" role="region" aria-label="Propuesta del reglamento">
+    <div className="mt-4 p-4 bg-white border border-warning-text/20 rounded-2xl space-y-3 text-left text-[11px]" role="region" aria-label="Propuesta del reglamento">
       <div className="flex items-start justify-between gap-2">
-        <div className="font-black text-slate-800 flex items-center gap-1.5">
-          <FileText size={14} className="text-amber-600" />
+        <div className="font-black text-text-1 flex items-center gap-1.5">
+          <FileText size={14} className="text-warning-text" />
           Propuesta leída de: {propuesta.fuente.nombre}
           <span className="text-slate-400 font-semibold">({propuesta.fuente.caracteres.toLocaleString('es-MX')} caracteres)</span>
         </div>
-        <button type="button" onClick={onDescartar} className="text-slate-400 hover:text-slate-700 bg-transparent border-none cursor-pointer" title="Descartar propuesta">
+        <button type="button" onClick={onDescartar} className="text-slate-400 hover:text-text-2 bg-transparent border-none cursor-pointer" title="Descartar propuesta">
           <X size={14} />
         </button>
       </div>
 
-      <p className="text-slate-500 font-medium">
+      <p className="text-text-3 font-medium">
         Nada se ha guardado. Marca lo que quieras cargar en el formulario, revísalo y después pulsa <strong>Guardar</strong> como siempre.
       </p>
 
       {filas.length === 0 && (
-        <p className="p-3 bg-slate-50 rounded-xl text-slate-500 font-semibold">
+        <p className="p-3 bg-page rounded-xl text-text-3 font-semibold">
           La IA no encontró en el texto ninguna de las reglas que esta pantalla configura.
         </p>
       )}
 
       {filas.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-500 font-black">
+              <tr className="bg-page border-b border-border text-[10px] uppercase tracking-wider text-text-3 font-black">
                 <th className="py-2 px-3">Cargar</th>
                 <th className="py-2 px-3">Regla</th>
                 <th className="py-2 px-3">Propone</th>
@@ -116,7 +116,7 @@ export default function PropuestaDeReglamento({ propuesta, valoresActuales, onAp
                 <th className="py-2 px-3">Cita del reglamento</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {filas.map(([clave, regla]) => (
                 <tr key={clave}>
                   <td className="py-2 px-3">
@@ -125,18 +125,18 @@ export default function PropuestaDeReglamento({ propuesta, valoresActuales, onAp
                       aria-label={'Cargar ' + ETIQUETAS[clave]}
                       checked={!!marcadas[clave]}
                       onChange={() => setMarcadas(prev => ({ ...prev, [clave]: !prev[clave] }))}
-                      className="w-4 h-4 rounded border-slate-300 text-amber-600 cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-warning-text cursor-pointer"
                     />
                   </td>
-                  <td className="py-2 px-3 font-bold text-slate-800">{ETIQUETAS[clave]}</td>
-                  <td className="py-2 px-3 font-black text-amber-700">{formatearValor(clave, regla.valor)}</td>
-                  <td className="py-2 px-3 text-slate-500">{formatearValor(clave, valoresActuales[clave])}</td>
+                  <td className="py-2 px-3 font-bold text-text-1">{ETIQUETAS[clave]}</td>
+                  <td className="py-2 px-3 font-black text-warning-text">{formatearValor(clave, regla.valor)}</td>
+                  <td className="py-2 px-3 text-text-3">{formatearValor(clave, valoresActuales[clave])}</td>
                   <td className="py-2 px-3">
                     <span className={'px-1.5 py-0.5 rounded-md font-black uppercase text-[9px] ' + colorConfianza(regla.confianza)}>
                       {regla.confianza}
                     </span>
                   </td>
-                  <td className="py-2 px-3 text-slate-500 italic max-w-[320px]">{regla.cita ? '«' + regla.cita + '»' : '—'}</td>
+                  <td className="py-2 px-3 text-text-3 italic max-w-[320px]">{regla.cita ? '«' + regla.cita + '»' : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -145,7 +145,7 @@ export default function PropuestaDeReglamento({ propuesta, valoresActuales, onAp
       )}
 
       {propuesta.advertencias.length > 0 && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 space-y-1">
+        <div className="p-3 bg-warning-bg border border-warning-text/20 rounded-xl text-warning-text space-y-1">
           <div className="font-black flex items-center gap-1.5"><AlertTriangle size={12} /> Ojo:</div>
           <ul className="list-disc pl-4">
             {propuesta.advertencias.map((a, i) => <li key={i}>{a}</li>)}
@@ -154,7 +154,7 @@ export default function PropuestaDeReglamento({ propuesta, valoresActuales, onAp
       )}
 
       {propuesta.articulos.length > 0 && (
-        <details className="text-slate-500">
+        <details className="text-text-3">
           <summary className="cursor-pointer font-bold">Artículos que la IA identificó ({propuesta.articulos.length})</summary>
           <ul className="mt-1 space-y-0.5 pl-4 list-disc">
             {propuesta.articulos.map((art, i) => <li key={i}><strong>{art.referencia}:</strong> {art.resumen}</li>)}
@@ -163,14 +163,14 @@ export default function PropuestaDeReglamento({ propuesta, valoresActuales, onAp
       )}
 
       <div className="flex items-center justify-end gap-2 pt-1">
-        <button type="button" onClick={onDescartar} className="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold bg-transparent border-none cursor-pointer">
+        <button type="button" onClick={onDescartar} className="px-3 py-2 rounded-xl text-text-2 hover:bg-page font-bold bg-transparent border-none cursor-pointer">
           Descartar
         </button>
         <button
           type="button"
           onClick={aplicar}
           disabled={seleccionadas.length === 0}
-          className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black flex items-center gap-1.5 border-none cursor-pointer"
+          className="px-4 py-2 rounded-xl bg-warning-text hover:bg-warning-text disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black flex items-center gap-1.5 border-none cursor-pointer"
         >
           <CheckCircle2 size={14} /> Cargar {seleccionadas.length} en el formulario
         </button>

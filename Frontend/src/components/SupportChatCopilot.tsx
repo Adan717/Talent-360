@@ -2,13 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
- 
+
 interface Message {
     sender: 'user' | 'bot';
     text: string;
     timestamp: Date;
 }
- 
+
 export const SupportChatCopilot = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
@@ -22,32 +22,32 @@ export const SupportChatCopilot = () => {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const { currentUser } = useAppStore();
- 
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
- 
+
     useEffect(() => {
         if (isOpen) {
             scrollToBottom();
         }
     }, [messages, isOpen]);
- 
+
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!inputValue.trim() || isLoading) return;
- 
+
         const userMsg = inputValue.trim();
         setInputValue('');
         setMessages(prev => [...prev, { sender: 'user', text: userMsg, timestamp: new Date() }]);
         setIsLoading(true);
- 
+
         try {
             const response = await axiosInstance.post('/support/copilot', {
                 question: userMsg,
                 context: `Usuario actual: ${currentUser?.name || 'Desconocido'}, Email: ${currentUser?.email || 'N/A'}, Rol: ${currentUser?.role || 'N/A'}`
             });
- 
+
             const botAnswer = response.data.answer || 'Lo siento, no he podido procesar tu solicitud.';
             setMessages(prev => [...prev, { sender: 'bot', text: botAnswer, timestamp: new Date() }]);
         } catch (error) {
@@ -64,7 +64,7 @@ export const SupportChatCopilot = () => {
             setIsLoading(false);
         }
     };
- 
+
     const createSupportTicketDirectly = async () => {
         try {
             setIsLoading(true);
@@ -76,7 +76,7 @@ export const SupportChatCopilot = () => {
                 contact_name: currentUser?.name || 'Cliente',
                 contact_email: currentUser?.email || 'soporte@talent360.com.mx'
             });
-            
+
             setMessages(prev => [
                 ...prev,
                 {
@@ -91,35 +91,35 @@ export const SupportChatCopilot = () => {
             setIsLoading(false);
         }
     };
- 
+
     return (
         <div className="fixed bottom-6 right-6 z-[9999] font-sans select-none">
             {/* Botón Flotante */}
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="w-14 h-14 bg-gradient-to-tr from-violet-600 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-108 transition-all active:scale-95 duration-300 relative group cursor-pointer border-none outline-none"
+                    className="w-14 h-14 bg-gradient-to-tr from-accent to-accent text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-108 transition-all active:scale-95 duration-300 relative group cursor-pointer border-none outline-none"
                     title="Copiloto de Soporte"
                 >
-                    <div className="absolute inset-0 bg-violet-400 rounded-full blur-[8px] opacity-40 group-hover:opacity-75 transition-opacity pointer-events-none animate-pulse"></div>
+                    <div className="absolute inset-0 bg-navy-400 rounded-full blur-[8px] opacity-40 group-hover:opacity-75 transition-opacity pointer-events-none animate-pulse"></div>
                     <Bot size={26} className="relative z-10 animate-pulse" />
-                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white animate-ping"></span>
-                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white"></span>
+                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-success-icon rounded-full border-2 border-white animate-ping"></span>
+                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-success-icon rounded-full border-2 border-white"></span>
                 </button>
             )}
- 
+
             {/* Ventana de Chat */}
             {isOpen && (
-                <div className="w-[360px] h-[500px] sm:w-[400px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300 backdrop-blur-md">
+                <div className="w-[360px] h-[500px] sm:w-[400px] bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300 backdrop-blur-md">
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 px-5 py-4 flex items-center justify-between text-white shrink-0 shadow-md">
+                    <div className="bg-gradient-to-r from-accent via-accent to-accent px-5 py-4 flex items-center justify-between text-white shrink-0 shadow-md">
                         <div className="flex items-center gap-3 text-left">
                             <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
                                 <Bot size={22} className="animate-pulse" />
                             </div>
                             <div>
                                 <h3 className="text-sm font-black tracking-wide uppercase leading-none">Copiloto AI</h3>
-                                <p className="text-[10px] text-violet-200 mt-1 flex items-center gap-1">
+                                <p className="text-[10px] text-navy-100 mt-1 flex items-center gap-1">
                                     <Sparkles size={10} className="animate-bounce" />
                                     Soporte Técnico Activo
                                 </p>
@@ -132,9 +132,9 @@ export const SupportChatCopilot = () => {
                             <X size={18} />
                         </button>
                     </div>
- 
+
                     {/* Mensajes */}
-                    <div className="flex-grow p-4 overflow-y-auto space-y-3.5 custom-scrollbar bg-slate-50/50 dark:bg-slate-950/20">
+                    <div className="flex-grow p-4 overflow-y-auto space-y-3.5 custom-scrollbar bg-page/50 dark:bg-slate-950/20">
                         {messages.map((msg, idx) => (
                             <div
                                 key={idx}
@@ -143,8 +143,8 @@ export const SupportChatCopilot = () => {
                                 <div
                                     className={`max-w-[82%] px-4 py-3 rounded-2xl text-xs leading-relaxed text-left ${
                                         msg.sender === 'user'
-                                            ? 'bg-violet-600 text-white rounded-br-none shadow-md shadow-violet-600/10'
-                                            : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700/80 rounded-bl-none shadow-sm'
+                                            ? 'bg-accent text-white rounded-br-none shadow-md shadow-accent/10'
+                                            : 'bg-white dark:bg-slate-800 text-text-1 dark:text-slate-200 border border-border dark:border-slate-700/80 rounded-bl-none shadow-sm'
                                     }`}
                                 >
                                     {msg.text}
@@ -158,48 +158,48 @@ export const SupportChatCopilot = () => {
                                 </div>
                             </div>
                         ))}
-                        
+
                         {isLoading && (
                             <div className="flex justify-start">
-                                <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/85 px-4 py-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-1">
-                                    <div className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                    <div className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                    <div className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                <div className="bg-white dark:bg-slate-800 border border-border dark:border-slate-700/85 px-4 py-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-1">
+                                    <div className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                    <div className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                    <div className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                                 </div>
                             </div>
                         )}
                         <div ref={messagesEndRef} />
                     </div>
- 
+
                     {/* Botones de acción rápida */}
                     {messages.length > 2 && !isLoading && (
-                        <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-800/80 bg-white/40 dark:bg-slate-900/40 flex items-center justify-center shrink-0">
+                        <div className="px-4 py-2 border-t border-border dark:border-slate-800/80 bg-white/40 dark:bg-slate-900/40 flex items-center justify-center shrink-0">
                             <button
                                 onClick={createSupportTicketDirectly}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all border border-rose-200/50 cursor-pointer outline-none active:scale-95"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-danger-bg hover:bg-danger-bg dark:bg-danger-text/20 text-danger-text dark:text-rose-400 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all border border-danger-text/50 cursor-pointer outline-none active:scale-95"
                             >
                                 <MessageSquare size={12} />
                                 ¿Aún tienes dudas? Crear Ticket
                             </button>
                         </div>
                     )}
- 
+
                     {/* Input Area */}
                     <form
                         onSubmit={handleSend}
-                        className="p-3 border-t border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-900 flex gap-2 shrink-0"
+                        className="p-3 border-t border-border dark:border-slate-800/80 bg-white dark:bg-slate-900 flex gap-2 shrink-0"
                     >
                         <input
                             type="text"
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                             placeholder="Escribe tu consulta de soporte..."
-                            className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 text-xs rounded-xl border border-slate-200/60 dark:border-slate-800 focus:outline-none focus:border-violet-500"
+                            className="flex-1 px-4 py-2.5 bg-page dark:bg-slate-950 text-text-1 dark:text-slate-200 text-xs rounded-xl border border-border/60 dark:border-slate-800 focus:outline-none focus:border-accent"
                         />
                         <button
                             type="submit"
                             disabled={!inputValue.trim() || isLoading}
-                            className="p-2.5 bg-violet-600 hover:bg-violet-750 text-white rounded-xl flex items-center justify-center transition-all disabled:opacity-40 disabled:hover:bg-violet-600 border-none cursor-pointer outline-none"
+                            className="p-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl flex items-center justify-center transition-all disabled:opacity-40 disabled:hover:bg-accent border-none cursor-pointer outline-none"
                         >
                             <Send size={15} />
                         </button>

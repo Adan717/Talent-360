@@ -94,16 +94,16 @@ export const MealReservation: React.FC<MealReservationProps> = ({ onClose }) => 
   };
 
   const getSlotColor = (slot: MealSlot) => {
-    if (slot.is_my_reservation) return 'border-violet-500 bg-violet-500/20';
+    if (slot.is_my_reservation) return 'border-accent bg-accent/20';
     if (slot.is_full || slot.same_role_blocked) return 'border-gray-700 bg-gray-800/50 opacity-60';
-    return 'border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 cursor-pointer';
+    return 'border-success-text/40 bg-success-icon/10 hover:bg-success-icon/20 cursor-pointer';
   };
 
   const getSlotStatus = (slot: MealSlot) => {
-    if (slot.is_my_reservation) return { icon: <CheckCircle size={16} className="text-violet-400" />, text: 'Tu reserva', color: 'text-violet-400' };
-    if (slot.same_role_blocked) return { icon: <AlertTriangle size={16} className="text-amber-400" />, text: 'Mismo puesto ocupado', color: 'text-amber-400' };
-    if (slot.is_full) return { icon: <XCircle size={16} className="text-red-400" />, text: 'Lleno', color: 'text-red-400' };
-    return { icon: <Coffee size={16} className="text-emerald-400" />, text: `${slot.available} lugares`, color: 'text-emerald-400' };
+    if (slot.is_my_reservation) return { icon: <CheckCircle size={16} className="text-navy-300" />, text: 'Tu reserva', color: 'text-navy-300' };
+    if (slot.same_role_blocked) return { icon: <AlertTriangle size={16} className="text-warning-text" />, text: 'Mismo puesto ocupado', color: 'text-warning-text' };
+    if (slot.is_full) return { icon: <XCircle size={16} className="text-danger-text" />, text: 'Lleno', color: 'text-danger-text' };
+    return { icon: <Coffee size={16} className="text-success-text" />, text: `${slot.available} lugares`, color: 'text-success-text' };
   };
 
   return (
@@ -111,8 +111,8 @@ export const MealReservation: React.FC<MealReservationProps> = ({ onClose }) => 
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
-            <Utensils size={20} className="text-violet-400" />
+          <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
+            <Utensils size={20} className="text-navy-300" />
           </div>
           <div>
             <h2 className="font-bold text-lg leading-tight">Comedor</h2>
@@ -128,18 +128,18 @@ export const MealReservation: React.FC<MealReservationProps> = ({ onClose }) => 
 
       {/* Mi Reserva Activa */}
       {myReservation && (
-        <div className="mx-4 mt-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-between">
+        <div className="mx-4 mt-4 p-3 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CheckCircle size={18} className="text-violet-400 flex-shrink-0" />
+            <CheckCircle size={18} className="text-navy-300 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-violet-300">Reserva activa</p>
+              <p className="text-sm font-semibold text-navy-100">Reserva activa</p>
               <p className="text-xs text-white/60">{myReservation.slot_start} - {myReservation.slot_end}</p>
             </div>
           </div>
           <button
             onClick={handleCancel}
             disabled={isProcessing}
-            className="text-xs px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-colors disabled:opacity-50"
+            className="text-xs px-3 py-1.5 rounded-lg bg-danger-icon/20 text-danger-text border border-danger-text/30 hover:bg-danger-icon/30 transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>
@@ -148,12 +148,12 @@ export const MealReservation: React.FC<MealReservationProps> = ({ onClose }) => 
 
       {/* Mensajes */}
       {error && (
-        <div className="mx-4 mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-sm text-red-400 flex items-center gap-2">
+        <div className="mx-4 mt-3 p-3 rounded-xl bg-danger-icon/10 border border-danger-text/30 text-sm text-danger-text flex items-center gap-2">
           <AlertTriangle size={16} className="flex-shrink-0" /> {error}
         </div>
       )}
       {success && (
-        <div className="mx-4 mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-sm text-emerald-400 flex items-center gap-2">
+        <div className="mx-4 mt-3 p-3 rounded-xl bg-success-icon/10 border border-success-text/30 text-sm text-success-text flex items-center gap-2">
           <CheckCircle size={16} className="flex-shrink-0" /> {success}
         </div>
       )}
@@ -162,7 +162,7 @@ export const MealReservation: React.FC<MealReservationProps> = ({ onClose }) => 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-40 gap-3">
-            <Loader2 size={32} className="text-violet-400 animate-spin" />
+            <Loader2 size={32} className="text-navy-300 animate-spin" />
             <p className="text-sm text-white/50">Cargando horarios...</p>
           </div>
         ) : slots.length === 0 ? (
@@ -185,7 +185,7 @@ export const MealReservation: React.FC<MealReservationProps> = ({ onClose }) => 
                 <div className="flex items-center justify-between">
                   {/* Hora */}
                   <div className="flex items-center gap-3">
-                    <Clock size={20} className={slot.is_my_reservation ? 'text-violet-400' : slot.is_full ? 'text-gray-500' : 'text-emerald-400'} />
+                    <Clock size={20} className={slot.is_my_reservation ? 'text-navy-300' : slot.is_full ? 'text-text-3' : 'text-success-text'} />
                     <div>
                       <p className="font-bold text-base">{slot.slot_start} - {slot.slot_end}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
@@ -200,7 +200,7 @@ export const MealReservation: React.FC<MealReservationProps> = ({ onClose }) => 
                     <Users size={14} className="text-white/40" />
                     <span className="text-xs text-white/40">{slot.booked}/{slot.capacity}</span>
                     {canReserve && (
-                      <div className="ml-2 px-3 py-1 rounded-full bg-emerald-500/30 text-emerald-300 text-xs font-semibold">
+                      <div className="ml-2 px-3 py-1 rounded-full bg-success-icon/30 text-success-text text-xs font-semibold">
                         Reservar
                       </div>
                     )}
@@ -210,7 +210,7 @@ export const MealReservation: React.FC<MealReservationProps> = ({ onClose }) => 
                 {/* Barra de aforo */}
                 <div className="mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${slot.is_full ? 'bg-red-500' : 'bg-emerald-500'}`}
+                    className={`h-full rounded-full transition-all duration-500 ${slot.is_full ? 'bg-danger-icon' : 'bg-success-icon'}`}
                     style={{ width: `${(slot.booked / slot.capacity) * 100}%` }}
                   />
                 </div>

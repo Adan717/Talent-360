@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  Users, Briefcase, GraduationCap, Clock, 
+import {
+  Users, Briefcase, GraduationCap, Clock,
   ArrowUpRight, Activity, ShieldCheck, Zap,
   Lock, Settings, LayoutDashboard, ListTodo, BarChart3, Star,
   Play, Send, CheckCircle2, MessageSquare, PlusCircle, Sparkles, MessageCircle, AlertTriangle, FileText, ChevronRight, Receipt,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { GlobalSystemSettingsPanel } from './GlobalSystemSettingsPanel';
 import { OnboardingWizard } from './OnboardingWizard';
+import { StatusBadge } from './ui/StatusBadge';
 // Resync 3: HeaderStats se va (su refactor Monitor 360 borró el componente); los paneles de
 // resolución del Reloj SE QUEDAN — son funcionales, no estética: sin ellos, lo que los
 // empleados declaran desde el dial (entrada tardía R56/R57, pánico R80, justificante R82,
@@ -39,7 +40,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
   const colaboradoresActivos = Math.max(1, globalUsers.length);
   const planDelPlan = planDelTarifario(tarifario, currentTier);
   const cotizacionDelPlan = cotizar(planDelPlan, colaboradoresActivos, 'monthly');
-  
+
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [isAdoptionSaving, setIsAdoptionSaving] = useState(false);
 
@@ -114,7 +115,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [assigningTask, setAssigningTask] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  
+
   // Drag and Drop y Modales Interactivos del Monitor
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
   const [dragOverUserId, setDragOverUserId] = useState<number | null>(null);
@@ -288,7 +289,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'es-MX';
-    
+
     const voices = window.speechSynthesis.getVoices();
     const spanishVoice = voices.find(v => v.lang.startsWith('es-MX')) ||
                           voices.find(v => v.lang.startsWith('es-ES')) ||
@@ -296,23 +297,23 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
     if (spanishVoice) {
       utterance.voice = spanishVoice;
     }
-    
+
     // Store reference to prevent garbage collection
     activeUtterances.push(utterance);
-    
+
     utterance.onend = () => {
       activeUtterances = activeUtterances.filter(u => u !== utterance);
       setTimeout(() => {
         if (callback) callback();
       }, 350); // Delay to avoid picking up computer's own voice
     };
-    
+
     utterance.onerror = (err) => {
       console.error("Speech synthesis error", err);
       activeUtterances = activeUtterances.filter(u => u !== utterance);
       if (callback) callback();
     };
-    
+
     window.speechSynthesis.speak(utterance);
   };
 
@@ -326,18 +327,18 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       'una hora': 60, 'dos horas': 120, 'tres horas': 180,
       'media hora': 30, 'un cuarto de hora': 15
     };
-    
+
     for (const key in numbersMap) {
       if (lower.includes(key)) {
         return numbersMap[key];
       }
     }
-    
+
     const match = lower.match(/\d+/);
     if (match) {
       return parseInt(match[0]);
     }
-    
+
     return null;
   };
 
@@ -384,7 +385,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
           if (res.data && res.data.status === 'success') {
             const parsed = res.data.data;
             setVoiceParsedData(parsed);
-            
+
             setNewTaskTitle(parsed.title || '');
             setNewTaskMins(parsed.estimated_mins || 30);
             setNewTaskPoints(parsed.points || 10);
@@ -394,7 +395,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
             setNewTaskTargetId(parsed.target_id ? String(parsed.target_id) : '');
             setNewTaskAssistantType(parsed.assistant_type || 'ninguno');
             setNewTaskAssistantPrompt(parsed.assistant_prompt || '');
-            
+
             if (!parsed.time_detected) {
               startVoiceWizardStep('asking_time', 'Entendido. ¿Cuánto tiempo en minutos deseas asignarle a esta tarea?');
             } else if (!parsed.target_id) {
@@ -419,7 +420,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       if (parsedTime !== null) {
         setNewTaskMins(parsedTime);
         setNewTaskPoints(Math.max(5, Math.round(parsedTime / 3)));
-        
+
         if (!newTaskTargetId) {
           startVoiceWizardStep('asking_assignee', 'Entendido. ¿A qué colaborador o puesto deseas asignar esta tarea?');
         } else {
@@ -430,17 +431,17 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       }
     } else if (step === 'asking_assignee') {
       const lower = text.toLowerCase();
-      const matchedUser = globalUsers.find(u => 
-        lower.includes(u.name.toLowerCase()) || 
+      const matchedUser = globalUsers.find(u =>
+        lower.includes(u.name.toLowerCase()) ||
         lower.includes(u.name.split(' ')[0].toLowerCase())
       );
-      
+
       if (matchedUser) {
         setNewTaskTargetType('user');
         setNewTaskTargetId(String(matchedUser.id));
         startVoiceWizardStep('asking_assistant', `Asignada a ${matchedUser.name}. ¿Deseas acoplar algún asistente de evidencia? Di foto, cantidad, texto o ninguno.`);
       } else {
-        const matchedRole = (monitorData.job_roles || []).find(r => 
+        const matchedRole = (monitorData.job_roles || []).find(r =>
           lower.includes(r.name.toLowerCase())
         );
         if (matchedRole) {
@@ -510,7 +511,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       setVoiceWizardStep('idle');
       return;
     }
-    
+
     setVoiceWizardActive(true);
     setNewTaskTitle('');
     setNewTaskMins(30);
@@ -546,7 +547,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
         setCreatingTask(false);
         setVoiceWizardActive(false);
         setVoiceWizardStep('idle');
-        
+
         setNewTaskTitle('');
         setNewTaskPoints(10);
         setNewTaskTargetType('role');
@@ -556,10 +557,10 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
         setNewTaskIsAutoCapture(false);
         setShowCreateTaskModal(false);
         setTaskCreationMode(null);
-        
+
         setToastMessage('Tarea creada con éxito vía asistente de voz.');
         setTimeout(() => setToastMessage(null), 3000);
-        
+
         speakText('Tarea guardada exitosamente.');
       })
       .catch(err => {
@@ -626,14 +627,14 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
   // Efecto para reproducir alerta sonora cuando hay tareas excedidas en progreso
   React.useEffect(() => {
     if (!monitorData || !monitorData.users) return;
-    
+
     // Buscar si hay alguna tarea en progreso que esté sobre el tiempo estimado
     let hasOvertimeTask = false;
     monitorData.users.forEach((user) => {
       const userActiveTasks = (user as any).active_tasks || [];
       userActiveTasks.forEach((t: any) => {
         if (t.status === 'in_progress') {
-          const elapsed = (t.accumulated_mins || 0) + 
+          const elapsed = (t.accumulated_mins || 0) +
             (t.started_at_mins ? (globalSimTime - t.started_at_mins) : 0);
           if (elapsed > t.estimated_mins) {
             hasOvertimeTask = true;
@@ -648,14 +649,14 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
           const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
           const oscillator = audioCtx.createOscillator();
           const gainNode = audioCtx.createGain();
-          
+
           oscillator.type = 'sine';
           oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Nota La5 (A5)
           gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime); // Volumen 8%
-          
+
           oscillator.connect(gainNode);
           gainNode.connect(audioCtx.destination);
-          
+
           oscillator.start();
           oscillator.stop(audioCtx.currentTime + 0.18); // Duración 180ms
         } catch (e) {
@@ -736,8 +737,8 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
   };
 
   const stats = [
-    { label: 'Asistencia del Día', value: `${realStats.cumplimiento}%`, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-100', trend: 'Cumplimiento' },
-    { label: 'Retardos del Día', value: realStats.retardos_hoy.toString(), icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100', trend: 'Hoy' },
+    { label: 'Asistencia del Día', value: `${realStats.cumplimiento}%`, icon: CheckCircle2, color: 'text-success-icon', tone: 'success' as const, trend: 'Cumplimiento' },
+    { label: 'Retardos del Día', value: realStats.retardos_hoy.toString(), icon: Clock, color: 'text-warning-icon', tone: 'warning' as const, trend: 'Hoy' },
   ];
 
   const visibleStats = stats.filter(stat => {
@@ -747,16 +748,16 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
       {/* Header y Pestañas del Dashboard */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-border">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-2xl font-black text-text-1 tracking-tight">
               Bienvenido a {currentUser?.tenant?.name || 'Talent 360'}
             </h1>
-            <p className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-1.5 font-medium">
-              <span>Resumen general de tu empresa (Plan <span className="font-extrabold text-blue-600">{(currentUser?.tenant?.plan || currentTier).toUpperCase()}</span>)</span>
+            <p className="text-sm text-text-3 mt-1 flex flex-wrap items-center gap-1.5 font-medium">
+              <span>Resumen general de tu empresa (Plan <span className="font-extrabold text-accent">{(currentUser?.tenant?.plan || currentTier).toUpperCase()}</span>)</span>
               {currentUser?.tenant?.created_at && (
                 <>
                   <span className="text-slate-300">•</span>
@@ -765,9 +766,9 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               )}
             </p>
           </div>
-          
+
           {currentTier === 'freemium' && (
-            <button className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-amber-500/20 hover:shadow-lg hover:shadow-amber-500/30 transition-all hover:-translate-y-0.5">
+            <button className="flex items-center gap-2 bg-gradient-to-r from-warning-icon to-warning-text text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-warning-text/20 hover:shadow-lg hover:shadow-warning-text/30 transition-all hover:-translate-y-0.5">
               <Zap size={18} className="fill-current" />
               Mejorar a PRO
             </button>
@@ -775,17 +776,17 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
         </div>
 
         {/* Custom Tabs */}
-        <div className="flex gap-2 border-b border-slate-100 pb-0 overflow-x-auto custom-scrollbar">
-          <button 
+        <div className="flex gap-2 border-b border-border pb-0 overflow-x-auto custom-scrollbar">
+          <button
             onClick={() => setActiveTab('overview')}
-            className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors font-bold whitespace-nowrap ${activeTab === 'overview' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors font-bold whitespace-nowrap ${activeTab === 'overview' ? 'border-accent text-accent' : 'border-transparent text-text-3 hover:text-text-2'}`}
           >
             <LayoutDashboard size={18} />
             Visión General
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('onboarding')}
-            className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors font-bold whitespace-nowrap ${activeTab === 'onboarding' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors font-bold whitespace-nowrap ${activeTab === 'onboarding' ? 'border-accent text-accent' : 'border-transparent text-text-3 hover:text-text-2'}`}
           >
             <Settings size={18} />
             Configuración de Onboarding
@@ -815,50 +816,48 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       {/* Métricas complementarias (lo que no repite ya las píldoras de arriba) */}
       <div className="grid grid-cols-2 gap-4">
         {visibleStats.map((stat, idx) => (
-          <div key={idx} className="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3.5 group hover:border-blue-200 transition-colors">
-            <div className={`p-3.5 rounded-2xl ${stat.bg} ${stat.color} shrink-0`}>
+          <div key={idx} className="bg-white p-3.5 rounded-xl shadow-sm border border-border flex items-center gap-3.5 group hover:border-border transition-colors">
+            <div className={`p-3.5 rounded-2xl ${stat.color} shrink-0`}>
               <stat.icon size={40} strokeWidth={1.5} />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-xl font-black text-slate-800 leading-none">{stat.value}</h3>
-              <p className="text-xs font-semibold text-slate-500 truncate mt-1">{stat.label}</p>
+              <h3 className="text-xl font-black text-text-1 leading-none">{stat.value}</h3>
+              <p className="text-xs font-semibold text-text-3 truncate mt-1">{stat.label}</p>
               <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                <div className="text-[9px] font-bold text-slate-400 bg-slate-50 py-0.5 px-2 rounded inline-block w-max">
-                  {stat.trend}
-                </div>
+                <StatusBadge tone={stat.tone} className="text-[10px]">{stat.trend}</StatusBadge>
               </div>
             </div>
-            <ArrowUpRight size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors shrink-0 self-start mt-0.5" />
+            <ArrowUpRight size={14} className="text-slate-300 group-hover:text-text-3 transition-colors shrink-0 self-start mt-0.5" />
           </div>
         ))}
       </div>
 
       {/* Monitor de Actividad en Tiempo Real */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-border p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-4 gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+            <div className="p-2 bg-navy-50 text-accent rounded-xl">
               <Activity size={20} strokeWidth={2} className="animate-pulse" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-800 tracking-tight">Monitor de Actividad en Tiempo Real</h2>
-              <p className="text-xs text-slate-500 mt-0.5 font-medium">Seguimiento de turnos, tareas activas y reportes del personal</p>
+              <h2 className="text-lg font-black text-text-1 tracking-tight">Monitor de Actividad en Tiempo Real</h2>
+              <p className="text-xs text-text-3 mt-0.5 font-medium">Seguimiento de turnos, tareas activas y reportes del personal</p>
             </div>
           </div>
           <div className="flex items-center gap-2 self-end sm:self-auto">
-            <button 
+            <button
               onClick={() => {
                 setTaskCreationMode(null);
                 setShowCreateTaskModal(true);
               }}
-              className="text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-3.5 py-2 rounded-xl transition-all shadow-md shadow-blue-500/10 flex items-center gap-1.5"
+              className="text-xs font-bold text-white bg-gradient-to-r from-accent to-accent hover:from-accent-hover hover:to-accent-hover px-3.5 py-2 rounded-xl transition-all shadow-md shadow-accent/10 flex items-center gap-1.5"
             >
               <PlusCircle size={14} />
               Crear Tarea
             </button>
-            <button 
+            <button
               onClick={fetchMonitorData}
-              className="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-xl transition-colors"
+              className="text-xs font-bold text-text-2 bg-page hover:bg-slate-200 px-3.5 py-2 rounded-xl transition-colors"
             >
               Actualizar
             </button>
@@ -866,17 +865,17 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
         </div>
 
         {isLoadingMonitor ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></span>
+          <div className="flex flex-col items-center justify-center py-16 text-text-3">
+            <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mb-2"></span>
             <p className="text-xs font-medium">Cargando monitor de actividad...</p>
           </div>
         ) : (
           <div className="space-y-6">
             {/* Tareas Pendientes de Validación por el Supervisor */}
             {assignments.filter(a => a.status === 'awaiting_validation').length > 0 && (
-              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 mb-4 animate-in slide-in-from-top-4 duration-300">
-                <h3 className="text-sm font-black text-indigo-950 flex items-center gap-2 mb-3">
-                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
+              <div className="bg-navy-50 border border-border rounded-2xl p-5 mb-4 animate-in slide-in-from-top-4 duration-300">
+                <h3 className="text-sm font-black text-brand-dark flex items-center gap-2 mb-3">
+                  <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse"></span>
                   Tareas Pendientes de Validación ({assignments.filter(a => a.status === 'awaiting_validation').length})
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -884,54 +883,54 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     const task = tasks.find(t => t.id === assignment.taskId);
                     const employee = globalUsers.find(u => u.id === assignment.userId);
                     return (
-                      <div key={assignment.id} className="bg-white border border-indigo-200/50 p-4 rounded-xl shadow-sm flex flex-col justify-between">
+                      <div key={assignment.id} className="bg-white border border-border/50 p-4 rounded-xl shadow-sm flex flex-col justify-between">
                         <div>
                           <div className="flex justify-between items-start gap-2">
-                            <span className="text-xs font-bold text-slate-500 block">Colaborador: <span className="text-slate-800 font-extrabold">{employee?.name || 'Empleado'}</span></span>
+                            <span className="text-xs font-bold text-text-3 block">Colaborador: <span className="text-text-1 font-extrabold">{employee?.name || 'Empleado'}</span></span>
                             {task?.priority === 'bloqueante' ? (
-                              <span className="bg-rose-100 text-rose-800 text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded-md">Crítica</span>
+                              <span className="bg-danger-bg text-danger-text text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded-md">Crítica</span>
                             ) : null}
                           </div>
-                          <h4 className="font-bold text-slate-800 text-sm mt-1">{task?.title || 'Tarea'}</h4>
-                          <p className="text-xs text-slate-400 mt-1 truncate">{task?.description || 'Sin descripción'}</p>
-                          
+                          <h4 className="font-bold text-text-1 text-sm mt-1">{task?.title || 'Tarea'}</h4>
+                          <p className="text-xs text-text-3 mt-1 truncate">{task?.description || 'Sin descripción'}</p>
+
                           {/* Evidencia */}
-                          <div className="mt-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-xs">
-                            <span className="font-bold text-slate-500 block uppercase text-[9px] tracking-wider mb-1">Evidencia entregada</span>
+                          <div className="mt-3 bg-page p-2.5 rounded-lg border border-border text-xs">
+                            <span className="font-bold text-text-3 block uppercase text-[9px] tracking-wider mb-1">Evidencia entregada</span>
                             {task?.assistantType === 'evidencia_foto' ? (
                               <div className="space-y-1.5">
-                                <span className="text-slate-600 block italic">Foto adjuntada:</span>
+                                <span className="text-text-2 block italic">Foto adjuntada:</span>
                                 {assignment.assistantData?.photoUrl ? (
-                                  <img src={assignment.assistantData.photoUrl} alt="Evidencia" className="h-16 w-auto rounded border border-slate-200" />
+                                  <img src={assignment.assistantData.photoUrl} alt="Evidencia" className="h-16 w-auto rounded border border-border" />
                                 ) : (
-                                  <div className="w-24 h-16 bg-slate-200 border border-slate-300 rounded flex items-center justify-center text-[10px] text-slate-500 font-medium">📷 Evidencia Foto</div>
+                                  <div className="w-24 h-16 bg-slate-200 border border-slate-300 rounded flex items-center justify-center text-[10px] text-text-3 font-medium">📷 Evidencia Foto</div>
                                 )}
                               </div>
                             ) : task?.assistantType === 'captura_numero' ? (
-                              <span className="text-slate-700 block font-bold mt-0.5">Número: {assignment.assistantData?.number || assignment.assistantData || 'Sin captura'}</span>
+                              <span className="text-text-2 block font-bold mt-0.5">Número: {assignment.assistantData?.number || assignment.assistantData || 'Sin captura'}</span>
                             ) : task?.assistantType === 'texto' ? (
-                              <span className="text-slate-700 block font-medium mt-0.5 italic">"{assignment.assistantData?.text || assignment.assistantData || 'Sin texto'}"</span>
+                              <span className="text-text-2 block font-medium mt-0.5 italic">"{assignment.assistantData?.text || assignment.assistantData || 'Sin texto'}"</span>
                             ) : (
-                              <span className="text-slate-500 block italic mt-0.5">No requiere evidencia física</span>
+                              <span className="text-text-3 block italic mt-0.5">No requiere evidencia física</span>
                             )}
                           </div>
                         </div>
 
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex gap-2">
-                          <button 
+                        <div className="mt-4 pt-3 border-t border-border flex gap-2">
+                          <button
                             onClick={() => validateTaskAssignment(assignment.id, 'completed')}
-                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-xs transition-colors"
+                            className="flex-1 bg-success-text hover:bg-success-text text-white font-bold py-1.5 rounded-lg text-xs transition-colors"
                           >
                             Aprobar
                           </button>
-                          <button 
+                          <button
                             onClick={() => {
                               const feedback = prompt("Introduce el motivo de rechazo (comentarios para el empleado):");
                               if (feedback !== null) {
                                 validateTaskAssignment(assignment.id, 'in_progress', feedback || 'Revisión requerida.');
                               }
                             }}
-                            className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-1.5 rounded-lg text-xs border border-rose-200/60 transition-colors"
+                            className="flex-1 bg-danger-bg hover:bg-danger-bg text-danger-text font-bold py-1.5 rounded-lg text-xs border border-danger-text/60 transition-colors"
                           >
                             Rechazar
                           </button>
@@ -942,9 +941,9 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 </div>
               </div>
             )}
-            
+
             {/* Selector de sección: en móvil se ve una a la vez, en escritorio (lg+) esto se oculta y las tres se ven lado a lado */}
-            <div className="flex gap-1 bg-slate-100 rounded-xl p-1 lg:hidden">
+            <div className="flex gap-1 bg-page rounded-xl p-1 lg:hidden">
               {([
                 { key: 'bolsa', label: 'Bolsa' },
                 { key: 'equipo', label: 'Equipo' },
@@ -954,7 +953,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   key={tab.key}
                   onClick={() => setActiveMonitorTab(tab.key)}
                   className={`flex-1 py-2 text-xs font-black rounded-lg transition-colors ${
-                    activeMonitorTab === tab.key ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'
+                    activeMonitorTab === tab.key ? 'bg-white text-accent shadow-sm' : 'text-text-3'
                   }`}
                 >
                   {tab.label}
@@ -965,16 +964,16 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
               {/* PANEL 1: Bolsa de Tareas Rápidas & Asistente IA (1/4) */}
-              <div className={`${activeMonitorTab === 'bolsa' ? 'flex' : 'hidden'} lg:flex lg:col-span-1 bg-slate-50/60 p-4 rounded-2xl border border-slate-200 flex-col justify-between h-full min-h-[500px]`}>
+              <div className={`${activeMonitorTab === 'bolsa' ? 'flex' : 'hidden'} lg:flex lg:col-span-1 bg-page/60 p-4 rounded-2xl border border-border flex-col justify-between h-full min-h-[500px]`}>
                 <div className="space-y-4 flex-1 flex flex-col">
-                  <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-3">
                     <div>
-                      <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                        <ListTodo size={14} className="text-blue-500" /> Bolsa de Tareas
+                      <h3 className="text-xs font-black text-text-2 uppercase tracking-wider flex items-center gap-1.5">
+                        <ListTodo size={14} className="text-accent" /> Bolsa de Tareas
                       </h3>
-                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Arrastra o selecciona para asignar</p>
+                      <p className="text-[10px] text-text-3 font-semibold mt-0.5">Arrastra o selecciona para asignar</p>
                     </div>
-                    <span className="bg-slate-200 text-slate-600 text-[9px] font-black px-1.5 py-0.5 rounded">
+                    <span className="bg-slate-200 text-text-2 text-[9px] font-black px-1.5 py-0.5 rounded">
                       {monitorData.available_tasks.length}
                     </span>
                   </div>
@@ -1003,25 +1002,22 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                             }
                           }}
                           className={`p-3 rounded-xl border transition-all duration-200 cursor-grab active:cursor-grabbing text-left select-none relative overflow-hidden group ${
-                            isDragged ? 'opacity-30 border-dashed border-blue-400 bg-blue-50/20' :
-                            isSelected ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/10' :
-                            'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
+                            isDragged ? 'opacity-30 border-dashed border-navy-300 bg-navy-50/20' :
+                            isSelected ? 'border-accent bg-navy-50 ring-2 ring-focus-ring/10' :
+                            'border-border bg-white hover:border-slate-300 hover:shadow-xs'
                           }`}
                         >
                           <div className="flex justify-between items-start gap-1">
-                            <span className="font-extrabold text-xs text-slate-800 line-clamp-2 leading-tight pr-4">
+                            <span className="font-extrabold text-xs text-text-1 line-clamp-2 leading-tight pr-4">
                               {task.title}
                             </span>
-                            <span className={`text-[8px] font-extrabold px-1.5 py-0.2 rounded uppercase shrink-0 ${
-                              task.priority === 'high' || task.priority === 'bloqueante' ? 'bg-rose-100 text-rose-700' :
-                              task.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
-                            }`}>
+                            <StatusBadge tone={task.priority === 'high' || task.priority === 'bloqueante' ? 'danger' : task.priority === 'medium' ? 'warning' : 'neutral'} className="text-[10px]">
                               {task.priority === 'bloqueante' ? 'Crítica' : task.priority}
-                            </span>
+                            </StatusBadge>
                           </div>
-                          <div className="mt-2.5 flex items-center justify-between text-[9px] text-slate-400 font-bold">
+                          <div className="mt-2.5 flex items-center justify-between text-[9px] text-text-3 font-bold">
                             <span className="flex items-center gap-0.5">⏱️ {task.estimated_mins} min</span>
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 font-black flex items-center gap-0.5">
+                            <span className="opacity-0 group-hover:opacity-100 transition-opacity text-accent font-black flex items-center gap-0.5">
                               {isSelected ? 'Toca colaborador' : 'Arrastra ➔'}
                             </span>
                           </div>
@@ -1030,7 +1026,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     })}
 
                     {monitorData.available_tasks.length === 0 && (
-                      <div className="text-center py-10 border border-dashed border-slate-200 rounded-xl bg-white text-slate-400 text-[10px] font-bold">
+                      <div className="text-center py-10 border border-dashed border-border rounded-xl bg-white text-text-3 text-[10px] font-bold">
                         Bolsa vacía. Genera tareas abajo con IA.
                       </div>
                     )}
@@ -1038,9 +1034,9 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 </div>
 
                 {/* Generador de Tareas IA */}
-                <div className="mt-4 pt-3 border-t border-slate-200/60">
-                  <label className="text-[9px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1 mb-1.5">
-                    <Bot size={12} className="text-blue-600" /> Asistente de Tareas IA
+                <div className="mt-4 pt-3 border-t border-border/60">
+                  <label className="text-[9px] font-black uppercase tracking-wider text-text-3 flex items-center gap-1 mb-1.5">
+                    <Bot size={12} className="text-accent" /> Asistente de Tareas IA
                   </label>
                   <form
                     onSubmit={(e) => {
@@ -1048,7 +1044,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       const form = e.currentTarget;
                       const input = form.elements.namedItem('ai_task_input') as HTMLInputElement;
                       if (!input.value.trim()) return;
-                      
+
                       const text = input.value;
                       const lower = text.toLowerCase();
                       let mins = 30;
@@ -1084,11 +1080,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       type="text"
                       name="ai_task_input"
                       placeholder="Ej. Barrer bodega 20 min urgente..."
-                      className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="flex-1 bg-white border border-border rounded-xl px-3 py-2 text-[10px] font-bold text-text-1 placeholder-text-3 focus:outline-none focus:ring-1 focus-visible:ring-focus-ring"
                     />
                     <button
                       type="submit"
-                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-3 flex items-center justify-center border-none cursor-pointer text-[10px] font-black"
+                      className="bg-accent hover:bg-accent-hover text-white rounded-xl px-3 flex items-center justify-center border-none cursor-pointer text-[10px] font-black"
                     >
                       Crear
                     </button>
@@ -1099,10 +1095,10 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               {/* PANEL 2: Colaboradores en Turno / "Equipo" (2/4) */}
               <div className={`${activeMonitorTab === 'equipo' ? 'block' : 'hidden'} lg:block lg:col-span-2 space-y-4`}>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                    <Users size={14} className="text-slate-400" /> Colaboradores Activos
+                  <h3 className="text-xs font-black text-text-3 uppercase tracking-wider flex items-center gap-1">
+                    <Users size={14} className="text-text-3" /> Colaboradores Activos
                   </h3>
-                  <span className="bg-blue-50 text-blue-700 text-[10px] font-black px-2.5 py-0.5 rounded-md">
+                  <span className="bg-navy-50 text-accent text-[10px] font-black px-2.5 py-0.5 rounded-md">
                     {monitorData.users.length} En Turno
                   </span>
                 </div>
@@ -1115,21 +1111,21 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     .sort((a, b) => (b.stats.efficiencyPct as number) - (a.stats.efficiencyPct as number));
                   if (ranked.length === 0) return null;
                   return (
-                    <div className="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-3">
-                      <h4 className="text-[9px] font-black text-indigo-500 uppercase tracking-wider flex items-center gap-1 mb-2">
+                    <div className="bg-navy-50/60 border border-border rounded-2xl p-3">
+                      <h4 className="text-[9px] font-black text-accent uppercase tracking-wider flex items-center gap-1 mb-2">
                         <BarChart3 size={11} /> Rendimiento del Día (solo admin)
                       </h4>
                       <div className="space-y-1">
                         {ranked.slice(0, 5).map(({ user: u, stats }, i) => (
                           <div key={u.id} className="flex items-center justify-between text-[10px]">
-                            <span className="flex items-center gap-1.5 text-slate-600 font-bold truncate">
+                            <span className="flex items-center gap-1.5 text-text-2 font-bold truncate">
                               <span className="text-slate-300 font-black w-3 shrink-0">{i + 1}</span>
                               {u.name}
-                              <span className="text-slate-400 font-medium">· {stats.completedCount} tareas</span>
+                              <span className="text-text-3 font-medium">· {stats.completedCount} tareas</span>
                             </span>
                             <span className={`font-black px-1.5 py-0.5 rounded-md shrink-0 ${
-                              (stats.efficiencyPct as number) >= 100 ? 'bg-emerald-100 text-emerald-700' :
-                              (stats.efficiencyPct as number) >= 80 ? 'bg-slate-100 text-slate-600' : 'bg-rose-100 text-rose-600'
+                              (stats.efficiencyPct as number) >= 100 ? 'bg-success-bg text-success-text' :
+                              (stats.efficiencyPct as number) >= 80 ? 'bg-page text-text-2' : 'bg-danger-bg text-danger-text'
                             }`}>
                               {stats.efficiencyPct}%
                             </span>
@@ -1177,7 +1173,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     const isSillaOvertime = isCurrentlySillaResting && (new Date().getMinutes() % 15 > 12);
                     const userActiveTasks = user.active_tasks || [];
                     const activeTask = userActiveTasks[0] || null;
-                    const hasTaskDelay = activeTask && activeTask.accumulated_mins && activeTask.estimated_mins && 
+                    const hasTaskDelay = activeTask && activeTask.accumulated_mins && activeTask.estimated_mins &&
                                          activeTask.accumulated_mins > activeTask.estimated_mins;
 
                     // Bonos Nómina MX
@@ -1200,16 +1196,16 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
                     // Status Dot Color
                     let statusDot = 'bg-slate-400';
-                    let edgeColor = 'border-l-slate-350';
+                    let edgeColor = 'border-l-border';
                     if (user.status === 'active') {
-                      statusDot = 'bg-emerald-500 animate-pulse';
-                      edgeColor = 'border-l-emerald-500';
+                      statusDot = 'bg-success-icon animate-pulse';
+                      edgeColor = 'border-l-success-text';
                     } else if (user.status === 'break') {
-                      statusDot = 'bg-amber-500';
-                      edgeColor = 'border-l-amber-500';
+                      statusDot = 'bg-warning-icon';
+                      edgeColor = 'border-l-warning-text';
                     } else if (user.status === 'idle') {
-                      statusDot = 'bg-rose-500 animate-ping';
-                      edgeColor = 'border-l-rose-500';
+                      statusDot = 'bg-danger-icon animate-ping';
+                      edgeColor = 'border-l-danger-text';
                     }
 
                     // Calculo de barra de progreso de turno
@@ -1264,9 +1260,9 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                             setSelectedTaskIdForAssign(null);
                           }
                         }}
-                        className={`bg-white border border-slate-200 border-l-4 ${edgeColor} p-4.5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group ${
-                          isDragOver ? 'border-blue-500 ring-4 ring-blue-500/10 scale-102 bg-blue-50/10' : ''
-                        } ${selectedTaskIdForAssign ? 'ring-2 ring-blue-400/50 cursor-pointer animate-pulse' : ''}`}
+                        className={`bg-white border border-border border-l-4 ${edgeColor} p-4.5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group ${
+                          isDragOver ? 'border-navy-300 ring-4 ring-focus-ring/10 scale-102 bg-navy-50' : ''
+                        } ${selectedTaskIdForAssign ? 'ring-2 ring-focus-ring/50 cursor-pointer animate-pulse' : ''}`}
                       >
                         {/* Cabecera: Avatar + Nombre + Puesto */}
                         <div>
@@ -1274,23 +1270,26 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                             <div className="flex items-center gap-3">
                               <div className="relative shrink-0">
                                 {user.avatar ? (
-                                  <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-slate-100" />
+                                  <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-border" />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-inner">
+                                  <div className="w-10 h-10 rounded-full bg-page text-text-2 font-bold flex items-center justify-center text-sm shadow-inner">
                                     {user.name.charAt(0)}
                                   </div>
                                 )}
                                 <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${statusDot}`}></span>
                               </div>
                               <div className="min-w-0">
-                                <h4 className="text-sm font-extrabold text-slate-800 truncate">{user.name}</h4>
+                                <h4 className="text-sm font-extrabold text-text-1 truncate">{user.name}</h4>
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <p className="text-[10px] text-slate-400 font-semibold truncate uppercase tracking-wider">{user.role_name}</p>
+                                  <p className="text-[10px] text-text-3 font-semibold truncate uppercase tracking-wider">{user.role_name}</p>
+                                  <StatusBadge tone={user.status === 'active' ? 'success' : user.status === 'break' ? 'warning' : user.status === 'idle' ? 'danger' : 'neutral'} className="text-[10px]">
+                                    {user.status_text || (user.status === 'active' ? 'Activo' : user.status === 'break' ? 'En descanso' : user.status === 'idle' ? 'Sin actividad' : 'Sin conexión')}
+                                  </StatusBadge>
                                   {getTenureLabel((user as any).hire_date) && (
                                     <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full shrink-0 ${
                                       getTenureLabel((user as any).hire_date)?.startsWith('nuevo')
-                                        ? 'bg-amber-100 text-amber-700'
-                                        : 'bg-slate-100 text-slate-500'
+                                        ? 'bg-warning-bg text-warning-text'
+                                        : 'bg-page text-text-3'
                                     }`}>
                                       {getTenureLabel((user as any).hire_date)}
                                     </span>
@@ -1298,7 +1297,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                                 </div>
                               </div>
                             </div>
-                            <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                            <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-page text-text-2 border border-border">
                               {user.efficiency}% Efic.
                             </span>
                           </div>
@@ -1306,21 +1305,21 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                           {/* Sección de Bonos Nómina MX */}
                           <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
                             <div className={`p-1.5 rounded-lg border text-[9px] font-bold flex flex-col justify-center items-center ${
-                              isBonoPuntualidadActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'
+                              isBonoPuntualidadActive ? 'bg-success-bg text-success-text border-success-text/20' : 'bg-danger-bg text-danger-text border-danger-text/20'
                             }`}>
                               <Award size={10} className="mb-0.5" />
                               <span>Puntualidad</span>
                               <span className="text-[8px] font-black uppercase mt-0.5">{isBonoPuntualidadActive ? 'Activo' : 'Perdido'}</span>
                             </div>
                             <div className={`p-1.5 rounded-lg border text-[9px] font-bold flex flex-col justify-center items-center ${
-                              isBonoAsistenciaActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'
+                              isBonoAsistenciaActive ? 'bg-success-bg text-success-text border-success-text/20' : 'bg-danger-bg text-danger-text border-danger-text/20'
                             }`}>
                               <CheckCircle2 size={10} className="mb-0.5" />
                               <span>Asistencia</span>
                               <span className="text-[8px] font-black uppercase mt-0.5">{isBonoAsistenciaActive ? 'Activo' : 'Inactivo'}</span>
                             </div>
                             <div className={`p-1.5 rounded-lg border text-[9px] font-bold flex flex-col justify-center items-center ${
-                              isBonoProductividadActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-200'
+                              isBonoProductividadActive ? 'bg-success-bg text-success-text border-success-text/20' : 'bg-page text-text-3 border-border'
                             }`}>
                               <Sparkles size={10} className="mb-0.5" />
                               <span>Productividad</span>
@@ -1331,25 +1330,25 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                           {/* Alertas LFT / Incidentes de Descanso */}
                           <div className="mt-3 space-y-1.5">
                             {hasEntryLate && (
-                              <div className="flex items-center gap-1.5 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-100 p-1.5 rounded-lg">
+                              <div className="flex items-center gap-1.5 text-[9px] font-black text-danger-text bg-danger-bg border border-danger-text/20 p-1.5 rounded-lg">
                                 <AlertTriangle size={11} className="shrink-0" />
                                 <span>Retardo registrado en Entrada: ({lateMinutes} min tarde)</span>
                               </div>
                             )}
                             {isMealOvertime && (
-                              <div className="flex items-center gap-1.5 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-100 p-1.5 rounded-lg">
+                              <div className="flex items-center gap-1.5 text-[9px] font-black text-danger-text bg-danger-bg border border-danger-text/20 p-1.5 rounded-lg">
                                 <AlertTriangle size={11} className="shrink-0" />
                                 <span>Exceso LFT en tiempo de Comida: (+{mealDurationMins - (user.meal_minutes || 60)} min)</span>
                               </div>
                             )}
                             {isSillaOvertime && (
-                              <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-100 p-1.5 rounded-lg animate-pulse">
+                              <div className="flex items-center gap-1.5 text-[9px] font-black text-warning-text bg-warning-bg border border-warning-text/20 p-1.5 rounded-lg animate-pulse">
                                 <Armchair size={11} className="shrink-0" />
                                 <span>Ley Silla LFT: Alerta de descanso prolongado.</span>
                               </div>
                             )}
                             {hasTaskDelay && (
-                              <div className="flex items-center gap-1.5 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-100 p-1.5 rounded-lg animate-pulse">
+                              <div className="flex items-center gap-1.5 text-[9px] font-black text-danger-text bg-danger-bg border border-danger-text/20 p-1.5 rounded-lg animate-pulse">
                                 <AlertCircle size={11} className="shrink-0" />
                                 <span>Demora en Tarea Activa: ({activeTask.accumulated_mins - activeTask.estimated_mins} min excedidos)</span>
                               </div>
@@ -1357,20 +1356,20 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                           </div>
 
                           {/* Analítica e IA de Diagnóstico */}
-                          <div className="mt-3 p-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-medium text-slate-600 italic flex gap-1.5 items-start">
-                            <Cpu size={12} className="text-blue-500 shrink-0 mt-0.5" />
+                          <div className="mt-3 p-2 bg-page border border-border rounded-xl text-[10px] font-medium text-text-2 italic flex gap-1.5 items-start">
+                            <Cpu size={12} className="text-accent shrink-0 mt-0.5" />
                             <span>{iaDiagnostic}</span>
                           </div>
 
                           {/* Línea de Progreso Temporal de Jornada */}
                           <div className="mt-4 space-y-2">
-                            <div className="flex items-center justify-between text-[9px] text-slate-400 font-bold">
+                            <div className="flex items-center justify-between text-[9px] text-text-3 font-bold">
                               <span className="flex items-center gap-0.5"><Clock size={10} /> Resta de Turno: {timeRemainingStr}</span>
                               <span>Jornada: {progressPercent}%</span>
                             </div>
-                            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden relative">
+                            <div className="w-full bg-page h-1.5 rounded-full overflow-hidden relative">
                               <div
-                                className={`h-full transition-all duration-500 ${user.status === 'break' ? 'bg-amber-400' : 'bg-blue-600'}`}
+                                className={`h-full transition-all duration-500 ${user.status === 'break' ? 'bg-warning-icon' : 'bg-accent'}`}
                                 style={{ width: `${progressPercent}%` }}
                               ></div>
                             </div>
@@ -1389,13 +1388,13 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                             const workedPercent = Math.min(100, Math.round((stats.workedMins / shiftMins) * 100));
                             return (
                               <div className="mt-2">
-                                <div className="flex items-center justify-between text-[9px] text-indigo-400 font-bold">
+                                <div className="flex items-center justify-between text-[9px] text-navy-300 font-bold">
                                   <span>Trabajado: {(stats.workedMins / 60).toFixed(1)}h de {(shiftMins / 60).toFixed(1)}h turno</span>
                                   {stats.efficiencyPct !== null && <span>{stats.efficiencyPct}% efic.</span>}
                                 </div>
-                                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden relative">
+                                <div className="w-full bg-page h-1.5 rounded-full overflow-hidden relative">
                                   <div
-                                    className="h-full bg-indigo-500 transition-all duration-500"
+                                    className="h-full bg-accent transition-all duration-500"
                                     style={{ width: `${workedPercent}%` }}
                                   ></div>
                                 </div>
@@ -1406,7 +1405,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
                         {/* Tareas del Día del Colaborador */}
                         <div className="mt-4 space-y-2">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Avance de Rutinas</span>
+                          <span className="text-[9px] font-black text-text-3 uppercase tracking-wider block">Avance de Rutinas</span>
                           {userActiveTasks.length > 0 ? (
                             userActiveTasks.map((t: any) => {
                               const elapsed = t.accumulated_mins || 0;
@@ -1414,15 +1413,15 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                               const isOver = elapsed > t.estimated_mins;
                               return (
                                 <div key={t.id} className={`p-2.5 rounded-xl border flex flex-col justify-between transition-all ${
-                                  isOver && t.status === 'in_progress' ? 'bg-rose-50 border-rose-200' : 'bg-blue-50/30 border-blue-100'
+                                  isOver && t.status === 'in_progress' ? 'bg-danger-bg border-danger-text/20' : 'bg-navy-50/30 border-border'
                                 }`}>
-                                  <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 mb-1">
-                                    <span className="font-extrabold text-blue-600 truncate max-w-[120px]">{t.title}</span>
+                                  <div className="flex justify-between items-center text-[9px] font-bold text-text-3 mb-1">
+                                    <span className="font-extrabold text-accent truncate max-w-[120px]">{t.title}</span>
                                     <span>{elapsed}/{t.estimated_mins}m</span>
                                   </div>
                                   <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
-                                    <div 
-                                      className={`h-full ${isOver ? 'bg-rose-500' : 'bg-blue-500'}`}
+                                    <div
+                                      className={`h-full ${isOver ? 'bg-danger-icon' : 'bg-accent'}`}
                                       style={{ width: `${percent}%` }}
                                     ></div>
                                   </div>
@@ -1430,17 +1429,17 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                               );
                             })
                           ) : (
-                            <div className="bg-slate-50 border border-slate-150 rounded-xl p-2.5 text-center text-[10px] text-slate-400 font-bold">
+                            <div className="bg-page border border-border rounded-xl p-2.5 text-center text-[10px] text-text-3 font-bold">
                               No tiene tareas activas. Arrastra una aquí.
                             </div>
                           )}
                         </div>
 
                         {/* Acciones del Supervisor */}
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between gap-1.5 items-center">
+                        <div className="mt-4 pt-3 border-t border-border flex justify-between gap-1.5 items-center">
                           <button
                             onClick={() => setSelectedUserForTask(user)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-3 py-1.5 rounded-xl text-[10px] transition-colors flex items-center justify-center gap-1 cursor-pointer border-none"
+                            className="bg-accent hover:bg-accent-hover text-white font-extrabold px-3 py-1.5 rounded-xl text-[10px] transition-colors flex items-center justify-center gap-1 cursor-pointer border-none"
                           >
                             <Play size={10} className="fill-current" /> Asignar Tarea
                           </button>
@@ -1454,7 +1453,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                                 setChatInput(`@${user.name} `);
                                 setChatTab('chat');
                               }}
-                              className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-xl border-none cursor-pointer flex items-center justify-center transition-colors"
+                              className="bg-page hover:bg-slate-200 text-text-2 p-2 rounded-xl border-none cursor-pointer flex items-center justify-center transition-colors"
                               title="Chat Directo"
                             >
                               <MessageSquare size={13} />
@@ -1466,8 +1465,8 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                               disabled={suspendingUser === user.id}
                               className={`p-2 rounded-xl border-none cursor-pointer flex items-center justify-center transition-colors ${
                                 user.is_active_employee !== false
-                                  ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
-                                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                                  ? 'bg-danger-bg hover:bg-danger-bg text-danger-text'
+                                  : 'bg-success-bg hover:bg-success-bg text-success-text'
                               }`}
                               title={user.is_active_employee !== false ? "Suspender acceso de colaborador" : "Reactivar colaborador"}
                             >
@@ -1486,7 +1485,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   })}
 
                   {monitorData.users.length === 0 && (
-                    <div className="col-span-2 bg-slate-50 border border-dashed border-slate-200 rounded-2xl py-12 text-center text-slate-400 text-xs">
+                    <div className="col-span-2 bg-page border border-dashed border-border rounded-2xl py-12 text-center text-text-3 text-xs">
                       No hay colaboradores actualmente en turno.
                     </div>
                   )}
@@ -1494,17 +1493,17 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               </div>
 
               {/* PANEL 3: Bitácora & Chat en tiempo real / "Actividad" (1/4) */}
-              <div className={`${activeMonitorTab === 'actividad' ? 'block' : 'hidden'} lg:block lg:col-span-1 border-t lg:border-t-0 lg:border-l border-slate-200 pt-6 lg:pt-0 lg:pl-4 space-y-4`}>
-                <div className="flex gap-2 border-b border-slate-150 pb-1 shrink-0">
-                  <button 
+              <div className={`${activeMonitorTab === 'actividad' ? 'block' : 'hidden'} lg:block lg:col-span-1 border-t lg:border-t-0 lg:border-l border-border pt-6 lg:pt-0 lg:pl-4 space-y-4`}>
+                <div className="flex gap-2 border-b border-border pb-1 shrink-0">
+                  <button
                     onClick={() => setChatTab('chat')}
-                    className={`flex-1 py-1.5 text-xs font-black tracking-tight rounded-lg transition-colors flex items-center justify-center gap-1.5 ${chatTab === 'chat' ? 'bg-blue-50 text-blue-700 font-extrabold' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-1.5 text-xs font-black tracking-tight rounded-lg transition-colors flex items-center justify-center gap-1.5 ${chatTab === 'chat' ? 'bg-navy-50 text-accent font-extrabold' : 'text-text-3 hover:text-text-2'}`}
                   >
                     💬 Chat del Día
                   </button>
-                  <button 
+                  <button
                     onClick={() => setChatTab('feed')}
-                    className={`flex-1 py-1.5 text-xs font-black tracking-tight rounded-lg transition-colors flex items-center justify-center gap-1.5 ${chatTab === 'feed' ? 'bg-blue-50 text-blue-700 font-extrabold' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-1.5 text-xs font-black tracking-tight rounded-lg transition-colors flex items-center justify-center gap-1.5 ${chatTab === 'feed' ? 'bg-navy-50 text-accent font-extrabold' : 'text-text-3 hover:text-text-2'}`}
                   >
                     ⚡ Bitácora
                   </button>
@@ -1515,27 +1514,27 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     {/* Chat Messages */}
                     <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar text-left p-0.5">
                       {monitorData.chat.map((msg) => {
-                        let msgBg = 'bg-slate-100 text-slate-800';
+                        let msgBg = 'bg-page text-text-1';
                         let typeIcon = '💬';
                         if (msg.type === 'permission') {
-                          msgBg = 'bg-blue-50 text-blue-800 border border-blue-100';
+                          msgBg = 'bg-navy-50 text-navy-800 border border-border';
                           typeIcon = '🛡️';
                         } else if (msg.type === 'food_change') {
-                          msgBg = 'bg-amber-50 text-amber-800 border border-amber-100';
+                          msgBg = 'bg-warning-bg text-warning-text border border-warning-text/20';
                           typeIcon = '🍽️';
                         } else if (msg.type === 'announcement') {
-                          msgBg = 'bg-purple-50 text-purple-800 border border-purple-100 font-bold';
+                          msgBg = 'bg-navy-50 text-navy-800 border border-border font-bold';
                           typeIcon = '📢';
                         }
 
                         return (
                           <div key={msg.id} className={`p-3 rounded-xl text-xs space-y-1 hover:shadow-xs transition-shadow ${msgBg}`}>
                             <div className="flex justify-between items-center">
-                              <span className="font-extrabold text-[10px] text-slate-800 flex items-center gap-1">
+                              <span className="font-extrabold text-[10px] text-text-1 flex items-center gap-1">
                                 {typeIcon}
                                 {msg.sender_name}
                               </span>
-                              <span className="text-[9px] text-slate-400 font-semibold">{msg.time}</span>
+                              <span className="text-[9px] text-text-3 font-semibold">{msg.time}</span>
                             </div>
                             <p className="font-semibold">{msg.content}</p>
                           </div>
@@ -1543,7 +1542,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       })}
 
                       {monitorData.chat.length === 0 && (
-                        <div className="text-center py-12 text-slate-400 text-xs">
+                        <div className="text-center py-12 text-text-3 text-xs">
                           No hay mensajes en el chat de colaboradores.
                         </div>
                       )}
@@ -1552,10 +1551,10 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     {/* Chat Input */}
                     <form onSubmit={handleSendMessage} className="mt-3 pt-3 border-t border-slate-250 space-y-2">
                       <div className="flex gap-2">
-                        <select 
+                        <select
                           value={chatType}
                           onChange={(e: any) => setChatType(e.target.value)}
-                          className="text-[10px] font-bold border border-slate-200 rounded-lg px-2 py-1 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="text-[10px] font-bold border border-border rounded-lg px-2 py-1 bg-page focus:outline-none focus:ring-1 focus-visible:ring-focus-ring"
                         >
                           <option value="general">General</option>
                           <option value="permission">Permiso</option>
@@ -1569,12 +1568,12 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                           value={chatInput}
                           onChange={(e) => setChatInput(e.target.value)}
                           placeholder="Mensaje de permisos, comida o aviso..."
-                          className="flex-1 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                          className="flex-1 border border-border rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-semibold"
                         />
                         <button
                           type="submit"
                           disabled={!chatInput.trim() || sendingMessage}
-                          className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-2 transition-colors disabled:opacity-50 flex items-center justify-center border-none cursor-pointer"
+                          className="bg-accent hover:bg-accent-hover text-white rounded-xl p-2 transition-colors disabled:opacity-50 flex items-center justify-center border-none cursor-pointer"
                         >
                           <Send size={14} />
                         </button>
@@ -1585,32 +1584,32 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   // Bitácora de Sucesos en Vivo
                   <div className="space-y-3 h-[400px] overflow-y-auto pr-1 custom-scrollbar">
                     {monitorData.feed.map((event) => {
-                      let eventIconColor = 'text-blue-500 bg-blue-50';
+                      let eventIconColor = 'text-accent bg-navy-50';
                       if (event.action === 'check_in' || event.action === 'meal_end') {
-                        eventIconColor = 'text-emerald-500 bg-emerald-50';
+                        eventIconColor = 'text-success-text bg-success-bg';
                       } else if (event.action === 'check_out' || event.action === 'meal_start') {
-                        eventIconColor = 'text-amber-500 bg-amber-50';
+                        eventIconColor = 'text-warning-text bg-warning-bg';
                       } else if (event.action.includes('completed')) {
-                        eventIconColor = 'text-violet-500 bg-violet-50';
+                        eventIconColor = 'text-accent bg-navy-50';
                       }
 
                       return (
-                        <div key={event.id} className="flex gap-2.5 p-2.5 bg-slate-50/50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors text-left animate-in fade-in slide-in-from-right-3 duration-300">
+                        <div key={event.id} className="flex gap-2.5 p-2.5 bg-page/50 rounded-xl border border-border hover:border-border transition-colors text-left animate-in fade-in slide-in-from-right-3 duration-300">
                           <div className={`p-1.5 rounded-lg ${eventIconColor} shrink-0 self-start mt-0.5`}>
                             <Activity size={12} />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-slate-700 font-semibold leading-normal">
-                              <span className="font-bold text-slate-900">{event.user}</span> {event.details}
+                            <p className="text-xs text-text-2 font-semibold leading-normal">
+                              <span className="font-bold text-text-1">{event.user}</span> {event.details}
                             </p>
-                            <span className="text-[10px] text-slate-400 block mt-0.5">{event.time}</span>
+                            <span className="text-[10px] text-text-3 block mt-0.5">{event.time}</span>
                           </div>
                         </div>
                       );
                     })}
 
                     {monitorData.feed.length === 0 && (
-                      <div className="text-center py-12 text-slate-400 text-xs">
+                      <div className="text-center py-12 text-text-3 text-xs">
                         No hay sucesos registrados hoy en la bitácora.
                       </div>
                     )}
@@ -1623,20 +1622,20 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       </div>
 
       {/* Panel de Adopción de Módulos y Precios (Arma tu Paquete Modular) */}
-      <div className="mt-8 pt-6 border-t border-slate-200">
+      <div className="mt-8 pt-6 border-t border-border">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
           <div className="flex items-center gap-2">
-            <Zap className="text-blue-600 animate-pulse" size={22} />
+            <Zap className="text-accent animate-pulse" size={22} />
             <div>
-              <h2 className="text-lg font-black text-slate-800 tracking-tight">Adopción de Módulos y Precios</h2>
-              <p className="text-xs text-slate-500 font-semibold mt-0.5">Arma tu propio paquete modular y escala conforme tu sucursal lo requiera</p>
+              <h2 className="text-lg font-black text-text-1 tracking-tight">Adopción de Módulos y Precios</h2>
+              <p className="text-xs text-text-3 font-semibold mt-0.5">Arma tu propio paquete modular y escala conforme tu sucursal lo requiera</p>
             </div>
           </div>
-          <div className="p-3 bg-slate-100/80 rounded-2xl border border-slate-200/50 flex items-center gap-3 shrink-0">
-            <span className="text-xs font-bold text-slate-500">Plan Actual:</span>
+          <div className="p-3 bg-page/80 rounded-2xl border border-border/50 flex items-center gap-3 shrink-0">
+            <span className="text-xs font-bold text-text-3">Plan Actual:</span>
             <span className={`text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider ${
-              currentTier === 'enterprise' ? 'bg-purple-100 text-purple-700' :
-              currentTier === 'pro' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'
+              currentTier === 'enterprise' ? 'bg-accent-soft text-accent' :
+              currentTier === 'pro' ? 'bg-accent-soft text-accent' : 'bg-slate-200 text-text-2'
             }`}>
               {currentTier === 'freemium' ? 'Gratuito (Freemium)' : currentTier === 'pro' ? 'Profesional' : 'Empresas (Dedicado)'}
             </span>
@@ -1644,20 +1643,20 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
         </div>
 
         {currentTier === 'freemium' ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 shadow-sm relative overflow-hidden">
+          <div className="bg-white rounded-2xl border border-border p-6 space-y-6 shadow-sm relative overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              
+
               {/* ATS Toggle Card */}
               {(() => {
                 const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
                 const isAtsActive = activeModules.includes('ats');
-                
+
                 const handleToggle = async () => {
                   setIsAdoptionSaving(true);
-                  const updatedModules = isAtsActive 
+                  const updatedModules = isAtsActive
                     ? activeModules.filter((m: string) => m !== 'ats')
                     : [...activeModules, 'ats'];
-                  
+
                   try {
                     await axiosInstance.post('/sync/settings', { active_modules: updatedModules });
                     await fetchState();
@@ -1671,26 +1670,26 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 };
 
                 return (
-                  <div className={`p-4 rounded-2xl border transition-all ${isAtsActive ? 'border-violet-200 bg-violet-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`p-4 rounded-2xl border transition-all ${isAtsActive ? 'border-border bg-navy-50/30' : 'border-border bg-page/50'}`}>
                     <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-violet-100 text-violet-600 rounded-xl">
+                      <div className="p-2 bg-accent-soft text-accent rounded-xl">
                         <Briefcase size={18} />
                       </div>
-                      <button 
+                      <button
                         disabled={isAdoptionSaving}
                         onClick={handleToggle}
                         className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
-                          isAtsActive 
-                            ? 'bg-violet-600 hover:bg-violet-750 text-white shadow-sm' 
-                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                          isAtsActive
+                            ? 'bg-accent hover:bg-accent-hover text-white shadow-sm'
+                            : 'bg-white hover:bg-page text-text-2 border border-border'
                         }`}
                       >
                         {isAtsActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-xs">Reclutamiento ATS</h3>
-                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed">Vacantes, bolsa de trabajo y entrevistas 1-click.</p>
-                    <span className="text-xs font-black text-violet-600">+$29 MXN / mes</span>
+                    <h3 className="font-bold text-text-1 text-xs">Reclutamiento ATS</h3>
+                    <p className="text-text-3 text-[10px] mt-1 mb-2 leading-relaxed">Vacantes, bolsa de trabajo y entrevistas 1-click.</p>
+                    <span className="text-xs font-black text-accent">+$29 MXN / mes</span>
                   </div>
                 );
               })()}
@@ -1699,13 +1698,13 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               {(() => {
                 const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
                 const isLmsActive = activeModules.includes('academia');
-                
+
                 const handleToggle = async () => {
                   setIsAdoptionSaving(true);
-                  const updatedModules = isLmsActive 
+                  const updatedModules = isLmsActive
                     ? activeModules.filter((m: string) => m !== 'academia')
                     : [...activeModules, 'academia'];
-                  
+
                   try {
                     await axiosInstance.post('/sync/settings', { active_modules: updatedModules });
                     await fetchState();
@@ -1719,26 +1718,26 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 };
 
                 return (
-                  <div className={`p-4 rounded-2xl border transition-all ${isLmsActive ? 'border-sky-200 bg-sky-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`p-4 rounded-2xl border transition-all ${isLmsActive ? 'border-border bg-navy-50/30' : 'border-border bg-page/50'}`}>
                     <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-sky-100 text-sky-600 rounded-xl">
+                      <div className="p-2 bg-accent-soft text-accent rounded-xl">
                         <GraduationCap size={18} />
                       </div>
-                      <button 
+                      <button
                         disabled={isAdoptionSaving}
                         onClick={handleToggle}
                         className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
-                          isLmsActive 
-                            ? 'bg-sky-600 hover:bg-sky-750 text-white shadow-sm' 
-                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                          isLmsActive
+                            ? 'bg-accent hover:bg-accent-hover text-white shadow-sm'
+                            : 'bg-white hover:bg-page text-text-2 border border-border'
                         }`}
                       >
                         {isLmsActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-xs">Academia 360</h3>
-                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed">Cursos interactivos, inducción y gamificación.</p>
-                    <span className="text-xs font-black text-sky-600">+$49 MXN / mes</span>
+                    <h3 className="font-bold text-text-1 text-xs">Academia 360</h3>
+                    <p className="text-text-3 text-[10px] mt-1 mb-2 leading-relaxed">Cursos interactivos, inducción y gamificación.</p>
+                    <span className="text-xs font-black text-accent">+$49 MXN / mes</span>
                   </div>
                 );
               })()}
@@ -1747,13 +1746,13 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               {(() => {
                 const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
                 const isReportsActive = activeModules.includes('reportes');
-                
+
                 const handleToggle = async () => {
                   setIsAdoptionSaving(true);
-                  const updatedModules = isReportsActive 
+                  const updatedModules = isReportsActive
                     ? activeModules.filter((m: string) => m !== 'reportes')
                     : [...activeModules, 'reportes'];
-                  
+
                   try {
                     await axiosInstance.post('/sync/settings', { active_modules: updatedModules });
                     await fetchState();
@@ -1767,26 +1766,26 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 };
 
                 return (
-                  <div className={`p-4 rounded-2xl border transition-all ${isReportsActive ? 'border-rose-200 bg-rose-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`p-4 rounded-2xl border transition-all ${isReportsActive ? 'border-danger-text/20 bg-danger-bg/30' : 'border-border bg-page/50'}`}>
                     <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-rose-100 text-rose-600 rounded-xl">
+                      <div className="p-2 bg-danger-bg text-danger-text rounded-xl">
                         <BarChart3 size={18} />
                       </div>
-                      <button 
+                      <button
                         disabled={isAdoptionSaving}
                         onClick={handleToggle}
                         className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
-                          isReportsActive 
-                            ? 'bg-rose-600 hover:bg-rose-750 text-white shadow-sm' 
-                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                          isReportsActive
+                            ? 'bg-danger-text hover:bg-danger-text text-white shadow-sm'
+                            : 'bg-white hover:bg-page text-text-2 border border-border'
                         }`}
                       >
                         {isReportsActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-xs">Reportes IA</h3>
-                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed">Faltas, retardos, Ley Silla y exportes Excel/PDF.</p>
-                    <span className="text-xs font-black text-rose-600">+$19 MXN / mes</span>
+                    <h3 className="font-bold text-text-1 text-xs">Reportes IA</h3>
+                    <p className="text-text-3 text-[10px] mt-1 mb-2 leading-relaxed">Faltas, retardos, Ley Silla y exportes Excel/PDF.</p>
+                    <span className="text-xs font-black text-danger-text">+$19 MXN / mes</span>
                   </div>
                 );
               })()}
@@ -1795,13 +1794,13 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               {(() => {
                 const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
                 const isDocsActive = activeModules.includes('documentos');
-                
+
                 const handleToggle = async () => {
                   setIsAdoptionSaving(true);
-                  const updatedModules = isDocsActive 
+                  const updatedModules = isDocsActive
                     ? activeModules.filter((m: string) => m !== 'documentos')
                     : [...activeModules, 'documentos'];
-                  
+
                   try {
                     await axiosInstance.post('/sync/settings', { active_modules: updatedModules });
                     await fetchState();
@@ -1815,26 +1814,26 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 };
 
                 return (
-                  <div className={`p-4 rounded-2xl border transition-all ${isDocsActive ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`p-4 rounded-2xl border transition-all ${isDocsActive ? 'border-warning-text/20 bg-warning-bg/30' : 'border-border bg-page/50'}`}>
                     <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-amber-100 text-amber-600 rounded-xl">
+                      <div className="p-2 bg-warning-bg text-warning-text rounded-xl">
                         <FileText size={18} />
                       </div>
-                      <button 
+                      <button
                         disabled={isAdoptionSaving}
                         onClick={handleToggle}
                         className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
-                          isDocsActive 
-                            ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                          isDocsActive
+                            ? 'bg-warning-text hover:bg-warning-text text-white shadow-sm'
+                            : 'bg-white hover:bg-page text-text-2 border border-border'
                         }`}
                       >
                         {isDocsActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-xs">Archivo Digital</h3>
-                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed">Expedientes avanzados, manuales y contratos.</p>
-                    <span className="text-xs font-black text-amber-600">+$19 MXN / mes</span>
+                    <h3 className="font-bold text-text-1 text-xs">Archivo Digital</h3>
+                    <p className="text-text-3 text-[10px] mt-1 mb-2 leading-relaxed">Expedientes avanzados, manuales y contratos.</p>
+                    <span className="text-xs font-black text-warning-text">+$19 MXN / mes</span>
                   </div>
                 );
               })()}
@@ -1843,13 +1842,13 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               {(() => {
                 const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
                 const isCfdiActive = activeModules.includes('facturacion');
-                
+
                 const handleToggle = async () => {
                   setIsAdoptionSaving(true);
-                  const updatedModules = isCfdiActive 
+                  const updatedModules = isCfdiActive
                     ? activeModules.filter((m: string) => m !== 'facturacion')
                     : [...activeModules, 'facturacion'];
-                  
+
                   try {
                     await axiosInstance.post('/sync/settings', { active_modules: updatedModules });
                     await fetchState();
@@ -1863,26 +1862,26 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 };
 
                 return (
-                  <div className={`p-4 rounded-2xl border transition-all ${isCfdiActive ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`p-4 rounded-2xl border transition-all ${isCfdiActive ? 'border-success-text/20 bg-success-bg/30' : 'border-border bg-page/50'}`}>
                     <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
+                      <div className="p-2 bg-success-bg text-success-text rounded-xl">
                         <Receipt size={18} />
                       </div>
-                      <button 
+                      <button
                         disabled={isAdoptionSaving}
                         onClick={handleToggle}
                         className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
-                          isCfdiActive 
-                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                          isCfdiActive
+                            ? 'bg-success-text hover:bg-success-text text-white shadow-sm'
+                            : 'bg-white hover:bg-page text-text-2 border border-border'
                         }`}
                       >
                         {isCfdiActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-xs">Nómina CFDI 4.0</h3>
-                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed">Timbrado masivo de recibos del SAT.</p>
-                    <span className="text-xs font-black text-emerald-600">+$39 MXN / mes</span>
+                    <h3 className="font-bold text-text-1 text-xs">Nómina CFDI 4.0</h3>
+                    <p className="text-text-3 text-[10px] mt-1 mb-2 leading-relaxed">Timbrado masivo de recibos del SAT.</p>
+                    <span className="text-xs font-black text-success-text">+$39 MXN / mes</span>
                   </div>
                 );
               })()}
@@ -1900,13 +1899,13 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               const totalCost = (hasAts ? 29 : 0) + (hasLms ? 49 : 0) + (hasReports ? 19 : 0) + (hasDocs ? 19 : 0) + (hasCfdi ? 39 : 0);
 
               return (
-                <div className="pt-5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="text-slate-600 text-xs font-medium">
-                    Suscripción modular calculada: <strong className="text-slate-800 font-bold">$0 base (Starter)</strong> + {totalCost > 0 ? `$${totalCost} por módulos` : 'sin módulos extra'}
+                <div className="pt-5 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="text-text-2 text-xs font-medium">
+                    Suscripción modular calculada: <strong className="text-text-1 font-bold">$0 base (Starter)</strong> + {totalCost > 0 ? `$${totalCost} por módulos` : 'sin módulos extra'}
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-slate-500 text-sm font-bold">Total Mensual:</span>
-                    <span className="text-2xl font-black text-slate-900 font-sans tracking-tight">${totalCost} MXN / mes</span>
+                    <span className="text-text-3 text-sm font-bold">Total Mensual:</span>
+                    <span className="text-2xl font-black text-text-1 font-sans tracking-tight">${totalCost} MXN / mes</span>
                   </div>
                 </div>
               );
@@ -1914,11 +1913,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[80px] pointer-events-none"></div>
+          <div className="bg-white rounded-2xl border border-border p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-[80px] pointer-events-none"></div>
             <div>
-              <h3 className="font-bold text-slate-800 text-sm">Paquete Todo Incluido Activado</h3>
-              <p className="text-slate-500 text-[11px] mt-1 max-w-lg leading-relaxed">
+              <h3 className="font-bold text-text-1 text-sm">Paquete Todo Incluido Activado</h3>
+              <p className="text-text-3 text-[11px] mt-1 max-w-lg leading-relaxed">
                 Tu empresa cuenta con el plan {currentTier === 'pro' ? 'Profesional' : 'Empresas'}. Tienes acceso completo e ilimitado a todos los módulos actuales y futuros (ATS, Academia, Nóminas y Reportes) sin costos adicionales por módulo.
               </p>
             </div>
@@ -1927,11 +1926,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 POR COLABORADOR AL MES), ni con la landing, ni con el panel de plataforma. Ahora
                 sale del tabulador del servidor, y si no llegó no se inventa una cifra. */}
             <div className="text-right shrink-0">
-              <span className="text-slate-400 text-[10px] font-bold block uppercase tracking-widest">Inversión mensual</span>
-              <span className="text-3xl font-black text-blue-600 font-sans tracking-tight">
+              <span className="text-text-3 text-[10px] font-bold block uppercase tracking-widest">Inversión mensual</span>
+              <span className="text-3xl font-black text-accent font-sans tracking-tight">
                 {cotizacionDelPlan ? `$${pesos(cotizacionDelPlan.totalMensual)} MXN` : '—'}
               </span>
-              <span className="text-[10px] text-slate-500 font-bold block">
+              <span className="text-[10px] text-text-3 font-bold block">
                 {planDelPlan
                   ? `${colaboradoresActivos} colaborador(es) × $${pesos(planDelPlan.tarifa_mensual_por_colaborador)}/mes`
                   : 'Precio no disponible en este momento'}
@@ -1946,7 +1945,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
       {toastMessage && (
         <div className="fixed bottom-4 right-4 z-50 bg-slate-900 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg border border-slate-800 animate-in slide-in-from-bottom-2 duration-300 flex items-center gap-2">
-          <CheckCircle2 size={14} className="text-emerald-400" />
+          <CheckCircle2 size={14} className="text-success-text" />
           {toastMessage}
         </div>
       )}
@@ -1955,18 +1954,18 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       {showCreateTaskModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           {taskCreationMode === null ? (
-            <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-lg w-full p-7 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-2xl border border-border max-w-lg w-full p-7 animate-in zoom-in-95 duration-200 relative overflow-hidden">
               {/* Decorative gradient blur in background */}
-              <div className="absolute -top-16 -right-16 w-36 h-36 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
-              
+              <div className="absolute -top-16 -right-16 w-36 h-36 bg-accent/10 rounded-full blur-2xl pointer-events-none"></div>
+
               <div className="flex justify-between items-center mb-5 relative z-10">
                 <div>
-                  <h3 className="text-lg font-black text-slate-800 tracking-tight">Nueva Tarea Operativa</h3>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Selecciona el método de creación</p>
+                  <h3 className="text-lg font-black text-text-1 tracking-tight">Nueva Tarea Operativa</h3>
+                  <p className="text-[11px] font-bold text-text-3 uppercase tracking-wider mt-0.5">Selecciona el método de creación</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowCreateTaskModal(false)}
-                  className="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center font-bold text-xs"
+                  className="w-7 h-7 rounded-full bg-page hover:bg-page text-text-3 hover:text-text-2 transition-colors flex items-center justify-center font-bold text-xs"
                 >
                   ✕
                 </button>
@@ -1987,29 +1986,29 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     }, 150);
                   }}
                   className={`w-full flex items-start gap-4 p-5 rounded-2xl border-2 transition-all text-left group shadow-sm hover:shadow-md relative overflow-hidden ${
-                    !isFeatureUnlocked('voice_assistant') 
-                      ? 'border-slate-200 bg-slate-50/80 opacity-75' 
-                      : 'border-indigo-500 bg-indigo-50/20 hover:bg-indigo-50/40'
+                    !isFeatureUnlocked('voice_assistant')
+                      ? 'border-border bg-page/80 opacity-75'
+                      : 'border-accent bg-navy-50/20 hover:bg-navy-50/40'
                   }`}
                 >
                   <div className={`absolute top-0 right-0 text-white text-[9px] font-black uppercase px-3 py-1 rounded-bl-xl tracking-wider ${
-                    !isFeatureUnlocked('voice_assistant') ? 'bg-slate-500' : 'bg-indigo-500'
+                    !isFeatureUnlocked('voice_assistant') ? 'bg-slate-500' : 'bg-accent'
                   }`}>
                     {!isFeatureUnlocked('voice_assistant') ? '🔒 Plan PRO' : 'Recomendado'}
                   </div>
                   <div className={`p-3.5 rounded-2xl shrink-0 group-hover:scale-105 transition-transform shadow-md ${
-                    !isFeatureUnlocked('voice_assistant') 
-                      ? 'bg-slate-300 text-slate-500 shadow-slate-300/10' 
-                      : 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-indigo-500/20'
+                    !isFeatureUnlocked('voice_assistant')
+                      ? 'bg-slate-300 text-text-3 shadow-slate-300/10'
+                      : 'bg-gradient-to-br from-accent to-accent text-white shadow-accent/20'
                   }`}>
                     {!isFeatureUnlocked('voice_assistant') ? <Lock size={22} className="stroke-[2.5]" /> : <Mic size={22} className="stroke-[2.5]" />}
                   </div>
                   <div className="pr-12">
-                    <h4 className="text-sm font-black text-slate-800 group-hover:text-indigo-600 transition-colors flex items-center gap-1.5 font-bold">
+                    <h4 className="text-sm font-black text-text-1 group-hover:text-accent transition-colors flex items-center gap-1.5 font-bold">
                       Asistente de Voz AI
-                      {isFeatureUnlocked('voice_assistant') && <Sparkles size={14} className="text-amber-500 fill-amber-400 animate-pulse" />}
+                      {isFeatureUnlocked('voice_assistant') && <Sparkles size={14} className="text-warning-text fill-warning-text animate-pulse" />}
                     </h4>
-                    <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                    <p className="text-xs text-text-3 font-medium mt-1 leading-relaxed">
                       Crea la tarea con manos libres. Describe qué hacer en un solo enunciado y el asistente AI llenará el título, duración, colaborador y evidencia.
                     </p>
                   </div>
@@ -2021,27 +2020,27 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   onClick={() => {
                     setTaskCreationMode('manual');
                   }}
-                  className="w-full flex items-start gap-4 p-5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group shadow-sm hover:shadow-md"
+                  className="w-full flex items-start gap-4 p-5 rounded-2xl border border-border bg-white hover:bg-page hover:border-slate-300 transition-all text-left group shadow-sm hover:shadow-md"
                 >
-                  <div className="p-3.5 rounded-2xl bg-slate-100 text-slate-600 shrink-0 group-hover:scale-105 transition-transform border border-slate-200">
+                  <div className="p-3.5 rounded-2xl bg-page text-text-2 shrink-0 group-hover:scale-105 transition-transform border border-border">
                     <FileText size={22} className="stroke-[2.5]" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-slate-800 group-hover:text-slate-900 transition-colors">
+                    <h4 className="text-sm font-black text-text-1 group-hover:text-text-1 transition-colors">
                       Escribir en Formulario
                     </h4>
-                    <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                    <p className="text-xs text-text-3 font-medium mt-1 leading-relaxed">
                       Completa los detalles de forma manual y paso a paso mediante campos de texto tradicionales si prefieres mayor control visual.
                     </p>
                   </div>
                 </button>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end gap-2">
+              <div className="mt-6 pt-4 border-t border-border flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowCreateTaskModal(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-colors"
+                  className="px-4 py-2 bg-page hover:bg-slate-200 text-text-2 rounded-xl text-xs font-bold transition-colors"
                 >
                   Cerrar
                 </button>
@@ -2050,17 +2049,17 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
           ) : taskCreationMode === 'voice' ? (
             <div className="bg-slate-900 text-white rounded-3xl shadow-2xl border border-slate-800 max-w-xl w-full p-6 animate-in zoom-in-95 duration-200 relative overflow-hidden">
               {/* Background glows */}
-              <div className="absolute -top-24 -left-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-              <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute -top-24 -left-24 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none"></div>
 
               <div className="flex justify-between items-center mb-5 relative z-10">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg border border-indigo-500/20">
+                  <div className="p-1.5 bg-accent/10 text-navy-300 rounded-lg border border-accent/20">
                     <Mic size={16} />
                   </div>
                   <div>
-                    <h3 className="text-xs font-black uppercase tracking-widest text-indigo-400">Asistente por Voz</h3>
-                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">Registrar vía comandos de voz</p>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-navy-300">Asistente por Voz</h3>
+                    <p className="text-[10px] text-navy-200 font-medium uppercase tracking-wider mt-0.5">Registrar vía comandos de voz</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -2073,11 +2072,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       setVoiceWizardStep('idle');
                       setTaskCreationMode('manual');
                     }}
-                    className="text-[10px] font-black text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1.5 rounded-lg border border-indigo-500/20 transition-all uppercase tracking-wider"
+                    className="text-[10px] font-black text-navy-100 bg-accent/10 hover:bg-accent/20 px-2.5 py-1.5 rounded-lg border border-accent/20 transition-all uppercase tracking-wider"
                   >
                     Escribir a mano
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       if (window.speechSynthesis) window.speechSynthesis.cancel();
                       setIsListening(false);
@@ -2086,7 +2085,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       setTaskCreationMode(null);
                       setShowCreateTaskModal(false);
                     }}
-                    className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors flex items-center justify-center font-bold text-xs"
+                    className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 text-navy-200 hover:text-white transition-colors flex items-center justify-center font-bold text-xs"
                   >
                     ✕
                   </button>
@@ -2095,18 +2094,18 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
               {/* Conversational Voice Panel */}
               {voiceWizardActive && (
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 border-indigo-500/20 shadow-inner relative overflow-hidden animate-in fade-in duration-300">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 border-accent/20 shadow-inner relative overflow-hidden animate-in fade-in duration-300">
                   {/* Animated sound wave indicator */}
                   <div className="absolute right-4 top-4 flex items-end gap-1 h-6">
-                    <span className={`w-1 bg-indigo-400 rounded-full ${isListening ? 'animate-bounce' : 'h-1'}`} style={{ animationDelay: '0.1s', animationDuration: '0.6s' }}></span>
-                    <span className={`w-1 bg-purple-400 rounded-full ${isListening ? 'animate-bounce' : 'h-2'}`} style={{ animationDelay: '0.3s', animationDuration: '0.5s' }}></span>
-                    <span className={`w-1 bg-pink-400 rounded-full ${isListening ? 'animate-bounce' : 'h-1.5'}`} style={{ animationDelay: '0.2s', animationDuration: '0.7s' }}></span>
-                    <span className={`w-1 bg-indigo-400 rounded-full ${isListening ? 'animate-bounce' : 'h-3'}`} style={{ animationDelay: '0.4s', animationDuration: '0.4s' }}></span>
+                    <span className={`w-1 bg-navy-400 rounded-full ${isListening ? 'animate-bounce' : 'h-1'}`} style={{ animationDelay: '0.1s', animationDuration: '0.6s' }}></span>
+                    <span className={`w-1 bg-navy-400 rounded-full ${isListening ? 'animate-bounce' : 'h-2'}`} style={{ animationDelay: '0.3s', animationDuration: '0.5s' }}></span>
+                    <span className={`w-1 bg-navy-400 rounded-full ${isListening ? 'animate-bounce' : 'h-1.5'}`} style={{ animationDelay: '0.2s', animationDuration: '0.7s' }}></span>
+                    <span className={`w-1 bg-navy-400 rounded-full ${isListening ? 'animate-bounce' : 'h-3'}`} style={{ animationDelay: '0.4s', animationDuration: '0.4s' }}></span>
                   </div>
 
                   <div className="flex items-center gap-2 mb-4">
                     <div className={`p-1.5 rounded-lg text-xs font-black uppercase tracking-wider ${
-                      voiceWizardStep === 'asking_initial' ? 'bg-indigo-500 text-white' : 'bg-white/10 text-indigo-300'
+                      voiceWizardStep === 'asking_initial' ? 'bg-accent text-white' : 'bg-white/10 text-navy-100'
                     }`}>
                       {voiceWizardStep === 'asking_initial' && 'Descripción'}
                       {voiceWizardStep === 'asking_time' && 'Duración'}
@@ -2115,7 +2114,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       {voiceWizardStep === 'asking_assistant_prompt' && 'Instrucción'}
                       {voiceWizardStep === 'confirm_save' && 'Guardar'}
                     </div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                    <span className="text-[10px] text-navy-200 font-bold uppercase tracking-wider">
                       {voiceWizardStep === 'asking_initial' && 'Paso 1 de 6'}
                       {voiceWizardStep === 'asking_time' && 'Paso 2 de 6'}
                       {voiceWizardStep === 'asking_assignee' && 'Paso 3 de 6'}
@@ -2127,33 +2126,33 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
                   {/* Question spoken by assistant */}
                   <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 mb-3.5">
-                    <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Asistente</p>
+                    <p className="text-[9px] font-bold text-navy-300 uppercase tracking-widest">Asistente</p>
                     <p className="text-sm font-extrabold text-white mt-1 leading-relaxed">{voiceWizardPrompt}</p>
                   </div>
 
                   {/* Transcript of user speech */}
                   <div className="bg-black/40 rounded-xl p-3.5 text-xs min-h-[60px] flex flex-col justify-between border border-white/5">
                     <div>
-                      <span className="text-[9px] font-bold text-slate-500 block uppercase tracking-wider">Tú dijiste</span>
+                      <span className="text-[9px] font-bold text-navy-200 block uppercase tracking-wider">Tú dijiste</span>
                       <p className="text-white/80 italic mt-1 font-semibold leading-normal">
                         {voiceWizardTranscript ? `"${voiceWizardTranscript}"` : (isListening ? 'Escuchando tu voz...' : 'Esperando respuesta...')}
                       </p>
                     </div>
                     {isListening && (
-                      <div className="flex items-center gap-1.5 mt-2.5 text-[9px] text-rose-400 font-extrabold animate-pulse">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      <div className="flex items-center gap-1.5 mt-2.5 text-[9px] text-danger-text font-extrabold animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-danger-icon"></span>
                         <span>MICRÓFONO ACTIVO - HABLA AHORA</span>
                       </div>
                     )}
                   </div>
 
                   {/* Summary of parsed/filled values */}
-                  <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-[10px] text-slate-400 font-semibold bg-black/10 p-3 rounded-xl">
+                  <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-[10px] text-text-3 font-semibold bg-black/10 p-3 rounded-xl">
                     <div className="truncate">📌 Título: <span className="text-white font-black">{newTaskTitle || 'Pendiente'}</span></div>
                     <div>⏱️ Tiempo: <span className="text-white font-black">{newTaskMins ? `${newTaskMins} mins` : 'Pendiente'}</span></div>
                     <div className="truncate">👤 Asignado: <span className="text-white font-black">
-                      {newTaskTargetId 
-                        ? (newTaskTargetType === 'user' 
+                      {newTaskTargetId
+                        ? (newTaskTargetType === 'user'
                             ? (globalUsers.find(u => String(u.id) === newTaskTargetId)?.name || 'Colaborador')
                             : ((monitorData.job_roles || []).find(r => String(r.id) === newTaskTargetId)?.name || 'Puesto')
                           )
@@ -2189,7 +2188,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       <button
                         type="button"
                         onClick={saveTaskDirectly}
-                        className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-5 py-2 rounded-xl shadow-lg shadow-emerald-950/20 transition-all hover:-translate-y-0.5"
+                        className="bg-gradient-to-r from-success-icon to-accent hover:from-success-text hover:to-accent-hover text-white px-5 py-2 rounded-xl shadow-lg shadow-success-text/20 transition-all hover:-translate-y-0.5"
                       >
                         Guardar Tarea
                       </button>
@@ -2199,15 +2198,15 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-xl w-full p-7 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-2xl border border-border max-w-xl w-full p-7 animate-in zoom-in-95 duration-200 relative overflow-hidden">
               {/* Decorative gradient blur in background */}
-              <div className="absolute -top-16 -right-16 w-36 h-36 bg-blue-500/5 rounded-full blur-2xl pointer-events-none"></div>
+              <div className="absolute -top-16 -right-16 w-36 h-36 bg-accent/5 rounded-full blur-2xl pointer-events-none"></div>
 
               {/* Cabecera limpia */}
               <div className="flex justify-between items-center mb-5 relative z-10">
                 <div>
-                  <h3 className="text-lg font-black text-slate-800 tracking-tight">Nueva Tarea Operativa</h3>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Escribir en Formulario</p>
+                  <h3 className="text-lg font-black text-text-1 tracking-tight">Nueva Tarea Operativa</h3>
+                  <p className="text-[11px] font-bold text-text-3 uppercase tracking-wider mt-0.5">Escribir en Formulario</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {isFeatureUnlocked('voice_assistant') && (
@@ -2219,18 +2218,18 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                           startVoiceWizard();
                         }, 150);
                       }}
-                      className="px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100 transition-all shadow-sm"
+                      className="px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-navy-50 hover:bg-accent-soft text-accent border border-border transition-all shadow-sm"
                     >
                       <Mic size={12} />
                       Cambiar a Voz
                     </button>
                   )}
-                  <button 
+                  <button
                     onClick={() => {
                       setTaskCreationMode(null);
                       setShowCreateTaskModal(false);
                     }}
-                    className="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center font-bold text-xs"
+                    className="w-7 h-7 rounded-full bg-page hover:bg-page text-text-3 hover:text-text-2 transition-colors flex items-center justify-center font-bold text-xs"
                   >
                     ✕
                   </button>
@@ -2240,39 +2239,39 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               <form onSubmit={handleCreateTask} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1.5 custom-scrollbar">
                 {/* Título de la Tarea */}
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Título de la Tarea</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Título de la Tarea</label>
                   <input
                     type="text"
                     required
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="Ej. Limpiar cristales frontales"
-                    className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800 placeholder-slate-400"
+                    className="w-full border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-semibold text-text-1 placeholder-text-3"
                   />
                 </div>
 
                 {/* Grid de Tiempo Estimado y Puntos */}
                 <div className="grid grid-cols-2 gap-3.5">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Tiempo Estimado (Mins)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Tiempo Estimado (Mins)</label>
                     <input
                       type="number"
                       required
                       min={1}
                       value={newTaskMins}
                       onChange={(e) => setNewTaskMins(Number(e.target.value))}
-                      className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800"
+                      className="w-full border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-semibold text-text-1"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Puntos de Proactividad</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Puntos de Proactividad</label>
                     <input
                       type="number"
                       required
                       min={1}
                       value={newTaskPoints}
                       onChange={(e) => setNewTaskPoints(Number(e.target.value))}
-                      className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800"
+                      className="w-full border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-semibold text-text-1"
                     />
                   </div>
                 </div>
@@ -2280,11 +2279,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 {/* Grid de Prioridad y Categoría */}
                 <div className="grid grid-cols-2 gap-3.5">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Nivel de Prioridad</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Nivel de Prioridad</label>
                     <select
                       value={newTaskPriority}
                       onChange={(e) => setNewTaskPriority(e.target.value)}
-                      className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800"
+                      className="w-full border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-semibold text-text-1"
                     >
                       <option value="normal">Normal</option>
                       <option value="medium">Mediana</option>
@@ -2293,11 +2292,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Categoría</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Categoría</label>
                     <select
                       value={newTaskCategory}
                       onChange={(e) => setNewTaskCategory(e.target.value)}
-                      className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800"
+                      className="w-full border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-semibold text-text-1"
                     >
                       <option value="operativo">Operativo</option>
                       <option value="administrativo">Administrativo</option>
@@ -2310,14 +2309,14 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 {/* Grid de Destinatario */}
                 <div className="grid grid-cols-2 gap-3.5">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Tipo de Destinatario</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Tipo de Destinatario</label>
                     <select
                       value={newTaskTargetType}
                       onChange={(e) => {
                         setNewTaskTargetType(e.target.value as 'role' | 'user');
                         setNewTaskTargetId('');
                       }}
-                      className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800"
+                      className="w-full border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-semibold text-text-1"
                     >
                       <option value="role">Por Puesto de Trabajo (Bolsa)</option>
                       <option value="user">Por Colaborador Específico (Directa)</option>
@@ -2326,11 +2325,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   <div>
                     {newTaskTargetType === 'role' ? (
                       <>
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Puesto de Trabajo</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Puesto de Trabajo</label>
                         <select
                           value={newTaskTargetId}
                           onChange={(e) => setNewTaskTargetId(e.target.value)}
-                          className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800"
+                          className="w-full border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-semibold text-text-1"
                         >
                           <option value="">Cualquiera / Todos los Puestos</option>
                           {(monitorData.job_roles || []).map((role) => (
@@ -2340,12 +2339,12 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       </>
                     ) : (
                       <>
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Colaborador</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Colaborador</label>
                         <select
                           required
                           value={newTaskTargetId}
                           onChange={(e) => setNewTaskTargetId(e.target.value)}
-                          className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800"
+                          className="w-full border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-semibold text-text-1"
                         >
                           <option value="">Selecciona un colaborador...</option>
                           {globalUsers.map((user) => (
@@ -2358,39 +2357,39 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 </div>
 
                 {/* Modo Autocaptura (IA) */}
-                <div 
+                <div
                   onClick={() => setNewTaskIsAutoCapture(!newTaskIsAutoCapture)}
                   className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer select-none transition-all ${
-                    newTaskIsAutoCapture 
-                      ? 'bg-blue-50/50 border-blue-200' 
-                      : 'bg-slate-50/50 border-slate-200 hover:bg-slate-50'
+                    newTaskIsAutoCapture
+                      ? 'bg-navy-50/50 border-border'
+                      : 'bg-page/50 border-border hover:bg-page'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Cpu size={14} className="text-blue-500" />
+                    <Cpu size={14} className="text-accent" />
                     <div>
-                      <span className="text-xs font-bold text-slate-700 block">Modo Autocaptura (IA)</span>
-                      <span className="text-[9.5px] text-slate-400">Aprenderá automáticamente de la telemetría real del personal.</span>
+                      <span className="text-xs font-bold text-text-2 block">Modo Autocaptura (IA)</span>
+                      <span className="text-[9.5px] text-text-3">Aprenderá automáticamente de la telemetría real del personal.</span>
                     </div>
                   </div>
                   <input
                     type="checkbox"
                     checked={newTaskIsAutoCapture}
                     onChange={() => {}}
-                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 pointer-events-none"
+                    className="w-4 h-4 rounded text-accent focus-visible:ring-focus-ring border-slate-300 pointer-events-none"
                   />
                 </div>
 
                 {/* Mini-Asistente Acoplado */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                    <Bot size={14} className="text-blue-500" />
+                <div className="bg-page border border-border rounded-xl p-3.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-text-2 mb-2">
+                    <Bot size={14} className="text-accent" />
                     Mini-Asistente Acoplado
                   </div>
                   <select
                     value={newTaskAssistantType}
                     onChange={(e) => setNewTaskAssistantType(e.target.value)}
-                    className="w-full border border-slate-200 bg-white rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800"
+                    className="w-full border border-border bg-white rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-semibold text-text-1"
                   >
                     <option value="ninguno">Ninguno</option>
                     <option value="evidencia_foto">Evidencia Fotográfica</option>
@@ -2400,7 +2399,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
                   {newTaskAssistantType !== 'ninguno' && (
                     <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">
                         ¿Qué le preguntará el asistente al empleado?
                       </label>
                       <input
@@ -2415,27 +2414,27 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                             ? 'Ej. ¿Cuántas bolsas contaste en el inventario?'
                             : 'Ej. Escribe observaciones o notas adicionales.'
                         }
-                        className="w-full border border-slate-200 bg-white rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800 placeholder-slate-400"
+                        className="w-full border border-border bg-white rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring font-semibold text-text-1 placeholder-text-3"
                       />
                     </div>
                   )}
                 </div>
 
                 {/* Acciones */}
-                <div className="mt-6 flex justify-end gap-2 text-xs font-bold pt-2 border-t border-slate-100">
+                <div className="mt-6 flex justify-end gap-2 text-xs font-bold pt-2 border-t border-border">
                   <button
                     type="button"
                     onClick={() => {
                       setTaskCreationMode(null);
                     }}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors"
+                    className="px-4 py-2 bg-page hover:bg-slate-200 text-text-2 rounded-lg transition-colors"
                   >
                     Atrás
                   </button>
                   <button
                     type="submit"
                     disabled={creatingTask || !newTaskTitle.trim()}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg transition-colors disabled:opacity-50"
                   >
                     {creatingTask ? 'Creando...' : 'Guardar Tarea'}
                   </button>
@@ -2450,42 +2449,42 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       {/* Modal de Asignación de Tarea Rápida */}
       {selectedUserForTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-base font-black text-slate-800">Asignar Tarea en Tiempo Real</h3>
-            <p className="text-xs text-slate-500 mt-1">Selecciona la tarea que deseas asignar a <span className="font-bold text-slate-700">{selectedUserForTask.name}</span></p>
+          <div className="bg-white rounded-2xl shadow-xl border border-border max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-base font-black text-text-1">Asignar Tarea en Tiempo Real</h3>
+            <p className="text-xs text-text-3 mt-1">Selecciona la tarea que deseas asignar a <span className="font-bold text-text-2">{selectedUserForTask.name}</span></p>
 
             <div className="mt-4 space-y-2.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
               {monitorData.available_tasks.map((task) => (
-                <label 
+                <label
                   key={task.id}
                   onClick={() => setSelectedTaskId(task.id)}
-                  className={`flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-all ${selectedTaskId === task.id ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/70'}`}
+                  className={`flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-all ${selectedTaskId === task.id ? 'border-accent bg-navy-50/50' : 'border-border bg-page hover:bg-page/70'}`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <input 
-                      type="radio" 
+                    <input
+                      type="radio"
                       name="assign_task_radio"
                       checked={selectedTaskId === task.id}
                       onChange={() => setSelectedTaskId(task.id)}
-                      className="text-blue-600 focus:ring-blue-500"
+                      className="text-accent focus-visible:ring-focus-ring"
                     />
                     <div>
-                      <span className="font-bold text-slate-800 block">{task.title}</span>
-                      <span className="text-[10px] text-slate-400">{task.estimated_mins} mins estimados</span>
+                      <span className="font-bold text-text-1 block">{task.title}</span>
+                      <span className="text-[10px] text-text-3">{task.estimated_mins} mins estimados</span>
                     </div>
                   </div>
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded capitalize ${
-                    task.priority === 'high' ? 'bg-rose-100 text-rose-700' :
-                    task.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
-                    'bg-slate-100 text-slate-600'
+                    task.priority === 'high' ? 'bg-danger-bg text-danger-text' :
+                    task.priority === 'medium' ? 'bg-warning-bg text-warning-text' :
+                    'bg-page text-text-2'
                   }`}>
                     {task.priority}
                   </span>
                 </label>
               ))}
-              
+
               {monitorData.available_tasks.length === 0 && (
-                <div className="text-center py-6 text-slate-400 text-xs font-semibold">
+                <div className="text-center py-6 text-text-3 text-xs font-semibold">
                   No hay tareas creadas para asignar. Crea tareas primero con el botón "+ Crear Tarea".
                 </div>
               )}
@@ -2494,14 +2493,14 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
             <div className="mt-6 flex justify-end gap-2 text-xs font-bold">
               <button
                 onClick={() => { setSelectedUserForTask(null); setSelectedTaskId(null); }}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors"
+                className="px-4 py-2 bg-page hover:bg-slate-200 text-text-2 rounded-lg transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAssignTask}
                 disabled={!selectedTaskId || assigningTask}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
               >
                 {assigningTask ? 'Asignando...' : 'Asignar Ahora'}
               </button>

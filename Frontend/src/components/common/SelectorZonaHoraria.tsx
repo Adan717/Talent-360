@@ -31,8 +31,8 @@ interface SelectorZonaHorariaProps {
 export const SelectorZonaHoraria: React.FC<SelectorZonaHorariaProps> = ({
   value,
   onChange,
-  selectClassName = 'w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium',
-  labelClassName = 'block text-sm font-bold text-slate-700 mb-2',
+  selectClassName = 'w-full px-4 py-3 bg-page border border-border rounded-xl focus:ring-2 focus-visible:ring-focus-ring focus:outline-none font-medium',
+  labelClassName = 'block text-sm font-bold text-text-2 mb-2',
   helpClassName = 'text-xs text-slate-400 mt-2',
 }) => {
   // Una empresa puede tener declarada una zona fuera de este catálogo (el comando

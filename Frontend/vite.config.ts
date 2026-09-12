@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import tokens from './src/design/tokens-talent360.json'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -45,8 +46,8 @@ export default defineConfig({
         name: 'Talent360 — Gestión de Capital Humano',
         short_name: 'Talent360',
         description: 'Plataforma SaaS B2B para Recursos Humanos, Reloj Checador GPS, Tareas y Nómina LFT.',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: tokens.color.functional['brand-dark'],
+        background_color: tokens.color.neutral.bg,
         display: 'standalone',
         orientation: 'portrait-primary',
         start_url: '/app',

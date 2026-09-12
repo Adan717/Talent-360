@@ -101,34 +101,34 @@ export function BackupPanel() {
   return (
     <div className="relative w-full">
       {/* Background Glow */}
-      <div className="absolute -top-10 -right-10 w-80 h-80 bg-blue-500/5 rounded-full blur-[80px] pointer-events-none"></div>
+      <div className="absolute -top-10 -right-10 w-80 h-80 bg-accent/5 rounded-full blur-[80px] pointer-events-none"></div>
 
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100 shadow-sm">
+        <div className="p-3 bg-navy-50 text-accent rounded-2xl border border-border shadow-sm">
           <Database size={24} />
         </div>
         <div className="text-left">
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Respaldos y Seguridad</h1>
-          <p className="text-xs text-slate-500 font-medium">Descarga una copia firmada de los datos de tu empresa y reponla si hace falta.</p>
+          <h1 className="text-2xl font-black text-text-1 tracking-tight">Respaldos y Seguridad</h1>
+          <p className="text-xs text-text-3 font-medium">Descarga una copia firmada de los datos de tu empresa y reponla si hace falta.</p>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex gap-3 items-start animate-in fade-in">
-          <AlertTriangle className="text-rose-500 shrink-0 mt-0.5" size={18} />
+        <div className="mb-6 p-4 bg-danger-bg border border-danger-text/20 rounded-2xl flex gap-3 items-start animate-in fade-in">
+          <AlertTriangle className="text-danger-text shrink-0 mt-0.5" size={18} />
           <div className="text-left">
-            <span className="font-bold text-rose-800 text-sm">Fallo de seguridad o integridad</span>
-            <p className="text-rose-700 text-xs mt-0.5 leading-relaxed">{errorMsg}</p>
+            <span className="font-bold text-danger-text text-sm">Fallo de seguridad o integridad</span>
+            <p className="text-danger-text text-xs mt-0.5 leading-relaxed">{errorMsg}</p>
           </div>
         </div>
       )}
 
       {successMsg && (
-        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex gap-3 items-start animate-in fade-in">
-          <CheckCircle2 className="text-emerald-500 shrink-0 mt-0.5" size={18} />
+        <div className="mb-6 p-4 bg-success-bg border border-success-text/20 rounded-2xl flex gap-3 items-start animate-in fade-in">
+          <CheckCircle2 className="text-success-text shrink-0 mt-0.5" size={18} />
           <div className="text-left">
-            <span className="font-bold text-emerald-800 text-sm">Operación exitosa</span>
-            <p className="text-emerald-700 text-xs mt-0.5 leading-relaxed">{successMsg}</p>
+            <span className="font-bold text-success-text text-sm">Operación exitosa</span>
+            <p className="text-success-text text-xs mt-0.5 leading-relaxed">{successMsg}</p>
           </div>
         </div>
       )}
@@ -136,19 +136,19 @@ export function BackupPanel() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
         {/* Enforce Freemium Locked Overlay */}
         {isFreemiumExpired && (
-          <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-md rounded-3xl z-40 flex flex-col items-center justify-center p-6 text-center border border-slate-200/50 shadow-sm">
-            <div className="w-14 h-14 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mb-4 text-slate-700 shadow-sm animate-bounce">
+          <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-md rounded-3xl z-40 flex flex-col items-center justify-center p-6 text-center border border-border/50 shadow-sm">
+            <div className="w-14 h-14 bg-white border border-border rounded-2xl flex items-center justify-center mb-4 text-text-2 shadow-sm animate-bounce">
               <Database size={28} />
             </div>
-            <h2 className="text-lg font-black text-slate-800 tracking-tight leading-none mb-1">
+            <h2 className="text-lg font-black text-text-1 tracking-tight leading-none mb-1">
               Copias de Seguridad Bloqueadas
             </h2>
-            <p className="text-slate-500 text-xs max-w-sm leading-relaxed mb-5">
+            <p className="text-text-3 text-xs max-w-sm leading-relaxed mb-5">
               Descargar y reponer copias de seguridad es exclusivo del Plan Profesional e Ilimitado.
             </p>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('open-pricing-modal'))}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-200 shadow-md"
+              className="px-6 py-3 bg-accent hover:bg-accent-hover text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-200 shadow-md"
             >
               Ver Planes de Actualización
             </button>
@@ -157,19 +157,19 @@ export function BackupPanel() {
 
         {/* Column 1: Local Backup Actions */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm text-left">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-2">Descargar Respaldo</h3>
+          <div className="bg-white rounded-3xl p-6 border border-border shadow-sm text-left">
+            <h3 className="text-sm font-black text-text-1 uppercase tracking-wider mb-2">Descargar Respaldo</h3>
             {/* Decía "archivo JSON cifrado": no está cifrado, va FIRMADO. Y el archivo llevaba en
                 claro el hash de la contraseña de cada persona, el secreto de 2FA, la llave
                 biométrica y el token del checador; ya no salen del servidor. */}
-            <p className="text-xs text-slate-500 leading-relaxed mb-4">
+            <p className="text-xs text-text-3 leading-relaxed mb-4">
               Un archivo JSON <span className="font-bold">firmado</span> (HMAC SHA-256 con la llave del servidor), para que no se pueda alterar sin que se note. No va cifrado: guárdalo en un lugar seguro.
             </p>
-            <div className="text-[11px] text-slate-500 leading-relaxed mb-6 bg-slate-50 border border-slate-200 rounded-xl p-3">
-              <span className="font-bold text-slate-700 block mb-1">Qué incluye</span>
+            <div className="text-[11px] text-text-3 leading-relaxed mb-6 bg-page border border-border rounded-xl p-3">
+              <span className="font-bold text-text-2 block mb-1">Qué incluye</span>
               Colaboradores y sus expedientes, puestos y capacidades, cuentas de acceso, fichajes,
               rutinas y tareas, vacantes y candidatos, cursos y su avance, y la configuración.
-              <span className="font-bold text-slate-700 block mt-2 mb-1">Qué NO incluye</span>
+              <span className="font-bold text-text-2 block mt-2 mb-1">Qué NO incluye</span>
               Los archivos subidos (Archivo Digital y evidencias, que viven en disco), los recibos
               de nómina, y las contraseñas y PINs (nunca salen del servidor).
             </div>
@@ -191,20 +191,20 @@ export function BackupPanel() {
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm text-left">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-2">Reponer desde un Respaldo</h3>
+          <div className="bg-white rounded-3xl p-6 border border-border shadow-sm text-left">
+            <h3 className="text-sm font-black text-text-1 uppercase tracking-wider mb-2">Reponer desde un Respaldo</h3>
             {/* Se llamaba "Restaurar Estado" y el servidor BORRABA las tablas de la empresa antes
                 de reinsertar. Eso dejaba a toda la plantilla sin cuenta y sin puesto (los
                 expedientes no viajan atados a nada) y se llevaba por delante el chat, la
                 auditoría, las eventualidades y el monedero, que no están en el respaldo. Ahora
                 repone sin borrar, y el texto dice exactamente eso. */}
-            <p className="text-xs text-slate-500 leading-relaxed mb-6">
+            <p className="text-xs text-text-3 leading-relaxed mb-6">
               Sube el archivo que descargaste. Se comprueba la firma y luego cada registro del
               respaldo se vuelve a escribir sobre el actual. <span className="font-bold">No se borra nada</span>:
               lo que se haya creado después del respaldo se conserva.
             </p>
 
-            <label className={`inline-flex items-center gap-2 px-6 py-3.5 border border-slate-300 hover:border-slate-400 bg-white text-slate-700 font-bold text-xs uppercase tracking-wider rounded-2xl shadow-sm transition-colors cursor-pointer ${loading || isFreemiumExpired ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <label className={`inline-flex items-center gap-2 px-6 py-3.5 border border-slate-300 hover:border-slate-400 bg-white text-text-2 font-bold text-xs uppercase tracking-wider rounded-2xl shadow-sm transition-colors cursor-pointer ${loading || isFreemiumExpired ? 'opacity-50 cursor-not-allowed' : ''}`}>
               <Upload size={16} /> Cargar y Reponer
               <input
                 type="file"

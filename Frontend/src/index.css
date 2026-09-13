@@ -123,6 +123,57 @@ html, body {
   color: var(--text-1);
 }
 
+/* La landing usa exclusivamente la paleta de marca aprobada. Las variables se
+   redefinen dentro de su raíz para recolorear también los demos embebidos sin
+   alterar sus estados, estructura ni el resto de la aplicación. */
+.saas-landing {
+  --navy-200: var(--navy-100);
+  --navy-300: var(--navy-600);
+  --navy-400: var(--navy-600);
+  --navy-500: var(--navy-600);
+  --navy-700: var(--navy-800);
+  --accent-hover: var(--navy-800);
+
+  --success-bg: var(--navy-50);
+  --success-text: var(--navy-600);
+  --success-icon: var(--navy-600);
+  --warning-bg: var(--navy-50);
+  --warning-text: var(--navy-800);
+  --warning-icon: var(--navy-600);
+  --danger-bg: var(--navy-50);
+  --danger-text: var(--navy-800);
+  --danger-icon: var(--navy-600);
+  --error-bg: var(--navy-50);
+  --error-text: var(--navy-800);
+  --error-icon: var(--navy-600);
+  --info-bg: var(--navy-50);
+  --info-text: var(--navy-600);
+  --info-icon: var(--navy-600);
+
+  --color-slate-50: var(--navy-50);
+  --color-slate-100: var(--navy-50);
+  --color-slate-150: var(--navy-100);
+  --color-slate-200: var(--navy-100);
+  --color-slate-300: var(--navy-100);
+  --color-slate-400: var(--text-3);
+  --color-slate-450: var(--text-3);
+  --color-slate-500: var(--text-3);
+  --color-slate-600: var(--text-2);
+  --color-slate-700: var(--navy-600);
+  --color-slate-750: var(--navy-800);
+  --color-slate-800: var(--navy-800);
+  --color-slate-900: var(--navy-900);
+  --color-slate-950: var(--navy-900);
+  --color-amber-400: var(--navy-600);
+  --color-emerald-400: var(--navy-600);
+  --color-rose-400: var(--navy-600);
+  --color-black: var(--navy-900);
+}
+
+.saas-landing .landing-warm-accent {
+  color: #B45309;
+}
+
 /* Unlayered on purpose: existing outline-none utilities must not hide keyboard focus. */
 :where(button, a, input, select, textarea, summary, [tabindex], [role="button"]):focus-visible {
   outline: 2px solid var(--focus-ring) !important;

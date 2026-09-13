@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ShieldCheck, FileText, X, Lock, CheckCircle2, Building2, UserCheck, AlertTriangle, KeyRound, CreditCard, Cpu, Database, Scale, Globe, RefreshCcw } from 'lucide-react';
 
 export type LegalDocType = 'privacy' | 'terms' | 'arco';
@@ -13,9 +13,9 @@ export type LegalDocType = 'privacy' | 'terms' | 'arco';
  * privacidad con dos versiones que se separan es de los peores lugares donde puede pasar.
  */
 export const LEGAL_TABS: { id: LegalDocType; label: string; Icono: React.ElementType }[] = [
-  { id: 'privacy', label: 'Aviso de Privacidad (8 Puntos)', Icono: ShieldCheck },
-  { id: 'terms', label: 'Términos del Servicio (7 Puntos TOS & SLA)', Icono: FileText },
-  { id: 'arco', label: 'Derechos ARCO & Biométricos', Icono: UserCheck },
+  { id: 'privacy', label: 'Privacidad', Icono: ShieldCheck },
+  { id: 'terms', label: 'Términos', Icono: FileText },
+  { id: 'arco', label: 'Derechos ARCO', Icono: UserCheck },
 ];
 
 /**
@@ -343,44 +343,54 @@ interface LegalModalProps {
 export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, defaultTab = 'privacy' }) => {
   const [activeTab, setActiveTab] = useState<LegalDocType>(defaultTab);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setActiveTab(defaultTab);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, defaultTab, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-700/80 w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh] text-slate-100 overflow-hidden">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-brand-dark/75 p-4 backdrop-blur-sm animate-in fade-in duration-200" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div role="dialog" aria-modal="true" aria-labelledby="legal-modal-title" className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-navy-700 bg-slate-900 text-slate-100 shadow-[0_1px_3px_rgba(16,24,40,0.08)]">
 
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-700 bg-brand-dark px-6 py-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center text-navy-300">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-navy-600 bg-navy-800 text-navy-100">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-black text-white flex items-center gap-2">
-                Centro de Protección Legal & Privacidad <span className="text-[10px] bg-accent/20 text-navy-100 border border-accent/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">LFPDPPP & TOS</span>
+              <h2 id="legal-modal-title" className="flex items-center gap-2 text-base font-semibold text-white">
+                Documentos legales <span className="rounded-full border border-navy-600 bg-navy-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-navy-100">Talent 360</span>
               </h2>
-              <p className="text-xs text-slate-400 font-medium">Marco Legal Completo, SLA B2B y Tratamiento de Datos — Talent360</p>
+              <p className="text-xs font-medium text-slate-300">Privacidad, términos del servicio y derechos ARCO.</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
-            title="Cerrar ventana"
+            className="rounded-lg p-2 text-slate-300 transition hover:bg-navy-800 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-brand-dark"
+            aria-label="Cerrar documentos legales"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
         {/* Tab Selector — recorre LEGAL_TABS para que las etiquetas vivan en un solo sitio. */}
-        <div className="px-6 py-2.5 bg-slate-900/90 border-b border-slate-800 flex gap-2 overflow-x-auto shrink-0">
+        <div className="flex shrink-0 gap-2 overflow-x-auto border-b border-slate-700 bg-slate-900 px-6 py-3">
           {LEGAL_TABS.map(({ id, label, Icono }) => (
             <button
               key={id}
               type="button"
               onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex whitespace-nowrap items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
                 activeTab === id
-                  ? 'bg-accent text-white shadow-lg shadow-accent/20'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  ? 'bg-navy-600 text-white'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
               <Icono className="w-4 h-4" />
@@ -390,19 +400,19 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
         </div>
 
         {/* Scrollable Content */}
-        <div className="p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
+        <div className="overflow-y-auto p-6 md:p-8 scrollbar-thin scrollbar-thumb-slate-700">
           <LegalBody tab={activeTab} />
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex justify-between items-center shrink-0">
-          <p className="text-[10px] text-text-3 font-medium">Talent360 © 2026 — Plataforma Cumplimiento LFPDPPP & LFT</p>
+        <div className="flex shrink-0 items-center justify-between border-t border-slate-700 bg-brand-dark px-6 py-4">
+          <p className="text-[10px] font-medium text-slate-300">Talent 360 © {new Date().getFullYear()}</p>
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 bg-accent hover:bg-accent text-white font-bold text-xs rounded-xl transition shadow-lg shadow-accent/20 cursor-pointer"
+            className="rounded-lg bg-accent px-5 py-2.5 text-xs font-bold text-white transition hover:bg-navy-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-brand-dark"
           >
-            Aceptar y Cerrar
+            Cerrar
           </button>
         </div>
 

@@ -8,8 +8,10 @@ import { RelojSimuladoLanding } from './RelojSimuladoLanding';
 import { LegalModal, type LegalDocType } from './LegalModal';
 import { useTarifario } from '../hooks/useTarifario';
 import { cotizar, planDelTarifario, pesos } from '../lib/tarifario';
+import { SaaSLandingLab } from './SaaSLandingLab';
 
-export const SaaSLandingPage = () => {
+/** Preserved during the landing migration as a rollback-safe reference. */
+export const LegacySaaSLandingPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
@@ -297,10 +299,10 @@ export const SaaSLandingPage = () => {
   const cotizacionEnterprise = cotizar(planEnterprise, proEmployeesCount, billingCycle);
 
   return (
-    <div className="min-h-screen bg-page font-sans text-text-1 selection:bg-accent-soft selection:text-brand-dark">
+    <div className="saas-landing min-h-screen bg-page font-sans text-text-1 selection:bg-accent-soft selection:text-brand-dark">
 
       {/* NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-border">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-lg shadow-accent/20">
@@ -323,7 +325,7 @@ export const SaaSLandingPage = () => {
             <button onClick={() => navigate('/login')} className="text-sm font-bold text-text-2 hover:text-text-1 transition-colors">
               Iniciar Sesión
             </button>
-            <button onClick={() => handleBuy('Freemium')} className="bg-accent text-white px-5 py-2.5 rounded-xl text-sm font-black hover:bg-accent-hover transition-all shadow-md hover:shadow-lg active:scale-98">
+            <button onClick={() => handleBuy('Freemium')} className="bg-accent text-white px-5 py-2.5 rounded-xl text-sm font-black hover:bg-navy-800 transition-all shadow-md hover:shadow-lg active:scale-98">
               Crear Cuenta Gratis
             </button>
           </div>
@@ -332,7 +334,7 @@ export const SaaSLandingPage = () => {
           <div className="flex md:hidden items-center gap-2">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2.5 text-text-2 bg-page/80 hover:bg-slate-200/80 rounded-2xl transition-all active:scale-95 border border-border/50 flex items-center gap-2 font-bold text-xs"
+              className="p-2.5 text-text-2 bg-page hover:bg-navy-100 rounded-2xl transition-all active:scale-95 border border-border flex items-center gap-2 font-bold text-xs"
               aria-label="Abrir menú"
             >
               <span className="text-text-2 font-extrabold text-[11px] uppercase tracking-wider pl-1">Menú</span>
@@ -347,20 +349,20 @@ export const SaaSLandingPage = () => {
         <>
           {/* Dark Backdrop Overlay */}
           <div
-            className="md:hidden fixed inset-0 top-[80px] bg-slate-950/75 backdrop-blur-md z-40 animate-in fade-in duration-200"
+            className="md:hidden fixed inset-0 top-[80px] bg-brand-dark/75 backdrop-blur-md z-40 animate-in fade-in duration-200"
             onClick={() => setIsMobileMenuOpen(false)}
           />
 
           {/* Premium Mobile Menu Drawer */}
-          <div className="md:hidden fixed top-[80px] left-0 right-0 bottom-0 bg-slate-900 text-white z-50 flex flex-col p-6 animate-in slide-in-from-top-4 duration-200 border-t border-slate-800 shadow-2xl overflow-y-auto">
+          <div className="md:hidden fixed top-[80px] left-0 right-0 bottom-0 bg-brand-dark text-white z-50 flex flex-col p-6 animate-in slide-in-from-top-4 duration-200 border-t border-navy-800 shadow-2xl overflow-y-auto">
             <div className="flex flex-col h-full justify-between max-w-sm mx-auto w-full py-2">
               <div className="space-y-6">
-                <div className="flex items-center justify-between px-1 pb-3 border-b border-slate-800">
+                <div className="flex items-center justify-between px-1 pb-3 border-b border-navy-800">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center font-black text-xs text-white">T</div>
-                    <span className="font-extrabold text-sm text-slate-200">Menú de Navegación</span>
+                    <span className="font-extrabold text-sm text-navy-100">Menú de Navegación</span>
                   </div>
-                  <span className="text-[10px] font-bold text-success-text bg-success-icon/10 px-2 py-0.5 rounded-full border border-success-text/20">
+                  <span className="text-[10px] font-bold text-navy-100 bg-navy-800 px-2 py-0.5 rounded-full border border-navy-600">
                     SaaS Online
                   </span>
                 </div>
@@ -369,63 +371,63 @@ export const SaaSLandingPage = () => {
                   <a
                     href="#features"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-accent/20 hover:border-accent/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
+                    className="p-4 rounded-2xl bg-navy-800 hover:bg-navy-600 border border-navy-800 hover:border-navy-600 transition-all flex items-center justify-between group active:scale-98"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-navy-300 group-hover:scale-110 transition-transform">
+                      <div className="w-10 h-10 rounded-xl bg-brand-dark border border-navy-600 flex items-center justify-center text-navy-100 group-hover:scale-110 transition-transform">
                         <Zap size={20} />
                       </div>
                       <div className="text-left">
-                        <div className="font-extrabold text-sm text-white group-hover:text-navy-300 transition-colors">Plataforma 360</div>
-                        <div className="text-[11px] text-slate-400 font-medium">Módulos de RRHH & Asistencia</div>
+                        <div className="font-extrabold text-sm text-white group-hover:text-navy-100 transition-colors">Plataforma 360</div>
+                        <div className="text-[11px] text-navy-100 font-medium">Módulos de RRHH & Asistencia</div>
                       </div>
                     </div>
-                    <ChevronRight size={18} className="text-text-3 group-hover:text-navy-300 group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-navy-100 group-hover:text-white group-hover:translate-x-1 transition-all" />
                   </a>
 
                   <a
                     href="#pricing"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-success-text/20 hover:border-success-text/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
+                    className="p-4 rounded-2xl bg-navy-800 hover:bg-navy-600 border border-navy-800 hover:border-navy-600 transition-all flex items-center justify-between group active:scale-98"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-success-icon/10 border border-success-text/20 flex items-center justify-center text-success-text group-hover:scale-110 transition-transform">
+                      <div className="w-10 h-10 rounded-xl bg-brand-dark border border-navy-600 flex items-center justify-center text-navy-100 group-hover:scale-110 transition-transform">
                         <Tag size={20} />
                       </div>
                       <div className="text-left">
-                        <div className="font-extrabold text-sm text-white group-hover:text-success-text transition-colors">Precios y Planes</div>
-                        <div className="text-[11px] text-slate-400 font-medium">Freemium, Pro & Enterprise</div>
+                        <div className="font-extrabold text-sm text-white group-hover:text-navy-100 transition-colors">Precios y Planes</div>
+                        <div className="text-[11px] text-navy-100 font-medium">Freemium, Pro & Enterprise</div>
                       </div>
                     </div>
-                    <ChevronRight size={18} className="text-text-3 group-hover:text-success-text group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-navy-100 group-hover:text-white group-hover:translate-x-1 transition-all" />
                   </a>
 
                   <a
                     href="#simulador"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-accent/20 hover:border-accent/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
+                    className="p-4 rounded-2xl bg-navy-800 hover:bg-navy-600 border border-navy-800 hover:border-navy-600 transition-all flex items-center justify-between group active:scale-98"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-navy-300 group-hover:scale-110 transition-transform">
+                      <div className="w-10 h-10 rounded-xl bg-brand-dark border border-navy-600 flex items-center justify-center text-navy-100 group-hover:scale-110 transition-transform">
                         <Sparkles size={20} />
                       </div>
                       <div className="text-left">
-                        <div className="font-extrabold text-sm text-white group-hover:text-navy-300 transition-colors">Simulador de Nómina</div>
-                        <div className="text-[11px] text-slate-400 font-medium">Calculadora de Ley LFT</div>
+                        <div className="font-extrabold text-sm text-white group-hover:text-navy-100 transition-colors">Simulador de Nómina</div>
+                        <div className="text-[11px] text-navy-100 font-medium">Calculadora de Ley LFT</div>
                       </div>
                     </div>
-                    <ChevronRight size={18} className="text-text-3 group-hover:text-navy-300 group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-navy-100 group-hover:text-white group-hover:translate-x-1 transition-all" />
                   </a>
                 </nav>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-slate-800/80 flex flex-col gap-3.5 shrink-0">
+              <div className="mt-8 pt-6 border-t border-navy-800 flex flex-col gap-3.5 shrink-0">
                 {/* Single Auth Entry Point inside Drawer */}
                 <button
                   onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }}
-                  className="w-full py-4 rounded-2xl font-black text-slate-100 bg-slate-800 hover:bg-slate-750 border border-slate-700/80 transition-all text-center text-sm flex items-center justify-center gap-2.5 active:scale-98 shadow-md"
+                  className="w-full py-4 rounded-2xl font-black text-navy-100 bg-navy-800 hover:bg-navy-600 border border-navy-600 transition-all text-center text-sm flex items-center justify-center gap-2.5 active:scale-98 shadow-md"
                 >
-                  <Lock size={16} className="text-navy-300" />
+                  <Lock size={16} className="text-navy-100" />
                   <span>Iniciar Sesión en tu Cuenta</span>
                 </button>
 
@@ -438,7 +440,7 @@ export const SaaSLandingPage = () => {
                 </button>
 
                 <div className="mt-2 text-center text-[11px] font-semibold text-text-3 flex items-center justify-center gap-1.5">
-                  <ShieldCheck size={14} className="text-success-text" />
+                  <ShieldCheck size={14} className="text-navy-100" />
                   <span>Conexión Segura SSL 256-Bit</span>
                 </div>
               </div>
@@ -448,8 +450,8 @@ export const SaaSLandingPage = () => {
       )}
 
       {/* HERO SECTION */}
-      <section className="relative pt-36 pb-24 px-6 overflow-hidden bg-gradient-to-b from-navy-50/50 via-white to-slate-50">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[300px] bg-gradient-to-r from-accent-soft/20 to-accent-soft/20 rounded-full blur-[120px] opacity-60 pointer-events-none"></div>
+      <section className="relative pt-36 pb-24 px-6 overflow-hidden bg-white">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[300px] bg-navy-50 rounded-full blur-[120px] opacity-60 pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto relative z-10 animate-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
@@ -462,7 +464,7 @@ export const SaaSLandingPage = () => {
 
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-text-1 leading-tight">
                 El sistema operativo para <br className="hidden sm:block"/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-accent to-accent">tu Capital Humano</span>
+                <span className="landing-warm-accent">tu Capital Humano</span>
               </h2>
 
               <p className="text-sm md:text-base text-text-3 font-medium leading-relaxed max-w-lg">
@@ -476,7 +478,7 @@ export const SaaSLandingPage = () => {
                   onClick={() => {
                     document.getElementById('seccion-simulador')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }}
-                  className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-accent via-accent to-accent text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-accent/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border-none"
+                  className="w-full sm:w-auto px-8 py-4 bg-accent text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-accent/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border-none"
                 >
                   <Play size={14} fill="currentColor" />
                   <span>Ver simulador</span>
@@ -486,7 +488,7 @@ export const SaaSLandingPage = () => {
 
             {/* Columna Derecha: Showcase Interactivo de Producto (Oculto en móvil) */}
             <div className="hidden lg:flex col-span-1 lg:col-span-7 relative flex-col md:flex-row items-center justify-center gap-6 lg:gap-8 order-2 lg:order-2 w-full">
-              <div className="absolute inset-0 bg-gradient-to-tr from-navy-300/10 via-navy-300/5 to-transparent rounded-[32px] blur-2xl opacity-75 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-navy-50 rounded-[32px] blur-2xl opacity-75 pointer-events-none"></div>
 
               {activeTab === 'checador' && (
                 <div className="flex items-center gap-2 max-w-sm w-full mx-auto mb-4 order-2 md:absolute md:-top-16 md:left-1/2 md:-translate-x-1/2 md:z-20 justify-center">
@@ -496,8 +498,8 @@ export const SaaSLandingPage = () => {
                       onClick={() => setSimulatedTier('free')}
                       className={`flex-1 py-2.5 px-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
                         simulatedTier === 'free'
-                          ? 'bg-white text-text-1 shadow-md shadow-slate-200/50'
-                          : 'text-slate-400 hover:text-text-2 font-bold'
+                          ? 'bg-white text-text-1 shadow-md shadow-navy-100/50'
+                          : 'text-text-3 hover:text-text-2 font-bold'
                       }`}
                     >
                       <span>🔓</span> Básica
@@ -507,8 +509,8 @@ export const SaaSLandingPage = () => {
                       onClick={() => setSimulatedTier('pro')}
                       className={`flex-1 py-2.5 px-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
                         simulatedTier === 'pro'
-                          ? 'bg-gradient-to-r from-accent to-accent text-white shadow-md shadow-accent/10'
-                          : 'text-slate-400 hover:text-text-2 font-bold'
+                          ? 'bg-accent text-white shadow-md shadow-accent/10'
+                          : 'text-text-3 hover:text-text-2 font-bold'
                       }`}
                     >
                       <span>👑</span> Pro
@@ -532,13 +534,13 @@ export const SaaSLandingPage = () => {
 
                   {/* SMARTPHONE FRAME (Utiliza el RelojVisual clon real en modo simulado) */}
                   <div
-                    className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0 order-2 transition-transform duration-300"
+                    className="relative w-full max-w-[290px] border-8 border-brand-dark bg-brand-dark rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0 order-2 transition-transform duration-300"
                     style={{ transform: `scale(${simSettings.scale / 100})`, transformOrigin: 'top center' }}
                   >
                     {/* Speaker & Sensor Notch */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-32 bg-slate-900 rounded-b-2xl z-55 flex items-center justify-center gap-1.5">
-                      <div className="w-12 h-1 bg-slate-800 rounded-full"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700"></div>
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-32 bg-brand-dark rounded-b-2xl z-55 flex items-center justify-center gap-1.5">
+                      <div className="w-12 h-1 bg-navy-800 rounded-full"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-navy-800 border border-navy-600"></div>
                     </div>
 
                     <div className="flex-grow bg-white flex flex-col justify-between overflow-hidden select-none">
@@ -553,11 +555,11 @@ export const SaaSLandingPage = () => {
                     </div>
 
                     {/* iOS Home Indicator Bar */}
-                    <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-slate-800 rounded-full z-55"></div>
+                    <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-navy-800 rounded-full z-55"></div>
                   </div>
 
                   {/* Right Side: Comparative Detail Card */}
-                  <div className="flex-1 max-w-sm text-left bg-white border border-border/80 p-6 rounded-3xl shadow-xl shadow-slate-100/50 space-y-4 order-3">
+                  <div className="flex-1 max-w-sm text-left bg-white border border-border/80 p-6 rounded-3xl shadow-xl shadow-navy-50/50 space-y-4 order-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">{simulatedTier === 'pro' ? '👑' : '🔓'}</span>
                       <h4 className="text-sm font-black text-text-1 tracking-tight uppercase">
@@ -571,43 +573,43 @@ export const SaaSLandingPage = () => {
                     </p>
 
                     <div className="border-t border-border pt-3 space-y-2.5">
-                      <h5 className="text-[9px] font-black uppercase tracking-wider text-slate-400">Características de esta versión</h5>
+                      <h5 className="text-[9px] font-black uppercase tracking-wider text-text-3">Características de esta versión</h5>
                       <ul className="space-y-2">
                         {simulatedTier === 'pro' ? (
                           <>
                             <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-2">
-                              <span className="text-success-text font-extrabold text-xs">✓</span>
+                              <span className="text-accent font-extrabold text-xs">✓</span>
                               <span><strong>Barra de Progreso y Badges</strong>: Timeline dinámico con colores de entrada, descansos y comidas.</span>
                             </li>
                             <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-2">
-                              <span className="text-success-text font-extrabold text-xs">✓</span>
+                              <span className="text-accent font-extrabold text-xs">✓</span>
                               <span><strong>Auditoría de Ubicación GPS</strong>: Valida que el colaborador esté en sucursal al checar.</span>
                             </li>
                             <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-2">
-                              <span className="text-success-text font-extrabold text-xs">✓</span>
+                              <span className="text-accent font-extrabold text-xs">✓</span>
                               <span><strong>Checklist de Tareas Integrado</strong>: Lista de pendientes operativas del día directo en la app.</span>
                             </li>
                             <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-2">
-                              <span className="text-success-text font-extrabold text-xs">✓</span>
+                              <span className="text-accent font-extrabold text-xs">✓</span>
                               <span><strong>Academia LMS e Incidencias</strong>: Cursos de inducción y solicitud de vacaciones/permisos.</span>
                             </li>
                           </>
                         ) : (
                           <>
                             <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-2">
-                              <span className="text-success-text font-extrabold text-xs">✓</span>
+                              <span className="text-accent font-extrabold text-xs">✓</span>
                               <span><strong>Fichaje Básico de Turnos</strong>: Registro tradicional de entradas y salidas por PIN.</span>
                             </li>
-                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-400/80">
-                              <span className="text-danger-text font-extrabold text-xs">✗</span>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-3">
+                              <span className="text-navy-800 font-extrabold text-xs">✗</span>
                               <span className="line-through">Sin geolocalización (fichajes fuera de sucursal permitidos).</span>
                             </li>
-                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-400/80">
-                              <span className="text-danger-text font-extrabold text-xs">✗</span>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-3">
+                              <span className="text-navy-800 font-extrabold text-xs">✗</span>
                               <span className="line-through">Sin barra cronológica interactiva de colores de estado.</span>
                             </li>
-                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-400/80">
-                              <span className="text-danger-text font-extrabold text-xs">✗</span>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-text-3">
+                              <span className="text-navy-800 font-extrabold text-xs">✗</span>
                               <span className="line-through">Pestañas de Tareas, LMS y Herramientas bloqueadas.</span>
                             </li>
                           </>
@@ -619,16 +621,16 @@ export const SaaSLandingPage = () => {
                 </div>
               ) : (
                 /* SIMULACIÓN ESCRITORIO (BROWSER FRAME) PARA ATS Y ORGANIGRAMA */
-                <div className="relative w-full bg-white rounded-3xl border border-border/80 shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col min-h-[460px] transition-all animate-in fade-in duration-300">
+                <div className="relative w-full bg-white rounded-3xl border border-border/80 shadow-2xl shadow-navy-100/50 overflow-hidden flex flex-col min-h-[460px] transition-all animate-in fade-in duration-300">
                   {/* Top Browser Bar */}
                   <div className="bg-page/80 border-b border-border/60 px-4 py-3 flex items-center gap-3 shrink-0">
                     <div className="flex gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-danger-icon"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-warning-icon"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-success-icon"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-navy-800"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-navy-600"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-navy-100"></div>
                     </div>
-                    <div className="flex-1 max-w-sm mx-auto bg-page rounded-lg py-1 px-3 text-[10px] font-bold text-slate-400 flex items-center gap-1.5 shadow-inner">
-                      <Lock size={10} className="text-slate-400" />
+                    <div className="flex-1 max-w-sm mx-auto bg-page rounded-lg py-1 px-3 text-[10px] font-bold text-text-3 flex items-center gap-1.5 shadow-inner">
+                      <Lock size={10} className="text-text-3" />
                       <span>https://talent360.com.mx/app?module={activeTab === 'rrhh' ? 'rrhh' : 'ats'}</span>
                     </div>
                   </div>
@@ -645,15 +647,15 @@ export const SaaSLandingPage = () => {
                             onMouseLeave={() => setHoveredNodeId(null)}
                           >
                             <div className={`inline-block bg-white border-2 rounded-3xl p-4 text-center min-w-[210px] shadow-sm transition-all duration-300 relative z-10 ${
-                              hoveredNodeId === 1 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId !== null && (hoveredNodeId === 2 || hoveredNodeId === 3) ? 'border-success-text ring-2 ring-success-text/10' : 'border-warning-text bg-warning-bg/5'
+                              hoveredNodeId === 1 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId !== null && (hoveredNodeId === 2 || hoveredNodeId === 3) ? 'border-navy-600 ring-2 ring-focus-ring/10' : 'border-navy-100 bg-navy-50'
                             }`}>
                               <div className="mb-1.5">
-                                <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-warning-text/20 bg-warning-bg text-warning-text">
+                                <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-navy-100 bg-navy-50 text-navy-800">
                                   Dirección General (Nivel 1)
                                 </span>
                               </div>
                               <div className="font-black text-xs text-text-1 uppercase tracking-widest mb-0.5">ADMINISTRADOR GENERAL</div>
-                              <div className="text-[8px] font-bold text-slate-400 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Administración</div>
+                              <div className="text-[8px] font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Administración</div>
 
                               <div className="flex items-center gap-2 bg-page border border-border p-1.5 rounded-2xl">
                                 <div className="w-7 h-7 rounded-full bg-accent-soft text-accent font-black text-xs flex items-center justify-center flex-shrink-0">
@@ -661,13 +663,13 @@ export const SaaSLandingPage = () => {
                                 </div>
                                 <div className="text-left overflow-hidden">
                                   <div className="text-[10px] font-black text-text-1 truncate leading-tight">Francisco Vega</div>
-                                  <div className="text-[7.5px] font-medium text-slate-400 truncate">francisco@decorarte360.com</div>
+                                  <div className="text-[7.5px] font-medium text-text-3 truncate">francisco@decorarte360.com</div>
                                 </div>
                               </div>
                             </div>
 
                             {/* Vertical Connector Line */}
-                            <div className="w-0.5 h-6 bg-slate-300 mx-auto mt-0"></div>
+                            <div className="w-0.5 h-6 bg-navy-100 mx-auto mt-0"></div>
                           </li>
 
                           {/* Nivel 2: Hijas */}
@@ -679,15 +681,15 @@ export const SaaSLandingPage = () => {
                               onMouseLeave={() => setHoveredNodeId(null)}
                             >
                               <div className={`inline-block bg-white border-2 rounded-3xl p-4 text-center min-w-[210px] shadow-sm transition-all duration-300 relative z-10 ${
-                                hoveredNodeId === 2 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId === 1 ? 'border-accent ring-2 ring-focus-ring/10' : 'border-navy-300 bg-navy-50/5'
+                                hoveredNodeId === 2 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId === 1 ? 'border-accent ring-2 ring-focus-ring/10' : 'border-navy-100 bg-navy-50'
                               }`}>
                                 <div className="mb-1.5">
-                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-navy-300 bg-navy-50 text-accent">
+                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-navy-100 bg-navy-50 text-accent">
                                     Supervisión (Nivel 2)
                                   </span>
                                 </div>
                                 <div className="font-black text-xs text-text-1 uppercase tracking-widest mb-0.5">SUPERVISOR DE VENTAS</div>
-                                <div className="text-[8px] font-bold text-slate-400 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Ventas</div>
+                                <div className="text-[8px] font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Ventas</div>
 
                                 <div className="flex items-center gap-2 bg-page border border-border p-1.5 rounded-2xl">
                                   <div className="w-7 h-7 rounded-full bg-accent-soft text-accent font-black text-xs flex items-center justify-center flex-shrink-0">
@@ -695,7 +697,7 @@ export const SaaSLandingPage = () => {
                                   </div>
                                   <div className="text-left overflow-hidden">
                                     <div className="text-[10px] font-black text-text-1 truncate leading-tight">Liz Camacho</div>
-                                    <div className="text-[7.5px] font-medium text-slate-400 truncate">liz@decorarte360.com</div>
+                                    <div className="text-[7.5px] font-medium text-text-3 truncate">liz@decorarte360.com</div>
                                   </div>
                                 </div>
                               </div>
@@ -708,15 +710,15 @@ export const SaaSLandingPage = () => {
                               onMouseLeave={() => setHoveredNodeId(null)}
                             >
                               <div className={`inline-block bg-white border-2 rounded-3xl p-4 text-center min-w-[210px] shadow-sm transition-all duration-300 relative z-10 ${
-                                hoveredNodeId === 3 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId === 1 ? 'border-accent ring-2 ring-focus-ring/10' : 'border-success-text bg-success-bg/5'
+                                hoveredNodeId === 3 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId === 1 ? 'border-accent ring-2 ring-focus-ring/10' : 'border-navy-100 bg-navy-50'
                               }`}>
                                 <div className="mb-1.5">
-                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-success-text/20 bg-success-bg text-success-text">
+                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-navy-100 bg-navy-50 text-navy-800">
                                     Operaciones (Nivel 3)
                                   </span>
                                 </div>
                                 <div className="font-black text-xs text-text-1 uppercase tracking-widest mb-0.5">AYUDANTE GENERAL</div>
-                                <div className="text-[8px] font-bold text-slate-400 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Producción</div>
+                                <div className="text-[8px] font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Producción</div>
 
                                 <div className="flex items-center gap-2 bg-page border border-border p-1.5 rounded-2xl">
                                   <div className="w-7 h-7 rounded-full bg-accent-soft text-accent font-black text-xs flex items-center justify-center flex-shrink-0">
@@ -724,7 +726,7 @@ export const SaaSLandingPage = () => {
                                   </div>
                                   <div className="text-left overflow-hidden">
                                     <div className="text-[10px] font-black text-text-1 truncate leading-tight">Hiraym Castillo</div>
-                                    <div className="text-[7.5px] font-medium text-slate-400 truncate">hiraym@decorarte360.com</div>
+                                    <div className="text-[7.5px] font-medium text-text-3 truncate">hiraym@decorarte360.com</div>
                                   </div>
                                 </div>
                               </div>
@@ -738,12 +740,12 @@ export const SaaSLandingPage = () => {
                       <div className="w-full text-center flex flex-col justify-center min-w-[500px]">
                         <div className="flex justify-between items-center mb-4 px-2">
                           <span className="text-[10px] font-black uppercase tracking-wider text-accent">Tablero ATS (Vacantes)</span>
-                          <span className="text-[9px] font-bold text-slate-400">Puesto: Agente de Ventas</span>
+                          <span className="text-[9px] font-bold text-text-3">Puesto: Agente de Ventas</span>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                           {/* Col 1: Prospectos */}
                           <div className="flex flex-col bg-page/70 border border-border/50 rounded-2xl p-2.5">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
+                            <p className="text-[9px] font-black text-text-3 uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
                               <span>Prospecto</span>
                               <span className="bg-white text-text-3 font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
                                 {atsCandidates.filter(c => c.status === 'prospect').length}
@@ -755,15 +757,15 @@ export const SaaSLandingPage = () => {
                                   type="button"
                                   key={c.id}
                                   onClick={() => handleCandidateClick(c.id)}
-                                  className="w-full text-left bg-white border border-border/80 rounded-2xl p-3 shadow-sm hover:border-navy-300 hover:shadow-md transition-all active:scale-98"
+                                  className="w-full text-left bg-white border border-border/80 rounded-2xl p-3 shadow-sm hover:border-navy-600 hover:shadow-md transition-all active:scale-98"
                                 >
                                   <div className="flex justify-between items-start mb-1.5">
                                     <h5 className="text-[10.5px] font-black text-text-1 leading-none">{c.name}</h5>
                                     <span className="text-[7.5px] bg-page text-text-3 font-bold px-1.5 py-0.5 rounded-md">CV</span>
                                   </div>
-                                  <p className="text-[8px] text-slate-450 font-bold mb-2.5">{c.vacancy}</p>
+                                  <p className="text-[8px] text-text-3 font-bold mb-2.5">{c.vacancy}</p>
                                   <div className="flex items-center justify-between border-t border-border pt-2">
-                                    <span className="text-[7.5px] text-slate-400 font-medium">{c.time}</span>
+                                    <span className="text-[7.5px] text-text-3 font-medium">{c.time}</span>
                                     <span className="text-[8px] font-black text-accent flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
                                   </div>
                                 </button>
@@ -785,13 +787,13 @@ export const SaaSLandingPage = () => {
                                   type="button"
                                   key={c.id}
                                   onClick={() => handleCandidateClick(c.id)}
-                                  className="w-full text-left bg-white border border-border/80 rounded-2xl p-3 shadow-sm hover:border-navy-300 hover:shadow-md transition-all active:scale-98"
+                                  className="w-full text-left bg-white border border-border/80 rounded-2xl p-3 shadow-sm hover:border-navy-600 hover:shadow-md transition-all active:scale-98"
                                 >
                                   <div className="flex justify-between items-start mb-1.5">
                                     <h5 className="text-[10.5px] font-black text-text-1 leading-none">{c.name}</h5>
                                     <span className="text-[7.5px] bg-navy-50 text-accent font-bold px-1.5 py-0.5 rounded-md">Cita</span>
                                   </div>
-                                  <p className="text-[8px] text-slate-450 font-bold mb-2.5">{c.vacancy}</p>
+                                  <p className="text-[8px] text-text-3 font-bold mb-2.5">{c.vacancy}</p>
                                   <div className="flex items-center justify-between border-t border-border pt-2">
                                     <span className="text-[7.5px] text-accent font-bold">{c.time}</span>
                                     <span className="text-[8px] font-black text-accent flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
@@ -803,9 +805,9 @@ export const SaaSLandingPage = () => {
 
                           {/* Col 3: Contratados */}
                           <div className="flex flex-col bg-page/70 border border-border/50 rounded-2xl p-2.5">
-                            <p className="text-[9px] font-black text-success-text uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
+                            <p className="text-[9px] font-black text-accent uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
                               <span>Contratados</span>
-                              <span className="bg-white text-success-text font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
+                              <span className="bg-white text-accent font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
                                 {atsCandidates.filter(c => c.status === 'hired').length}
                               </span>
                             </p>
@@ -815,15 +817,15 @@ export const SaaSLandingPage = () => {
                                   type="button"
                                   key={c.id}
                                   onClick={() => handleCandidateClick(c.id)}
-                                  className="w-full text-left bg-white border border-l-2 border-l-success-text border-border/80 rounded-2xl p-3 shadow-sm hover:border-navy-300 hover:shadow-md transition-all active:scale-98"
+                                  className="w-full text-left bg-white border border-l-2 border-l-navy-600 border-border/80 rounded-2xl p-3 shadow-sm hover:border-navy-600 hover:shadow-md transition-all active:scale-98"
                                 >
                                   <div className="flex justify-between items-start mb-1.5">
                                     <h5 className="text-[10.5px] font-black text-text-1 leading-none">{c.name}</h5>
-                                    <span className="text-[7.5px] bg-success-bg text-success-text font-bold px-1.5 py-0.5 rounded-md">Contratado</span>
+                                    <span className="text-[7.5px] bg-navy-50 text-navy-800 font-bold px-1.5 py-0.5 rounded-md">Contratado</span>
                                   </div>
-                                  <p className="text-[8px] text-slate-450 font-bold mb-2.5">{c.vacancy}</p>
+                                  <p className="text-[8px] text-text-3 font-bold mb-2.5">{c.vacancy}</p>
                                   <div className="flex items-center justify-between border-t border-border pt-2">
-                                    <span className="text-[7.5px] text-success-text font-black">{c.time}</span>
+                                    <span className="text-[7.5px] text-accent font-black">{c.time}</span>
                                     <span className="text-[8px] font-black text-accent flex items-center gap-0.5">Reciclar <ChevronRight size={8} /></span>
                                   </div>
                                 </button>
@@ -845,7 +847,7 @@ export const SaaSLandingPage = () => {
                   onClick={() => {
                     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="px-6 py-3 bg-accent hover:bg-accent-hover text-white rounded-2xl font-black text-xs shadow-lg shadow-accent/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+                  className="px-6 py-3 bg-accent hover:bg-navy-800 text-white rounded-2xl font-black text-xs shadow-lg shadow-accent/20 active:scale-98 transition-all flex items-center justify-center gap-2"
                 >
                   Ver Planes y Precios <ChevronRight size={14} />
                 </button>
@@ -853,7 +855,7 @@ export const SaaSLandingPage = () => {
 
               {/* Selector de Pestañas Interactivas */}
               <div className="space-y-2.5 border-t border-border pt-6">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Explora las interfaces clave (Toca para interactuar)</p>
+                <p className="text-[9px] font-black text-text-3 uppercase tracking-widest px-1">Explora las interfaces clave (Toca para interactuar)</p>
                 <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory scroll-smooth">
                   <button
                     type="button"
@@ -865,7 +867,7 @@ export const SaaSLandingPage = () => {
                     </div>
                     <div>
                       <p className="text-xs font-black">Reloj Checador Premium V2</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">Asistencia con geocerca, biométricos y firma digital</p>
+                      <p className="text-[10px] text-text-3 font-semibold">Asistencia con geocerca, biométricos y firma digital</p>
                     </div>
                   </button>
 
@@ -879,7 +881,7 @@ export const SaaSLandingPage = () => {
                     </div>
                     <div>
                       <p className="text-xs font-black">Organigrama & Recursos Humanos</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">Visualización de personal y jerarquías relacionales</p>
+                      <p className="text-[10px] text-text-3 font-semibold">Visualización de personal y jerarquías relacionales</p>
                     </div>
                   </button>
 
@@ -893,7 +895,7 @@ export const SaaSLandingPage = () => {
                     </div>
                     <div>
                       <p className="text-xs font-black">Reclutamiento ATS</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">Tablero Kanban para el seguimiento de candidatos</p>
+                      <p className="text-[10px] text-text-3 font-semibold">Tablero Kanban para el seguimiento de candidatos</p>
                     </div>
                   </button>
                 </div>
@@ -916,21 +918,21 @@ export const SaaSLandingPage = () => {
             <h3 className="text-2xl font-black text-text-1 leading-tight">
               Prueba el Reloj Checador
             </h3>
-            <p className="text-xs text-text-3 dark:text-slate-400 font-semibold px-4 max-w-sm">
+            <p className="text-xs text-text-3 font-semibold px-4 max-w-sm">
               Experimenta el registro de asistencia en tiempo real. Cambia de versión para ver las diferencias.
             </p>
           </div>
 
           {/* Selector de versión + Botón de reinicio para móviles */}
           <div className="flex items-center gap-2 w-full max-w-[290px] justify-center">
-            <div className="flex p-1 bg-slate-150 rounded-2xl border border-border flex-1">
+            <div className="flex p-1 bg-navy-50 rounded-2xl border border-border flex-1">
               <button
                 type="button"
                 onClick={() => setSimulatedTier('free')}
                 className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
                   simulatedTier === 'free'
                     ? 'bg-white text-text-1 shadow-md'
-                    : 'text-slate-400 hover:text-text-2 bg-transparent'
+                    : 'text-text-3 hover:text-text-2 bg-transparent'
                 }`}
               >
                 <span>🔓</span> Básica
@@ -940,8 +942,8 @@ export const SaaSLandingPage = () => {
                 onClick={() => setSimulatedTier('pro')}
                 className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
                   simulatedTier === 'pro'
-                    ? 'bg-gradient-to-r from-accent to-accent text-white shadow-md'
-                    : 'text-slate-400 hover:text-text-2 bg-transparent'
+                    ? 'bg-accent text-white shadow-md'
+                    : 'text-text-3 hover:text-text-2 bg-transparent'
                 }`}
               >
                 <span>👑</span> Pro
@@ -961,13 +963,13 @@ export const SaaSLandingPage = () => {
 
           {/* SMARTPHONE FRAME (Perfectamente centrado en celulares) */}
           <div
-            className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0 transition-transform duration-300"
+            className="relative w-full max-w-[290px] border-8 border-brand-dark bg-brand-dark rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0 transition-transform duration-300"
             style={{ transform: `scale(${simSettings.scale / 100})`, transformOrigin: 'top center' }}
           >
             {/* Speaker & Notch */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-32 bg-slate-900 rounded-b-2xl z-55 flex items-center justify-center gap-1.5">
-              <div className="w-12 h-1 bg-slate-800 rounded-full"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700"></div>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-32 bg-brand-dark rounded-b-2xl z-55 flex items-center justify-center gap-1.5">
+              <div className="w-12 h-1 bg-navy-800 rounded-full"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-navy-800 border border-navy-600"></div>
             </div>
 
             <div className="flex-grow bg-white flex flex-col justify-between overflow-hidden select-none">
@@ -982,7 +984,7 @@ export const SaaSLandingPage = () => {
             </div>
 
             {/* iOS Home Indicator Bar */}
-            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-slate-800 rounded-full z-55"></div>
+            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-navy-800 rounded-full z-55"></div>
           </div>
         </div>
       </section>
@@ -997,13 +999,13 @@ export const SaaSLandingPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Card 1 */}
-            <div className="group bg-page border border-border/60 rounded-3xl overflow-hidden hover:border-navy-300 hover:shadow-xl transition-all duration-300">
-              <div className="aspect-video bg-slate-200 relative overflow-hidden flex items-center justify-center">
+            <div className="group bg-page border border-border/60 rounded-3xl overflow-hidden hover:border-navy-600 hover:shadow-xl transition-all duration-300">
+              <div className="aspect-video bg-navy-50 relative overflow-hidden flex items-center justify-center">
                 <div className="absolute inset-0 bg-accent/5 mix-blend-overlay group-hover:bg-accent/10 transition-colors"></div>
                 <div className="w-14 h-14 bg-white border border-border rounded-full flex items-center justify-center text-accent relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
                   <span className="text-xl ml-1">▶</span>
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-black text-6xl select-none tracking-widest opacity-35">
+                <div className="absolute inset-0 flex items-center justify-center text-navy-100 font-black text-6xl select-none tracking-widest opacity-35">
                   WIZARD
                 </div>
               </div>
@@ -1017,13 +1019,13 @@ export const SaaSLandingPage = () => {
             </div>
 
             {/* Card 2 */}
-            <div className="group bg-page border border-border/60 rounded-3xl overflow-hidden hover:border-navy-300 hover:shadow-xl transition-all duration-300">
-              <div className="aspect-video bg-slate-200 relative overflow-hidden flex items-center justify-center">
+            <div className="group bg-page border border-border/60 rounded-3xl overflow-hidden hover:border-navy-600 hover:shadow-xl transition-all duration-300">
+              <div className="aspect-video bg-navy-50 relative overflow-hidden flex items-center justify-center">
                 <div className="absolute inset-0 bg-accent/5 mix-blend-overlay group-hover:bg-accent/10 transition-colors"></div>
                 <div className="w-14 h-14 bg-white border border-border rounded-full flex items-center justify-center text-accent relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
                   <span className="text-xl ml-1">▶</span>
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-black text-6xl select-none tracking-widest opacity-35">
+                <div className="absolute inset-0 flex items-center justify-center text-navy-100 font-black text-6xl select-none tracking-widest opacity-35">
                   CLOCK
                 </div>
               </div>
@@ -1037,13 +1039,13 @@ export const SaaSLandingPage = () => {
             </div>
 
             {/* Card 3 */}
-            <div className="group bg-page border border-border/60 rounded-3xl overflow-hidden hover:border-navy-300 hover:shadow-xl transition-all duration-300">
-              <div className="aspect-video bg-slate-200 relative overflow-hidden flex items-center justify-center">
+            <div className="group bg-page border border-border/60 rounded-3xl overflow-hidden hover:border-navy-600 hover:shadow-xl transition-all duration-300">
+              <div className="aspect-video bg-navy-50 relative overflow-hidden flex items-center justify-center">
                 <div className="absolute inset-0 bg-accent/5 mix-blend-overlay group-hover:bg-accent/10 transition-colors"></div>
                 <div className="w-14 h-14 bg-white border border-border rounded-full flex items-center justify-center text-accent relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
                   <span className="text-xl ml-1">▶</span>
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-black text-6xl select-none tracking-widest opacity-35">
+                <div className="absolute inset-0 flex items-center justify-center text-navy-100 font-black text-6xl select-none tracking-widest opacity-35">
                   ATS
                 </div>
               </div>
@@ -1073,7 +1075,7 @@ export const SaaSLandingPage = () => {
             <button
               type="button"
               onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-              className="w-14 h-8 bg-slate-200 hover:bg-slate-300 rounded-full p-1 transition-all duration-300 relative focus:outline-none"
+              className="w-14 h-8 bg-navy-100 hover:bg-navy-600 rounded-full p-1 transition-all duration-300 relative focus:outline-none"
               aria-label="Alternar ciclo de facturación"
             >
               <div
@@ -1085,7 +1087,7 @@ export const SaaSLandingPage = () => {
               {/* El ahorro sale de las dos tarifas del servidor. Este "20%" estaba escrito a
                   mano y era falso para PRO, cuyo ahorro real es 17.2% ($29 → $24). */}
               {tarifario && tarifario.descuento_anual_maximo_pct > 0 && (
-                <span className="text-[9px] font-black text-white bg-success-icon px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                <span className="text-[9px] font-black text-white bg-accent px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
                   Ahorra hasta {tarifario.descuento_anual_maximo_pct}%
                 </span>
               )}
@@ -1095,36 +1097,36 @@ export const SaaSLandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
 
             {/* FREE PLAN CARD */}
-            <div className="bg-white border border-border/80 rounded-3xl p-8 flex flex-col hover:border-navy-300 hover:shadow-lg transition-all text-left">
+            <div className="bg-white border border-border/80 rounded-3xl p-8 flex flex-col hover:border-navy-600 hover:shadow-lg transition-all text-left">
               <h4 className="text-2xl font-black text-text-1 mb-2">Plan Gratuito</h4>
               <p className="text-text-3 text-sm mb-6 min-h-[40px]">Para micro-empresas y startups que buscan automatizar la asistencia y expediente sin costo.</p>
               <div className="mb-8 bg-page p-5 rounded-2xl border border-border/50 flex flex-col justify-center min-h-[106px]">
                 <div className="flex items-baseline gap-1">
                   <span className="text-5xl font-black text-text-1">$0</span>
-                  <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
-                  <span className="text-slate-400 font-bold">/mes</span>
+                  <span className="text-text-3 font-bold text-xs uppercase">MXN</span>
+                  <span className="text-text-3 font-bold">/mes</span>
                 </div>
-                <span className="text-[10px] text-slate-400 font-bold mt-1.5">Sin plazos forzosos, gratis para siempre</span>
+                <span className="text-[10px] text-text-3 font-bold mt-1.5">Sin plazos forzosos, gratis para siempre</span>
               </div>
               <ul className="space-y-3.5 mb-8 flex-1">
                 {/* El tope sale del tarifario del servidor: el backend caía a 5 y esta línea
                     anunciaba 10, sin que ninguno de los dos mandara sobre el otro. */}
-                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-success-text shrink-0" size={18}/> {planFreemium?.tope_colaboradores ? `Hasta ${planFreemium.tope_colaboradores} Colaboradores Activos` : 'Colaboradores Activos'}</li>
-                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-success-text shrink-0" size={18}/> Reloj Checador Básico (PIN, Web y Móvil)</li>
-                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-success-text shrink-0" size={18}/> Directorio Digital de Empleados y Puestos</li>
-                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-success-text shrink-0" size={18}/> Control de Entradas y Salidas en Tiempo Real</li>
-                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-success-text shrink-0" size={18}/> Opción de Desbloqueo PRO por Difusión Social</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={18}/> {planFreemium?.tope_colaboradores ? `Hasta ${planFreemium.tope_colaboradores} Colaboradores Activos` : 'Colaboradores Activos'}</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={18}/> Reloj Checador Básico (PIN, Web y Móvil)</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={18}/> Directorio Digital de Empleados y Puestos</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={18}/> Control de Entradas y Salidas en Tiempo Real</li>
+                <li className="flex items-start gap-3 text-text-2 text-xs font-semibold"><CheckCircle2 className="text-accent shrink-0" size={18}/> Opción de Desbloqueo PRO por Difusión Social</li>
               </ul>
               <button
                 onClick={() => handleBuy('Freemium')}
-                className="w-full font-bold py-3.5 bg-slate-950 text-white hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-98 text-center"
+                className="w-full font-bold py-3.5 bg-brand-dark text-white hover:bg-navy-800 rounded-xl transition-all shadow-sm active:scale-98 text-center"
               >
                 Comenzar Gratis
               </button>
             </div>
 
             {/* PROFESSIONAL PLAN CARD WITH SLIDER */}
-            <div className="bg-white border-2 border-accent rounded-3xl p-8 flex flex-col relative shadow-[0_10px_35px_rgba(37,99,235,0.08)] text-left transform md:-translate-y-4">
+            <div className="bg-white border-2 border-accent rounded-3xl p-8 flex flex-col relative shadow-[0_10px_35px_rgba(16,24,40,0.08)] text-left transform md:-translate-y-4">
               <div className="absolute top-0 right-8 -translate-y-1/2 bg-accent text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md flex items-center gap-1">
                 <Sparkles size={12} /> Plan Recomendado
               </div>
@@ -1141,12 +1143,12 @@ export const SaaSLandingPage = () => {
                     <span className="text-4xl font-black text-accent transition-all">
                       {cotizacionPro ? `$${pesos(billingCycle === 'yearly' ? cotizacionPro.equivalenteMensualAnual : cotizacionPro.totalMensual)}` : '—'}
                     </span>
-                    <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
-                    <span className="text-slate-400 text-xs font-bold">/mes</span>
+                    <span className="text-text-3 font-bold text-xs uppercase">MXN</span>
+                    <span className="text-text-3 text-xs font-bold">/mes</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-baseline text-xs border-t border-border/60 pt-2 mt-2">
-                  <span className="text-success-text font-bold">
+                  <span className="text-accent font-bold">
                     {billingCycle === 'yearly' ? 'Facturado anualmente:' : `Ahorra ${planPro?.descuento_anual_pct ?? 0}% en Plan Anual:`}
                   </span>
                   {/* EL MISMO número en los dos ciclos. Antes el anual valía $288 con el
@@ -1170,9 +1172,9 @@ export const SaaSLandingPage = () => {
                   step="1"
                   value={proEmployeesCount}
                   onChange={e => setProEmployeesCount(parseInt(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-focus-ring focus:outline-none"
+                  className="w-full h-2 bg-navy-100 rounded-lg appearance-none cursor-pointer accent-focus-ring focus:outline-none"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400 font-bold mt-1">
+                <div className="flex justify-between text-[10px] text-text-3 font-bold mt-1">
                   <span>6 colab.</span>
                   <span>25 colab.</span>
                   <span>50 colab.</span>
@@ -1188,14 +1190,14 @@ export const SaaSLandingPage = () => {
               </ul>
               <button
                 onClick={() => handleBuy('PRO')}
-                className="w-full bg-accent hover:bg-accent-hover text-white font-black py-4 rounded-xl transition-all shadow-md active:scale-98 text-center"
+                className="w-full bg-accent hover:bg-navy-800 text-white font-black py-4 rounded-xl transition-all shadow-md active:scale-98 text-center"
               >
                 Suscribirse Profesional
               </button>
             </div>
 
             {/* ENTERPRISE PLAN CARD */}
-            <div className="bg-white border border-border/80 rounded-3xl p-8 flex flex-col hover:border-navy-300 hover:shadow-lg transition-all text-left">
+            <div className="bg-white border border-border/80 rounded-3xl p-8 flex flex-col hover:border-navy-600 hover:shadow-lg transition-all text-left">
               <h4 className="text-2xl font-black text-text-1 mb-2">Plan Enterprise</h4>
               <p className="text-text-3 text-sm mb-6 min-h-[40px]">Suite HR & Legal integral para corporativos con cálculo de nómina y desarrollo de personal.</p>
 
@@ -1209,12 +1211,12 @@ export const SaaSLandingPage = () => {
                     <span className="text-4xl font-black text-text-1 transition-all">
                       {cotizacionEnterprise ? `$${pesos(billingCycle === 'yearly' ? cotizacionEnterprise.equivalenteMensualAnual : cotizacionEnterprise.totalMensual)}` : '—'}
                     </span>
-                    <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
-                    <span className="text-slate-400 text-xs font-bold">/mes</span>
+                    <span className="text-text-3 font-bold text-xs uppercase">MXN</span>
+                    <span className="text-text-3 text-xs font-bold">/mes</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-baseline text-xs border-t border-border/60 pt-2 mt-2">
-                  <span className="text-success-text font-bold">
+                  <span className="text-accent font-bold">
                     {billingCycle === 'yearly' ? 'Facturado anualmente:' : `Ahorra ${planEnterprise?.descuento_anual_pct ?? 0}% en Plan Anual:`}
                   </span>
                   <span className="text-text-2 font-bold whitespace-nowrap">
@@ -1236,7 +1238,7 @@ export const SaaSLandingPage = () => {
               </ul>
               <button
                 onClick={() => handleBuy('Enterprise')}
-                className="w-full font-bold py-3.5 bg-slate-900 text-white hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-98 text-center"
+                className="w-full font-bold py-3.5 bg-brand-dark text-white hover:bg-navy-800 rounded-xl transition-all shadow-sm active:scale-98 text-center"
               >
                 Aprovisionar Enterprise
               </button>
@@ -1254,7 +1256,7 @@ export const SaaSLandingPage = () => {
 
       {/* REGISTRATION STEP WIZARD MODAL */}
       {showCheckout && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/60 backdrop-blur-md animate-in fade-in overflow-y-auto">
           <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative text-text-1 my-auto border border-border animate-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
 
             {/* Header */}
@@ -1263,12 +1265,12 @@ export const SaaSLandingPage = () => {
                 <Building2 className="text-accent" size={22} />
                 <span className="font-extrabold text-text-1 text-base">Crear Cuenta Talent 360</span>
               </div>
-              <button onClick={() => setShowCheckout(false)} className="text-slate-400 hover:text-text-2 font-bold text-xl p-1 bg-slate-200/50 rounded-full w-7 h-7 flex items-center justify-center transition-colors">&times;</button>
+              <button onClick={() => setShowCheckout(false)} className="text-text-3 hover:text-text-2 font-bold text-xl p-1 bg-navy-50 rounded-full w-7 h-7 flex items-center justify-center transition-colors">&times;</button>
             </div>
 
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
               {error && (
-                <div className="mb-4 bg-danger-bg border border-danger-text/20 text-danger-text text-xs font-bold p-3 rounded-xl flex gap-1.5 items-start">
+                <div className="mb-4 bg-navy-50 border border-navy-100 text-navy-800 text-xs font-bold p-3 rounded-xl flex gap-1.5 items-start">
                   <span>⚠️</span> <span>{error}</span>
                 </div>
               )}
@@ -1276,17 +1278,17 @@ export const SaaSLandingPage = () => {
               {/* Progress Steps Indicator */}
               <div className="flex items-center justify-center gap-4 mb-6">
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${registrationStep === 1 ? 'bg-accent text-white' : 'bg-success-bg text-success-text'}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${registrationStep === 1 ? 'bg-accent text-white' : 'bg-navy-50 text-navy-800'}`}>
                     {registrationStep === 1 ? '1' : '✓'}
                   </div>
                   <span className={`text-xs font-bold ${registrationStep === 1 ? 'text-accent' : 'text-text-3'}`}>Identidad</span>
                 </div>
-                <div className="w-10 h-0.5 bg-slate-200"></div>
+                <div className="w-10 h-0.5 bg-navy-100"></div>
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${registrationStep === 2 ? 'bg-accent text-white' : 'bg-page text-slate-400'}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${registrationStep === 2 ? 'bg-accent text-white' : 'bg-page text-text-3'}`}>
                     2
                   </div>
-                  <span className={`text-xs font-bold ${registrationStep === 2 ? 'text-accent' : 'text-slate-400'}`}>Empresa</span>
+                  <span className={`text-xs font-bold ${registrationStep === 2 ? 'text-accent' : 'text-text-3'}`}>Empresa</span>
                 </div>
               </div>
 
@@ -1310,7 +1312,7 @@ export const SaaSLandingPage = () => {
                       {/* Divisor */}
                       <div className="relative flex py-2 items-center w-full max-w-xs mx-auto">
                         <div className="flex-grow border-t border-border"></div>
-                        <span className="flex-shrink mx-3 text-[10px] text-slate-400 font-black uppercase tracking-wider">o regístrate con tu correo</span>
+                        <span className="flex-shrink mx-3 text-[10px] text-text-3 font-black uppercase tracking-wider">o regístrate con tu correo</span>
                         <div className="flex-grow border-t border-border"></div>
                       </div>
 
@@ -1353,9 +1355,9 @@ export const SaaSLandingPage = () => {
                         </div>
 
                         {isEmailDuplicated && (
-                          <div className="bg-warning-bg border border-warning-text/20 rounded-xl p-3 text-xs text-warning-text space-y-2 mt-2">
+                          <div className="bg-navy-50 border border-navy-100 rounded-xl p-3 text-xs text-navy-800 space-y-2 mt-2">
                             <p className="font-bold flex items-center gap-1">
-                              <AlertCircle size={14} className="text-warning-text shrink-0" />
+                              <AlertCircle size={14} className="text-navy-600 shrink-0" />
                               Esta cuenta ya existe
                             </p>
                             <p className="text-[10px] text-text-3 font-medium leading-relaxed">
@@ -1364,7 +1366,7 @@ export const SaaSLandingPage = () => {
                             <button
                               type="button"
                               onClick={() => navigate(`/login?email=${encodeURIComponent(googleEmail)}`)}
-                              className="w-full bg-warning-text hover:bg-warning-text text-white font-black py-2 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1 shadow-sm"
+                              className="w-full bg-navy-800 hover:bg-navy-600 text-white font-black py-2 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1 shadow-sm"
                             >
                               <LogIn size={11} /> Iniciar Sesión Ahora
                             </button>
@@ -1374,7 +1376,7 @@ export const SaaSLandingPage = () => {
                         <button
                           type="submit"
                           disabled={isProcessing}
-                          className="w-full mt-2 py-3.5 bg-accent hover:bg-accent-hover text-white font-black rounded-2xl text-xs transition-all shadow-lg shadow-accent/10 flex items-center justify-center gap-1.5"
+                          className="w-full mt-2 py-3.5 bg-accent hover:bg-navy-800 text-white font-black rounded-2xl text-xs transition-all shadow-lg shadow-accent/10 flex items-center justify-center gap-1.5"
                         >
                           {isProcessing ? 'Procesando...' : 'Crear Cuenta y Continuar'}
                         </button>
@@ -1394,7 +1396,7 @@ export const SaaSLandingPage = () => {
                     </div>
                     <div className="text-left">
                       <p className="text-xs font-black text-text-1">{googleUser.name}</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">{googleUser.email}</p>
+                      <p className="text-[10px] text-text-3 font-semibold">{googleUser.email}</p>
                     </div>
                     {/* 2026-07-26 (auditoría en vivo): esta insignia decía siempre "Cuenta social",
                         incluso cuando el alta se hizo con correo y contraseña — afirmaba una
@@ -1510,7 +1512,7 @@ export const SaaSLandingPage = () => {
                   <button
                     type="submit"
                     disabled={isProcessing || !acceptedTerms}
-                    className={`w-full text-white font-black py-4 rounded-2xl shadow-lg shadow-accent/20 transition-all flex justify-center items-center gap-2 text-sm ${isProcessing || !acceptedTerms ? 'bg-slate-400 cursor-not-allowed opacity-60' : 'bg-accent hover:bg-accent-hover'}`}
+                    className={`w-full text-white font-black py-4 rounded-2xl shadow-lg shadow-accent/20 transition-all flex justify-center items-center gap-2 text-sm ${isProcessing || !acceptedTerms ? 'bg-text-3 cursor-not-allowed opacity-60' : 'bg-accent hover:bg-navy-800'}`}
                   >
                     {isProcessing ? (
                       <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Creando Instancia...</>
@@ -1526,7 +1528,7 @@ export const SaaSLandingPage = () => {
       )}
 
       {/* FOOTER GLOBAL CON ENLACES LEGALES */}
-      <footer className="bg-slate-950 text-slate-400 py-12 px-6 border-t border-slate-800">
+      <footer className="bg-brand-dark text-navy-100 py-12 px-6 border-t border-navy-800">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3 text-left">
             <div className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center text-white font-black text-xs">360</div>
@@ -1536,7 +1538,7 @@ export const SaaSLandingPage = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center items-center gap-6 text-xs font-bold text-slate-400">
+          <div className="flex flex-wrap justify-center items-center gap-6 text-xs font-bold text-navy-100">
             <button
               onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }}
               className="hover:text-white transition cursor-pointer"
@@ -1575,3 +1577,6 @@ export const SaaSLandingPage = () => {
     </div>
   );
 };
+
+/** The public home now uses the validated, backend-connected landing experience. */
+export const SaaSLandingPage = () => <SaaSLandingLab />;

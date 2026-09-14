@@ -29,4 +29,17 @@ describe('professional application shell', () => {
     expect(tokens.usage['sidebar-bg']).toBe('neutral.surface');
     expect(tokens.usage['sidebar-active-bg']).toBe('brand.50');
   });
+
+  it('uses vector icons instead of emoji in the desktop clock navigation', () => {
+    const clock = source('src/components/reloj/RelojVisual.tsx');
+    const navigation = clock.slice(
+      clock.indexOf('/* RENDER DESKTOP NAVIGATION VIEW */'),
+      clock.indexOf('/* --- CONTENT LAYOUTS --- */'),
+    );
+
+    expect(navigation).not.toMatch(emoji);
+    expect(navigation).toContain('<Clock size={15}');
+    expect(navigation).toContain('<GraduationCap size={15}');
+    expect(navigation).toContain('<User size={15}');
+  });
 });

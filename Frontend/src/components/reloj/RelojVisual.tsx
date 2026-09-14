@@ -3436,37 +3436,37 @@ export default function RelojVisual({
                 <nav className={`flex items-center gap-1 p-1 rounded-2xl border ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-page border-border'}`}>
                   <button
                     onClick={() => { setInnerTool(null); setPhoneTab('checador'); }}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'checador' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 ${phoneTab === 'checador' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
                   >
-                    ⏱️ Checador
+                    <Clock size={15} aria-hidden="true" /> Checador
                   </button>
                   {!isStoreClosed && (
                     <button
                       onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
                     >
-                      ✅ Tareas
+                      <CheckSquare size={15} aria-hidden="true" /> Tareas
                     </button>
                   )}
                   <button
                     onClick={() => { setInnerTool(null); setPhoneTab('academia'); }}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'academia' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 ${phoneTab === 'academia' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
                   >
-                    🎓 Academia
+                    <GraduationCap size={15} aria-hidden="true" /> Academia
                   </button>
                   {!isStoreClosed && (
                     <button
                       onClick={() => { setInnerTool(null); setPhoneTab('herramientas'); }}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
                     >
-                      🛠️ Herramientas
+                      <Settings size={15} aria-hidden="true" /> Herramientas
                     </button>
                   )}
                   <button
                     onClick={() => { setInnerTool(null); setPhoneTab('perfil'); }}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
                   >
-                    🪪 Perfil & Ajustes
+                    <User size={15} aria-hidden="true" /> Perfil &amp; Ajustes
                   </button>
                 </nav>
 
@@ -3477,7 +3477,7 @@ export default function RelojVisual({
                       onClick={() => initPaseLista(false)}
                       className="bg-accent hover:bg-accent-hover text-white font-extrabold text-[11px] px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md border-none outline-none select-none cursor-pointer active:scale-95 transition-all"
                     >
-                      <span>📋</span>
+                      <ClipboardList size={15} aria-hidden="true" />
                       <span>Pase Lista</span>
                     </button>
                   )}
@@ -3488,7 +3488,7 @@ export default function RelojVisual({
                     }`}
                     title="Auditoría Anónima"
                   >
-                    🛡️
+                    <ShieldAlert size={17} aria-hidden="true" />
                   </button>
 
                   <div className="relative" ref={profileMenuRef}>
@@ -3570,37 +3570,37 @@ export default function RelojVisual({
                 <nav className={`flex items-center gap-1 p-1 rounded-2xl border ${isDark ? 'bg-slate-950 border-slate-900' : 'bg-page border-border'}`}>
                   <button
                     onClick={() => { setInnerTool(null); setPhoneTab('checador'); }}
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'checador' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 ${phoneTab === 'checador' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
                   >
-                    ⏱️ Checador
+                    <Clock size={15} aria-hidden="true" /> Checador
                   </button>
                   {!isStoreClosed && (
                     <button
                       onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
-                      className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
                     >
-                      ✅ Tareas
+                      <CheckSquare size={15} aria-hidden="true" /> Tareas
                     </button>
                   )}
                   <button
                     onClick={() => { setInnerTool(null); setPhoneTab('academia'); }}
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'academia' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 ${phoneTab === 'academia' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
                   >
-                    🎓 Academia
+                    <GraduationCap size={15} aria-hidden="true" /> Academia
                   </button>
                   {!isStoreClosed && (
                     <button
                       onClick={() => { setInnerTool(null); setPhoneTab('herramientas'); }}
-                      className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
                     >
-                      🛠️ Herramientas
+                      <Settings size={15} aria-hidden="true" /> Herramientas
                     </button>
                   )}
                   <button
                     onClick={() => { setInnerTool(null); setPhoneTab('perfil'); }}
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-text-1 shadow-sm font-black') : 'text-text-3 hover:text-text-2'}`}
                   >
-                    🪪 Perfil & Ajustes
+                    <User size={15} aria-hidden="true" /> Perfil &amp; Ajustes
                   </button>
                 </nav>
               </div>

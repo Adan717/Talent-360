@@ -116,6 +116,7 @@ html, body {
   min-height: 100vh;
   background-color: var(--page);
   color: var(--text-1);
+  overflow-x: hidden;
 }
 
 ::selection {
@@ -181,7 +182,11 @@ html, body {
 }
 
 .talent-sidebar :focus-visible {
-  box-shadow: 0 0 0 2px var(--surface);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.talent-sidebar {
+  overscroll-behavior: contain;
 }
 
 @media (forced-colors: active) {

@@ -738,7 +738,7 @@ export function OrgVaultManager() {
 
         {/* Admin Navigation (Escritorio) */}
         {isAdmin && (
-          <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+          <div className="hidden sm:block sticky -top-5 -mt-5 -mx-5 xl:-top-6 xl:-mt-6 xl:-mx-6 px-5 xl:px-6 pt-4 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-5">
             <div className="bg-white rounded-3xl p-2 border border-border shadow-sm flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
               <button
                 onClick={() => setAdminTab('view')}

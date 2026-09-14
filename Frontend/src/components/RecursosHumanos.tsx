@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ImportarPlantilla } from './ImportarPlantilla';
 import { useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus, Calendar, AlertTriangle, CheckCircle2, Upload, Inbox } from 'lucide-react';
+import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus, Calendar, AlertTriangle, CheckCircle2, Upload, Inbox, BarChart3, Settings, Building2, KeyRound } from 'lucide-react';
 import PendientesDeMiEquipo from './PendientesDeMiEquipo';
 import axiosInstance from '../lib/axios';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
@@ -366,7 +366,7 @@ const UserCardItem: React.FC<UserCardItemProps> = ({
                     className="text-[10px] font-black px-2 py-0.5 rounded-full border bg-danger-bg text-danger-text border-danger-text/20"
                     title={`Reserva legal desde ${String(u.legal_hold_at).slice(0, 10)}: ${u.legal_hold_reason || 'sin motivo escrito'}. No la alcanza la purga de retención.`}
                   >
-                     ⚖ Reserva legal
+                     <span className="inline-flex items-center gap-1"><Scale size={11} /> Reserva legal</span>
                   </span>
                 )}
              </div>
@@ -547,7 +547,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       // backend) sobre el employee_id crudo (employees.id) que trae /store-opening/assignments.
       const match = assignments.find((a: any) => Number(a.resolved_user_id ?? a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
       if (match) {
-        return match.priority_order === 1 ? ' 🔑' : ' 🔑🔑';
+        return <span className="ml-1 inline-flex items-center gap-0.5 text-warning-text" title={match.priority_order === 1 ? 'Portador principal de llaves' : 'Portador alterno de llaves'}><KeyRound size={12} />{match.priority_order !== 1 && <span className="text-[8px] font-bold">2</span>}</span>;
       }
     } catch {}
     return '';
@@ -573,7 +573,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       if (roleUsers.length > 0) {
         const roleAssignments = assignments.filter((a: any) => a.is_active && a.can_open_store && roleUsers.some((u: any) => Number(u.employee_id ? u.employee_id : u.id) === Number(a.resolved_user_id ?? a.employee_id)));
         const minPriority = Math.min(...roleAssignments.map((a: any) => a.priority_order));
-        return minPriority === 1 ? ' 🔑' : ' 🔑🔑';
+        return <span className="ml-1 inline-flex items-center gap-0.5 text-warning-text" title={minPriority === 1 ? 'Puesto con portador principal de llaves' : 'Puesto con portador alterno de llaves'}><KeyRound size={12} />{minPriority !== 1 && <span className="text-[8px] font-bold">2</span>}</span>;
       }
     } catch {}
     return '';
@@ -1682,13 +1682,13 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
   const getLevelBadge = (level: number) => {
     switch (level) {
-      case 1: return { text: '👑 Dirección', bg: 'bg-warning-bg text-warning-text border-warning-text/20' };
-      case 2: return { text: '⭐ Jefatura', bg: 'bg-accent-soft text-navy-800 border-border' };
-      case 3: return { text: '📈 Supervisión', bg: 'bg-success-bg text-success-text border-success-text/20' };
-      case 4: return { text: '👤 Operativo', bg: 'bg-accent-soft text-navy-800 border-border' };
-      case 5: return { text: '🔧 Auxiliar', bg: 'bg-page text-text-1 border-border' };
-      case 6: return { text: '🚫 Inactivo/Apoyo', bg: 'bg-danger-bg text-danger-text border-danger-text/20' };
-      default: return { text: '👤 Puesto', bg: 'bg-page text-text-1 border-border' };
+      case 1: return { text: 'Dirección', bg: 'bg-warning-bg text-warning-text border-warning-text/20' };
+      case 2: return { text: 'Jefatura', bg: 'bg-accent-soft text-navy-800 border-border' };
+      case 3: return { text: 'Supervisión', bg: 'bg-success-bg text-success-text border-success-text/20' };
+      case 4: return { text: 'Operativo', bg: 'bg-accent-soft text-navy-800 border-border' };
+      case 5: return { text: 'Auxiliar', bg: 'bg-page text-text-1 border-border' };
+      case 6: return { text: 'Inactivo / apoyo', bg: 'bg-danger-bg text-danger-text border-danger-text/20' };
+      default: return { text: 'Puesto', bg: 'bg-page text-text-1 border-border' };
     }
   };
 
@@ -1829,7 +1829,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
       {/* HEADER RRHH (Escritorio) */}
       {!readOnly && (
-        <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+        <div className="hidden sm:block sticky -top-5 -mt-5 -mx-5 xl:-top-6 xl:-mt-6 xl:-mx-6 px-5 xl:px-6 pt-4 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-5">
           <div className="bg-white rounded-3xl p-2 shadow-sm border border-border">
             {/* TABS */}
             <div className="flex items-center gap-2 bg-page p-1.5 rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
@@ -2622,7 +2622,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
                                                   // Formatear el mensaje
                                                   const inviteUrl = `${getQrOrigin(qrIpOverride)}/invite?pin=${editingUser.pin_code}`;
-                                                  const message = `¡Hola, ${editingUser.name}! 👋\n\nTe damos la bienvenida a *Talent 360* de parte de tu empresa. 🏢\n\nA partir de hoy registrarás tu asistencia y verás tus tareas desde tu celular. Para activar tu Reloj Checador PWA en tu móvil, haz clic en el siguiente enlace:\n\n🔗 ${inviteUrl}\n\n🔑 Tu PIN temporal de acceso es: *${editingUser.pin_code}*\n\n¡Mucho éxito en tu primer día! 🚀`;
+                                                  const message = `Hola, ${editingUser.name}.\n\nTe damos la bienvenida a *Talent 360* de parte de tu empresa.\n\nA partir de hoy registrarás tu asistencia y verás tus tareas desde tu celular. Para activar tu Reloj Checador PWA, abre este enlace:\n\n${inviteUrl}\n\nTu PIN temporal de acceso es: *${editingUser.pin_code}*\n\nTe deseamos mucho éxito en tu primer día.`;
 
                                                   const waUrl = `https://wa.me/${editingUser.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
                                                   window.open(waUrl, '_blank');
@@ -2639,7 +2639,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                          <div className="p-3 bg-warning-bg border border-warning-text/80 rounded-xl text-left">
                                            <div className="flex items-center gap-1.5 text-warning-text font-bold text-[10px] sm:text-xs mb-1">
                                              <Network size={14} className="text-warning-text" />
-                                             <span>🔌 Desarrollo Local: Configuración de QR</span>
+                                             <span>Desarrollo local: configuración de QR</span>
                                            </div>
                                            <p className="text-[9px] sm:text-[10px] text-warning-text leading-relaxed mb-2">
                                              Al desarrollar localmente, el celular no puede acceder a <code className="bg-warning-bg px-1 rounded font-mono text-[9px]">localhost</code>. Ingresa la dirección IP local de tu PC (ej: <code className="bg-warning-bg px-1 rounded font-mono text-[9px]">192.168.1.75:5173</code>) para que tu cel pueda abrirlo:
@@ -2849,7 +2849,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
                                     return (
                                        <div className="mt-2 p-3 rounded-xl bg-warning-bg border border-warning-text/20 flex items-start gap-2.5">
-                                          <span className="text-base leading-none mt-0.5">👤</span>
+                                          <User size={16} className="text-warning-text shrink-0 mt-0.5" />
                                           <div className="flex-1">
                                              <p className="text-[11px] font-black text-warning-text leading-snug">
                                                 Este puesto tiene personas a cargo ({aCargo.map((r: any) => r.name).join(', ')}).
@@ -3055,7 +3055,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                       : 'text-text-3 hover:text-text-1'
                   }`}
                 >
-                  🌳 Árbol Conectado
+                  <Network size={15} /> Árbol conectado
                 </button>
                 <button
                   onClick={() => setOrgViewMode('levels')}
@@ -3065,7 +3065,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                       : 'text-text-3 hover:text-text-1'
                   }`}
                 >
-                  📊 Carriles de Mando
+                  <BarChart3 size={15} /> Carriles de mando
                 </button>
               </div>
             </div>
@@ -3326,7 +3326,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                       <p className="text-sm text-text-3">Editando reglas para {jobRoles.find(r => r.id === selectedRolePolicy.job_role_id)?.name}</p>
                     </div>
                     <button onClick={saveRolePolicy} className="bg-success-icon hover:bg-success-text text-white px-5 py-2 rounded-xl font-bold transition-colors shadow-md flex items-center gap-2">
-                      <span>💾</span> Guardar Cambios
+                      <Save size={16} /> Guardar Cambios
                     </button>
                   </div>
 
@@ -3523,24 +3523,24 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                         {/* Selector colapsable por Giro de Empresa */}
                         <details className="group">
                            <summary className="text-xs font-bold text-accent cursor-pointer hover:text-navy-800 select-none flex items-center gap-1">
-                              <span>⚙️ Personalizar o explorar catálogo de personajes por Giro de Empresa...</span>
+                              <span className="inline-flex items-center gap-1.5"><Settings size={14} /> Personalizar o explorar catálogo por giro de empresa</span>
                            </summary>
                            <div className="mt-3 pt-3 border-t border-border">
                               <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 no-scrollbar">
                                  {[
-                                   { id: 'decorarte', label: '🎨 Decorarte 360' },
-                                   { id: 'automotriz', label: '🚗 Automotriz / Mecánica' },
-                                   { id: 'legal', label: '⚖️ Jurídico & Legal' },
-                                   { id: 'salud', label: '🏥 Salud & Clínicas' },
-                                   { id: 'construccion', label: '🏗️ Construcción & Obra' },
-                                   { id: 'servicios', label: '⚡ Servicios & Mantenimiento' },
-                                   { id: 'educacion', label: '🎓 Educación & Colegios' },
-                                   { id: 'belleza', label: '💇 Estética & Spa' },
-                                   { id: 'retail', label: '🏪 Retail & Tiendas' },
-                                   { id: 'oficina', label: '🏢 Oficina & Corp' },
-                                   { id: 'tecnologia', label: '💻 Tecnología' },
-                                   { id: 'restaurante', label: '🍽️ Restaurantes' },
-                                   { id: 'all', label: '🌐 Todos' },
+                                   { id: 'decorarte', label: 'Decorarte 360' },
+                                   { id: 'automotriz', label: 'Automotriz / Mecánica' },
+                                   { id: 'legal', label: 'Jurídico & Legal' },
+                                   { id: 'salud', label: 'Salud & Clínicas' },
+                                   { id: 'construccion', label: 'Construcción & Obra' },
+                                   { id: 'servicios', label: 'Servicios & Mantenimiento' },
+                                   { id: 'educacion', label: 'Educación & Colegios' },
+                                   { id: 'belleza', label: 'Estética & Spa' },
+                                   { id: 'retail', label: 'Retail & Tiendas' },
+                                   { id: 'oficina', label: 'Oficina & Corp' },
+                                   { id: 'tecnologia', label: 'Tecnología' },
+                                   { id: 'restaurante', label: 'Restaurantes' },
+                                   { id: 'all', label: 'Todos' },
                                  ].map((cat) => (
                                     <button
                                       key={cat.id}
@@ -3638,7 +3638,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                           }`}
                                         >
                                            {area}
-                                           {isSelected && <span className="text-[10px] font-bold">✓</span>}
+                                           {isSelected && <CheckCircle2 size={11} />}
                                         </button>
 
                                         <button
@@ -3690,7 +3690,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                           atributo del puesto (su rango), no una conexión entre dos puestos. */}
                       <div className="col-span-1 sm:col-span-2 flex items-start gap-2 bg-navy-50 border border-border rounded-xl px-4 py-3 text-xs text-accent font-semibold">
                          <Network size={16} className="shrink-0 mt-0.5" />
-                         <span>Las relaciones de jerarquía ("Reporta A" y la posición en el árbol visual) ahora se configuran arrastrando una línea entre dos puestos directamente en el organigrama interactivo, en la pestaña 🌳 Árbol Conectado.</span>
+                         <span>Las relaciones de jerarquía ("Reporta A" y la posición en el árbol visual) se configuran arrastrando una línea entre dos puestos en la pestaña Árbol conectado.</span>
                       </div>
                        <div className="col-span-1 sm:col-span-2">
                            <label className="block text-sm font-bold text-text-2 mb-2">Nivel de Mando / Rango de Autoridad</label>
@@ -3997,7 +3997,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                   <div>
                     <h4 className="text-[11px] font-black text-text-3 uppercase tracking-widest mb-2">Puesto al que Reporta (Jefe Directo)</h4>
                     <div className="flex items-center gap-2 text-sm font-bold text-text-2 dark:text-slate-300">
-                      <span className="p-1 rounded bg-page dark:bg-slate-800 text-accent">🏢</span>
+                      <span className="p-1 rounded bg-page dark:bg-slate-800 text-accent"><Building2 size={15} /></span>
                       {jobRoles.find(r => r.id === selectedRoleForDrawer.org_parent_role_id)?.name || 'Directores / Asamblea'}
                     </div>
                   </div>
@@ -4005,7 +4005,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                   {selectedRoleForDrawer.manual_name ? (
                     <div className="bg-success-bg/60 dark:bg-success-text/20 border border-success-text/20 dark:border-success-text p-5 rounded-2xl">
                       <h4 className="text-xs font-black text-success-text dark:text-emerald-300 flex items-center gap-2 mb-2">
-                        <span>📄</span> Protocolo Documental Asociado
+                        <FileText size={15} /> Protocolo Documental Asociado
                       </h4>
                       <p className="text-[11px] text-text-3 dark:text-text-3 mb-4 truncate">
                         Archivo: {selectedRoleForDrawer.manual_name}

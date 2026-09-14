@@ -305,7 +305,7 @@ export const FacturacionManager = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-page overflow-hidden">
       {/* Encabezado Principal (Escritorio) */}
-      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+      <div className="hidden sm:block sticky -top-5 -mt-5 -mx-5 xl:-top-6 xl:-mt-6 xl:-mx-6 px-5 xl:px-6 pt-4 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-5">
         <div className="bg-white rounded-3xl p-6 border border-border shadow-sm flex justify-between items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-success-bg text-success-text rounded-2xl border border-success-text/20 shadow-inner">
@@ -555,8 +555,8 @@ export const FacturacionManager = () => {
                 >
                   Sincronizar y Subir al SAT
                 </button>
-                <p className="text-[10px] text-slate-400 font-medium text-center">
-                  🔐 Las llaves privadas se almacenan encriptadas de extremo a extremo.
+                <p className="text-[10px] text-slate-400 font-medium text-center inline-flex items-center justify-center gap-1.5">
+                  <ShieldCheck size={12} /> Las llaves privadas se almacenan encriptadas de extremo a extremo.
                 </p>
               </div>
             </div>
@@ -703,16 +703,16 @@ export const FacturacionManager = () => {
                         </td>
                         <td className="py-4 px-6">
                           {emp.approval_status === 'approved_by_admin' ? (
-                            <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-extrabold uppercase rounded-full border border-success-text/50">
-                              🟢 Autorizada
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-extrabold uppercase rounded-full border border-success-text/50">
+                              <CheckCircle2 size={11} /> Autorizada
                             </span>
                           ) : emp.approval_status === 'approved_by_employee' || emp.approval_status === 'finalized' ? (
-                            <span className="px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-extrabold uppercase rounded-full border border-border/50">
-                              🔵 Firmada · falta autorizar
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-extrabold uppercase rounded-full border border-border/50">
+                              <FileText size={11} /> Firmada · falta autorizar
                             </span>
                           ) : (
-                            <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-[10px] font-extrabold uppercase rounded-full border border-warning-text/50">
-                              🟡 Sin firma del colaborador
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-warning-bg text-warning-text text-[10px] font-extrabold uppercase rounded-full border border-warning-text/50">
+                              <Clock size={11} /> Sin firma del colaborador
                             </span>
                           )}
                         </td>

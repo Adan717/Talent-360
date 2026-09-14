@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Clock, Lock, Brain, Bot, Rocket, Plus, X, Camera, Hash, FileText, Search, LayoutList, Workflow, Armchair, Mic, Check, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { Settings, Clock, Lock, Brain, Bot, Rocket, Plus, X, Camera, Hash, FileText, Search, LayoutList, Workflow, Armchair, Mic, Check, ChevronRight, ChevronLeft, Sparkles, Briefcase, ListFilter, Gauge, ShieldCheck, AlertTriangle, CheckCircle2, GraduationCap, ClipboardList, Trash2 } from 'lucide-react';
 import { MobileModuleBottomDock } from '../common/MobileModuleBottomDock';
 import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, Routine, ProcedureStep } from '../../store/useTaskStore';
@@ -416,7 +416,7 @@ export function PanelTareasRutinas() {
     return (
         <div className="max-w-7xl mx-auto space-y-6 font-sans pb-24 sm:pb-6">
               {/* Tarjeta Superior: Menú de Pestañas (Escritorio) */}
-              <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+              <div className="hidden sm:block sticky -top-5 -mt-5 -mx-5 xl:-top-6 xl:-mt-6 xl:-mx-6 px-5 xl:px-6 pt-4 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-5">
                   <div className="bg-white rounded-3xl p-2 shadow-sm border border-border">
                       <div className="flex items-center gap-2 bg-page p-1.5 rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
                           <button
@@ -547,16 +547,17 @@ export function PanelTareasRutinas() {
 
                             {/* Selector de Puesto / Rol */}
                             <div className="relative">
+                                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-text-3 pointer-events-none" size={14} />
                                 <select
                                     value={selectedRoleFilter}
                                     onChange={(e) => setSelectedRoleFilter(e.target.value)}
-                                    className="pl-3 pr-8 py-1.5 bg-white border border-border rounded-xl text-xs font-bold text-text-2 focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                                    className="pl-9 pr-8 py-1.5 bg-white border border-border rounded-xl text-xs font-bold text-text-2 focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent outline-none transition-all appearance-none cursor-pointer shadow-sm"
                                 >
-                                    <option value="all">💼 Todos los Puestos</option>
-                                    <option value="pool">🌐 Bolsa de Trabajo (Pool)</option>
+                                    <option value="all">Todos los puestos</option>
+                                    <option value="pool">Bolsa de trabajo (pool)</option>
                                     {globalRoles?.map((r: any) => (
                                         <option key={r.id} value={r.id}>
-                                            👤 {r.name}
+                                            {r.name}
                                         </option>
                                     ))}
                                 </select>
@@ -565,14 +566,15 @@ export function PanelTareasRutinas() {
 
                             {/* Selector de Estado de Validación */}
                             <div className="relative">
+                                <ListFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-text-3 pointer-events-none" size={14} />
                                 <select
                                     value={selectedStatusFilter}
                                     onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                                    className="pl-3 pr-8 py-1.5 bg-white border border-border rounded-xl text-xs font-bold text-text-2 focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                                    className="pl-9 pr-8 py-1.5 bg-white border border-border rounded-xl text-xs font-bold text-text-2 focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent outline-none transition-all appearance-none cursor-pointer shadow-sm"
                                 >
-                                    <option value="all">📝 Todos los Estados</option>
-                                    <option value="validated">✓ Validadas</option>
-                                    <option value="pending">⚠️ Pendientes de revisión</option>
+                                    <option value="all">Todos los estados</option>
+                                    <option value="validated">Validadas</option>
+                                    <option value="pending">Pendientes de revisión</option>
                                 </select>
                                 <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▼</div>
                             </div>
@@ -627,24 +629,24 @@ export function PanelTareasRutinas() {
                                     )}
                                     {t.validationMode === 'auto' ? (
                                         <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-bold rounded-md flex items-center gap-1">
-                                            ⚡ Auto-Aprobación
+                                            <Gauge size={12} /> Auto-aprobación
                                         </span>
                                     ) : t.validationMode === 'dynamic' ? (
                                         <span className="px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-bold rounded-md flex items-center gap-1">
-                                            📊 Supervisión Dinámica
+                                            <ShieldCheck size={12} /> Supervisión dinámica
                                         </span>
                                     ) : (
                                         <span className="px-2.5 py-1 bg-page text-text-2 text-[10px] font-bold rounded-md flex items-center gap-1">
-                                            🔒 Supervisión Forzada
+                                            <Lock size={12} /> Supervisión forzada
                                         </span>
                                     )}
                                     {t.is_validated ? (
                                         <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-bold rounded-md flex items-center gap-1 border border-success-text/50">
-                                            ✓ Validada
+                                            <CheckCircle2 size={12} /> Validada
                                         </span>
                                     ) : (
                                         <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-[10px] font-bold rounded-md flex items-center gap-1 border border-warning-text/50">
-                                            ⚠️ Pendiente
+                                            <AlertTriangle size={12} /> Pendiente
                                         </span>
                                     )}
                                 </div>
@@ -867,9 +869,9 @@ export function PanelTareasRutinas() {
                                                     onChange={e => setNewTaskExecutorRoleId(Number(e.target.value))}
                                                     className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm bg-white"
                                                 >
-                                                    <option value={0}>🌐 Bolsa de Trabajo (Pool General)</option>
+                                                    <option value={0}>Bolsa de trabajo (pool general)</option>
                                                     {globalRoles?.map((r: any) => (
-                                                        <option key={r.id} value={r.id}>👤 {r.name}</option>
+                                                        <option key={r.id} value={r.id}>{r.name}</option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -991,7 +993,7 @@ export function PanelTareasRutinas() {
                                                                 onClick={() => setNewTaskAiReferenceImages(prev => prev.filter((_, i) => i !== idx))}
                                                                 className="absolute top-0 right-0 w-4 h-4 bg-danger-text text-white rounded-bl-md flex items-center justify-center text-[9px] border-none cursor-pointer"
                                                             >
-                                                                ✕
+                                                                <X size={11} />
                                                             </button>
                                                         </div>
                                                     ))}
@@ -1056,7 +1058,7 @@ export function PanelTareasRutinas() {
 
                                         {/* Vincular con lección de la Academia: muestra el video antes de que el colaborador empiece */}
                                         <div className="p-4 sm:p-5 bg-page rounded-2xl border border-border">
-                                            <label className="text-sm font-bold text-text-1 mb-2 flex items-center gap-2">🎓 Lección de la Academia (opcional)</label>
+                                            <label className="text-sm font-bold text-text-1 mb-2 flex items-center gap-2"><GraduationCap size={18} className="text-accent" /> Lección de la Academia (opcional)</label>
                                             <select
                                                 value={newTaskAcademyLessonId}
                                                 onChange={e => setNewTaskAcademyLessonId(e.target.value ? Number(e.target.value) : '')}
@@ -1077,7 +1079,7 @@ export function PanelTareasRutinas() {
                                         {/* Pasos del Proceso (SOP) */}
                                         <div className="bg-page p-4 sm:p-6 rounded-2xl border border-border space-y-4">
                                             <div className="flex justify-between items-center border-b border-border pb-2">
-                                                <label className="text-sm font-bold text-text-1 flex items-center gap-2">📋 Pasos del Proceso (SOP)</label>
+                                                <label className="text-sm font-bold text-text-1 flex items-center gap-2"><ClipboardList size={18} className="text-accent" /> Pasos del Proceso (SOP)</label>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -1125,7 +1127,7 @@ export function PanelTareasRutinas() {
                                                                     }}
                                                                     className="text-slate-400 hover:text-danger-text transition-colors"
                                                                 >
-                                                                    🗑️
+                                                                    <Trash2 size={15} />
                                                                 </button>
                                                             </div>
                                                             <textarea
@@ -1147,7 +1149,7 @@ export function PanelTareasRutinas() {
                                         {/* Checklist de Validación */}
                                         <div className="bg-page p-4 sm:p-6 rounded-2xl border border-border space-y-4">
                                             <div className="flex justify-between items-center border-b border-border pb-2">
-                                                <label className="text-sm font-bold text-text-1 flex items-center gap-2">✅ Checklist de Validación</label>
+                                                <label className="text-sm font-bold text-text-1 flex items-center gap-2"><CheckCircle2 size={18} className="text-success-text" /> Checklist de Validación</label>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -1185,7 +1187,7 @@ export function PanelTareasRutinas() {
                                                                 }}
                                                                 className="text-slate-400 hover:text-danger-text transition-colors"
                                                             >
-                                                                🗑️
+                                                                <Trash2 size={15} />
                                                             </button>
                                                         </div>
                                                     ))}

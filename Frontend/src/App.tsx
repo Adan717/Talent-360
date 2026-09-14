@@ -475,25 +475,25 @@ function MainLayout() {
       {/* SIDEBAR LATERAL (SAAS LAYOUT RESPONSIVO) */}
       <aside className={`
         talent-sidebar fixed lg:static inset-y-0 left-0 z-50
-        bg-usage-sidebar-bg text-usage-sidebar-text border-r border-navy-700 transition-all duration-300 flex flex-col
-        ${isSidebarOpen ? 'w-64' : 'w-20'}
+        bg-usage-sidebar-bg text-usage-sidebar-text border-r border-border transition-all duration-300 flex flex-col overflow-x-hidden
+        ${isSidebarOpen ? 'w-64' : 'w-[72px]'}
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Header Sidebar */}
-        <div className="min-h-20 py-3 flex flex-col justify-center px-4 border-b border-navy-700 relative">
+        <div className="min-h-[72px] py-3 flex flex-col justify-center px-3 border-b border-border relative">
           <div className={`flex items-start gap-3 overflow-hidden ${!isSidebarOpen && 'justify-center w-full'}`}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 overflow-hidden">
               {systemSettings?.company_logo ? (
                 <img src={systemSettings.company_logo} alt="Logo" className="w-full h-full object-contain p-0.5 bg-white" />
               ) : (
-                <TalentLogo className="w-10 h-10 text-usage-logo-on-dark" />
+                <TalentLogo className="w-10 h-10 text-usage-logo-on-light" />
               )}
             </div>
             {isSidebarOpen && (
               <div className="flex flex-col overflow-hidden text-left">
                 <div className="flex items-center">
-                  <h1 className="text-lg font-bold text-white tracking-tight whitespace-nowrap leading-none">
-                    Talent <span className="text-white">360</span>
+                  <h1 className="text-lg font-bold text-brand-dark tracking-tight whitespace-nowrap leading-none">
+                    Talent <span className="text-accent">360</span>
                   </h1>
                 </div>
               </div>
@@ -502,7 +502,7 @@ function MainLayout() {
           {/* Botón Cerrar en Móviles */}
           <button
             aria-label="Cerrar menú"
-            className="lg:hidden absolute right-4 top-1/2 -translate-y-1/2 p-2 text-navy-100 hover:text-white"
+            className="lg:hidden absolute right-4 top-1/2 -translate-y-1/2 p-2 text-text-2 hover:text-brand-dark"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             <X size={20} />
@@ -510,10 +510,12 @@ function MainLayout() {
         </div>
 
         {/* Scrollable Navigation */}
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
-          <p className={`text-[10px] font-bold text-navy-200 uppercase tracking-widest mb-3 px-2 ${!isSidebarOpen && 'text-center'}`}>
-            {isSidebarOpen ? 'Módulos' : 'Apps'}
-          </p>
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 px-2.5 space-y-1 scrollbar-none">
+          {isSidebarOpen && (
+            <p className="text-[10px] font-bold text-text-3 uppercase tracking-widest mb-2 px-2.5">
+              Módulos
+            </p>
+          )}
 
           {visibleModules.map(mod => {
             const isActive = activeModule === mod.id;
@@ -531,18 +533,18 @@ function MainLayout() {
                   }
                 }}
                 className={`
-                  w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group relative
+                  w-full min-w-0 flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all duration-200 group relative
                   ${isActive
-                    ? 'bg-usage-sidebar-active-bg text-white shadow-sm'
-                    : 'text-navy-100 hover:bg-navy-800 hover:text-white'
+                    ? 'bg-usage-sidebar-active-bg text-navy-800'
+                    : 'text-text-2 hover:bg-page hover:text-brand-dark'
                   }
                   ${!hasPermission ? 'opacity-60 hover:opacity-80' : ''}
                 `}
                 title={!isSidebarOpen ? mod.title : undefined}
               >
                 <div className={`
-                  w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors
-                  ${isActive ? 'text-white' : (hasPermission ? 'text-navy-100' : 'text-navy-200')}
+                  w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors
+                  ${isActive ? 'bg-white text-accent shadow-sm' : (hasPermission ? 'text-text-2 group-hover:text-accent' : 'text-text-3')}
                 `}>
                   {hasPermission ? mod.icon : <Lock size={18} />}
                 </div>
@@ -550,7 +552,7 @@ function MainLayout() {
                 {isSidebarOpen && (
                   <div className="min-w-0 flex-1 pr-2 text-left">
                     <span className={`block truncate text-sm font-semibold transition-colors
-                      ${isActive ? 'text-white' : 'text-navy-100 group-hover:text-white'}
+                      ${isActive ? 'text-navy-800' : 'text-text-2 group-hover:text-brand-dark'}
                     `}>
                       {mod.title}
                     </span>
@@ -558,7 +560,7 @@ function MainLayout() {
                 )}
                 {isActive && isSidebarOpen && (
                   <div
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full bg-navy-300"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-7 rounded-r-full bg-accent"
                   />
                 )}
               </button>
@@ -567,11 +569,11 @@ function MainLayout() {
         </div>
 
         {/* Footer Sidebar (Collapse Toggle) */}
-        <div className="p-4 border-t border-navy-700 hidden lg:flex justify-end">
+        <div className="p-3 border-t border-border hidden lg:flex justify-end">
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             aria-label={isSidebarOpen ? "Contraer menú" : "Expandir menú"}
-            className="p-2 rounded-lg text-navy-100 hover:text-white hover:bg-navy-800 transition-colors"
+            className="p-2 rounded-lg text-text-3 hover:text-accent hover:bg-navy-50 transition-colors"
           >
             <ChevronLeft size={20} className={`transition-transform duration-300 ${!isSidebarOpen && 'rotate-180'}`} />
           </button>
@@ -583,7 +585,7 @@ function MainLayout() {
         {/* Top Navbar */}
         <header className="bg-white border-b border-border shadow-sm relative z-30 flex-shrink-0">
           {/* Unified Responsive Header */}
-          <div className="h-20 flex items-center justify-between px-4 lg:px-8">
+          <div className="h-[72px] flex items-center justify-between px-3 sm:px-4 lg:px-6">
             {/* Left Section: Hamburger + Module Icon + Title & Description */}
             <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
               {/* Hamburger Button (visible on mobile and tablet < lg - larger size for accessibility) */}
@@ -615,18 +617,18 @@ function MainLayout() {
 
               {/* Active Module Icon (Pure colored icon, no background box, extra large focal point) */}
               {activeModuleData?.icon && (
-                <div className={`text-accent shrink-0 flex items-center justify-center [&>svg]:w-[36px] [&>svg]:h-[36px] sm:[&>svg]:w-[48px] sm:[&>svg]:h-[48px] lg:[&>svg]:w-[56px] lg:[&>svg]:h-[56px]`}>
+                <div className={`text-accent shrink-0 flex items-center justify-center [&>svg]:w-7 [&>svg]:h-7 sm:[&>svg]:w-9 sm:[&>svg]:h-9`}>
                   {activeModuleData.icon}
                 </div>
               )}
 
               {/* Title & Description (Enlarged and clean, no clutter) */}
               <div className="flex flex-col min-w-0 text-left justify-center">
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-1 tracking-tight leading-tight truncate">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-text-1 tracking-tight leading-tight truncate">
                   {activeModuleData?.title}
                 </h2>
                 {activeModuleData?.desc && (
-                  <p className="text-[10px] sm:text-sm text-text-3 font-bold mt-1.5 truncate leading-none">
+                  <p className="hidden sm:block text-xs text-text-3 font-medium mt-1 truncate leading-none">
                     {activeModuleData.desc}
                   </p>
                 )}
@@ -744,7 +746,7 @@ function MainLayout() {
         <BannerDeCobranza aviso={avisoDeCobranza} />
 
         {/* Dynamic Canvas */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar relative z-10">
+        <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-3 sm:p-5 xl:p-6 custom-scrollbar relative z-10">
           <Suspense fallback={<LoadingScreen message="Cargando Módulo..." />}>
             {activeModule === 'dashboard' && <MonitorActividadesTiempoReal setActiveModule={setActiveModule} />}
             {activeModule === 'rrhh' && <RecursosHumanos />}

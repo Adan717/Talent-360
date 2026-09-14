@@ -56,9 +56,9 @@
     }
   },
   "usage": {
-    "sidebar-bg": "brand.900",
-    "sidebar-text": "brand.100",
-    "sidebar-active-bg": "brand.800",
+    "sidebar-bg": "neutral.surface",
+    "sidebar-text": "neutral.text-secondary",
+    "sidebar-active-bg": "brand.50",
     "button-primary": "functional.accent",
     "button-primary-hover": "brand.700",
     "link": "brand.600",

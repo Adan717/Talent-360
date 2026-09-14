@@ -239,7 +239,7 @@ export default function ReportesManager() {
           plan sale del tenant. */}
 
       {/* Header (Escritorio) */}
-      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+      <div className="hidden sm:block sticky -top-5 -mt-5 -mx-5 xl:-top-6 xl:-mt-6 xl:-mx-6 px-5 xl:px-6 pt-4 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-5">
         <div className="bg-white rounded-3xl p-6 border border-border shadow-sm">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-success-bg text-success-text rounded-xl">
@@ -604,8 +604,8 @@ export default function ReportesManager() {
                                             ) : hasCheckIn ? (
                                               <div className="space-y-1.5">
                                                 <div className="flex flex-col gap-1 text-text-3 text-[10.5px]">
-                                                  <span>🕒 Entrada: <strong>{day.entries.find((e: any) => e.type === 'check_in')?.time || '-'}</strong></span>
-                                                  <span>🕒 Salida: <strong>{day.entries.find((e: any) => e.type === 'check_out')?.time || 'Faltante'}</strong></span>
+                                                  <span className="inline-flex items-center gap-1"><Calendar size={11} /> Entrada: <strong>{day.entries.find((e: any) => e.type === 'check_in')?.time || '-'}</strong></span>
+                                                  <span className="inline-flex items-center gap-1"><Calendar size={11} /> Salida: <strong>{day.entries.find((e: any) => e.type === 'check_out')?.time || 'Faltante'}</strong></span>
                                                 </div>
                                                 {/* Exceso de comida. Antes se leía `duration_minutes`
                                                     de los details del ponche —un campo que NADIE
@@ -616,9 +616,10 @@ export default function ReportesManager() {
                                                     que YA calcula la nómina, con los minutos de
                                                     comida del empleado y la tolerancia de la LFT. */}
                                                 {day.meal_makeup_minutes > 0 && (
-                                                  <div className="text-[9.5px] text-danger-text font-bold bg-danger-bg/50 p-1.5 rounded-lg border border-danger-text/20">
-                                                    ⚠️ Exceso de comida: {day.meal_makeup_minutes} min
+                                                  <div className="text-[9.5px] text-danger-text font-bold bg-danger-bg/50 p-1.5 rounded-lg border border-danger-text/20 flex items-center gap-1.5">
+                                                    <AlertCircle size={11} className="shrink-0" /> <span>Exceso de comida: {day.meal_makeup_minutes} min
                                                     {day.required_exit_time && <> · salida requerida {day.required_exit_time}</>}
+                                                    </span>
                                                   </div>
                                                 )}
                                               </div>

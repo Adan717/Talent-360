@@ -463,7 +463,7 @@ export const GestorDocumentos = () => {
     <div className="h-full bg-page flex flex-col font-sans">
 
       {/* Header Sticky (Escritorio) */}
-      <header className="sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+      <header className="sticky top-0 -mx-3 sm:-mx-5 px-3 sm:px-5 pt-2 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-5">
         <div className="bg-white rounded-3xl p-6 border border-border shadow-sm flex justify-between items-center gap-4">
           <div>
             <h1 className="text-2xl font-black text-text-1">Gestor Documental y Expedientes</h1>
@@ -474,13 +474,13 @@ export const GestorDocumentos = () => {
               onClick={() => { setActiveTab('employees'); setSelectedEmployeeId(null); }}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'employees' ? 'bg-white text-text-1 shadow-sm' : 'text-text-3 hover:text-text-1'}`}
             >
-              📂 Expedientes Colaboradores
+              <span className="inline-flex items-center gap-1.5"><FolderOpen size={14} /> Expedientes</span>
             </button>
             <button
               onClick={() => { setActiveTab('company'); }}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'company' ? 'bg-white text-text-1 shadow-sm' : 'text-text-3 hover:text-text-1'}`}
             >
-              🏢 Documentos Corporativos
+              <span className="inline-flex items-center gap-1.5"><FileCheck size={14} /> Corporativo</span>
             </button>
           </div>
         </div>
@@ -565,8 +565,8 @@ export const GestorDocumentos = () => {
                           <h4 className="font-extrabold text-text-1 text-xs truncate leading-snug">{u.name}</h4>
                           <p className="text-[10px] text-slate-400 font-semibold truncate mt-0.5">{u.role}</p>
                           <div className="flex flex-wrap gap-1 mt-2">
-                            <span className="inline-block text-[9px] font-bold text-text-3 bg-page px-2 py-0.5 rounded-full">
-                              📂 {u.validados}/{u.subidos} validados
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-text-3 bg-page px-2 py-0.5 rounded-full">
+                              <FileCheck size={10} /> {u.validados}/{u.subidos} validados
                             </span>
                             {/* (2026-08-22) El rechazado ya cuenta dentro de "faltantes" —hay que
                                 volver a subirlo—, pero se nombra aparte: no es lo mismo perseguir

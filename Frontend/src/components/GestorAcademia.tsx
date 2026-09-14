@@ -257,7 +257,7 @@ export const GestorAcademia = () => {
   return (
     <div className="h-full bg-white rounded-3xl p-8 border border-border text-text-1 relative flex flex-col shadow-sm">
 
-      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-6">
+      <div className="hidden sm:block sticky -top-5 -mt-5 -mx-5 xl:-top-6 xl:-mt-6 xl:-mx-6 px-5 xl:px-6 pt-4 pb-3 bg-page/90 backdrop-blur-md z-20 transition-all border-b border-border/50 mb-5">
         <div className="bg-white rounded-3xl p-3 border border-border shadow-sm">
           <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2 bg-page p-1.5 rounded-xl overflow-x-auto w-full lg:w-auto scrollbar-none whitespace-nowrap">
@@ -544,7 +544,7 @@ export const GestorAcademia = () => {
 
                             <h3 className="text-base font-extrabold text-text-1 mb-1 leading-snug group-hover:text-accent transition-colors">{course.title}</h3>
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2.5 block">
-                              📌 {role ? role.name : 'Todos los puestos'}
+                              <span className="inline-flex items-center gap-1"><Users size={11} /> {role ? role.name : 'Todos los puestos'}</span>
                             </span>
                             <p className="text-text-3 text-xs line-clamp-3 mb-6 font-medium leading-relaxed">{course.description}</p>
                           </div>

@@ -5,7 +5,7 @@ import {
   Plus, Search, Filter, ShieldCheck, AlertTriangle, ChevronRight, X, EyeOff,
   RefreshCw, Play, CheckCircle2, UserCheck, Building2, FileText,
   Camera, Zap, Send, Shield, LayoutDashboard, Settings, Award,
-  Briefcase, GraduationCap, BarChart3, Receipt, Sparkle
+  Briefcase, GraduationCap, BarChart3, Receipt, Sparkle, Lock, Pin
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
@@ -368,7 +368,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   // Sugerencia de función: ahora se ENVÍA (queda como ticket con el equipo). Antes el
   // prompt() se agradecía y el texto se tiraba.
   const handleSugerirFuncion = async () => {
-    const suggestion = prompt("💡 ¿Qué nueva función o módulo te gustaría ver en Talent360?");
+    const suggestion = prompt("¿Qué nueva función o módulo te gustaría ver en Talent360?");
     if (!suggestion || !suggestion.trim()) return;
     try {
       const res = await axiosInstance.post('/feature-suggestions', { suggestion: suggestion.trim() });
@@ -494,7 +494,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
 
   return (
-    <div className="space-y-6 text-text-1 pb-12">
+    <div className="max-w-[1440px] mx-auto min-w-0 space-y-5 text-text-1 pb-8">
 
       {/* Toast Notification */}
       {toastMessage && (
@@ -505,14 +505,14 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
       {/* 1. HEADER BIENVENIDA Y AGRADECIMIENTO (ALINEACIÓN CENTRAL) */}
       {headerDismissType === 'none' && (
-        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-brand-dark text-white border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 relative overflow-hidden group text-center flex flex-col items-center">
+        <div className="bg-white text-text-1 border border-border rounded-2xl px-4 py-3 sm:px-5 shadow-sm relative overflow-hidden group text-left flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           {/* Ambient Glow & Grid Accents */}
-          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-accent/15 rounded-full blur-3xl pointer-events-none group-hover:bg-accent/25 transition-all duration-700" />
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-accent/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.03] pointer-events-none" />
+          <div className="hidden" />
+          <div className="hidden" />
+          <div className="hidden" />
 
           {/* Logo Emblem Oficial de Talent 360 */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/80 text-white shadow-md backdrop-blur-md relative z-10 hover:border-slate-600 transition-all">
+          <div className="hidden">
             <div className="relative w-6 h-6 flex items-center justify-center">
               <div className="absolute inset-0 bg-accent rounded-full blur-xs opacity-75 animate-pulse"></div>
               <div className="relative w-6 h-6 rounded-full bg-gradient-to-tr from-accent to-navy-400 flex items-center justify-center text-white font-black text-[10px] shadow-xs">
@@ -524,28 +524,29 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
             </span>
           </div>
 
-          <div className="space-y-3 relative z-10 max-w-4xl mx-auto">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight flex items-center justify-center gap-3 flex-wrap leading-tight">
+          <div className="relative z-10 min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent mb-1">Resumen operativo</p>
+            <h1 className="text-lg sm:text-xl font-semibold text-text-1 tracking-tight leading-tight truncate">
               {/* H12: el default era 'DecorArte 360' — una empresa recién registrada saludaba
                   con el nombre de OTRA en su primera pantalla. Se prefiere el nombre real
                   (tenant o company_name de settings) y, si aún no cargó, algo neutro. */}
-              Bienvenido a <span className="bg-gradient-to-r from-navy-300 via-white to-accent-soft bg-clip-text text-transparent">{currentUser?.tenant?.name || systemSettings?.company_name || 'tu empresa'}</span>
+              Bienvenido a <span className="text-navy-800">{currentUser?.tenant?.name || systemSettings?.company_name || 'tu empresa'}</span>
             </h1>
 
-            <p className="text-sm sm:text-base text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed italic">
+            <p className="hidden">
               "{welcomePhrase}"
             </p>
 
             {/* Metadatos: Plan + Iconos de Módulos Contratados + Cliente Desde */}
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-slate-800/80 text-xs font-semibold text-slate-400 w-full">
+            <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] font-medium text-text-3">
               {/* Badge del Plan */}
-              <span className="bg-warning-icon/10 border border-warning-text/30 text-warning-text font-extrabold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-xs">
+              <span className="bg-navy-50 border border-navy-100 text-navy-800 font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5">
                 <Award size={14} className="text-warning-text" />
                 Plan {(currentUser?.tenant?.plan || currentTier).toUpperCase()}
               </span>
 
               {/* Iconos de Módulos Activos / Contratados */}
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/60 border border-slate-700/60 backdrop-blur-md" title="Módulos Activos en tu Plan">
+              <div className="hidden" title="Módulos Activos en tu Plan">
                 <span className="text-[11px] font-bold text-slate-400 mr-1">Módulos:</span>
                 {MODULE_ICON_LIST.filter(m => activeModules.includes(m.id)).map(m => {
                   const IconComp = m.icon;
@@ -563,23 +564,23 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
               {currentUser?.tenant?.created_at && (
                 <>
-                  <span className="text-text-2 hidden sm:inline">•</span>
-                  <span className="text-slate-400">Cliente desde {new Date(currentUser.tenant.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  <span className="text-border hidden sm:inline">•</span>
+                  <span>Cliente desde {new Date(currentUser.tenant.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                 </>
               )}
-              <span className="text-text-2 hidden sm:inline">•</span>
-              <span className="flex items-center gap-1.5 text-slate-400">
-                <ShieldCheck size={14} className="text-navy-300" />
+              <span className="text-border hidden sm:inline">•</span>
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck size={14} className="text-accent" />
                 Supervisión activa
               </span>
             </div>
           </div>
 
           {/* Botón X con Menú de Opciones de Ocultar */}
-          <div className="absolute top-5 right-5 z-20">
+          <div className="absolute top-2 right-2 z-20">
             <button
               onClick={() => setShowDismissMenu(!showDismissMenu)}
-              className="p-2.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-all backdrop-blur-md border border-transparent hover:border-slate-700"
+              className="p-2 text-text-3 hover:text-text-1 hover:bg-page rounded-lg transition-all"
               title="Opciones para ocultar bienvenida"
             >
               <X size={18} />
@@ -632,18 +633,18 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
           <FichajesPorRevisarPanel />
 
           {/* 3. BARRA DE HERRAMIENTAS Y ACCIONES DEL MONITOR 360 */}
-          <div className="bg-white border border-border rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+          <div className="bg-white border border-border rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-tr from-accent to-accent text-white rounded-2xl shadow-md">
-                  <Zap className="w-6 h-6 animate-pulse" />
+                <div className="p-2.5 bg-navy-50 text-accent rounded-xl border border-navy-100">
+                  <Zap className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-lg font-bold text-text-1">Control Operativo en Tiempo Real</h2>
-                    <span className="px-2.5 py-1 bg-success-bg text-success-text border border-success-text/20 rounded-full font-bold text-xs flex items-center gap-1.5 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-success-icon animate-pulse"></span>
+                    <h2 className="text-base sm:text-lg font-semibold text-text-1">Control Operativo en Tiempo Real</h2>
+                    <span className="px-2 py-0.5 bg-success-bg text-success-text border border-success-text/20 rounded-full font-semibold text-[10px] flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-success-icon"></span>
                       {/* El refresco real es cada 5 s (setInterval de fetchData); el "(3s)"
                           era el del carrusel de módulos, otra cosa. */}
                       En Vivo (5s)
@@ -659,9 +660,9 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 {iaDisponible && (
                   <button
                     onClick={handleGenerateAiPlan}
-                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent via-accent to-accent text-white font-bold text-xs sm:text-sm hover:opacity-95 transition-all shadow-md shadow-accent/20 flex items-center justify-center gap-2 active:scale-95"
+                    className="px-3 py-2 rounded-xl bg-accent text-white font-semibold text-xs hover:bg-accent-hover transition-colors flex items-center justify-center gap-2"
                   >
-                    <Sparkles className="w-4 h-4 text-warning-text animate-spin" />
+                    <Sparkles className="w-4 h-4" />
                     <span>Plan Diario IA</span>
                   </button>
                 )}
@@ -702,7 +703,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
             </div>
 
             {/* KPI METRICAS RAPIDAS (3 o 4 Fichas estilo botón/pill en 1 sola fila continua) */}
-            <div className={`grid ${isModuleUnlocked('ats') ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 sm:gap-3 pt-1`}>
+            <div className={`grid grid-cols-2 ${isModuleUnlocked('ats') ? 'lg:grid-cols-4' : 'sm:grid-cols-3'} gap-2 sm:gap-3 pt-1`}>
               {/* Personal Presente */}
               <div
                 onClick={() => setActiveModule && setActiveModule('rrhh')}
@@ -722,7 +723,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     </div>
                   </div>
                 </div>
-                <UserCheck className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-12 h-12 sm:w-16 sm:h-16 text-success-text/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
               </div>
 
               {/* En Almuerzo/Break */}
@@ -736,7 +736,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     <div className="text-[10px] sm:text-xs text-text-3 font-bold tracking-tight truncate">Almuerzo</div>
                   </div>
                 </div>
-                <Clock className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-12 h-12 sm:w-16 sm:h-16 text-warning-text/10 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
               </div>
 
               {/* Eficiencia Promedio */}
@@ -750,7 +749,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     <div className="text-[10px] sm:text-xs text-text-3 font-bold tracking-tight truncate">Eficiencia</div>
                   </div>
                 </div>
-                <CheckSquare className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-12 h-12 sm:w-16 sm:h-16 text-accent/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
               </div>
 
               {/* Prospectos (Solo si ATS está activo) */}
@@ -769,7 +767,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                       <div className="text-[10px] sm:text-xs text-text-3 font-bold tracking-tight truncate">Prospectos</div>
                     </div>
                   </div>
-                  <Briefcase className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-12 h-12 sm:w-16 sm:h-16 text-accent/10 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
                 </div>
               )}
             </div>
@@ -863,13 +860,13 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     onClick={() => setStatusFilter('active')}
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all ${statusFilter === 'active' ? 'bg-success-bg text-success-text border-success-text/20' : 'bg-page text-text-2 border-border'}`}
                   >
-                    🟢 En Turno
+                    <span className="inline-flex items-center gap-1.5"><CheckCircle2 size={12} /> En turno</span>
                   </button>
                   <button
                     onClick={() => setStatusFilter('break')}
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all ${statusFilter === 'break' ? 'bg-warning-bg text-warning-text border-warning-text/20' : 'bg-page text-text-2 border-border'}`}
                   >
-                    🟡 En Almuerzo
+                    <span className="inline-flex items-center gap-1.5"><Clock size={12} /> En almuerzo</span>
                   </button>
                 </div>
               </div>
@@ -1122,7 +1119,12 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
           </div>
 
           {/* 4. SECCIÓN DE ADOPCIÓN DE MÓDULOS & ROADMAP DE INNOVACIÓN (SLIDER 3S CON BOTÓN Y TARJETA DE SUGERENCIAS) */}
-          <div className="bg-white border border-border rounded-3xl p-5 sm:p-6 shadow-sm space-y-4 relative overflow-hidden">
+          <details className="bg-white border border-border rounded-2xl shadow-sm relative overflow-hidden group/modules">
+            <summary className="list-none cursor-pointer px-4 py-3 sm:px-5 flex items-center justify-between gap-3 text-sm font-semibold text-text-1 hover:bg-page transition-colors">
+              <span className="inline-flex items-center gap-2"><Sparkles size={16} className="text-accent" /> Explorar módulos y roadmap</span>
+              <ChevronRight size={18} className="text-text-3 transition-transform group-open/modules:rotate-90" />
+            </summary>
+            <div className="border-t border-border p-5 sm:p-6 space-y-4">
             {/* Barra de Gradiente Superior Elegante */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent via-accent via-accent to-warning-icon"></div>
 
@@ -1140,7 +1142,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 className="px-4 py-2 rounded-2xl bg-gradient-to-r from-warning-icon via-warning-icon to-warning-text hover:from-warning-icon hover:to-warning-text text-text-1 font-black text-xs shadow-md shadow-warning-text/20 border border-warning-text/20 shrink-0 flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
               >
                 <Sparkles size={16} />
-                💡 Sugerir una función a nuestro equipo
+                <MessageSquare size={15} /> Sugerir una función a nuestro equipo
               </button>
             </div>
 
@@ -1185,7 +1187,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
                       {/* Frase Gancho Persuasiva */}
                       <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-accent/10 border border-navy-300/40 text-[10px] font-bold text-navy-800 leading-tight relative z-10">
-                        🔥 "¡Contrata al mejor talento en tiempo récord antes que la competencia!"
+                        Contrata al mejor talento en tiempo récord antes que la competencia.
                       </div>
 
                       <p className="text-text-3 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Vacantes, bolsa de trabajo y entrevistas.</p>
@@ -1232,7 +1234,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
                       {/* Frase Gancho Persuasiva */}
                       <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-accent/10 border border-navy-300/40 text-[10px] font-bold text-navy-800 leading-tight relative z-10">
-                        🚀 "¡Capacita e induce a tu personal 100% en automático sin perder tiempo!"
+                        Capacita e induce a tu personal de forma automática.
                       </div>
 
                       <p className="text-text-3 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Cursos interactivos e inducción.</p>
@@ -1279,7 +1281,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
                       {/* Frase Gancho Persuasiva */}
                       <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-danger-text/10 border border-danger-text/40 text-[10px] font-bold text-danger-text leading-tight relative z-10">
-                        💡 "¡Detecta fugas de tiempo y toma decisiones operativas con IA!"
+                        Detecta fugas de tiempo y toma decisiones operativas con IA.
                       </div>
 
                       <p className="text-text-3 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Faltas, retardos y analítica Ley Silla.</p>
@@ -1326,7 +1328,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
                       {/* Frase Gancho Persuasiva */}
                       <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-warning-text/10 border border-warning-text/40 text-[10px] font-bold text-warning-text leading-tight relative z-10">
-                        📁 "¡Di adiós al papel y protege tus expedientes laborales en la nube!"
+                        Protege tus expedientes laborales en la nube.
                       </div>
 
                       <p className="text-text-3 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Expedientes avanzados y contratos.</p>
@@ -1373,7 +1375,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
                       {/* Frase Gancho Persuasiva */}
                       <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-success-text/10 border border-success-text/40 text-[10px] font-bold text-success-text leading-tight relative z-10">
-                        ⚡ "¡Timbra tu nómina masiva ante el SAT sin errores y en un solo clic!"
+                        Timbra tu nómina masiva ante el SAT desde un solo lugar.
                       </div>
 
                       <p className="text-text-3 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Timbrado masivo del SAT.</p>
@@ -1390,13 +1392,13 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 <div className="relative z-10">
                   <div className="flex justify-between items-center mb-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-warning-icon/20 text-warning-text border border-warning-text/40 text-[10px] font-black uppercase">
-                      🚀 Roadmap • Q3 2026
+                      Roadmap • Q3 2026
                     </span>
                     <Award size={18} className="text-warning-text" />
                   </div>
                   <h3 className="font-bold text-white text-xs mb-1">Evaluación 360° & Desempeño</h3>
                   <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-warning-icon/10 border border-warning-text/30 text-[10px] font-bold text-warning-text leading-tight">
-                    🔥 "¡Mide el potencial, competencias y retroalimentación 360° de tus líderes!"
+                    Mide potencial, competencias y retroalimentación 360°.
                   </div>
                   <p className="text-slate-300 text-[10px] mb-2 leading-relaxed font-medium">Evaluaciones periódicas y matriz de talento.</p>
                 </div>
@@ -1409,13 +1411,13 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 <div className="relative z-10">
                   <div className="flex justify-between items-center mb-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-navy-400/20 text-navy-100 border border-navy-300/40 text-[10px] font-black uppercase">
-                      🖋️ Roadmap • Q3 2026
+                      Roadmap • Q3 2026
                     </span>
                     <FileText size={18} className="text-navy-300" />
                   </div>
                   <h3 className="font-bold text-white text-xs mb-1">Firma Electrónica Avanzada</h3>
                   <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-navy-400/10 border border-navy-300/30 text-[10px] font-bold text-navy-100 leading-tight">
-                    🖋️ "¡Firma contratos y convenios digitalmente con validez oficial NOM-151!"
+                    Firma contratos y convenios digitalmente con validez NOM-151.
                   </div>
                   <p className="text-slate-300 text-[10px] mb-2 leading-relaxed font-medium">Contratos digitales e historial con sello legal.</p>
                 </div>
@@ -1428,13 +1430,13 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 <div className="relative z-10">
                   <div className="flex justify-between items-center mb-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-success-icon/20 text-success-text border border-success-text/40 text-[10px] font-black uppercase">
-                      💬 Roadmap • Q4 2026
+                      Roadmap • Q4 2026
                     </span>
                     <MessageSquare size={18} className="text-success-text" />
                   </div>
                   <h3 className="font-bold text-white text-xs mb-1">Bot Asistente WhatsApp 24/7</h3>
                   <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-success-icon/10 border border-success-text/30 text-[10px] font-bold text-success-text leading-tight">
-                    💬 "¡Atención a colaboradores, recibos de nómina y vacaciones vía WhatsApp!"
+                    Atención a colaboradores, recibos y vacaciones vía WhatsApp.
                   </div>
                   <p className="text-slate-300 text-[10px] mb-2 leading-relaxed font-medium">Respuestas automatizadas e inteligencia artificial.</p>
                 </div>
@@ -1453,7 +1455,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                   </div>
                   <h3 className="font-black text-white text-sm mb-1">¿Tienes una idea para Talent360?</h3>
                   <p className="text-warning-text text-xs mb-3 font-medium leading-relaxed">
-                    💡 "¡Construimos la plataforma junto contigo! Dinos qué función o módulo necesita tu empresa."
+                    Construimos la plataforma junto contigo. Dinos qué necesita tu empresa.
                   </p>
                 </div>
 
@@ -1478,7 +1480,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 />
               ))}
             </div>
-          </div>
+            </div>
+          </details>
 
         </>
       )}
@@ -1563,8 +1566,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                             <div className="flex items-center justify-between gap-3 text-xs font-bold text-text-1">
                               <span className="min-w-0 truncate">
                                 {s.suggested_new_task_title
-                                  ? `➕ ${s.suggested_new_task_title}`
-                                  : '🔁 Reasignar tarea pendiente'}
+                                  ? s.suggested_new_task_title
+                                  : 'Reasignar tarea pendiente'}
                               </span>
                               {!!s.estimated_mins && (
                                 <span className="text-[11px] text-text-3 font-mono font-bold shrink-0">{s.estimated_mins} min</span>
@@ -1668,8 +1671,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                   className="w-full bg-page text-text-1 text-xs rounded-xl p-3 border border-border focus:outline-none focus:border-accent font-medium"
                 >
                   <option value="ninguno">Sin evidencia</option>
-                  <option value="evidencia_foto">📷 Foto</option>
-                  <option value="captura_numero">🔢 Capturar un número</option>
+                  <option value="evidencia_foto">Foto</option>
+                  <option value="captura_numero">Capturar un número</option>
                 </select>
               </div>
 
@@ -1795,7 +1798,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
           {/* D3: la retención se DICE aquí — una purga que nadie anuncia es una emboscada. */}
           <p className="text-[10px] text-slate-400 font-medium -mt-1">
-            Los mensajes del equipo se conservan {chatRetentionDays} días (los 📌 conservados, los privados y los avisos de megáfono no se borran).
+            Los mensajes del equipo se conservan {chatRetentionDays} días. Los conservados, privados y avisos no se borran.
           </p>
 
           <div className="h-64 overflow-y-auto space-y-2 pr-1 text-xs">
@@ -1827,7 +1830,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                           title={msg.preserved ? 'Conservado: la purga no lo toca. Clic para soltarlo.' : 'Conservar (citado en un incidente)'}
                           className={msg.preserved ? '' : 'opacity-30 hover:opacity-100'}
                         >
-                          📌
+                          <Pin size={13} fill={msg.preserved ? 'currentColor' : 'none'} />
                         </button>
                       )}
                     </span>
@@ -1835,8 +1838,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                   {/* Un privado se distingue a simple vista y dice para quién es: si no, nadie
                       sabría si lo que escribió lo leyó el turno entero. */}
                   {msg.receiver_id && (
-                    <p className="text-[10px] font-black text-accent uppercase tracking-wider mb-0.5">
-                      🔒 Privado para {msg.receiver_name || 'un colaborador'}
+                    <p className="text-[10px] font-black text-accent uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                      <Lock size={11} /> Privado para {msg.receiver_name || 'un colaborador'}
                     </p>
                   )}
                   <p className="text-text-1 font-medium">{msg.content}</p>

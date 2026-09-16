@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Clock, Coffee, ListTodo, Users, Save, CheckCircle2, Building2, Key, ArrowUp, ArrowDown, Trash2, Plus, Briefcase, GraduationCap, FileText, FileSpreadsheet, Receipt } from 'lucide-react';
+import { Settings, Clock, Coffee, ListTodo, Users, Save, CheckCircle2, Building2, Key, ArrowUp, ArrowDown, Trash2, Plus, Briefcase, GraduationCap, FileText, FileSpreadsheet, Receipt, Zap } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { ClockControlCenterPanel } from './reloj/ui/ClockControlCenterPanel';
@@ -390,7 +390,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'control_center' ? 'bg-accent text-white' : 'text-text-2 hover:bg-page'}`}
           >
             <Settings size={18} />
-            🎛️ Centro de Control (Módulos)
+             Centro de Control (Módulos)
           </button>
           <button
             onClick={() => setActiveTab('comidas')}
@@ -446,7 +446,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 activeTab === 'reloj' ? 'bg-accent text-white shadow-md shadow-accent/10' : 'bg-page text-text-2 hover:bg-slate-200'
               }`}
             >
-              🕒 Reloj y Ley Silla
+               Reloj y Ley Silla
             </button>
             <button
               onClick={() => setActiveTab('reloj_operacion')}
@@ -454,7 +454,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 activeTab === 'reloj_operacion' ? 'bg-accent text-white shadow-md shadow-accent/10' : 'bg-page text-text-2 hover:bg-slate-200'
               }`}
             >
-              ⚙️ Operación del Reloj
+               Operación del Reloj
             </button>
             <button
               onClick={() => setActiveTab('control_center')}
@@ -462,7 +462,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 activeTab === 'control_center' ? 'bg-accent text-white shadow-md shadow-accent/10' : 'bg-page text-text-2 hover:bg-slate-200'
               }`}
             >
-              🎛️ Centro de Control (Módulos)
+               Centro de Control (Módulos)
             </button>
           </div>
         )}
@@ -517,7 +517,6 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 <h4 className="font-bold text-text-1 mb-2">Teléfono de Contacto</h4>
                 <div className="flex border border-slate-300 rounded-xl overflow-hidden bg-white">
                   <div className="bg-page px-3 py-2.5 text-sm text-text-3 font-bold border-r border-border flex items-center gap-1 select-none">
-                    <span>🇲🇽</span>
                     <span>+52</span>
                   </div>
                   <input
@@ -538,7 +537,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 <h4 className="font-bold text-text-1 mb-1.5">Retención del Chat de Equipo</h4>
                 <p className="text-xs text-text-3 mb-4">
                   Los mensajes del canal del equipo se borran automáticamente después de estos días
-                  (máximo 30). Los privados, los avisos de megáfono y los conservados con 📌 no se borran.
+                  (máximo 30). Los privados, los avisos de megáfono y los mensajes fijados no se borran.
                 </p>
                 <div className="flex items-center gap-3">
                   <input
@@ -621,7 +620,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   Curso de Puntualidad Obligatorio
                 </h4>
                 <p className="text-xs text-text-3 mb-4">
-                  Al acumular 3 retardos, el fichaje del colaborador se bloquea hasta que complete este curso en la Academia (estado "🔒 Fichaje Bloqueado" del Reloj Checador).
+                  Al acumular 3 retardos, el fichaje del colaborador se bloquea hasta que complete este curso en la Academia (estado "Fichaje bloqueado" del Reloj Checador).
                 </p>
                 <select
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-text-2 bg-white focus:outline-none focus:border-accent"
@@ -841,7 +840,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               {/* Columna Izquierda: Ajustes de Apertura */}
               <div className="xl:col-span-5 bg-page/50 p-6 rounded-2xl border border-border/80 flex flex-col gap-4.5">
                 <div className="flex items-center justify-between pb-3 border-b border-border">
-                  <span className="font-bold text-sm text-text-1 flex items-center gap-2">⚙️ Parámetros de Operación</span>
+                  <span className="font-bold text-sm text-text-1 flex items-center gap-2"> Parámetros de Operación</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -955,7 +954,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <h5 className="font-semibold text-xs text-text-2">🔔 Notificaciones Flotantes del Reloj</h5>
+                      <h5 className="font-semibold text-xs text-text-2"> Notificaciones Flotantes del Reloj</h5>
                       <p className="text-[10px] text-slate-400">Muestra avisos emergentes (toasts) de pase de lista, aperturas GPS y recordatorios de turno.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
@@ -994,7 +993,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               {/* Columna Derecha: Jerarquía de Encargados */}
               <div className="xl:col-span-7 bg-white border border-border p-6 rounded-2xl flex flex-col gap-5 text-left">
                 <div>
-                  <h4 className="font-bold text-sm text-text-1 mb-1">🔑 Jerarquía de Encargados de Sucursal</h4>
+                  <h4 className="font-bold text-sm text-text-1 mb-1"> Jerarquía de Encargados de Sucursal</h4>
                   <p className="text-xs text-text-3">Determina el orden en que se asigna la apertura de tienda y se ceden las llaves.</p>
                 </div>
 
@@ -1245,7 +1244,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                 {/* Ajustes modularizados y premium */}
               <div className="bg-page p-6 rounded-2xl border border-border space-y-6">
-                <h4 className="font-extrabold text-text-1 text-sm border-b pb-2">🔒 Configuración de Red Wi-Fi e IP Lock (Básico / Gratis)</h4>
+                <h4 className="font-extrabold text-text-1 text-sm border-b pb-2"> Configuración de Red Wi-Fi e IP Lock (Básico / Gratis)</h4>
 
                 <div className="flex justify-between items-center">
                   <div>
@@ -1279,7 +1278,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 <div className="h-[1px] bg-slate-200"></div>
 
                 <h4 className="font-extrabold text-text-1 text-sm border-b pb-2 flex items-center justify-between">
-                  <span>⭐️ Controles y Componentes del Reloj (Modular Pro)</span>
+                  <span> Controles y Componentes del Reloj (Modular Pro)</span>
                   <span className="text-[10px] bg-accent-soft text-accent px-2 py-0.5 rounded-full font-black uppercase">Plan Pro</span>
                 </h4>
 
@@ -1608,7 +1607,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="bg-warning-icon text-text-1 p-2 rounded-2xl font-black text-sm shadow-md">
-                      ⚡
+                      <Zap size={18} aria-hidden="true" />
                     </div>
                     <div>
                       <h3 className="font-black text-sm text-white tracking-tight">Modo de Validación de Asistencia</h3>
@@ -1646,7 +1645,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-black text-xs text-success-text flex items-center gap-1.5">
-                        ⚡ Modo Fichaje Rápido (Sin GPS)
+                         Modo Fichaje Rápido (Sin GPS)
                       </span>
                       {formData.clockOpConfig?.gpsValidationEnabled === false && (
                         <span className="bg-success-icon text-text-1 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
@@ -1685,7 +1684,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-black text-xs text-navy-100 flex items-center gap-1.5">
-                        📍 Modo GPS Perimetral (Sucursal)
+                         Modo GPS Perimetral (Sucursal)
                       </span>
                       {formData.clockOpConfig?.gpsValidationEnabled !== false && (
                         <span className="bg-accent text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>

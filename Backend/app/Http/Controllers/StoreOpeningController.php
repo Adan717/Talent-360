@@ -328,7 +328,8 @@ class StoreOpeningController extends Controller
             $userId = intval($request->input('user_id'));
         }
 
-        $isSimulator = $request->boolean('is_simulator') || $request->input('is_simulator') === true;
+        $isSimulator = (app()->isLocal() || app()->runningUnitTests())
+            && ($request->boolean('is_simulator') || $request->input('is_simulator') === true);
 
         try {
             $result = $this->openingService->openStoreAndClockIn($userId, $storeId, $simTime, $isSimulator);

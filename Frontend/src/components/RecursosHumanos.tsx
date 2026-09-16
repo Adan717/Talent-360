@@ -2208,7 +2208,6 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                  <label className="block text-[11px] font-black text-text-3 uppercase tracking-wider mb-1.5">Teléfono Celular</label>
                                  <div className="flex border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-focus-ring/20 focus-within:border-accent bg-page transition-all text-xs sm:text-sm">
                                    <div className="bg-page/85 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-text-3 font-bold border-r border-border flex items-center gap-1.5 select-none">
-                                     <span>🇲🇽</span>
                                      <span>+52</span>
                                    </div>
                                    <input
@@ -2592,7 +2591,6 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                           <div className="flex gap-2">
                                              <div className="flex-1 flex border border-border rounded-lg overflow-hidden focus-within:ring-1 focus-within:ring-focus-ring focus-within:border-accent bg-white text-xs sm:text-sm">
                                                <div className="bg-page px-2 sm:px-2.5 py-1.5 text-[10px] sm:text-xs text-text-3 font-bold border-r flex items-center gap-1 select-none">
-                                                 <span>🇲🇽</span>
                                                  <span>+52</span>
                                                </div>
                                                <input
@@ -3684,7 +3682,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                          </button>
                       </div>
                       {/* NOTA (2026-07-21): "Reporta A" y "Puesto Superior en Organigrama (Visual)" se editan
-                          ahora directamente desde el organigrama interactivo (pestaña 🌳 Árbol Conectado),
+                          ahora directamente desde el organigrama interactivo (pestaña  Árbol Conectado),
                           arrastrando una línea entre dos puestos — ya no se configuran aquí, para que esta
                           ficha se mantenga simple. Nivel de Mando sí se queda en el modal porque es un
                           atributo del puesto (su rango), no una conexión entre dos puestos. */}

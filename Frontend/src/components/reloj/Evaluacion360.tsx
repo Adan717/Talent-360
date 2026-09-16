@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Star, User, Users } from 'lucide-react';
 import axiosInstance from '../../lib/axios';
 
 export default function Evaluacion360({ onBack }: { onBack: () => void }) {
@@ -149,7 +150,7 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
             </div>
           ) : peers.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-400 py-12">
-              <span className="text-5xl mb-4">👥</span>
+              <Users size={48} className="mb-4" aria-hidden="true" />
               <p className="text-center font-semibold">No hay otros colaboradores disponibles para evaluar en este turno.</p>
             </div>
           ) : (
@@ -163,7 +164,7 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
                     className="w-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-success-text/50 p-4 rounded-2xl flex items-center justify-between transition-all group text-left"
                   >
                     <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 rounded-full bg-success-icon/20 flex items-center justify-center text-xl">👤</div>
+                      <div className="w-12 h-12 rounded-full bg-success-icon/20 flex items-center justify-center text-xl"><User size={22} aria-hidden="true" /></div>
                       <span className="font-bold text-lg">{peer.name}</span>
                     </div>
                     <span className="text-text-3 group-hover:text-success-text transition-colors">Evaluar &rarr;</span>
@@ -200,7 +201,7 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
                   onClick={() => setTeamworkScore(star)}
                   className={`text-4xl transition-colors ${star <= teamworkScore ? 'text-warning-text' : 'text-text-2'}`}
                 >
-                  ★
+                  <Star size={32} fill="currentColor" aria-hidden="true" />
                 </button>
               ))}
             </div>
@@ -210,10 +211,10 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
             <label className="block text-slate-300 font-bold mb-3">2. ¿Cómo fue su Actitud hoy?</label>
             <div className="flex space-x-6 justify-center">
               {[
-                { emoji: '😞', score: 2, label: 'Deficiente' },
-                { emoji: '😐', score: 3, label: 'Regular' },
-                { emoji: '🙂', score: 4, label: 'Buena' },
-                { emoji: '🤩', score: 5, label: 'Excelente' }
+                { emoji: '', score: 2, label: 'Deficiente' },
+                { emoji: '', score: 3, label: 'Regular' },
+                { emoji: '', score: 4, label: 'Buena' },
+                { emoji: '', score: 5, label: 'Excelente' }
               ].map(opt => (
                 <button
                   type="button"
@@ -238,7 +239,7 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
                   onClick={() => setPerformanceScore(star)}
                   className={`text-3xl transition-colors ${star <= performanceScore ? 'text-success-text' : 'text-text-2'}`}
                 >
-                  ★
+                  <Star size={27} fill="currentColor" aria-hidden="true" />
                 </button>
               ))}
             </div>

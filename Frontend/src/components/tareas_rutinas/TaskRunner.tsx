@@ -3,7 +3,8 @@ import {
     Coffee, Play, Check, Clock, Lock, Brain, Camera, Bot,
     Pause, Trash2, Plus, X, AlertCircle, ChevronRight, User, HelpCircle,
     Search, RefreshCw, CheckCircle, XCircle, ShieldAlert, Sparkles, ClipboardList,
-    Briefcase, FileCheck, ShieldCheck
+    Briefcase, FileCheck, ShieldCheck, DollarSign, Star, GraduationCap,
+    History, CalendarDays, CheckCircle2
 } from 'lucide-react';
 import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, TaskAssignment } from '../../store/useTaskStore';
@@ -102,16 +103,16 @@ export function FichaTarea({
     if (assignment.status === 'pending') {
         timeDisplay = `⏱️ ${task.estimatedMins} min est.`;
     } else if (assignment.status === 'completed') {
-        timeDisplay = `✅ Listo en ${elapsed} min`;
+        timeDisplay = `Listo en ${elapsed} min`;
     } else if (assignment.status === 'omitted') {
-        timeDisplay = `🚫 Omitida`;
+        timeDisplay = 'Omitida';
     } else if (assignment.status === 'paused') {
         const remaining = Math.max(0, task.estimatedMins - (assignment.accumulatedMins || 0));
         timeDisplay = `⏳ ${remaining} min rest.`;
     } else {
         // in_progress u otros estados activos
         if (isOvertime) {
-            timeDisplay = `🚨 Excedido +${elapsed - task.estimatedMins} min`;
+            timeDisplay = `Excedido +${elapsed - task.estimatedMins} min`;
         } else {
             const remaining = Math.max(0, task.estimatedMins - elapsed);
             timeDisplay = `⏳ Quedan ${remaining} min`;
@@ -147,27 +148,27 @@ export function FichaTarea({
                         {/* Etiqueta de Prioridad / Categoría de Tarea */}
                         {task.priority === 'bloqueante' ? (
                             <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-danger-bg text-danger-text border border-danger-text/20 shrink-0">
-                                ⚠️ Obligatoria
+                                 Obligatoria
                             </span>
                         ) : task.category === 'operativo' ? (
                             <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-border shrink-0">
-                                ⚙️ Operativa
+                                 Operativa
                             </span>
                         ) : task.category === 'administrativo' ? (
                             <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-success-bg text-success-text border border-success-text/20 shrink-0">
-                                📋 Administrativa
+                                 Administrativa
                             </span>
                         ) : task.category === 'mantenimiento' ? (
                             <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-warning-bg text-warning-text border border-warning-text/20 shrink-0">
-                                🔧 Mantenimiento
+                                 Mantenimiento
                             </span>
                         ) : task.category === 'supervision' ? (
                             <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-border shrink-0">
-                                🔍 Supervisión
+                                 Supervisión
                             </span>
                         ) : (
                             <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-page text-text-2 border border-border shrink-0">
-                                📌 Tarea
+                                 Tarea
                             </span>
                         )}
 
@@ -941,7 +942,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
 
                     <div className="flex items-center gap-3 relative z-10">
                         <div className="w-11 h-11 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl shadow-inner border border-white/25 shrink-0">
-                            🪙
+                            <DollarSign size={22} aria-hidden="true" />
                         </div>
                         <div className="text-left leading-tight">
                             <span className="text-[9.5px] font-black uppercase tracking-widest text-warning-text/90 block">Monedero Digital</span>
@@ -960,7 +961,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                             <span className="text-xs font-black text-white bg-white/20 px-1.5 py-0.2 rounded-md">{walletData.level}</span>
                         </div>
                         <div className="flex items-center gap-1 text-white text-[10.5px] font-extrabold pr-0.5">
-                            <span className="text-warning-text text-xs">🌟</span>
+                            <Star size={13} className="text-warning-text" aria-hidden="true" />
                             <span>{walletData.xp_points} XP</span>
                         </div>
                     </div>
@@ -1103,7 +1104,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fade-in text-left">
                         <div className="bg-white rounded-3xl p-5 shadow-2xl border border-border w-full max-w-md">
                             <h3 className="font-black text-text-1 text-sm mb-1 flex items-center gap-1.5">
-                                🎓 Antes de empezar: {t.title}
+                                <GraduationCap size={16} aria-hidden="true" /> Antes de empezar: {t.title}
                             </h3>
                             <p className="text-xs text-text-3 mb-3">
                                 {academyGateDismissable
@@ -1156,7 +1157,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                     <div className="bg-white rounded-3xl p-6 shadow-xl border border-border/80 w-full max-w-md max-h-[85vh] flex flex-col">
                         <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pb-2 border-b border-border z-10 shrink-0">
                             <h3 className="text-sm font-black text-text-1 flex items-center gap-1.5">
-                                📜 Historial de Tareas de Hoy
+                                <History size={16} aria-hidden="true" /> Historial de Tareas de Hoy
                             </h3>
                             <button
                                 onClick={() => setShowHistoryModal(false)}
@@ -1225,7 +1226,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                     <div className="bg-white rounded-3xl p-6 shadow-xl border border-border/80 w-full max-w-lg max-h-[90vh] flex flex-col">
                         <div className="flex justify-between items-center mb-3 sticky top-0 bg-white pb-2 border-b border-border z-10 shrink-0">
                             <h3 className="text-sm font-black text-text-1 flex items-center gap-1.5">
-                                🗓️ Plan de Trabajo Diario
+                                <CalendarDays size={16} aria-hidden="true" /> Plan de Trabajo Diario
                             </h3>
                             <button
                                 onClick={() => setShowPlanModal(false)}
@@ -1272,7 +1273,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                         </h4>
                                         {yesterdayLeftovers.length === 0 ? (
                                             <div className="bg-page border border-dashed border-border rounded-xl p-4 text-center text-[11px] text-slate-400 font-bold">
-                                                No quedaron pendientes de ayer. 🎉
+                                                No quedaron pendientes de ayer.
                                             </div>
                                         ) : (
                                             <div className="space-y-2">
@@ -1380,8 +1381,8 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                         <span className="text-[9px] font-bold text-slate-400">{r.total} tareas</span>
                                                     </div>
                                                     <div className="flex flex-wrap gap-1">
-                                                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-success-bg text-success-text">✔ {r.completed} hechas</span>
-                                                        {r.omitted > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-danger-bg text-danger-text">✕ {r.omitted} omitidas</span>}
+                                                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-success-bg text-success-text"> {r.completed} hechas</span>
+                                                        {r.omitted > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-danger-bg text-danger-text"> {r.omitted} omitidas</span>}
                                                         {r.stillOpen > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-page text-text-3">⏳ {r.stillOpen} abiertas</span>}
                                                         {r.extra > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-warning-bg text-warning-text">+{r.extra} extras</span>}
                                                         {r.carriedOver > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-navy-50 text-accent">↺ {r.carriedOver} de ayer</span>}
@@ -1564,7 +1565,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                         </span>
                                         {t.priority === 'bloqueante' && (
                                             <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-danger-bg text-danger-text border border-danger-text/20">
-                                                ⚠️ Obligatoria
+                                                 Obligatoria
                                             </span>
                                         )}
                                     </div>
@@ -1756,7 +1757,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                         {t.validationCriteria && t.validationCriteria.filter(c => c && c.trim()).length > 0 && (
                                             <div className="p-3 bg-success-bg rounded-xl border border-success-text/20 text-xs">
                                                 <p className="font-extrabold text-success-text flex items-center gap-1.5 mb-1.5">
-                                                    ✅ Qué revisar antes de aprobar:
+                                                    <CheckCircle2 size={14} aria-hidden="true" /> Qué revisar antes de aprobar:
                                                 </p>
                                                 <ul className="space-y-1">
                                                     {t.validationCriteria.filter(c => c && c.trim()).map((c, i) => (
@@ -1771,7 +1772,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                         {a.assistantData && (
                                             <div className="p-3 bg-page rounded-xl border border-border text-xs">
                                                 <p className="font-extrabold text-accent flex items-center gap-1.5 mb-1.5">
-                                                    📸 Evidencia presentada:
+                                                    <Camera size={14} aria-hidden="true" /> Evidencia presentada:
                                                 </p>
                                                 <p className="text-text-1 font-black bg-white p-2.5 rounded-lg border border-border">
                                                     {t.assistantType === 'evidencia_foto' ? (
@@ -2049,7 +2050,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                                                  if (!localInput.trim()) return;
                                                                  const ok = await submitTaskEvidence(a.id, t, localInput);
                                                                  if (ok) {
-                                                                     addMatrixEvent('✅ Asistente completado', `Tarea "${t.title}" con reporte: ${localInput}`, 'success', currentUser.id);
+                                                                     addMatrixEvent(' Asistente completado', `Tarea "${t.title}" con reporte: ${localInput}`, 'success', currentUser.id);
                                                                      handleSelectAssignment(null);
                                                                  }
                                                              }}
@@ -2121,9 +2122,9 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[120] flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-[2.5rem] p-7 max-w-xs w-full shadow-2xl text-center border border-warning-text/20 relative animate-in zoom-in-95 duration-300">
                         <div className="w-20 h-20 bg-gradient-to-tr from-warning-icon to-warning-icon rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-warning-text/30 animate-bounce">
-                            <span className="text-4xl">🪙</span>
+                            <DollarSign size={38} aria-hidden="true" />
                         </div>
-                        <h3 className="text-xl font-black text-text-1 tracking-tight mb-1">¡Recompensa Obtenida! 🎉</h3>
+                        <h3 className="text-xl font-black text-text-1 tracking-tight mb-1">¡Recompensa Obtenida! </h3>
                         <p className="text-xs font-bold text-text-3 mb-4 px-2 truncate">{celebration.title}</p>
 
                         <div className="bg-warning-bg border border-warning-text/20 rounded-2xl p-4 mb-5 flex items-center justify-around">

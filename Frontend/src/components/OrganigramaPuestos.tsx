@@ -51,12 +51,12 @@ const H_GAP = 36;
 const V_GAP = 120;
 
 const LEVEL_BADGES: Record<number, { text: string; bg: string; border: string }> = {
-  1: { text: '👑 Dirección', bg: 'bg-warning-bg text-warning-text border-warning-text/20', border: 'border-warning-text' },
-  2: { text: '⭐ Jefatura', bg: 'bg-accent-soft text-navy-800 border-border', border: 'border-navy-300' },
-  3: { text: '📈 Supervisión', bg: 'bg-success-bg text-success-text border-success-text/20', border: 'border-success-text' },
-  4: { text: '👤 Operativo', bg: 'bg-accent-soft text-navy-800 border-border', border: 'border-navy-300' },
-  5: { text: '🔧 Auxiliar', bg: 'bg-page text-text-1 border-border', border: 'border-slate-300' },
-  6: { text: '🚫 Inactivo/Apoyo', bg: 'bg-danger-bg text-danger-text border-danger-text/20', border: 'border-dashed border-slate-300' },
+  1: { text: ' Dirección', bg: 'bg-warning-bg text-warning-text border-warning-text/20', border: 'border-warning-text' },
+  2: { text: ' Jefatura', bg: 'bg-accent-soft text-navy-800 border-border', border: 'border-navy-300' },
+  3: { text: ' Supervisión', bg: 'bg-success-bg text-success-text border-success-text/20', border: 'border-success-text' },
+  4: { text: ' Operativo', bg: 'bg-accent-soft text-navy-800 border-border', border: 'border-navy-300' },
+  5: { text: ' Auxiliar', bg: 'bg-page text-text-1 border-border', border: 'border-slate-300' },
+  6: { text: ' Inactivo/Apoyo', bg: 'bg-danger-bg text-danger-text border-danger-text/20', border: 'border-dashed border-slate-300' },
 };
 
 interface PuestoTreeNode {
@@ -265,7 +265,7 @@ function PuestoNode({ data }: NodeProps) {
           ))
         ) : (
           <div className="text-[10px] font-bold italic text-slate-400 bg-page border border-dashed border-border py-2 rounded-xl">
-            🕳️ Vacante / Sin asignar
+             Vacante / Sin asignar
           </div>
         )}
       </div>
@@ -450,7 +450,7 @@ function OrganigramaPuestosInner({
                 connectMode === 'jerarquia' ? 'bg-accent text-white shadow-sm' : 'text-text-3 hover:text-text-1'
               }`}
             >
-              🌳 Jerarquía visual
+               Jerarquía visual
             </button>
             <button
               type="button"
@@ -459,7 +459,7 @@ function OrganigramaPuestosInner({
                 connectMode === 'reporta_a' ? 'bg-warning-icon text-white shadow-sm' : 'text-text-3 hover:text-text-1'
               }`}
             >
-              🔗 Reporta A
+               Reporta A
             </button>
           </Panel>
         )}

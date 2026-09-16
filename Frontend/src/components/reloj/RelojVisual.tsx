@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo, User, Users, Phone, Plus, ShieldAlert } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo, User, Users, Phone, Plus, ShieldAlert, Truck, Bell, FileText } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { ColorMap } from '../../design/theme';
 import { EnlaceAlAviso, NotaDeDatos } from '../AvisoDePrivacidad';
@@ -19,6 +19,7 @@ import DialPrincipal from './DialPrincipal';
 import MealPhotoCapture from './MealPhotoCapture';
 import MealQueue from './MealQueue';
 import { SillaRequestsPanel } from './SillaRequestsPanel';
+import { VendorVisitsPanel } from './VendorVisitsPanel';
 import { getStoreScheduleState, formatWait } from './logic/storeSchedule';
 import { resolverEstadoSucursal } from './logic/estadoSucursal';
 import { resolverEtiquetaTurno } from './logic/etiquetaTurno';
@@ -568,7 +569,7 @@ export default function RelojVisual({
       <div className={`flex flex-col h-[400px] rounded-2xl border p-3 ${isDark ? 'border-slate-800 bg-slate-950/60' : 'border-border bg-white'} shadow-inner`}>
         <div className="flex justify-between items-center border-b pb-2 mb-2 dark:border-slate-800">
           <h5 className="font-black text-sm text-accent flex items-center gap-1.5">
-            <span className="animate-pulse">🟢</span> Chat Grupal de Sucursal
+            <MessageSquare size={16} aria-hidden="true" /> Chat Grupal de Sucursal
           </h5>
           <span className="text-[9px] text-slate-400 italic">
             Mensajes expiran en {chatRetentionDays} {chatRetentionDays === 1 ? 'día' : 'días'}
@@ -609,7 +610,7 @@ export default function RelojVisual({
                             privado o la gente cree que le está escribiendo a todo el equipo. */}
                         {msg.es_privado && (
                           <span className="block text-[8px] font-black uppercase tracking-wide text-warning-text mb-1">
-                            🔒 Privado {msg.para_mi ? '· para ti' : (msg.receiver_name ? '· para ' + msg.receiver_name : '')}
+                             Privado {msg.para_mi ? '· para ti' : (msg.receiver_name ? '· para ' + msg.receiver_name : '')}
                           </span>
                         )}
                         {msg.message}
@@ -662,7 +663,7 @@ export default function RelojVisual({
       <div className={`rounded-2xl border p-5 space-y-4 text-left ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-border bg-white'} shadow-sm`}>
         <div className="border-b pb-2 mb-2 dark:border-slate-800">
           <h5 className="font-black text-sm text-danger-text flex items-center gap-1.5">
-            📢 Reportar Falta (El Soplón)
+             Reportar Falta (El Soplón)
           </h5>
           <p className="text-[10px] text-text-3">Notifica de forma confidencial ausencias o mala conducta en el turno.</p>
         </div>
@@ -743,7 +744,7 @@ export default function RelojVisual({
       <div className={`rounded-2xl border p-5 space-y-4 text-left ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-border bg-white'} shadow-sm`}>
         <div className="border-b pb-2 mb-2 dark:border-slate-800">
           <h5 className="font-black text-sm text-accent flex items-center gap-1.5">
-            🕵️ Buzón Anónimo de RRHH
+             Buzón Anónimo de RRHH
           </h5>
           <p className="text-[10px] text-text-3">Envía tus quejas o sugerencias. Tu identidad no será grabada en el servidor.</p>
         </div>
@@ -808,7 +809,7 @@ export default function RelojVisual({
       <div className={`rounded-2xl border p-5 space-y-4 text-left ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-border bg-white'} shadow-sm`}>
         <div className="border-b pb-2 mb-2 dark:border-slate-800">
           <h5 className="font-black text-sm text-accent flex items-center gap-1.5">
-            🔑 Transferir Cierre (Custodia de Llaves)
+             Transferir Cierre (Custodia de Llaves)
           </h5>
           <p className="text-[10px] text-text-3">Delega la responsabilidad del cierre a un compañero. El sistema requiere su aceptación.</p>
         </div>
@@ -868,13 +869,13 @@ export default function RelojVisual({
   const renderToolHuida = () => {
     return (
       <div className={`rounded-2xl border p-6 text-center space-y-4 ${isDark ? 'border-slate-800 bg-slate-900/40 text-white' : 'border-border bg-white text-text-1'} shadow-sm`}>
-        <div className="text-4xl">🏃⚠️</div>
+        <ShieldAlert size={40} className="text-warning-text" aria-hidden="true" />
         <h5 className="font-black text-base text-danger-text">Simulación de Abandono (Pérdida de Wi-Fi)</h5>
         <p className="text-xs text-text-3 leading-relaxed max-w-sm mx-auto">
           Al activar esta simulación, registrarás que te retiraste de la sucursal de manera imprevista sin traspasar formalmente las llaves de cierre a tu respaldo.
         </p>
         <div className="bg-danger-bg dark:bg-danger-text/20 border border-danger-text/20 dark:border-danger-text rounded-xl p-3.5 text-danger-text dark:text-rose-400 text-[10px] leading-normal text-left">
-          <strong>⚠️ Alerta de Seguridad:</strong> Esta acción registrará una incidencia crítica en la bitácora de auditoría del servidor (`audit_logs`) con una penalización simulada.
+          <strong> Alerta de Seguridad:</strong> Esta acción registrará una incidencia crítica en la bitácora de auditoría del servidor (`audit_logs`) con una penalización simulada.
         </div>
         <div className="flex gap-2">
           <button
@@ -1032,12 +1033,12 @@ export default function RelojVisual({
             {storeStatus === 'open' ? (
               <span className="text-success-text dark:text-emerald-400 font-black flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-success-icon animate-ping"></span>
-                <span>🏪 Sucursal Abierta</span>
+                <span> Sucursal Abierta</span>
               </span>
             ) : (
               <span className="text-danger-text dark:text-danger-text font-black flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-danger-icon"></span>
-                <span>🔒 Sucursal Cerrada</span>
+                <span> Sucursal Cerrada</span>
               </span>
             )}
           </div>
@@ -1046,12 +1047,12 @@ export default function RelojVisual({
           <div className="flex items-center select-none">
             {hasUserCheckedOut ? (
               <span className="text-success-text dark:text-emerald-400 font-black flex items-center gap-1.5">
-                <span>Turno Finalizado ✓</span>
+                <span>Turno Finalizado </span>
               </span>
             ) : hasUserCheckedIn ? (
               <span className="text-success-text dark:text-success-text font-black flex items-center gap-1.5 animate-pulse">
                 <span className="w-2 h-2 rounded-full bg-success-icon"></span>
-                <span>Turno Activo ✓</span>
+                <span>Turno Activo </span>
               </span>
             ) : (
               <span className="text-slate-400 dark:text-slate-500 font-black flex items-center gap-1.5">
@@ -1083,9 +1084,9 @@ export default function RelojVisual({
                   <LogIn size={isMobile ? 20 : 22} className={!hasUserCheckedIn ? "animate-pulse" : ""} />
                   {hasUserCheckedIn && (
                     isLateIn ? (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-warning-icon text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Retardo">⚠️</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-warning-icon text-white flex items-center justify-center shadow-sm" title="Retardo"><AlertTriangle size={11} aria-hidden="true" /></div>
                     ) : (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-success-icon text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Puntual">✓</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-success-icon text-white flex items-center justify-center shadow-sm" title="Puntual"><Check size={12} aria-hidden="true" /></div>
                     )
                   )}
                 </div>
@@ -1115,9 +1116,9 @@ export default function RelojVisual({
                   <Armchair size={isMobile ? 20 : 22} className={isActive ? "animate-bounce" : (hasUserCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
                   {isDone && (
                     isBreakExceeded ? (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger-icon text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Límite excedido">⚠️</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger-icon text-white flex items-center justify-center shadow-sm" title="Límite excedido"><AlertTriangle size={11} aria-hidden="true" /></div>
                     ) : (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-success-icon text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Dentro de límite">✓</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-success-icon text-white flex items-center justify-center shadow-sm" title="Dentro de límite"><Check size={12} aria-hidden="true" /></div>
                     )
                   )}
                 </div>
@@ -1147,9 +1148,9 @@ export default function RelojVisual({
                   <Utensils size={isMobile ? 20 : 22} className={isActive ? "animate-bounce" : (hasUserCheckedIn && !isMealDone ? "animate-pulse" : "")} />
                   {isDone && (
                     isMealExceeded ? (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger-icon text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Límite excedido">⚠️</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger-icon text-white flex items-center justify-center shadow-sm" title="Límite excedido"><AlertTriangle size={11} aria-hidden="true" /></div>
                     ) : (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-success-icon text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Dentro de límite">✓</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-success-icon text-white flex items-center justify-center shadow-sm" title="Dentro de límite"><Check size={12} aria-hidden="true" /></div>
                     )
                   )}
                 </div>
@@ -1178,9 +1179,9 @@ export default function RelojVisual({
                   <LogOut size={isMobile ? 20 : 22} />
                   {isDone && (
                     hasAnyDeviation ? (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger-icon text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Turno con desvíos">⚠️</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger-icon text-white flex items-center justify-center shadow-sm" title="Turno con desvíos"><AlertTriangle size={11} aria-hidden="true" /></div>
                     ) : (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-success-icon text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Turno excelente">✓</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-success-icon text-white flex items-center justify-center shadow-sm" title="Turno excelente"><Check size={12} aria-hidden="true" /></div>
                     )
                   )}
                 </div>
@@ -1224,7 +1225,7 @@ export default function RelojVisual({
               {/* Left extreme: Entrada pactada / entrada real */}
               <span>
                 {hasUserCheckedIn
-                  ? `${formatMinsToTimeClean(checkInMins)}${lateMins > 0 ? ' ⚠️' : ''}`
+                  ? `${formatMinsToTimeClean(checkInMins)}${lateMins > 0 ? ' ' : ''}`
                   : formatStringToTimeClean(userShiftStartStr)
                 }
               </span>
@@ -1246,7 +1247,7 @@ export default function RelojVisual({
           {hasUserCheckedIn && lateMins > 0 && (
             <div className="mt-1 flex items-center justify-center">
               <span className="text-[10px] font-black text-warning-text dark:text-amber-400 bg-warning-bg dark:bg-warning-text/40 border border-warning-text/20 dark:border-warning-text px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-                <span>⚠️ Retardo de +{lateMins} min</span>
+                <span> Retardo de +{lateMins} min</span>
                 <span className="opacity-75">•</span>
                 <span>Salida LFT ajustada a las {formatMinsToTimeClean(targetExitMins)}</span>
               </span>
@@ -1328,8 +1329,8 @@ export default function RelojVisual({
             desc: `${emp.name} solicita descanso (De pie: ${elapsedMins} min).`,
             icon: <Coffee className="text-accent w-4 h-4" />,
             buttons: [
-              { text: '✓ Aprobar', onClick: () => approveBreakRequest(emp.id), variant: 'success' },
-              { text: '✕ Rechazar', onClick: () => rejectBreakRequest(emp.id), variant: 'danger' }
+              { text: ' Aprobar', onClick: () => approveBreakRequest(emp.id), variant: 'success' },
+              { text: ' Rechazar', onClick: () => rejectBreakRequest(emp.id), variant: 'danger' }
             ]
           });
         }
@@ -1362,7 +1363,7 @@ export default function RelojVisual({
         desc: 'Declara el cierre del día: queda registrado y se reparte el checklist de cierre.',
         icon: <Lock className="text-danger-text w-4 h-4" />,
         action: declararCierreSucursal,
-        actionText: '🔒 Cerrar'
+        actionText: ' Cerrar'
       });
     }
 
@@ -1511,7 +1512,7 @@ export default function RelojVisual({
     } else if (clockState === 'meal') {
       shiftStatusText = 'Comida activa: Regresa en 30 minutos.';
     } else if (hasCheckedOut) {
-      shiftStatusText = 'Jornada del día completada 🎉';
+      shiftStatusText = 'Jornada del día completada ';
     }
 
     notificationsList.push({
@@ -1710,7 +1711,7 @@ export default function RelojVisual({
       return 'Fuera de horario';
     }
 
-    if (btnProps.text === '⚠️ Reportar Tienda Cerrada') return 'Reportar Cierre';
+    if (btnProps.text === ' Reportar Tienda Cerrada') return 'Reportar Cierre';
 
     return 'Registrar entrada';
   };
@@ -1792,7 +1793,7 @@ export default function RelojVisual({
         const updatedUser = { ...currentUser, avatar: avatarUrl };
         setCurrentUser(updatedUser);
         setGlobalUsers(globalUsers.map((u: any) => u.id === currentUser.id ? updatedUser : u));
-        showCustomAlert("📸 Foto de perfil subida exitosamente.");
+        showCustomAlert(" Foto de perfil subida exitosamente.");
       }
     } catch (err: any) {
       console.error("Error al subir avatar:", err);
@@ -1854,7 +1855,7 @@ export default function RelojVisual({
     return (
       <div className="bg-accent text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-accent/20">
         <div className="flex items-center gap-2">
-          <span className="text-xl">🧘</span>
+          <Armchair size={20} aria-hidden="true" />
           <div>
             <p className="font-black text-xs sm:text-sm">Solicitudes de Descanso Pendientes (Ley Silla)</p>
             <p className="text-[9px] sm:text-[10px] text-navy-100 opacity-90 leading-tight">Colaboradores solicitando descanso activo</p>
@@ -1879,13 +1880,13 @@ export default function RelojVisual({
                     onClick={() => approveBreakRequest(emp.id)}
                     className="bg-success-icon hover:bg-success-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 flex items-center gap-1"
                   >
-                    ✓ Aprobar
+                     Aprobar
                   </button>
                   <button
                     onClick={() => rejectBreakRequest(emp.id)}
                     className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 flex items-center gap-1"
                   >
-                    ✕ Rechazar
+                     Rechazar
                   </button>
                 </div>
               </div>
@@ -1916,7 +1917,7 @@ export default function RelojVisual({
       // §29: preferir resolved_user_id (users.id) sobre el employee_id crudo (employees.id).
       const match = assignments.find((a: any) => a && Number(a.resolved_user_id ?? a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
       if (match) {
-        return match.priority_order === 1 ? ' 🔑' : ' 🔑🔑';
+        return match.priority_order === 1 ? ' ' : ' ';
       }
     } catch {}
     return '';
@@ -2100,7 +2101,7 @@ export default function RelojVisual({
             <p className="font-bold text-text-2 dark:text-slate-300 font-sans">¿Cómo dar permiso de ubicación?</p>
             <div className="flex gap-2 text-text-2 dark:text-slate-400 font-sans">
               <span className="font-black text-accent">1.</span>
-              <span>Haz clic en el candado 🔒 (junto a la URL del navegador).</span>
+              <span>Haz clic en el candado  (junto a la URL del navegador).</span>
             </div>
             <div className="flex gap-2 text-text-2 dark:text-slate-400 font-sans">
               <span className="font-black text-accent">2.</span>
@@ -2297,7 +2298,7 @@ export default function RelojVisual({
             isDark ? 'bg-slate-900/40 border-slate-900' : 'bg-white border-border shadow-sm'
           }`}>
             <h4 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest mb-3.5 flex items-center gap-1.5">
-              <span>🚀</span> Menú Principal
+              <Menu size={15} aria-hidden="true" /> Menú Principal
             </h4>
             <div className="grid grid-cols-2 gap-3 text-left">
               <button
@@ -2390,7 +2391,7 @@ export default function RelojVisual({
           isDark ? 'bg-slate-900/40 border-slate-900' : 'bg-white border-border shadow-sm'
         }`}>
           <h4 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest mb-3.5 flex items-center gap-1.5">
-            <span>🗓️</span> Horarios y Turno
+            <Clock size={15} aria-hidden="true" /> Horarios y Turno
           </h4>
           <div className="grid grid-cols-2 gap-3 text-left">
             <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-900' : 'bg-page border-border'}`}>
@@ -2425,7 +2426,7 @@ export default function RelojVisual({
 
           <div className={`mt-3.5 p-3 rounded-xl border flex items-center justify-between ${isDark ? 'bg-slate-950/40 border-slate-900' : 'bg-page border-border'}`}>
             <div>
-              <p className="text-[11px] font-bold text-text-2 dark:text-slate-200 flex items-center gap-1.5">🔑 Jerarquía de Llaves</p>
+              <p className="text-[11px] font-bold text-text-2 dark:text-slate-200 flex items-center gap-1.5"> Jerarquía de Llaves</p>
               <p className="text-[10px] text-text-3 leading-tight">Acceso para apertura/cierre de tienda</p>
             </div>
             <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg uppercase ${
@@ -2443,7 +2444,7 @@ export default function RelojVisual({
           isDark ? 'bg-slate-900/40 border-slate-900' : 'bg-white border-border shadow-sm'
         }`}>
           <h4 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest mb-3.5 flex items-center gap-1.5">
-            <span>⚙️</span> Ajustes de Estación
+            <Settings size={15} aria-hidden="true" /> Ajustes de Estación
           </h4>
 
           <div className="space-y-4">
@@ -2455,14 +2456,14 @@ export default function RelojVisual({
                   className="flex-1 py-1.5 text-[10px] font-black rounded-md bg-white text-text-1 shadow-sm"
                   disabled
                 >
-                  ☀️ Claro (Forzado)
+                   Claro (Forzado)
                 </button>
                 <button
                   type="button"
                   className="flex-1 py-1.5 text-[10px] font-bold rounded-md text-slate-400 opacity-50 cursor-not-allowed"
                   disabled
                 >
-                  🌙 Oscuro (Deshabilitado)
+                   Oscuro (Deshabilitado)
                 </button>
               </div>
               <p className="text-[9px] text-text-3 mt-1 font-bold">Modo oscuro deshabilitado por políticas globales de Talent 360</p>
@@ -2472,13 +2473,13 @@ export default function RelojVisual({
               <label className="block text-[9px] font-bold uppercase text-text-3 mb-1.5">Validaciones de Asistencia</label>
               <div className={`space-y-2 p-3 rounded-xl border text-[11px] ${isDark ? 'bg-slate-950/40 border-slate-900' : 'bg-page border-border'}`}>
                 <div className="flex justify-between items-center">
-                  <span className="text-text-3">📍 Geolocalización (GPS):</span>
+                  <span className="text-text-3"> Geolocalización (GPS):</span>
                   <span className={`font-bold ${isFeatureUnlocked('gps_validation') ? 'text-success-text' : 'text-slate-400'}`}>
                     {isFeatureUnlocked('gps_validation') ? 'Activo (Geocerca)' : 'Desactivado'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-text-3">📷 Validación Facial (Selfie):</span>
+                  <span className="text-text-3"> Validación Facial (Selfie):</span>
                   <span className={`font-bold ${isFeatureUnlocked('face_validation') ? 'text-success-text' : 'text-slate-400'}`}>
                     {isFeatureUnlocked('face_validation') ? 'Obligatoria' : 'Desactivado'}
                   </span>
@@ -2496,7 +2497,7 @@ export default function RelojVisual({
                     : 'bg-white border-border text-text-2 hover:bg-page'
                 }`}
               >
-                <span>🔔</span> Ajustes de Alarmas y Alertas
+                <AlertCircle size={15} aria-hidden="true" /> Ajustes de Alarmas y Alertas
               </button>
             </div>
 
@@ -2518,7 +2519,7 @@ export default function RelojVisual({
               }}
               className="w-full bg-danger-text hover:bg-danger-text text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider text-center mt-2 focus:outline-none transition-colors shadow-lg shadow-danger-text/10"
             >
-              🚪 Cerrar Sesión del Dispositivo
+               Cerrar Sesión del Dispositivo
             </button>
           </div>
         </div>
@@ -2583,7 +2584,7 @@ export default function RelojVisual({
   const [copilotMessages, setCopilotMessages] = useState([
     {
       sender: 'bot',
-      text: '¡Hola! Soy tu Copiloto de Soporte de Talent 360. 🤖 ¿En qué puedo ayudarte hoy? Puedo resolver dudas sobre el Reloj Checador V2, geolocalización, sincronización offline, planes de suscripción o la facturación CFDI 4.0.',
+      text: '¡Hola! Soy tu Copiloto de Soporte de Talent 360.  ¿En qué puedo ayudarte hoy? Puedo resolver dudas sobre el Reloj Checador V2, geolocalización, sincronización offline, planes de suscripción o la facturación CFDI 4.0.',
       timestamp: new Date()
     }
   ]);
@@ -2621,7 +2622,7 @@ export default function RelojVisual({
         ...prev,
         {
           sender: 'bot',
-          text: '⚠️ Ocurrió un error al conectar con el servidor de inteligencia artificial. Por favor, inténtalo de nuevo.',
+          text: ' Ocurrió un error al conectar con el servidor de inteligencia artificial. Por favor, inténtalo de nuevo.',
           timestamp: new Date()
         }
       ]);
@@ -2641,7 +2642,7 @@ export default function RelojVisual({
     return (
       <div className="w-full max-w-sm mt-4 rounded-2xl border p-4 text-left bg-danger-bg border-danger-text/20 text-danger-text dark:bg-danger-icon/10 dark:border-danger-text/25 dark:text-rose-300 animate-pulse-slow">
         <span className="text-[10px] font-black uppercase tracking-wider block mb-1 opacity-70">
-          🚨 Mensaje de Administración
+           Mensaje de Administración
         </span>
         <span className="text-sm font-black block leading-snug">{ultimo.content}</span>
       </div>
@@ -2658,7 +2659,7 @@ export default function RelojVisual({
         <div className={`rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800 bg-gradient-to-tr from-warning-icon to-danger-icon text-white animate-pulse ${
           isMobile ? 'w-20 h-20 text-3xl mb-6' : 'w-28 h-28 text-5xl mb-8'
         }`}>
-          🔒
+          <Lock size={isMobile ? 32 : 44} aria-hidden="true" />
         </div>
         <h2 className={`font-black text-text-1 dark:text-slate-100 ${
           isMobile ? 'text-xl mb-2' : 'text-3xl mb-3'
@@ -2706,12 +2707,12 @@ export default function RelojVisual({
             </span>
             <span className="text-sm font-black block leading-snug">
               {miInduccion.vencido
-                ? '🎓 Tu inducción sigue pendiente y ya se pasó la fecha.'
+                ? ' Tu inducción sigue pendiente y ya se pasó la fecha.'
                 : miInduccion.dias_restantes === null || miInduccion.dias_restantes === undefined
-                  ? '🎓 Tienes tu inducción pendiente.'
+                  ? ' Tienes tu inducción pendiente.'
                   : miInduccion.dias_restantes === 0
-                    ? '🎓 Hoy es el último día para tu inducción.'
-                    : `🎓 Tienes ${miInduccion.dias_restantes} ${miInduccion.dias_restantes === 1 ? 'día' : 'días'} para tu inducción.`}
+                    ? ' Hoy es el último día para tu inducción.'
+                    : ` Tienes ${miInduccion.dias_restantes} ${miInduccion.dias_restantes === 1 ? 'día' : 'días'} para tu inducción.`}
             </span>
             <span className="text-[11px] font-bold underline block mt-1.5 opacity-80">
               Complétala aquí →
@@ -2726,62 +2727,51 @@ export default function RelojVisual({
     let title = '';
     let desc = '';
     let icon = null;
-    let badgeText = '';
-
     switch (phoneTab) {
       case 'checador':
         title = 'Reloj Checador';
         desc = 'Control de Asistencia';
         icon = <Clock className="text-[#2dce89] animate-spin-once" />;
-        badgeText = 'v4.3';
         break;
       case 'tareas':
         title = 'Tareas y Rutinas';
         desc = 'Gestión y seguimiento operativo';
         icon = <ListTodo className="text-accent animate-wiggle-once" />;
-        badgeText = 'v1.5';
         break;
       case 'academia':
         title = 'Academia';
         desc = 'Capacitación y desarrollo';
         icon = <GraduationCap className="text-accent animate-bounce-twice" />;
-        badgeText = 'v2.8';
         break;
       case 'nomina':
         title = 'Pre-nómina';
         desc = 'Recibos y timbrados CFDI';
         icon = <DollarSign className="text-success-text animate-pulse-once" />;
-        badgeText = 'v1.0';
         break;
       case 'herramientas':
         title = 'Herramientas';
-        desc = 'Simulador y bitácoras';
+        desc = 'Herramientas y bitácoras';
         icon = <Settings className="text-text-3 animate-spin-once" />;
-        badgeText = 'v1.0';
         break;
       case 'evaluacion360':
         title = 'Evaluación 360';
         desc = 'Evaluación de compañeros';
         icon = <Star className="text-warning-text animate-pulse-once" />;
-        badgeText = 'v1.1';
         break;
       case 'organigrama':
         title = 'Organigrama';
         desc = 'Estructura de la empresa';
         icon = <Network className="text-success-text animate-wiggle-once" />;
-        badgeText = 'v1.3';
         break;
       case 'perfil':
         title = 'Mi Perfil';
         desc = 'Credencial y ajustes';
         icon = <ClipboardList className="text-accent animate-pulse-once" />;
-        badgeText = 'v1.2';
         break;
       default:
         title = 'Reloj Checador';
         desc = 'Control de Asistencia';
         icon = <Clock className="text-[#2dce89]" />;
-        badgeText = 'v4.3';
     }
 
     let moduleId = 'asistencia';
@@ -2790,7 +2780,7 @@ export default function RelojVisual({
       case 'tareas': moduleId = 'operativo'; break;
       case 'academia': moduleId = 'academia'; break;
       case 'nomina': moduleId = 'facturacion'; break;
-      case 'herramientas': moduleId = 'matrix'; break;
+      case 'herramientas': moduleId = 'reloj'; break;
       case 'evaluacion360': moduleId = 'reportes'; break;
       case 'organigrama': moduleId = 'rrhh'; break;
       case 'perfil': moduleId = 'settings'; break;
@@ -2836,18 +2826,6 @@ export default function RelojVisual({
               }`}>
                 {title}
               </h3>
-              {badgeText && (
-                <span
-                  className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[7.5px] font-black tracking-wider uppercase border border-solid"
-                  style={{
-                    backgroundColor: activeColor.hex + '10',
-                    color: activeColor.hex,
-                    borderColor: activeColor.hex + '20'
-                  }}
-                >
-                  {badgeText}
-                </span>
-              )}
             </div>
             <p className={`text-[8.5px] xs:text-[9.5px] font-bold mt-0.5 leading-none truncate transition-colors max-w-[110px] xs:max-w-[160px] ${
               isDark ? 'text-slate-400' : 'text-[#525f7f]'
@@ -2865,7 +2843,7 @@ export default function RelojVisual({
               onClick={() => initPaseLista(false)}
               className="bg-accent hover:bg-accent-hover text-white font-extrabold text-[8px] xs:text-[9px] uppercase px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
             >
-              <span>📋</span>
+              <ClipboardList size={14} aria-hidden="true" />
               <span className="hidden xxs:inline">Lista</span>
             </button>
           )}
@@ -2989,7 +2967,7 @@ export default function RelojVisual({
                 </button>
                 {canCreateQuickTask && (
                   <button type="button" onClick={closeAnd(() => taskRunnerRef.current?.openPlanDelDia())} className={fabItemClass(isDark)}>
-                    <span className="text-sm w-3.5 text-center shrink-0">🗓️</span> Plan del Día
+                    <ClipboardList size={14} className="shrink-0" aria-hidden="true" /> Plan del Día
                   </button>
                 )}
               </>
@@ -2999,31 +2977,36 @@ export default function RelojVisual({
             <p className={fabSectionDivider(isDark, false)}>Caja de Herramientas</p>
             {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
               <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('silla_requests'); })} className={fabItemClass(isDark)}>
-                <Armchair size={14} className="text-navy-300 shrink-0" /> Solicitudes de Ley Silla 🪑
+                <Armchair size={14} className="text-navy-300 shrink-0" /> Solicitudes de Ley Silla
+              </button>
+            )}
+            {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
+              <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('vendor_visits'); })} className={fabItemClass(isDark)}>
+                <Truck size={14} className="text-accent shrink-0" /> Visitas y proveedores
               </button>
             )}
             <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('chat'); fetchChatMessages(); })} className={fabItemClass(isDark)}>
-              <MessageSquare size={14} className="text-navy-300 shrink-0" /> Chat de Equipo 💬
+              <MessageSquare size={14} className="text-navy-300 shrink-0" /> Chat de Equipo
             </button>
             <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('soplon'); })} className={fabItemClass(isDark)}>
-              <AlertOctagon size={14} className="text-danger-text shrink-0" /> El Soplón 📢
+              <AlertOctagon size={14} className="text-danger-text shrink-0" /> El Soplón
             </button>
             <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('buzon'); })} className={fabItemClass(isDark)}>
-              <Fingerprint size={14} className="text-navy-300 shrink-0" /> Buzón Anónimo RRHH 🕵️
+              <Fingerprint size={14} className="text-navy-300 shrink-0" /> Buzón Anónimo RRHH
             </button>
             <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('huida'); })} className={fabItemClass(isDark)}>
-              <WifiOff size={14} className="text-warning-text shrink-0" /> Simular Desconexión 🏃
+              <WifiOff size={14} className="text-warning-text shrink-0" /> Simular Desconexión
             </button>
             {isPro && clockState === 'active' && (
               <button type="button" onClick={closeAnd(() => setShowTempExitModal(true))} className={fabItemClass(isDark)}>
-                <LogOut size={14} className="text-accent shrink-0" /> Pase de Salida Temporal 🚪
+                <LogOut size={14} className="text-accent shrink-0" /> Pase de Salida Temporal
               </button>
             )}
             <button type="button" onClick={closeAnd(() => setPhoneTab('evaluacion360'))} className={fabItemClass(isDark)}>
-              <Star size={14} className="text-warning-text shrink-0" /> Evaluación de Compañeros ⭐
+              <Star size={14} className="text-warning-text shrink-0" /> Evaluación de Compañeros
             </button>
             <button type="button" onClick={closeAnd(() => setPhoneTab('organigrama'))} className={fabItemClass(isDark)}>
-              <Network size={14} className="text-success-text shrink-0" /> Organigrama de la Empresa 🕸️
+              <Network size={14} className="text-success-text shrink-0" /> Organigrama de la Empresa
             </button>
           </div>
         )}
@@ -3045,7 +3028,7 @@ export default function RelojVisual({
     if (!isTaskCreatorOpen) return null;
 
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="⚡ Crear Tarea Rápida">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label=" Crear Tarea Rápida">
         {/* Backdrop overlay */}
         <div
           onClick={() => setIsTaskCreatorOpen(false)}
@@ -3058,7 +3041,7 @@ export default function RelojVisual({
         }`}>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-base font-black flex items-center gap-1.5 text-accent">
-              ⚡ Crear Tarea Rápida
+               Crear Tarea Rápida
             </h3>
             <button
               onClick={() => setIsTaskCreatorOpen(false)}
@@ -3080,7 +3063,7 @@ export default function RelojVisual({
             );
             setNewTaskTitle('');
             setIsTaskCreatorOpen(false);
-            showCustomAlert('¡Tarea rápida creada con éxito y enviada a la Bolsa de Trabajo! ⚡');
+            showCustomAlert('¡Tarea rápida creada con éxito y enviada a la Bolsa de Trabajo! ');
           }} className="space-y-4">
             <div>
               <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Título de la Tarea</label>
@@ -3329,7 +3312,7 @@ export default function RelojVisual({
           isDark ? 'bg-slate-900/90 text-white border-slate-800' : 'bg-white/95 text-text-1 border-border'
         } ${isScrollableMobile ? 'fixed bottom-20 left-4 right-4' : 'fixed bottom-6 right-6 md:w-96'}`}>
           <div className="bg-accent rounded-lg p-1 flex-shrink-0">
-            <span role="img" aria-label="alert" className="text-white text-xs">🔔</span>
+            <Bell size={13} className="text-white" aria-hidden="true" />
           </div>
           <span className="text-left font-bold">{globalToast}</span>
         </div>
@@ -3342,7 +3325,7 @@ export default function RelojVisual({
         } ${isScrollableMobile ? 'fixed bottom-20 left-4 right-4' : 'fixed bottom-6 right-6 md:w-96'}`}>
           <div className="flex items-center gap-2 min-w-0">
             <div className="bg-accent rounded-lg p-1.5 flex-shrink-0 text-white flex items-center justify-center">
-              📲
+              <Phone size={14} aria-hidden="true" />
             </div>
             <div className="text-left min-w-0">
               <p className="font-extrabold text-xs">Instalar Talent 360 App</p>
@@ -3380,7 +3363,7 @@ export default function RelojVisual({
           <div className="flex justify-between items-center w-full">
             <div className="flex items-center gap-2">
               <div className="bg-danger-icon rounded-lg p-1 flex-shrink-0">
-                <span role="img" aria-label="alert" className="text-white text-[10px]">📲</span>
+                <Bell size={12} className="text-white" aria-hidden="true" />
               </div>
               <span className="font-extrabold text-[10px] uppercase tracking-wider text-slate-400">Notificación</span>
             </div>
@@ -3623,15 +3606,15 @@ export default function RelojVisual({
             ) : (shiftConfigs[currentUser?.id]?.restDay === currentDay || isSimulatedHoliday) && !isOvertimeUnlocked[currentUser?.id] ? (
               <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up pt-[82px] pb-[100px] gap-4">
                 <div className="w-20 h-20 bg-navy-50 dark:bg-brand-dark/40 rounded-full flex items-center justify-center text-3xl mb-1 shadow-inner border-2 border-white dark:border-slate-800">
-                  {isSimulatedHoliday ? '📅' : '🌴'}
+                  {isSimulatedHoliday ? '' : ''}
                 </div>
                 <h2 className="text-xl font-extrabold text-text-1 dark:text-slate-200 mb-1">
                   {isSimulatedHoliday ? 'Día Feriado Obligatorio (LFT)' : 'Día de Descanso'}
                 </h2>
                 <p className="text-text-3 dark:text-slate-400 text-xs font-medium max-w-sm leading-relaxed mb-2">
                   {isSimulatedHoliday
-                    ? 'Hoy conmemoramos el Natalicio de Benito Juárez de acuerdo a la Ley Federal del Trabajo. ¡Disfruta tu descanso de ley! 🇲🇽'
-                    : '¡Es tu derecho a la desconexión digital! Relájate, recarga energías y disfruta tu día. Tu equipo te cubre hoy. 🌟'}
+                    ? 'Hoy conmemoramos el Natalicio de Benito Juárez de acuerdo a la Ley Federal del Trabajo. ¡Disfruta tu descanso de ley! '
+                    : '¡Es tu derecho a la desconexión digital! Relájate, recarga energías y disfruta tu día. Tu equipo te cubre hoy. '}
                 </p>
                 <button
                   type="button"
@@ -3651,7 +3634,7 @@ export default function RelojVisual({
                   {isKeysControlUnlocked && pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
                     <div className="bg-gradient-to-r from-warning-icon to-warning-text text-white rounded-2xl p-4 shadow-lg mb-1.5 shrink-0 flex flex-col gap-2.5 text-left border border-warning-text/20">
                       <div className="flex items-start gap-2.5">
-                        <span className="text-xl mt-0.5 shrink-0">🔑</span>
+                        <Key size={20} className="mt-0.5 shrink-0" aria-hidden="true" />
                         <div>
                           <p className="font-black text-xs">Propuesta de Transferencia de Cierre</p>
                           <p className="text-[10px] text-warning-text/90 leading-normal mt-0.5">
@@ -3700,7 +3683,7 @@ export default function RelojVisual({
                       type="button"
                       onClick={() => {
                         if (!hasCheckedIn) {
-                          showCustomAlert("⚠️ Para ver tu desempeño semanal, primero debes registrar tu entrada.");
+                          showCustomAlert(" Para ver tu desempeño semanal, primero debes registrar tu entrada.");
                           return;
                         }
                         setShowPerformanceModal(true);
@@ -3757,7 +3740,7 @@ export default function RelojVisual({
                           if (respUser?.phone) {
                             window.location.href = `tel:${respUser.phone}`;
                           }
-                          showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
+                          showCustomAlert(` Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                         }}
                         onCallSuplenteClick={handleCallSuplente}
                         onSendDoorNoticeClick={handleSendDoorNotice}
@@ -3851,7 +3834,7 @@ export default function RelojVisual({
                       </div>
 
                       <div className="bg-navy-50 dark:bg-brand-dark/40 border border-border dark:border-navy-800/30 rounded-xl p-2 text-[7.5px] text-navy-800 dark:text-navy-100 font-medium leading-normal mt-3">
-                        💡 Pulsa sobre cada casilla de verificación para marcar o desmarcar las tareas y simular la productividad del checador.
+                         Pulsa sobre cada casilla de verificación para marcar o desmarcar las tareas y simular la productividad del checador.
                       </div>
                     </div>
                   )}
@@ -3899,22 +3882,22 @@ export default function RelojVisual({
 
                       <div className="grid grid-cols-2 gap-2">
                         <button type="button" className="p-2.5 bg-page dark:bg-slate-900/40 hover:bg-page dark:hover:bg-slate-800 border border-border dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
-                          <span className="text-sm">🏖️</span>
+                          <Sun size={16} aria-hidden="true" />
                           <span className="text-[7.5px] font-black text-text-2 dark:text-slate-300 uppercase leading-none">Solicitar Vacaciones</span>
                         </button>
 
                         <button type="button" className="p-2.5 bg-page dark:bg-slate-900/40 hover:bg-page dark:hover:bg-slate-800 border border-border dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
-                          <span className="text-sm">📄</span>
+                          <FileText size={16} aria-hidden="true" />
                           <span className="text-[7.5px] font-black text-text-2 dark:text-slate-300 uppercase leading-none">Recibos Nómina</span>
                         </button>
 
                         <button type="button" className="p-2.5 bg-page dark:bg-slate-900/40 hover:bg-page dark:hover:bg-slate-800 border border-border dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
-                          <span className="text-sm">🤕</span>
+                          <AlertTriangle size={16} aria-hidden="true" />
                           <span className="text-[7.5px] font-black text-text-2 dark:text-slate-300 uppercase leading-none">Nueva Incidencia</span>
                         </button>
 
                         <button type="button" className="p-2.5 bg-page dark:bg-slate-900/40 hover:bg-page dark:hover:bg-slate-800 border border-border dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
-                          <span className="text-sm">🔑</span>
+                          <Key size={16} aria-hidden="true" />
                           <span className="text-[7.5px] font-black text-text-2 dark:text-slate-300 uppercase leading-none">Cambiar PIN</span>
                         </button>
                       </div>
@@ -3948,7 +3931,7 @@ export default function RelojVisual({
                       {innerTool === null ? (
                         <div className="text-center py-12">
                           <p className="text-slate-400 font-bold text-sm">Cargando Caja de Herramientas...</p>
-                          <p className="text-xs text-text-3 mt-2">Usa el botón flotante 🛠️ para ver las herramientas rápidas.</p>
+                          <p className="text-xs text-text-3 mt-2">Usa el botón flotante para ver las herramientas rápidas.</p>
                         </div>
                       ) : (
                         <div className="flex flex-col h-full bg-transparent">
@@ -3961,6 +3944,7 @@ export default function RelojVisual({
                           {innerTool === 'transfer' && renderToolTransfer()}
                           {innerTool === 'huida' && renderToolHuida()}
                           {innerTool === 'silla_requests' && <SillaRequestsPanel isDark={isDark} />}
+                          {innerTool === 'vendor_visits' && <VendorVisitsPanel isDark={isDark} />}
                         </div>
                       )}
                     </div>
@@ -4010,15 +3994,15 @@ export default function RelojVisual({
                 isDark ? 'bg-slate-900/20 border-slate-900/40' : 'bg-white border-border shadow-md'
               }`}>
                 <div className="w-24 h-24 bg-navy-50 dark:bg-brand-dark/40 rounded-full flex items-center justify-center text-4xl mb-2 shadow-inner border-4 border-white dark:border-slate-800">
-                  {isSimulatedHoliday ? '📅' : '🌴'}
+                  {isSimulatedHoliday ? '' : ''}
                 </div>
                 <h2 className="text-3xl font-black text-text-1 dark:text-slate-100 mb-1">
                   {isSimulatedHoliday ? 'Día Feriado Obligatorio (LFT)' : 'Día de Descanso'}
                 </h2>
                 <p className="text-text-3 dark:text-slate-400 text-base font-medium max-w-lg leading-relaxed font-sans mb-4">
                   {isSimulatedHoliday
-                    ? 'Hoy conmemoramos el Natalicio de Benito Juárez de acuerdo a la Ley Federal del Trabajo. ¡Disfruta tu descanso de ley! 🇲🇽'
-                    : '¡Es tu derecho a la desconexión digital! Relájate, recarga energías y disfruta tu día de descanso. Tu equipo de trabajo te cubre hoy. 🌟'}
+                    ? 'Hoy conmemoramos el Natalicio de Benito Juárez de acuerdo a la Ley Federal del Trabajo. ¡Disfruta tu descanso de ley! '
+                    : '¡Es tu derecho a la desconexión digital! Relájate, recarga energías y disfruta tu día de descanso. Tu equipo de trabajo te cubre hoy. '}
                 </p>
                 <button
                   type="button"
@@ -4036,7 +4020,7 @@ export default function RelojVisual({
                 <div className="w-full bg-gradient-to-r from-slate-900 via-brand-dark to-slate-900 text-white rounded-3xl p-4 sm:p-5 shadow-xl border border-accent/20 flex flex-wrap items-center justify-between gap-4 mb-2 animate-in fade-in duration-300">
                   <div className="flex items-center gap-3.5">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-warning-icon to-warning-icon flex items-center justify-center text-2xl shadow-lg shadow-warning-text/20 shrink-0">
-                      ⚡
+                      <Trophy size={24} aria-hidden="true" />
                     </div>
                     <div className="text-left">
                       <h2 className="text-base sm:text-lg font-black text-white tracking-tight leading-tight flex items-center gap-2">
@@ -4062,7 +4046,7 @@ export default function RelojVisual({
                   {walletData && (
                     <div className="flex items-center gap-2.5">
                       <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
-                        <span className="text-base">🪙</span>
+                        <DollarSign size={16} aria-hidden="true" />
                         <div className="text-left">
                           <span className="text-[9px] font-black text-warning-text uppercase tracking-wider block leading-none">Monedero</span>
                           <span className="text-xs font-black text-white">${walletData.balance_coins.toFixed(2)} Coins</span>
@@ -4070,7 +4054,7 @@ export default function RelojVisual({
                       </div>
 
                       <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
-                        <span className="text-base">🌟</span>
+                        <Trophy size={16} aria-hidden="true" />
                         <div className="text-left">
                           <span className="text-[9px] font-black text-navy-100 uppercase tracking-wider block leading-none">Nivel {walletData.level}</span>
                           <span className="text-xs font-black text-white">{walletData.xp_points.toLocaleString('es-MX')} XP</span>
@@ -4096,7 +4080,7 @@ export default function RelojVisual({
               {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
                 <div className="bg-gradient-to-r from-warning-icon to-warning-text text-white rounded-2xl p-5 shadow-lg mb-2 flex flex-col sm:flex-row items-center justify-between gap-4 text-left border border-warning-text/20">
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl mt-0.5 shrink-0">🔑</span>
+                    <Key size={22} className="mt-0.5 shrink-0" aria-hidden="true" />
                     <div>
                       <p className="font-black text-sm">Propuesta de Transferencia de Cierre</p>
                       <p className="text-xs text-warning-text/90 leading-normal mt-1">
@@ -4129,7 +4113,7 @@ export default function RelojVisual({
             {/* NUEVO (estado #15): banner informativo "Modo Contingencia Activo" — versión desktop */}
             {activeContingency && (
               <div className="bg-warning-icon text-white px-5 py-3.5 rounded-2xl flex items-center gap-2.5 shadow-md mb-2 shrink-0 text-left">
-                <span className="text-base">🛡️</span>
+                <ShieldAlert size={16} aria-hidden="true" />
                 <span className="text-xs font-black">Modo Contingencia Activo — Penalizaciones congeladas (100% salario LFT).</span>
               </div>
             )}
@@ -4138,7 +4122,7 @@ export default function RelojVisual({
             {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
               <div className="bg-success-text text-white px-5 py-3.5 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-base">📋</span>
+                  <ClipboardList size={16} aria-hidden="true" />
                   <span className="text-xs font-black">Checklist de apertura pendiente. Completa las tareas operativas para abrir la sucursal de hoy.</span>
                 </div>
                 <button
@@ -4153,7 +4137,7 @@ export default function RelojVisual({
             {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted && (
               <div className="bg-accent text-white px-5 py-3.5 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
                 <div className="flex items-start gap-2.5">
-                  <span className="text-base">📋</span>
+                  <ClipboardList size={16} aria-hidden="true" />
                   <span className="text-xs font-black">Pase de lista de apertura pendiente. Pasa asistencia al equipo de apertura.</span>
                 </div>
                 <button
@@ -4195,7 +4179,7 @@ export default function RelojVisual({
                           if (Number(currentUser.id) === Number(responsibleId)) {
                             return isWithinPerimeter
                               ? 'Tienes el control de la apertura de hoy'
-                              : '🗝️ Responsable de apertura. Dirígete a la sucursal para abrir.';
+                              : ' Responsable de apertura. Dirígete a la sucursal para abrir.';
                           } else {
                             const responsibleUser = globalUsers.find((u: any) => u.id === responsibleId) || { name: 'Encargado' };
                             return `Esperando apertura por: ${responsibleUser.name}`;
@@ -4238,7 +4222,7 @@ export default function RelojVisual({
                         if (respUser?.phone) {
                           window.location.href = `tel:${respUser.phone}`;
                         }
-                        showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
+                        showCustomAlert(` Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                       }}
                       onCallSuplenteClick={handleCallSuplente}
                       onSendDoorNoticeClick={handleSendDoorNotice}
@@ -4306,7 +4290,7 @@ export default function RelojVisual({
                   })()}
                   {activeContingency && (
                     <div className="bg-warning-icon text-white px-3 py-2 rounded-xl flex items-center gap-2 text-[10px] font-black">
-                      🛡️ Modo Contingencia Activo — 100% salario LFT
+                       Modo Contingencia Activo — 100% salario LFT
                     </div>
                   )}
                 </div>
@@ -4325,7 +4309,7 @@ export default function RelojVisual({
                       onClick={() => {
                         const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
                         if (respUser?.phone) window.location.href = `tel:${respUser.phone}`;
-                        showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
+                        showCustomAlert(` Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                       }}
                       className="w-full text-left py-2.5 px-3.5 bg-navy-50 dark:bg-brand-dark/20 border border-border text-accent dark:text-navy-300 font-bold text-xs rounded-xl hover:bg-accent-soft transition-all flex items-center gap-2 active:scale-[0.98]"
                     >
@@ -4369,13 +4353,13 @@ export default function RelojVisual({
                     : null;
 
                   if (miUltimoPrivado) {
-                    alertMsg = `🚨 Mensaje del Admin: ${miUltimoPrivado}`;
+                    alertMsg = ` Mensaje del Admin: ${miUltimoPrivado}`;
                     alertBg = "bg-danger-icon/10 border-danger-text/20 text-danger-text animate-pulse";
                   } else if (alerts.length > 0) {
-                    alertMsg = `⚠️ ${alerts[0].msg}`;
+                    alertMsg = ` ${alerts[0].msg}`;
                     alertBg = "bg-danger-icon/10 border-danger-text/20 text-danger-text";
                   } else if (needsMealRes) {
-                    alertMsg = "🍔 Tienes pendiente apartar tu comida del día.";
+                    alertMsg = " Tienes pendiente apartar tu comida del día.";
                     alertBg = "bg-warning-icon/10 border-warning-text/20 text-warning-text dark:text-amber-400";
                   } else if (miInduccion?.pendiente) {
                     // Antes decía "Sugerencia: ...te recomendamos completar tu Inducción...para
@@ -4384,12 +4368,12 @@ export default function RelojVisual({
                     // sin bloquear nada.
                     const dias = miInduccion.dias_restantes;
                     alertMsg = miInduccion.vencido
-                      ? '🎓 Tu inducción sigue pendiente y ya se pasó la fecha. Complétala aquí.'
+                      ? ' Tu inducción sigue pendiente y ya se pasó la fecha. Complétala aquí.'
                       : dias === null || dias === undefined
-                        ? '🎓 Tienes tu inducción pendiente. Complétala aquí.'
+                        ? ' Tienes tu inducción pendiente. Complétala aquí.'
                         : dias === 0
-                          ? '🎓 Hoy es el último día para tu inducción. Complétala aquí.'
-                          : `🎓 Tienes ${dias} ${dias === 1 ? 'día' : 'días'} para tu inducción. Complétala aquí.`;
+                          ? ' Hoy es el último día para tu inducción. Complétala aquí.'
+                          : ` Tienes ${dias} ${dias === 1 ? 'día' : 'días'} para tu inducción. Complétala aquí.`;
                     alertBg = miInduccion.vencido
                       ? (isDark ? "bg-danger-icon/10 border-danger-text/25 text-danger-text" : "bg-danger-bg border-danger-text/20 text-danger-text")
                       : (isDark ? "bg-warning-icon/10 border-warning-text/25 text-warning-text" : "bg-warning-bg border-warning-text/20 text-warning-text");
@@ -4400,7 +4384,7 @@ export default function RelojVisual({
 
                   const contenido = (
                     <>
-                      <span>📢</span>
+                      <AlertCircle size={16} className="shrink-0" aria-hidden="true" />
                       <span className="flex-1 whitespace-normal">{alertMsg}</span>
                     </>
                   );
@@ -4421,7 +4405,7 @@ export default function RelojVisual({
 
                 {/* Hub Columns Headers */}
                 <div className="flex justify-between items-center text-xs font-extrabold text-slate-400 uppercase tracking-widest border-b border-slate-800/10 dark:border-slate-800/60 pb-2 shrink-0">
-                  <span className="flex items-center gap-1.5">📋 Tareas del Día (Asignaciones Operativas)</span>
+                  <span className="flex items-center gap-1.5"> Tareas del Día (Asignaciones Operativas)</span>
                   <span>Bolsa de Trabajo (Tomar Tareas Libres)</span>
                 </div>
 
@@ -4448,7 +4432,7 @@ export default function RelojVisual({
                           }`}>
                             <div className="min-w-0 flex-1 text-left">
                               <p className="text-xs font-extrabold text-text-1 dark:text-slate-200 truncate leading-snug">{task.title}</p>
-                              <p className="text-[9px] text-text-3 uppercase font-black tracking-wider mt-0.5">{task.priority === 'bloqueante' ? '🚨 Urgente' : 'Rutina'}</p>
+                              <p className="text-[9px] text-text-3 uppercase font-black tracking-wider mt-0.5">{task.priority === 'bloqueante' ? ' Urgente' : 'Rutina'}</p>
                             </div>
 
                             <div className="flex-shrink-0">
@@ -4469,8 +4453,8 @@ export default function RelojVisual({
                                 </button>
                               )}
                               {(assignment.status === 'completed' || assignment.status === 'awaiting_validation') && (
-                                <span className="w-6.5 h-6.5 rounded-full bg-success-icon/15 border border-success-text/20 text-success-text flex items-center justify-center text-[10px] font-black font-sans">
-                                  ✓
+                                <span className="w-6.5 h-6.5 rounded-full bg-success-icon/15 border border-success-text/20 text-success-text flex items-center justify-center font-sans">
+                                  <Check size={13} aria-hidden="true" />
                                 </span>
                               )}
                             </div>
@@ -4554,7 +4538,7 @@ export default function RelojVisual({
               isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-border shadow-sm'
             }`}>
               <h3 className="font-extrabold text-xl text-text-1 dark:text-slate-100 mb-6 flex items-center gap-2">
-                <span>✅</span> Tareas y Rutinas Asignadas
+                <CheckSquare size={20} aria-hidden="true" /> Tareas y Rutinas Asignadas
               </h3>
               <TaskRunner ref={taskRunnerRef} currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
             </div>
@@ -4575,7 +4559,7 @@ export default function RelojVisual({
               isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-border shadow-sm'
             }`}>
               <h3 className="font-extrabold text-xl text-text-1 dark:text-slate-100 mb-6 flex items-center gap-2">
-                <span>💵</span> Resumen y Liquidación de Pagos
+                <DollarSign size={20} aria-hidden="true" /> Resumen y Liquidación de Pagos
               </h3>
               <NominaColaborador isDark={isDark} />
             </div>
@@ -4608,7 +4592,7 @@ export default function RelojVisual({
                         <MessageSquare size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">Chat de Equipo 💬</p>
+                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">Chat de Equipo</p>
                         <p className="text-xs text-text-3 mt-0.5">Mensajes temporales entre colaboradores (Se borran cada semana)</p>
                       </div>
                     </button>
@@ -4629,8 +4613,25 @@ export default function RelojVisual({
                           <Armchair size={20} />
                         </div>
                         <div>
-                          <p className="font-bold text-sm text-text-1 dark:text-slate-100">Solicitudes de Ley Silla 🪑</p>
+                          <p className="font-bold text-sm text-text-1 dark:text-slate-100">Solicitudes de Ley Silla</p>
                           <p className="text-xs text-text-3 mt-0.5">Aprobar o rechazar las solicitudes pendientes de tu equipo</p>
+                        </div>
+                      </button>
+                    )}
+
+                    {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
+                      <button
+                        onClick={() => setInnerTool('vendor_visits')}
+                        className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
+                          isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-border bg-white hover:bg-page'
+                        }`}
+                      >
+                        <div className="w-12 h-12 rounded-full bg-slate-800 text-navy-300 flex items-center justify-center shrink-0">
+                          <Truck size={20} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-text-1 dark:text-slate-100">Visitas y proveedores</p>
+                          <p className="text-xs text-text-3 mt-0.5">Registrar entradas y salidas de personas externas</p>
                         </div>
                       </button>
                     )}
@@ -4645,7 +4646,7 @@ export default function RelojVisual({
                         <AlertOctagon size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">El Soplón 📢</p>
+                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">El Soplón</p>
                         <p className="text-xs text-text-3 mt-0.5">Reportar ausencias o faltas de compañeros de forma directa</p>
                       </div>
                     </button>
@@ -4660,7 +4661,7 @@ export default function RelojVisual({
                         <Fingerprint size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">Buzón Anónimo RRHH 🕵️</p>
+                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">Buzón Anónimo RRHH</p>
                         <p className="text-xs text-text-3 mt-0.5">Enviar sugerencias o reportes generales 100% privados</p>
                       </div>
                     </button>
@@ -4676,7 +4677,7 @@ export default function RelojVisual({
                           <Key size={20} />
                         </div>
                         <div>
-                          <h5 className="font-bold text-sm text-text-1 dark:text-slate-100">Transferir Cierre 🔑</h5>
+                          <h5 className="font-bold text-sm text-text-1 dark:text-slate-100">Transferir Cierre</h5>
                           <p className="text-xs text-text-3 mt-0.5">Ceder llaves de la sucursal a un compañero</p>
                         </div>
                       </button>
@@ -4692,7 +4693,7 @@ export default function RelojVisual({
                         <WifiOff size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">Simular Desconexión (Huida) 🏃</p>
+                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">Simular Desconexión</p>
                         <p className="text-xs text-text-3 mt-0.5">Detección de desconexión sin entregar el turno</p>
                       </div>
                     </button>
@@ -4707,7 +4708,7 @@ export default function RelojVisual({
                         <Star size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">Evaluación de Compañeros ⭐</p>
+                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">Evaluación de Compañeros</p>
                         <p className="text-xs text-text-3 mt-0.5">Evaluar desempeño y puntualidad en el turno</p>
                       </div>
                     </button>
@@ -4722,7 +4723,7 @@ export default function RelojVisual({
                         <Network size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">Organigrama de la Empresa 🕸️</p>
+                        <p className="font-bold text-sm text-text-1 dark:text-slate-100">Organigrama de la Empresa</p>
                         <p className="text-xs text-text-3 mt-0.5">Consulta los puestos y responsabilidades</p>
                       </div>
                     </button>
@@ -4738,7 +4739,8 @@ export default function RelojVisual({
                   {innerTool === 'buzon' && renderToolBuzon()}
                   {innerTool === 'transfer' && renderToolTransfer()}
                   {innerTool === 'huida' && renderToolHuida()}
-                          {innerTool === 'silla_requests' && <SillaRequestsPanel isDark={isDark} />}
+                  {innerTool === 'silla_requests' && <SillaRequestsPanel isDark={isDark} />}
+                  {innerTool === 'vendor_visits' && <VendorVisitsPanel isDark={isDark} />}
                 </div>
               )}
             </div>
@@ -4810,7 +4812,7 @@ export default function RelojVisual({
                     title="Cerrar"
                     className="w-8 h-8 rounded-full bg-page hover:bg-slate-200 text-text-2 flex items-center justify-center border-none cursor-pointer"
                   >
-                    ✕
+                    <X size={16} aria-hidden="true" />
                   </button>
                   </div>
                 </div>
@@ -4836,7 +4838,7 @@ export default function RelojVisual({
                           }}
                           className={`w-6 h-6 rounded-md flex items-center justify-center cursor-pointer transition-colors ${emp.selected ? 'bg-accent' : 'bg-slate-200'}`}
                         >
-                          {emp.selected && <span className="text-white text-xs">✓</span>}
+                          {emp.selected && <Check size={14} className="text-white" aria-hidden="true" />}
                         </div>
                         <div>
                           <p className="font-bold text-sm text-text-1">{emp.name}</p>
@@ -4845,7 +4847,7 @@ export default function RelojVisual({
                           </p>
                           {emp.onTime !== undefined && (
                             <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md ${emp.onTime ? 'bg-success-bg text-success-text' : 'bg-danger-bg text-danger-text'}`}>
-                              {emp.onTime ? `✓ En Tolerancia (${emp.statusLabel})` : `⚠️ Fuera de Tolerancia (${emp.statusLabel})`}
+                              {emp.onTime ? ` En Tolerancia (${emp.statusLabel})` : ` Fuera de Tolerancia (${emp.statusLabel})`}
                             </span>
                           )}
 
@@ -4876,7 +4878,7 @@ export default function RelojVisual({
                                         }`}
                                         aria-label={`${axis.label} ${star} estrella${star === 1 ? '' : 's'}`}
                                       >
-                                        ★
+                                        <Star size={15} fill="currentColor" aria-hidden="true" />
                                       </button>
                                     ))}
                                   </div>
@@ -4913,9 +4915,9 @@ export default function RelojVisual({
 
           {/* Modal Forzosa */}
           {showForzosaModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="⚠️ Apertura Forzosa">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label=" Apertura Forzosa">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up border-4 border-warning-text text-text-1">
-                <h3 className="font-black text-xl text-warning-text mb-2">⚠️ Apertura Forzosa</h3>
+                <h3 className="font-black text-xl text-warning-text mb-2"> Apertura Forzosa</h3>
                 <p className="text-sm text-text-2 mb-4">El Titular no avisó de su ausencia. Si tomas el control, se generará una alerta de seguridad.</p>
                 <textarea className="w-full bg-warning-bg border border-warning-text/20 rounded-xl p-3 text-sm mb-4 outline-none focus:ring-2 focus-visible:ring-warning-text" rows={3} placeholder="Ej. El titular olvidó su celular..."></textarea>
                 <button onClick={handleAperturaForzosa} className="w-full bg-warning-text text-white font-bold py-4 rounded-2xl mb-2 shadow-lg">Tomar el Control y Abrir</button>
@@ -4929,10 +4931,10 @@ export default function RelojVisual({
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Evaluación 360">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-text-1">
                 <div className="text-center mb-6">
-                  <span className="text-4xl">🌟</span>
+                  <Star size={40} className="text-warning-text" aria-hidden="true" />
                   <h3 className="font-bold text-xl text-text-1 mt-3">Evaluación 360</h3>
                   <p className="text-sm text-text-3 mt-2 bg-page p-3 rounded-xl border border-border">
-                    🔒 <strong className="text-text-2">Tus respuestas son 100% anónimas para tus compañeros.</strong> Evalúa con honestidad.
+                     <strong className="text-text-2">Tus respuestas son 100% anónimas para tus compañeros.</strong> Evalúa con honestidad.
                   </p>
                 </div>
                 <div className="mb-6">
@@ -4960,20 +4962,20 @@ export default function RelojVisual({
 
           {/* Modal Absence */}
           {showAbsenceModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="🏥 Reportar Incidencia de Asistencia">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label=" Reportar Incidencia de Asistencia">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-text-1 text-left">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-border">
-                  <h3 className="font-black text-lg text-danger-text">🏥 Reportar Incidencia de Asistencia</h3>
-                  <button onClick={() => { setShowAbsenceModal(false); setShowEtaSelector(false); }} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-lg cursor-pointer">✕</button>
+                  <h3 className="font-black text-lg text-danger-text"> Reportar Incidencia de Asistencia</h3>
+                  <button onClick={() => { setShowAbsenceModal(false); setShowEtaSelector(false); }} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-lg cursor-pointer"></button>
                 </div>
 
                 {!showEtaSelector ? (
                   <>
                     <p className="text-xs text-text-3 mb-4 bg-danger-bg/50 p-3 rounded-xl border border-danger-text/50">
                       {isOpeningPremium ? (
-                        <>⚠️ **Aviso de Encargado:** Reportar inasistencia cederá automáticamente la apertura y las llaves de la sucursal al suplente en la jerarquía.</>
+                        <> **Aviso de Encargado:** Reportar inasistencia cederá automáticamente la apertura y las llaves de la sucursal al suplente en la jerarquía.</>
                       ) : (
-                        <>⚠️ **Aviso de Colaborador:** Reportar inasistencia o retardo notificará a tus supervisores y liberará tus reservas de comida asignadas de hoy.</>
+                        <> **Aviso de Colaborador:** Reportar inasistencia o retardo notificará a tus supervisores y liberará tus reservas de comida asignadas de hoy.</>
                       )}
                     </p>
 
@@ -5015,7 +5017,7 @@ export default function RelojVisual({
                         }}
                         className="bg-danger-text hover:bg-danger-text text-white font-extrabold py-3.5 rounded-2xl flex flex-col items-center justify-center gap-1 border-none cursor-pointer active:scale-95 transition-transform"
                       >
-                        <span className="text-lg">❌</span>
+                        <UserX size={18} aria-hidden="true" />
                         <span className="text-xs">No asistiré</span>
                       </button>
                     </div>
@@ -5059,15 +5061,15 @@ export default function RelojVisual({
               (docs/BACKEND_INTERFACES.md §3). Ver advertencia en useClockEngine.tsx: sin un endpoint
               PUT /me/pin todavía, la validación del backend rechazará cualquier PIN por ahora. */}
           {showEmergencyOpenModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="⚠️ Apertura de Emergencia">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label=" Apertura de Emergencia">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-text-1 text-left">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-border">
-                  <h3 className="font-black text-lg text-danger-text">⚠️ Apertura de Emergencia</h3>
-                  <button onClick={() => setShowEmergencyOpenModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-lg cursor-pointer">✕</button>
+                  <h3 className="font-black text-lg text-danger-text"> Apertura de Emergencia</h3>
+                  <button onClick={() => setShowEmergencyOpenModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-lg cursor-pointer"></button>
                 </div>
 
                 <p className="text-xs text-text-3 mb-4 bg-danger-bg/50 p-3 rounded-xl border border-danger-text/50">
-                  ⚠️ La cadena de encargados/suplentes se agotó. Requiere la co-validación presencial de <strong>2 testigos</strong> con PIN para abrir la sucursal bajo tu responsabilidad.
+                   La cadena de encargados/suplentes se agotó. Requiere la co-validación presencial de <strong>2 testigos</strong> con PIN para abrir la sucursal bajo tu responsabilidad.
                 </p>
 
                 <div className="grid grid-cols-1 gap-3 mb-3">
@@ -5132,15 +5134,15 @@ export default function RelojVisual({
               POST /clock/declare-contingency (docs/BACKEND_INTERFACES.md §4) o encola offline
               si no hay conexión. */}
           {showContingencyModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="⚡ Declarar Eventualidad">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label=" Declarar Eventualidad">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-text-1 text-left">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-border">
-                  <h3 className="font-black text-lg text-warning-text">⚡ Declarar Eventualidad</h3>
-                  <button onClick={() => setShowContingencyModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-lg cursor-pointer">✕</button>
+                  <h3 className="font-black text-lg text-warning-text"> Declarar Eventualidad</h3>
+                  <button onClick={() => setShowContingencyModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-lg cursor-pointer"></button>
                 </div>
 
                 <p className="text-xs text-text-3 mb-4 bg-warning-bg/50 p-3 rounded-xl border border-warning-text/50">
-                  ⚡ Declarar una eventualidad protege tu jornada al <strong>100% del salario</strong> (Art. 56, 132 y 133 LFT), congelando retardos y faltas por causa de fuerza mayor.
+                   Declarar una eventualidad protege tu jornada al <strong>100% del salario</strong> (Art. 56, 132 y 133 LFT), congelando retardos y faltas por causa de fuerza mayor.
                 </p>
 
                 <div className="grid grid-cols-1 gap-2.5 mb-2">
@@ -5149,21 +5151,21 @@ export default function RelojVisual({
                     onClick={() => handleContingencyDeclaration('no_power')}
                     className="w-full bg-warning-icon hover:bg-warning-text disabled:opacity-50 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95 transition-transform"
                   >
-                    ⚡ Sin Energía Eléctrica en Sucursal
+                     Sin Energía Eléctrica en Sucursal
                   </button>
                   <button
                     disabled={contingencySubmitting}
                     onClick={() => handleContingencyDeclaration('no_internet')}
                     className="w-full bg-warning-icon hover:bg-warning-text disabled:opacity-50 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95 transition-transform"
                   >
-                    📡 Sin Internet en Sucursal
+                     Sin Internet en Sucursal
                   </button>
                   <button
                     disabled={contingencySubmitting}
                     onClick={() => handleContingencyDeclaration('no_power_and_internet')}
                     className="w-full bg-danger-text hover:bg-danger-text disabled:opacity-50 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95 transition-transform"
                   >
-                    🚨 Sin Luz y Sin Internet
+                     Sin Luz y Sin Internet
                   </button>
                 </div>
               </div>
@@ -5177,8 +5179,8 @@ export default function RelojVisual({
             <div role="dialog" aria-modal="true" aria-labelledby="closing-checklist-modal-title" className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-text-1 text-left">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-border">
-                  <h3 id="closing-checklist-modal-title" className="font-black text-lg text-danger-text">🚪 Checklist de Cierre Seguro</h3>
-                  <button onClick={() => setShowClosingChecklistModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-lg cursor-pointer">✕</button>
+                  <h3 id="closing-checklist-modal-title" className="font-black text-lg text-danger-text"> Checklist de Cierre Seguro</h3>
+                  <button onClick={() => setShowClosingChecklistModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-lg cursor-pointer"></button>
                 </div>
 
                 <p className="text-xs text-text-3 mb-4">
@@ -5188,15 +5190,15 @@ export default function RelojVisual({
                 <div className="flex flex-col gap-2.5 mb-5">
                   <label className="flex items-center gap-3 bg-page border border-border rounded-xl p-3.5 cursor-pointer">
                     <input type="checkbox" checked={closingLightsOff} onChange={(e) => setClosingLightsOff(e.target.checked)} className="w-5 h-5 accent-danger-text" />
-                    <span className="text-sm font-bold text-text-2">💡 Luces y aires acondicionados apagados</span>
+                    <span className="text-sm font-bold text-text-2"> Luces y aires acondicionados apagados</span>
                   </label>
                   <label className="flex items-center gap-3 bg-page border border-border rounded-xl p-3.5 cursor-pointer">
                     <input type="checkbox" checked={closingSafeSecured} onChange={(e) => setClosingSafeSecured(e.target.checked)} className="w-5 h-5 accent-danger-text" />
-                    <span className="text-sm font-bold text-text-2">🔒 Caja fuerte y valores resguardados</span>
+                    <span className="text-sm font-bold text-text-2"> Caja fuerte y valores resguardados</span>
                   </label>
                   <label className="flex items-center gap-3 bg-page border border-border rounded-xl p-3.5 cursor-pointer">
                     <input type="checkbox" checked={closingAlarmActivated} onChange={(e) => setClosingAlarmActivated(e.target.checked)} className="w-5 h-5 accent-danger-text" />
-                    <span className="text-sm font-bold text-text-2">🚨 Alarma y cortina de seguridad activadas</span>
+                    <span className="text-sm font-bold text-text-2"> Alarma y cortina de seguridad activadas</span>
                   </label>
                 </div>
 
@@ -5213,11 +5215,11 @@ export default function RelojVisual({
 
           {/* Modal de Checklist de Apertura */}
           {showOpeningChecklistModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="📋 Checklist de Apertura">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label=" Checklist de Apertura">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-text-1 text-left">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-border">
-                  <h3 className="font-black text-lg text-text-1">📋 Checklist de Apertura</h3>
-                  <button onClick={() => setShowOpeningChecklistModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-lg cursor-pointer">✕</button>
+                  <h3 className="font-black text-lg text-text-1"> Checklist de Apertura</h3>
+                  <button onClick={() => setShowOpeningChecklistModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-lg cursor-pointer"></button>
                 </div>
                 <p className="text-xs text-text-3 mb-4">Completa las siguientes tareas operativas obligatorias para habilitar el inicio de la sucursal de hoy:</p>
 
@@ -5228,7 +5230,7 @@ export default function RelojVisual({
                 ) : openingAssignments.length === 0 ? (
                   <div className="text-center py-6">
                     <p className="text-xs text-warning-text bg-warning-bg p-3 rounded-xl font-medium mb-4">
-                      ⚠️ No se encontraron tareas de apertura asignadas para ti hoy en la base de datos.
+                       No se encontraron tareas de apertura asignadas para ti hoy en la base de datos.
                     </p>
                     <button
                       onClick={async () => {
@@ -5261,7 +5263,7 @@ export default function RelojVisual({
                                   setOpeningAssignments(prev => prev.map(a => a.id === assignment.id ? { ...a, status: newStatus } : a));
                                 } catch (err) {
                                   console.error("Error updating assignment status", err);
-                                  showCustomAlert("❌ Error al actualizar la tarea en el servidor.");
+                                  showCustomAlert(" Error al actualizar la tarea en el servidor.");
                                 }
                               }}
                               className="rounded text-success-text focus-visible:ring-success-text mt-0.5 cursor-pointer"
@@ -5284,7 +5286,7 @@ export default function RelojVisual({
                         setOpeningChecklistCompleted(true);
                         localStorage.setItem('opening_checklist_completed', 'true');
                         setShowOpeningChecklistModal(false);
-                        showCustomAlert("✅ Checklist de apertura completado y registrado con éxito.");
+                        showCustomAlert(" Checklist de apertura completado y registrado con éxito.");
                       }}
                       className={`w-full font-black py-4 rounded-2xl transition-all shadow-md cursor-pointer border-none ${
                         openingAssignments.every(a => a.status === 'completed' || a.status === 'awaiting_validation' || a.status === 'omitted')
@@ -5315,7 +5317,7 @@ export default function RelojVisual({
                   {bloqueandoElAcceso ? 'Acceso Bloqueado' : 'Justificar retardo'}
                 </div>
                 <div className="mt-6 flex flex-col items-center text-center">
-                  <span className="text-5xl mb-4">{bloqueandoElAcceso ? '⛔' : '📝'}</span>
+                  <span className="text-5xl mb-4">{bloqueandoElAcceso ? '' : ''}</span>
                   <h3 className="font-black text-text-1 text-xl mb-2 uppercase">
                     {bloqueandoElAcceso ? 'Retardo Crítico Detectado' : 'Explica tu retardo'}
                   </h3>
@@ -5349,12 +5351,12 @@ export default function RelojVisual({
                                  reason: justificanteText.trim(),
                               });
                            } catch (e: any) {
-                              showCustomAlert(`⚠️ ${e?.response?.data?.message || 'No se pudo enviar el justificante.'}`);
+                              showCustomAlert(` ${e?.response?.data?.message || 'No se pudo enviar el justificante.'}`);
                               return;
                            }
                            updateClockState(currentUser.id, 'active');
                            setContingencyLogs((prev: any) => [{ id: Date.now(), userId: currentUser.id, userName: currentUser.name, type: 'late', reason: `JUSTIFICANTE: ${justificanteText}`, time: formattedTime }, ...prev]);
-                           showCustomAlert(`✅ Justificante enviado. Un administrador lo revisará; si lo aprueba, el retardo no se te descontará.`);
+                           showCustomAlert(` Justificante enviado. Un administrador lo revisará; si lo aprueba, el retardo no se te descontará.`);
                            consultarRetardoJustificable();
                            setShowJustificanteModal(false);
                            setJustificanteText("");
@@ -5376,9 +5378,9 @@ export default function RelojVisual({
 
           {/* Modal KeyDelegation / Entrega de Turno (Shift Handover) */}
           {showKeyDelegationModal && !isHandoverCompleted && (
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="🗝️ Entrega de Turno">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label=" Entrega de Turno">
               <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up text-text-1">
-                <h3 className="font-bold text-accent mb-2 text-xl flex items-center gap-2"><span>🗝️</span> Entrega de Turno</h3>
+                <h3 className="font-bold text-accent mb-2 text-xl flex items-center gap-2"><Key size={20} aria-hidden="true" /> Entrega de Turno</h3>
                 <p className="text-sm text-text-2 mb-4 bg-navy-50 p-3 rounded-xl border border-border">
                   Para registrar tu salida, debes realizar el arqueo de caja y delegar las llaves de la sucursal.
                 </p>
@@ -5441,9 +5443,9 @@ export default function RelojVisual({
           )}
 
           {showKeyDelegationModal && isHandoverCompleted && (
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="🔑 Entregar Llaves">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label=" Entregar Llaves">
               <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up text-text-1">
-                <h3 className="font-bold text-accent mb-2 text-xl flex items-center gap-2"><span>🔑</span> Entregar Llaves</h3>
+                <h3 className="font-bold text-accent mb-2 text-xl flex items-center gap-2"><Key size={20} aria-hidden="true" /> Entregar Llaves</h3>
                 <p className="text-sm text-text-2 mb-4 bg-navy-50 p-3 rounded-xl border border-border">Mañana es tu día de descanso. Selecciona al encargado que abrirá la sucursal mañana.</p>
 
                 <div className="space-y-2 mb-6">
@@ -5482,9 +5484,9 @@ export default function RelojVisual({
 
           {/* Modal Ley Silla Task Selection */}
           {showBreakSeatModal && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-text-1" role="dialog" aria-modal="true" aria-label="🧘 Descanso Ley Silla">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-text-1" role="dialog" aria-modal="true" aria-label=" Descanso Ley Silla">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-border animate-in zoom-in-95 duration-200">
-                <h3 className="font-extrabold text-accent mb-2 text-xl flex items-center gap-2"><span>🧘</span> Descanso Ley Silla</h3>
+                <h3 className="font-extrabold text-accent mb-2 text-xl flex items-center gap-2"><Armchair size={20} aria-hidden="true" /> Descanso Ley Silla</h3>
                 <p className="text-sm text-text-2 mb-5">
                   De acuerdo con la <strong>Ley Silla</strong>, puedes tomar un descanso de 15 minutos. Selecciona una tarea que puedas realizar sentado durante este periodo:
                 </p>
@@ -5502,9 +5504,9 @@ export default function RelojVisual({
                     >
                       <div>
                         <p className="font-bold text-brand-dark text-sm">{t.title}</p>
-                        <p className="text-[10px] text-accent mt-0.5">⏱️ {t.estimatedMins} min | 🏆 {t.points} pts</p>
+                        <p className="text-[10px] text-accent mt-0.5"> {t.estimatedMins} min |  {t.points} pts</p>
                       </div>
-                      <span className="text-accent bg-accent-soft p-1.5 rounded-full">🪑</span>
+                      <span className="text-accent bg-accent-soft p-1.5 rounded-full"><Armchair size={15} aria-hidden="true" /></span>
                     </button>
                   ))}
 
@@ -5520,7 +5522,7 @@ export default function RelojVisual({
                   onClick={startBreakWithoutTask}
                   className="w-full bg-accent hover:bg-accent-hover text-white font-bold py-3.5 rounded-2xl transition-colors border-none mb-2"
                 >
-                  🪑 Solo descansar (sin tarea)
+                   Solo descansar (sin tarea)
                 </button>
                 <button
                   onClick={() => setShowBreakSeatModal(false)}
@@ -5534,9 +5536,9 @@ export default function RelojVisual({
 
           {/* Modal Pase de Salida Temporal */}
           {showTempExitModal && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-text-1" role="dialog" aria-modal="true" aria-label="🚪 Pase de Salida Temporal">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-text-1" role="dialog" aria-modal="true" aria-label=" Pase de Salida Temporal">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-border animate-in zoom-in-95 duration-200">
-                <h3 className="font-extrabold text-accent mb-2 text-xl flex items-center gap-2"><span>🚪</span> Pase de Salida Temporal</h3>
+                <h3 className="font-extrabold text-accent mb-2 text-xl flex items-center gap-2"><LogOut size={20} aria-hidden="true" /> Pase de Salida Temporal</h3>
                 <p className="text-sm text-text-2 mb-5">
                   Selecciona el motivo de tu salida temporal. El sistema monitoreará tu ubicación GPS y alertará en caso de sobrepasar el límite configurado.
                 </p>
@@ -5549,7 +5551,7 @@ export default function RelojVisual({
                       className="w-full p-4 rounded-2xl border border-border hover:border-border bg-white hover:bg-navy-50/35 text-text-1 font-bold text-sm text-left transition-all flex justify-between items-center"
                     >
                       <span>{reason}</span>
-                      <span className="text-xs text-accent font-normal">Solicitar ➡️</span>
+                      <span className="text-xs text-accent font-normal">Solicitar </span>
                     </button>
                   ))}
                 </div>
@@ -5566,9 +5568,9 @@ export default function RelojVisual({
 
           {/* Modal Botón de Pánico */}
           {showPanicModal && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-text-1" role="dialog" aria-modal="true" aria-label="🚨 Botón de Pánico">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-text-1" role="dialog" aria-modal="true" aria-label=" Botón de Pánico">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-border animate-in zoom-in-95 duration-200">
-                <h3 className="font-extrabold text-danger-text mb-2 text-xl flex items-center gap-2"><span>🚨</span> Botón de Pánico</h3>
+                <h3 className="font-extrabold text-danger-text mb-2 text-xl flex items-center gap-2"><ShieldAlert size={20} aria-hidden="true" /> Botón de Pánico</h3>
                 <p className="text-sm text-text-2 mb-5">
                   Reporta una emergencia crítica en la sucursal de forma inmediata. Se bloqueará la pantalla y se avisará a todos los supervisores.
                 </p>
@@ -5580,7 +5582,7 @@ export default function RelojVisual({
                       onClick={() => triggerPanic(emergency, `Reportado por ${currentUser.name}`)}
                       className="w-full p-4 rounded-2xl border border-danger-text/20 hover:border-danger-text/20 bg-danger-bg/20 hover:bg-danger-bg text-danger-text font-bold text-sm text-left transition-all animate-pulse"
                     >
-                      🚨 {emergency}
+                       {emergency}
                     </button>
                   ))}
                 </div>
@@ -5597,9 +5599,9 @@ export default function RelojVisual({
 
           {/* Modal Intercambio Rápido de Comida */}
           {showMealSwapModal && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-text-1" role="dialog" aria-modal="true" aria-label="🔄 Intercambio de Comida">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-text-1" role="dialog" aria-modal="true" aria-label=" Intercambio de Comida">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-border animate-in zoom-in-95 duration-200">
-                <h3 className="font-extrabold text-warning-text mb-2 text-xl flex items-center gap-2"><span>🔄</span> Intercambio de Comida</h3>
+                <h3 className="font-extrabold text-warning-text mb-2 text-xl flex items-center gap-2"><Utensils size={20} aria-hidden="true" /> Intercambio de Comida</h3>
                 <p className="text-sm text-text-2 mb-5">
                   Selecciona un compañero de turno que tenga reservación de comida para intercambiar su horario por el tuyo de forma rápida.
                 </p>
@@ -5641,10 +5643,10 @@ export default function RelojVisual({
 
           {/* Modal Ajustes de Alarmas y Alertas */}
           {showAlarmSettingsModal && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[99999] select-none text-text-1" role="dialog" aria-modal="true" aria-label="🔔 Alertas y Alarmas">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[99999] select-none text-text-1" role="dialog" aria-modal="true" aria-label=" Alertas y Alarmas">
               <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-border dark:border-slate-800 animate-in zoom-in-95 duration-200">
                 <h3 className="font-extrabold text-accent dark:text-navy-300 mb-2 text-lg flex items-center gap-2">
-                  <span>🔔</span> Alertas y Alarmas
+                  <AlertCircle size={18} aria-hidden="true" /> Alertas y Alarmas
                 </h3>
                 <p className="text-xs text-text-3 mb-5">
                   Personaliza tus recordatorios de entrada, comida y Ley Silla.
@@ -5684,7 +5686,7 @@ export default function RelojVisual({
                                 : 'bg-white dark:bg-slate-900 text-text-2 dark:text-slate-400 border-border dark:border-slate-800 hover:bg-page'
                             }`}
                           >
-                            🎵 {tone}
+                             {tone}
                           </button>
                         ))}
                       </div>
@@ -5758,12 +5760,12 @@ export default function RelojVisual({
 
                 <h3 className="font-extrabold text-text-1 text-center tracking-tight mb-2 text-base">
                   {isOvertimeValidation
-                    ? (isSimulatedHoliday ? "📅 Autorizar Labor en Feriado" : "⏰ Autorizar Horas Extras")
+                    ? (isSimulatedHoliday ? " Autorizar Labor en Feriado" : " Autorizar Horas Extras")
                     : isEarlyDepartureValidation
-                      ? "🚪 Autorización de Salida Anticipada"
+                      ? " Autorización de Salida Anticipada"
                       : isLateEntryValidation
-                        ? "🔑 Autorizar Entrada Tardía"
-                        : "⚠️ Tareas Pendientes Detectadas"}
+                        ? " Autorizar Entrada Tardía"
+                        : " Tareas Pendientes Detectadas"}
                 </h3>
                 <p className="text-[10.5px] text-text-3 text-center leading-relaxed mb-5 px-2 font-bold">
                   {isOvertimeValidation
@@ -5796,7 +5798,7 @@ export default function RelojVisual({
                   </p>
                   {!isLateEntryValidation && !isEarlyDepartureValidation && !isOvertimeValidation && (
                     <p className="text-[9px] text-danger-text font-extrabold text-center uppercase">
-                      ⚠️ Nota: Omitir tareas afectará negativamente las métricas de productividad.
+                       Nota: Omitir tareas afectará negativamente las métricas de productividad.
                     </p>
                   )}
                 </div>
@@ -5836,14 +5838,14 @@ export default function RelojVisual({
 
           {/* Modal de Salida Anticipada */}
           {showEarlyDepartureModal && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[99999] select-none text-text-1 animate-fade-in" role="dialog" aria-modal="true" aria-label="🚪 Registrar Salida Anticipada">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[99999] select-none text-text-1 animate-fade-in" role="dialog" aria-modal="true" aria-label=" Registrar Salida Anticipada">
               <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-border animate-in zoom-in-95 duration-200">
                 <div className="w-12 h-12 bg-danger-bg border border-danger-text/20 rounded-2xl flex items-center justify-center text-danger-text mx-auto mb-4 shadow-sm">
                   <LogOut size={22} className="animate-pulse" />
                 </div>
 
                 <h3 className="font-extrabold text-text-1 text-center tracking-tight mb-2 text-base">
-                  🚪 Registrar Salida Anticipada
+                   Registrar Salida Anticipada
                 </h3>
                 <p className="text-[10.5px] text-text-3 text-center leading-relaxed mb-5 px-2 font-bold">
                   ¿Por qué necesitas retirarte antes de finalizar tu jornada?
@@ -5863,7 +5865,7 @@ export default function RelojVisual({
                   </select>
                   <p className="text-[9.5px] text-danger-text font-extrabold text-center uppercase">
                     {isPro
-                      ? "⚠️ Se requiere el PIN de tu supervisor para confirmar."
+                      ? " Se requiere el PIN de tu supervisor para confirmar."
                       : "ℹ️ Confirmar registrará tu salida de inmediato."}
                   </p>
                 </div>
@@ -5902,7 +5904,7 @@ export default function RelojVisual({
                 onClick={resolvePanic}
                 className="bg-success-text hover:bg-success-text text-white font-extrabold px-8 py-4 rounded-2xl shadow-xl transition-all hover:scale-105 border-none cursor-pointer text-sm uppercase tracking-wider"
               >
-                🔓 Desactivar Alerta (Administración)
+                 Desactivar Alerta (Administración)
               </button>
             </div>
           )}
@@ -5954,10 +5956,10 @@ export default function RelojVisual({
                             'bg-page border-border text-text-3'
                           }`}>
                             {modalState === 'active' ? '⏳ En curso' :
-                             modalState === 'completed' ? (hasExceeded ? '⚠️ Límite Excedido' : '✓ Cumplido') :
-                             modalState === 'reserved_pending' ? '📅 Reservado' : '🍽️ Sin Registro'}
+                             modalState === 'completed' ? (hasExceeded ? ' Límite Excedido' : ' Cumplido') :
+                             modalState === 'reserved_pending' ? ' Reservado' : ' Sin Registro'}
                           </span>
-                          <button onClick={() => setShowMealDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-sm cursor-pointer ml-1 select-none">✕</button>
+                          <button onClick={() => setShowMealDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-sm cursor-pointer ml-1 select-none"></button>
                         </div>
                       </div>
 
@@ -5972,9 +5974,9 @@ export default function RelojVisual({
                           <>¡Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>! Buen provecho. Actualmente te encuentras en tu tiempo de comida reservado. Recuerda registrar tu reingreso a tiempo.</>
                         ) : modalState === 'completed' ? (
                           hasExceeded ? (
-                            <>Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>. Hoy tu almuerzo duró <strong className="text-danger-text font-bold">{info?.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-danger-text font-bold">{info?.extra} minutos</strong>. ⚠️</>
+                            <>Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>. Hoy tu almuerzo duró <strong className="text-danger-text font-bold">{info?.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-danger-text font-bold">{info?.extra} minutos</strong>. </>
                           ) : (
-                            <>¡Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>! Tu almuerzo de hoy duró <strong className="text-success-text font-bold">{info?.duration} minutos</strong> (dentro del límite regular de {limit} minutos). ¡Excelente coordinación! 🌟</>
+                            <>¡Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>! Tu almuerzo de hoy duró <strong className="text-success-text font-bold">{info?.duration} minutos</strong> (dentro del límite regular de {limit} minutos). ¡Excelente coordinación! </>
                           )
                         ) : modalState === 'reserved_pending' ? (
                           <>Hola, tu horario de comida es a las <strong className="text-accent font-bold">{mySlots[0]}</strong>.</>
@@ -5996,7 +5998,7 @@ export default function RelojVisual({
                           {candidateColleagues.length > 0 && modalState === 'active' ? (
                             <div className="p-3 bg-page border border-border rounded-xl text-left">
                               <h4 className="text-[10px] font-black text-text-2 uppercase tracking-wider mb-2 flex items-center gap-1">
-                                <span>🔄</span> Intercambiar con un compañero
+                                <Users size={16} aria-hidden="true" /> Intercambiar con un compañero
                               </h4>
                               <select
                                 id="swap-colleague-select"
@@ -6086,9 +6088,9 @@ export default function RelojVisual({
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
                         isLate ? 'bg-danger-bg border-danger-text/20 text-danger-text' : 'bg-success-bg border-success-text/20 text-success-text'
                       }`}>
-                        {isLate ? '⚠️ Retardo' : '✓ Puntual'}
+                        {isLate ? ' Retardo' : ' Puntual'}
                       </span>
-                      <button onClick={() => setShowEntryDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-sm cursor-pointer ml-1 select-none">✕</button>
+                      <button onClick={() => setShowEntryDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-sm cursor-pointer ml-1 select-none"></button>
                     </div>
                   </div>
 
@@ -6097,7 +6099,7 @@ export default function RelojVisual({
                     isLate ? 'bg-danger-bg/40 border-danger-text/60 text-danger-text' : 'bg-success-bg/40 border-success-text/60 text-success-text'
                   }`}>
                     {isLate ? (
-                      <>Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>. Buen día. Registraste tu entrada hoy a las <strong className="text-danger-text font-bold">{actualIn !== undefined ? formatMinsToTimeClean(actualIn) : '--:--'}</strong> (tu entrada regular es a las {formatStringToTimeClean(expectedInStr)}), acumulando un retardo de <strong className="text-danger-text font-bold">{delayMins} minutos</strong>. Recuerda ingresar a tiempo para proteger tu bono de puntualidad mensual. ¡Mucho éxito en el turno de hoy! 💪</>
+                      <>Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>. Buen día. Registraste tu entrada hoy a las <strong className="text-danger-text font-bold">{actualIn !== undefined ? formatMinsToTimeClean(actualIn) : '--:--'}</strong> (tu entrada regular es a las {formatStringToTimeClean(expectedInStr)}), acumulando un retardo de <strong className="text-danger-text font-bold">{delayMins} minutos</strong>. Recuerda ingresar a tiempo para proteger tu bono de puntualidad mensual. ¡Mucho éxito en el turno de hoy! </>
                     ) : (
                       <>¡Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>! Buen día. Registraste tu entrada de forma puntual hoy a las <strong className="text-success-text font-bold">{actualIn !== undefined ? formatMinsToTimeClean(actualIn) : '--:--'}</strong> (tu entrada regular es a las {formatStringToTimeClean(expectedInStr)}). ¡Excelente inicio de jornada! Sigue así para asegurar tu bono de puntualidad. ⭐</>
                     )}
@@ -6136,7 +6138,7 @@ export default function RelojVisual({
                           Solicitud de Descanso (Ley Silla)
                         </h3>
                       </div>
-                      <button onClick={() => setShowBreakDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-sm cursor-pointer select-none">✕</button>
+                      <button onClick={() => setShowBreakDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-sm cursor-pointer select-none"></button>
                     </div>
 
                     <div className="p-4 rounded-2xl border bg-navy-50/40 border-border/60 text-brand-dark leading-relaxed text-xs font-semibold">
@@ -6149,18 +6151,18 @@ export default function RelojVisual({
                           {remainingMins > 0 ? (
                             <p>⏳ Tiempo restante para el descanso de ley: <strong className="text-warning-text">{remainingMins} minutos</strong>.</p>
                           ) : (
-                            <p className="text-success-text font-black">✓ Ya tienes derecho a tomar tu descanso de {leySillaConfig?.breakMinutes || 15} min.</p>
+                            <p className="text-success-text font-black"> Ya tienes derecho a tomar tu descanso de {leySillaConfig?.breakMinutes || 15} min.</p>
                           )}
                         </div>
                       ) : (
-                        <p className="text-danger-text font-black mt-2">⚠️ Registra tu entrada primero para calcular tu tiempo acumulado.</p>
+                        <p className="text-danger-text font-black mt-2"> Registra tu entrada primero para calcular tu tiempo acumulado.</p>
                       )}
                     </div>
 
                     {/* Sugerencias de Tareas en Silla */}
                     <div className="p-4 bg-page border border-border rounded-2xl space-y-2">
                       <h4 className="text-[11px] font-black text-text-2 uppercase tracking-wider flex items-center gap-1">
-                        <span>💡</span> Sugerencia de Tareas en Silla:
+                        <Sparkles size={16} aria-hidden="true" /> Sugerencia de Tareas en Silla:
                       </h4>
                       <p className="text-[10px] text-text-3 leading-relaxed">
                         Si necesitas descansar pero prefieres seguir activo, puedes solicitar al supervisor realizar temporalmente tareas sentado, tales como:
@@ -6216,10 +6218,10 @@ export default function RelojVisual({
                         'bg-success-bg border-success-text/20 text-success-text'
                       }`}>
                         {info.isActive ? '⏳ En curso' :
-                         hasExceeded ? '⚠️ Límite Excedido' :
-                         '✓ Cumplido'}
+                         hasExceeded ? ' Límite Excedido' :
+                         ' Cumplido'}
                       </span>
-                      <button onClick={() => setShowBreakDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-sm cursor-pointer ml-1 select-none">✕</button>
+                      <button onClick={() => setShowBreakDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-sm cursor-pointer ml-1 select-none"></button>
                     </div>
                   </div>
 
@@ -6232,9 +6234,9 @@ export default function RelojVisual({
                     {info.isActive ? (
                       <>¡Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>! Actualmente te encuentras en tu descanso de hoy, iniciado a las <strong className="text-accent font-bold">{formatMinsToTimeClean(info.start)}</strong>. Disfruta tu café o estiramiento. Recuerda registrar tu reingreso a tiempo.</>
                     ) : hasExceeded ? (
-                      <>Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>. Tu descanso (iniciado a las {formatMinsToTimeClean(info.start)}) duró <strong className="text-danger-text font-bold">{info.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-danger-text font-bold">{info.extra} minutos</strong>. Te sugerimos cuidar más tus tiempos en tus siguientes descansos. ⚠️</>
+                      <>Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>. Tu descanso (iniciado a las {formatMinsToTimeClean(info.start)}) duró <strong className="text-danger-text font-bold">{info.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-danger-text font-bold">{info.extra} minutos</strong>. Te sugerimos cuidar más tus tiempos en tus siguientes descansos. </>
                     ) : (
-                      <>¡Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>! Tu descanso (iniciado a las {formatMinsToTimeClean(info.start)}) duró <strong className="text-success-text font-bold">{info.duration} minutos</strong> (dentro de tu límite regular de {limit} minutos). ¡Excelente coordinación con tus tiempos de descanso! ☕</>
+                      <>¡Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>! Tu descanso (iniciado a las {formatMinsToTimeClean(info.start)}) duró <strong className="text-success-text font-bold">{info.duration} minutos</strong> (dentro de tu límite regular de {limit} minutos). ¡Excelente coordinación con tus tiempos de descanso! </>
                     )}
                   </div>
                 </div>
@@ -6276,9 +6278,9 @@ export default function RelojVisual({
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
                         hasAnyDeviation ? 'bg-warning-bg border-warning-text/20 text-warning-text' : 'bg-success-bg border-success-text/20 text-success-text'
                       }`}>
-                        {hasAnyDeviation ? '⚠️ Con Novedad' : '🏆 Impecable'}
+                        {hasAnyDeviation ? ' Con Novedad' : ' Impecable'}
                       </span>
-                      <button onClick={() => setShowExitDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-sm cursor-pointer ml-1 select-none">✕</button>
+                      <button onClick={() => setShowExitDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-text-2 text-sm cursor-pointer ml-1 select-none"></button>
                     </div>
                   </div>
 
@@ -6287,9 +6289,9 @@ export default function RelojVisual({
                     hasAnyDeviation ? 'bg-warning-bg/40 border-warning-text/60 text-warning-text' : 'bg-success-bg/40 border-success-text/60 text-success-text'
                   }`}>
                     {hasAnyDeviation ? (
-                      <>Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>. Concluiste tu turno con <strong className="text-text-1">{workedHours} horas</strong> registradas (entrada a las {checkInTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : '--:--'} y salida a las {checkOutTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : '--:--'}). Registramos algunas novedades: <strong className="text-danger-text">{devList.join(', ')}</strong>. ¡No te preocupes, mañana será una gran oportunidad para retomar tu récord de puntualidad! Buen descanso. 🌟</>
+                      <>Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>. Concluiste tu turno con <strong className="text-text-1">{workedHours} horas</strong> registradas (entrada a las {checkInTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : '--:--'} y salida a las {checkOutTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : '--:--'}). Registramos algunas novedades: <strong className="text-danger-text">{devList.join(', ')}</strong>. ¡No te preocupes, mañana será una gran oportunidad para retomar tu récord de puntualidad! Buen descanso. </>
                     ) : (
-                      <>¡Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>! Excelente trabajo hoy. Finalizaste tu jornada con <strong className="text-success-text font-bold">{workedHours} horas</strong> laboradas (entrada a las {checkInTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : '--:--'} y salida a las {checkOutTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : '--:--'}). Cumpliste perfectamente con tus horarios y límites de asistencia. ¡Muchas gracias por tu compromiso y descansa! 🏆</>
+                      <>¡Hola, <strong className="font-black text-text-1">{currentUser?.name}</strong>! Excelente trabajo hoy. Finalizaste tu jornada con <strong className="text-success-text font-bold">{workedHours} horas</strong> laboradas (entrada a las {checkInTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : '--:--'} y salida a las {checkOutTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : '--:--'}). Cumpliste perfectamente con tus horarios y límites de asistencia. ¡Muchas gracias por tu compromiso y descansa! </>
                     )}
                   </div>
                 </div>
@@ -6334,7 +6336,7 @@ export default function RelojVisual({
                     if (isFreemiumExpired) {
                       return (
                         <>
-                          <h3 className="font-bold text-warning-text mb-2 text-xl flex items-center gap-2"><span>🍔</span> Registro de Almuerzo</h3>
+                          <h3 className="font-bold text-warning-text mb-2 text-xl flex items-center gap-2"><Utensils size={20} aria-hidden="true" /> Registro de Almuerzo</h3>
 
                           <div className="p-4 bg-page border border-border rounded-2xl mb-6">
                             <p className="text-xs text-text-2 leading-relaxed mb-4 text-left">
@@ -6381,7 +6383,7 @@ export default function RelojVisual({
                       <div className="overflow-y-auto custom-scrollbar pr-1 space-y-4">
                         <div className="flex justify-between items-start">
                           <div>
-                            <h3 className="font-extrabold text-warning-text text-xl flex items-center gap-2"><span>🍔</span> Aparta tu Comida</h3>
+                            <h3 className="font-extrabold text-warning-text text-xl flex items-center gap-2"><Utensils size={20} aria-hidden="true" /> Aparta tu Comida</h3>
                             <p className="text-xs text-text-3 mt-1">
                               Selecciona un horario disponible. Se garantiza 1 solo lugar por colaborador. (Aforo máximo: {mealSettings?.maxChairs || 3})
                             </p>
@@ -6390,14 +6392,14 @@ export default function RelojVisual({
                             onClick={() => setShowMealReservationModal(false)}
                             className="bg-page hover:bg-slate-200 text-text-3 p-1.5 rounded-full border-none cursor-pointer transition-colors text-xs shrink-0"
                           >
-                            ✕
+                            <X size={15} aria-hidden="true" />
                           </button>
                         </div>
 
                         {currentReservedSlot && (
                           <div className="bg-success-bg border border-success-text/80 rounded-2xl p-3 flex items-center justify-between shadow-xs">
                             <div className="flex items-center gap-2.5">
-                              <span className="text-base">✅</span>
+                              <CheckCircle size={16} aria-hidden="true" />
                               <div>
                                 <p className="text-[11px] font-black text-success-text leading-tight">Lugar Garantizado Reservado</p>
                                 <p className="text-[10px] text-success-text font-bold leading-tight mt-0.5">
@@ -6488,7 +6490,7 @@ export default function RelojVisual({
                                 >
                                   <span className="font-extrabold text-xs">{slotStr}</span>
                                   <span className={`text-[9.5px] mt-1 font-bold text-center leading-tight ${isMySlot ? 'text-success-text' : ''}`}>
-                                    {isMySlot ? '✓ Tu Lugar Apartado' : disabled ? `🔒 ${blockReason}` : `🪑 Disp: ${(mealSettings?.maxChairs || 3) - firstBlockReservations.filter((r: any) => Number(r.userId) !== Number(currentUser?.id)).length}`}
+                                    {isMySlot ? ' Tu Lugar Apartado' : disabled ? ` ${blockReason}` : ` Disp: ${(mealSettings?.maxChairs || 3) - firstBlockReservations.filter((r: any) => Number(r.userId) !== Number(currentUser?.id)).length}`}
                                   </span>
                                 </button>
                               );
@@ -6499,7 +6501,7 @@ export default function RelojVisual({
                         {/* Listado Deslizable de Intercambio Filtrado */}
                         <div className="border-t border-border pt-3.5">
                           <h4 className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-2 flex items-center gap-1">
-                            <span>🔄</span> ¿Intercambiar horario con un compañero?
+                            <Users size={16} aria-hidden="true" /> ¿Intercambiar horario con un compañero?
                           </h4>
                           {swapCandidates.length > 0 ? (
                             <div className="max-h-28 overflow-y-auto pr-1 space-y-1.5 custom-scrollbar">
@@ -6517,7 +6519,7 @@ export default function RelojVisual({
                                         setIsSwappingLoading(false);
                                         setPendingSwapPartner(null);
                                         setShowMealReservationModal(false);
-                                        showCustomAlert(`🟢 ${u.name} ha aceptado tu solicitud de intercambio de comida.`);
+                                        showCustomAlert(` ${u.name} ha aceptado tu solicitud de intercambio de comida.`);
                                       }, 3000);
                                     }}
                                     className="p-2 rounded-xl border border-border hover:border-warning-text/20 bg-page/50 hover:bg-warning-bg/20 transition-all flex justify-between items-center cursor-pointer"
@@ -6629,10 +6631,10 @@ export default function RelojVisual({
                         : 'bg-danger-bg text-danger-text'
                   }`}>
                     {(weeklyPerformanceScore ?? 0) >= 85
-                      ? 'Desempeño Excelente ✓'
+                      ? 'Desempeño Excelente '
                       : (weeklyPerformanceScore ?? 0) >= 60
                         ? 'Rendimiento Regular'
-                        : 'Atención Requerida ⚠️'}
+                        : 'Atención Requerida '}
                   </span>
                 </div>
 
@@ -6640,7 +6642,7 @@ export default function RelojVisual({
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between p-2.5 bg-white border border-border rounded-xl">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">📅</span>
+                      <AlertTriangle size={15} className="text-danger-text" aria-hidden="true" />
                       <div className="leading-none">
                         <span className="text-[11px] font-black text-text-1">Faltas Registradas</span>
                         <span className="text-[9px] text-slate-400 block mt-0.5">Penaliza asistencia</span>
@@ -6651,7 +6653,7 @@ export default function RelojVisual({
 
                   <div className="flex items-center justify-between p-2.5 bg-white border border-border rounded-xl">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">⏱️</span>
+                      <Clock size={15} className="text-warning-text" aria-hidden="true" />
                       <div className="leading-none">
                         <span className="text-[11px] font-black text-text-1">Retardos Acumulados</span>
                         <span className="text-[9px] text-slate-400 block mt-0.5">Penaliza puntualidad</span>
@@ -6662,7 +6664,7 @@ export default function RelojVisual({
 
                   <div className="flex items-center justify-between p-2.5 bg-white border border-border rounded-xl">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">🍔</span>
+                      <Utensils size={15} className="text-warning-text" aria-hidden="true" />
                       <div className="leading-none">
                         <span className="text-[11px] font-black text-text-1">Excesos en Tiempo Comida</span>
                         <span className="text-[9px] text-slate-400 block mt-0.5">Minutos excedidos del límite</span>
@@ -6673,7 +6675,7 @@ export default function RelojVisual({
 
                   <div className="flex items-center justify-between p-2.5 bg-white border border-border rounded-xl">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">☕</span>
+                      <Armchair size={15} className="text-accent" aria-hidden="true" />
                       <div className="leading-none">
                         <span className="text-[11px] font-black text-text-1">Excesos en Descansos</span>
                         <span className="text-[9px] text-slate-400 block mt-0.5">Ley Silla / Pausas activas</span>
@@ -6684,7 +6686,7 @@ export default function RelojVisual({
 
                   <div className="flex items-center justify-between p-2.5 bg-white border border-border rounded-xl">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">✅</span>
+                      <CheckSquare size={15} className="text-success-text" aria-hidden="true" />
                       <div className="leading-none">
                         <span className="text-[11px] font-black text-text-1">Eficiencia en Tareas</span>
                         <span className="text-[9px] text-slate-400 block mt-0.5">Completadas a tiempo</span>
@@ -6733,7 +6735,7 @@ export default function RelojVisual({
                   <button
                     onClick={() => {
                       setShowPanicModal(false);
-                      showCustomAlert('🚨 Alerta de pánico enviada con éxito. Soporte en camino.');
+                      showCustomAlert(' Alerta de pánico enviada con éxito. Soporte en camino.');
                     }}
                     className="flex-1 py-3 bg-danger-text hover:bg-danger-text text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-danger-text/10 border-none cursor-pointer"
                   >
@@ -6749,7 +6751,7 @@ export default function RelojVisual({
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col justify-end text-text-1" role="dialog" aria-modal="true" aria-label="Reporte 100% Anónimo">
               <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up">
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">📢</span>
+                  <AlertOctagon size={22} className="text-warning-text" aria-hidden="true" />
                   <h3 className="font-bold text-text-1 text-lg">Reporte 100% Anónimo</h3>
                 </div>
                 <p className="text-xs text-text-3 mb-4 bg-page p-2 rounded-lg">Este reporte se enviará de forma confidencial a la administración. Nadie sabrá que fuiste tú.</p>
@@ -6861,7 +6863,7 @@ export default function RelojVisual({
                     <button
                       onClick={() => {
                         useAppStore.getState().setIsSandboxMode(!isSandboxMode);
-                        showCustomAlert(`🛠️ Modo Sandbox ${!isSandboxMode ? 'activado' : 'desactivado'}.`);
+                        showCustomAlert(` Modo Sandbox ${!isSandboxMode ? 'activado' : 'desactivado'}.`);
                       }}
                       className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-text-2 hover:bg-page transition-colors flex items-center justify-between focus:outline-none bg-transparent border-none cursor-pointer"
                     >
@@ -6897,13 +6899,13 @@ export default function RelojVisual({
 
           {/* settings Modal (User Profile & App Settings) */}
           {showSettingsModal && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="⚙️ Ajustes de Perfil">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label=" Ajustes de Perfil">
               <div className={`rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up border text-left ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-border text-text-1'}`}>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-black text-lg flex items-center gap-2">
-                    <span>⚙️</span> Ajustes de Perfil
+                    <ClipboardList size={16} aria-hidden="true" /> Ajustes de Perfil
                   </h3>
-                  <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-text-2 font-extrabold text-sm focus:outline-none">✕</button>
+                  <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-text-2 p-1 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" aria-label="Cerrar ajustes"><X size={18} aria-hidden="true" /></button>
                 </div>
 
                 <div className="space-y-4">
@@ -6980,7 +6982,7 @@ export default function RelojVisual({
                   {/* NUEVO: "Configura tu alarma" (docs/funcionamiento_del_dial.md §3 / BACKEND_INTERFACES.md §5).
                       Notificación push local previa al trayecto hacia la sucursal. */}
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">🔔 Configura tu Alarma</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1"> Configura tu Alarma</label>
                     <select
                       className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring ${isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-page border-border text-text-1'}`}
                       value={editPreShiftAlarm === null ? '' : editPreShiftAlarm}
@@ -7005,7 +7007,7 @@ export default function RelojVisual({
                       onClick={() => setShowSecurityPinSection(!showSecurityPinSection)}
                       className="w-full flex items-center justify-between text-left bg-transparent border-none cursor-pointer p-0"
                     >
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">🔐 PIN de Seguridad (Testigos de Emergencia)</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase"> PIN de Seguridad (Testigos de Emergencia)</span>
                       <span className="text-slate-400 text-xs">{showSecurityPinSection ? '▲' : '▼'}</span>
                     </button>
 
@@ -7093,7 +7095,7 @@ export default function RelojVisual({
                           const newVal = !isSimulatedHoliday;
                           localStorage.setItem('is_simulated_holiday', newVal ? 'true' : 'false');
                           setIsSimulatedHoliday(newVal);
-                          showCustomAlert(newVal ? '📅 Día Feriado (LFT) activado en el checador.' : '📅 Día Feriado (LFT) desactivado.');
+                          showCustomAlert(newVal ? ' Día Feriado (LFT) activado en el checador.' : ' Día Feriado (LFT) desactivado.');
                         }}
                         className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${isSimulatedHoliday ? 'bg-accent' : 'bg-slate-300'}`}
                       >
@@ -7151,7 +7153,7 @@ export default function RelojVisual({
                           restDay: editRestDay
                         }
                       });
-                      showCustomAlert('✅ Cambios guardados con éxito.');
+                      showCustomAlert(' Cambios guardados con éxito.');
                       setShowSettingsModal(false);
                     }}
                     className="w-full bg-accent hover:bg-accent-hover text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-md transition-all active:scale-95 border-none outline-none cursor-pointer"
@@ -7213,9 +7215,9 @@ export default function RelojVisual({
                         if (unlockPin === requiredPin) {
                           setIsSessionLocked(false);
                           setUnlockPin('');
-                          showCustomAlert('🔓 Sesión desbloqueada con éxito.');
+                          showCustomAlert(' Sesión desbloqueada con éxito.');
                         } else {
-                          showCustomAlert('❌ PIN / Contraseña incorrecta.');
+                          showCustomAlert(' PIN / Contraseña incorrecta.');
                         }
                       }
                     }}
@@ -7228,9 +7230,9 @@ export default function RelojVisual({
                     if (unlockPin === requiredPin) {
                       setIsSessionLocked(false);
                       setUnlockPin('');
-                      showCustomAlert('🔓 Sesión desbloqueada con éxito.');
+                      showCustomAlert(' Sesión desbloqueada con éxito.');
                     } else {
-                      showCustomAlert('❌ PIN / Contraseña incorrecta.');
+                      showCustomAlert(' PIN / Contraseña incorrecta.');
                     }
                   }}
                   className="w-full bg-accent hover:bg-accent-hover text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider mt-4 shadow-lg active:scale-95 transition-all border-none outline-none cursor-pointer"

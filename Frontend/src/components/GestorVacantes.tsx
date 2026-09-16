@@ -555,7 +555,7 @@ export default function GestorVacantes() {
 
              {isLocalhost() && (
                 <div className="p-3 bg-warning-bg border border-warning-text/80 rounded-xl text-left w-full mb-4">
-                  <span className="text-[10px] font-bold text-warning-text uppercase block mb-1">🔌 Desarrollo Local: Configuración de QR</span>
+                  <span className="text-[10px] font-bold text-warning-text uppercase block mb-1"> Desarrollo Local: Configuración de QR</span>
                   <p className="text-[9px] text-warning-text leading-relaxed mb-2">
                     Ingresa la IP local de tu PC (ej: <code className="bg-warning-bg px-1 rounded font-mono">192.168.1.75:5173</code>) para que tu celular pueda acceder:
                   </p>

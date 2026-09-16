@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ShieldAlert } from 'lucide-react';
 import axiosInstance from '../../lib/axios';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -74,7 +75,7 @@ export const ContingenciesPanel = () => {
   return (
     <div className="bg-slate-800 text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-slate-600/30">
       <div className="flex items-center gap-2">
-        <span className="text-xl">⚡</span>
+        <ShieldAlert size={20} className="shrink-0" aria-hidden="true" />
         <div>
           <p className="font-black text-xs sm:text-sm">Contingencias por Fuerza Mayor</p>
           <p className="text-[9px] sm:text-[10px] text-slate-300 opacity-90 leading-tight">
@@ -106,14 +107,14 @@ export const ContingenciesPanel = () => {
                   disabled={resolvingId === r.id}
                   className="bg-success-icon hover:bg-success-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
-                  ✓ Aprobar (pago 100%)
+                   Aprobar (pago 100%)
                 </button>
                 <button
                   onClick={() => resolve(r.id, 'rejected')}
                   disabled={resolvingId === r.id}
                   className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
-                  ✕ Rechazar
+                   Rechazar
                 </button>
               </div>
             )}

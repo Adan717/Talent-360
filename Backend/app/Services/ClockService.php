@@ -435,7 +435,8 @@ class ClockService
         // el target que en el simulador puede ser otro) tiene rol de mando. Para cualquier otro
         // se ignora y el ponche se trata como real.
         $emisorPuedeSimular = in_array(auth()->user()->role ?? null, ['admin', 'supervisor', 'platform_admin'], true);
-        $isSimulatorPunch = $emisorPuedeSimular
+        $isSimulatorPunch = (app()->isLocal() || app()->runningUnitTests())
+            && $emisorPuedeSimular
             && isset($details['is_simulator']) && $details['is_simulator'] === true;
         $simulationSessionId = null;
         $simulatorSession = null;
@@ -909,8 +910,9 @@ class ClockService
             $gpsEnabled = $clockOpConfig['gpsValidationEnabled'] ?? false;
 
             if ($gpsEnabled && is_array($gpsData)) {
-                // a) Detectar GPS falso (Bypass si proviene del simulador Matrix QA)
-                $isSimulator = isset($details['is_simulator']) || isset($details['sandbox_bypass']);
+                // El bypass de GPS sólo existe para una sesión de prueba validada por el servidor.
+                // Nunca se confía directamente en las banderas que envía el cliente.
+                $isSimulator = $isSimulatorPunch;
 
                 // Mapear coordenadas del simulador de forma relativa a la tienda configurada
                 if ($isSimulator && isset($gpsData['latitude'], $gpsData['longitude'])) {

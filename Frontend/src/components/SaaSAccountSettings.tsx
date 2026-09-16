@@ -142,8 +142,7 @@ const ModuleCard = ({
                       documentos: 'FileText',
                       facturacion: 'Receipt',
                       comidas: 'Coffee',
-                      portal: 'Globe',
-                      matrix: 'Monitor'
+                      portal: 'Globe'
                     };
                     setEditingCustomModule({
                       id: mod.moduleId,
@@ -334,7 +333,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
     }
 
     const inviteUrl = `${window.location.origin}/invite?pin=${invitePin}`;
-    const message = `*TALENT 360* | ¡Bienvenido al Equipo! 👋\n\nHola, *${emp?.name || 'Colaborador'}*, te damos la más cordial bienvenida a *${orgName}*. 🏢\n\nTu cuenta ha sido registrada con éxito en nuestra plataforma de asistencia y gestión laboral. Para activar tu Reloj Checador móvil (PWA) de forma segura y configurar tu perfil, haz clic en el enlace de invitación:\n\n🔑 *Tu PIN temporal de acceso es:* ${invitePin}\n\n¡Mucho éxito en tu jornada laboral! 🚀\n\n${inviteUrl}`;
+    const message = `*TALENT 360* | ¡Bienvenido al Equipo! \n\nHola, *${emp?.name || 'Colaborador'}*, te damos la más cordial bienvenida a *${orgName}*. \n\nTu cuenta ha sido registrada con éxito en nuestra plataforma de asistencia y gestión laboral. Para activar tu Reloj Checador móvil (PWA) de forma segura y configurar tu perfil, haz clic en el enlace de invitación:\n\n *Tu PIN temporal de acceso es:* ${invitePin}\n\n¡Mucho éxito en tu jornada laboral! \n\n${inviteUrl}`;
 
     const waUrl = `https://wa.me/${cleanDbPhone}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank');
@@ -754,7 +753,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
               <div className="bg-gradient-to-r from-warning-icon/10 to-warning-icon/10 border border-warning-text/20 rounded-3xl p-6 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-warning-icon/20 text-warning-text rounded-2xl flex items-center justify-center font-black text-xl shrink-0">
-                    ⏳
+                    <Zap size={22} aria-hidden="true" />
                   </div>
                   <div>
                     <h3 className="font-black text-text-1 text-base">Modo de Prueba Activo (Módulos PRO y Enterprise)</h3>
@@ -768,7 +767,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     onClick={() => setTutorialStep(0)}
                     className="bg-white hover:bg-page text-text-1 border border-border font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all shrink-0 flex items-center gap-1.5"
                   >
-                    📖 Ver Tutorial
+                     Ver Tutorial
                   </button>
                   <button
                     onClick={() => setActiveTab('billing')}
@@ -790,7 +789,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                   onClick={() => setTutorialStep(0)}
                   className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md transition-all shrink-0 flex items-center gap-1.5"
                 >
-                  📖 Ver Tutorial de Módulos
+                   Ver Tutorial de Módulos
                 </button>
               </div>
 
@@ -955,22 +954,6 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Integración directa con el cálculo de la pre-nómina.'
                     ]
                   },
-                  {
-                    name: 'Matrix QA',
-                    desc: 'Entorno de simulación',
-                    tier: 'pro',
-                    active: isModuleUnlocked('matrix'),
-                    version: 'v1.2',
-                    icon: <Monitor size={20} />,
-                    iconColor: 'bg-navy-50 text-accent',
-                    moduleId: 'matrix',
-                    features: [
-                      'Simulación interactiva de múltiples celulares en simultáneo.',
-                      'Time Machine para alterar el tiempo virtual y probar tolerancias.',
-                      'Bitácora detallada de eventos del motor de asistencia en tiempo real.',
-                      'Prueba integrada de Ley Silla, geocercas y llaves de apertura.'
-                    ]
-                  }
                 ];
 
                 const customizedModulesWithDetails = modulesWithDetails.map(mod => {
@@ -1032,7 +1015,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                             <div className="flex items-center justify-between border-b border-border pb-3">
                               <div className="flex items-center gap-2">
                                 <span className="bg-accent-soft text-navy-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-border/50 flex items-center gap-1">
-                                  🚀 Plan Pro
+                                   Plan Pro
                                 </span>
                                 <h3 className="text-base font-black text-text-1">Módulos Profesionales</h3>
                               </div>
@@ -1048,7 +1031,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                             <div className="flex items-center justify-between border-b border-border pb-3">
                               <div className="flex items-center gap-2">
                                 <span className="bg-accent-soft text-navy-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-border/50 flex items-center gap-1">
-                                  👑 Plan Enterprise
+                                   Plan Enterprise
                                 </span>
                                 <h3 className="text-base font-black text-text-1">Módulos Corporativos Premium</h3>
                               </div>
@@ -1102,7 +1085,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           {selectedModuleForDetail.name.includes('Comedor') && (
                             <div className="mb-6 p-4 rounded-2xl border border-warning-text/20 bg-warning-bg/50 text-left">
                               <h5 className="text-[10px] font-black text-warning-text uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
-                                ⚖️ Estado del Servicio (Degradación Activa)
+                                 Estado del Servicio (Degradación Activa)
                               </h5>
                               <div className="space-y-2 text-xs">
                                 <div className="flex justify-between items-center font-bold text-text-2">
@@ -1395,7 +1378,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                             {/* Header del Tutorial */}
                             <div className="flex items-center justify-between pb-4 border-b border-border mb-6">
                               <div className="flex items-center gap-2">
-                                <span className="text-xl">📖</span>
+                                <Monitor size={20} className="text-accent" aria-hidden="true" />
                                 <h3 className="text-lg font-black text-text-1">Recorrido de Módulos</h3>
                               </div>
                               <span className="text-xs font-black text-accent bg-navy-50 px-3 py-1 rounded-full">

@@ -75,7 +75,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
           appState.setCurrentUser(updatedUser);
           appState.setGlobalUsers(appState.globalUsers.map(u => u.id === appState.currentUser?.id ? updatedUser : u));
         }
-        setToastMessage("📸 Foto de perfil actualizada con éxito.");
+        setToastMessage(" Foto de perfil actualizada con éxito.");
         setTimeout(() => setToastMessage(null), 3000);
       }
     } catch (err: any) {
@@ -373,7 +373,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
               <div className="bg-page p-4 rounded-2xl border border-border">
                 <label className={`flex items-center justify-between gap-3 ${isNewHireForAcademyToggle ? 'opacity-60' : 'cursor-pointer'}`}>
                   <div className="pr-3">
-                    <span className="font-bold text-text-1 text-sm flex items-center gap-1.5">🎓 Asistente de Academia</span>
+                    <span className="font-bold text-text-1 text-sm flex items-center gap-1.5"> Asistente de Academia</span>
                     <span className="text-xs text-text-3 block mt-0.5">
                       {isNewHireForAcademyToggle
                         ? 'Activado automáticamente durante tus primeros 30 días.'

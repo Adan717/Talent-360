@@ -198,7 +198,7 @@ class Tenant extends Model
             return true;
         }
         if ($this->plan === 'pro') {
-            $proAllowed = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'portal', 'documentos', 'academia', 'facturacion', 'lft', 'organizacion', 'matrix'];
+            $proAllowed = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'portal', 'documentos', 'academia', 'facturacion', 'lft', 'organizacion'];
             return in_array($moduleId, $proAllowed);
         }
         

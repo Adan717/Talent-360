@@ -368,8 +368,8 @@ export default function DialPrincipal({
           <button
             type="button"
             onClick={onPanicClick}
-            title="Botón de Pánico / Alerta de Emergencia 🚨"
-            aria-label="Botón de Pánico / Alerta de Emergencia 🚨"
+            title="Botón de Pánico / Alerta de Emergencia "
+            aria-label="Botón de Pánico / Alerta de Emergencia "
             className={`absolute -right-12 sm:-right-14 top-1/2 -translate-y-1/2 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-md border cursor-pointer z-30 hover:scale-110 ${
               isMobile ? 'w-10 h-10' : 'w-12 h-12'
             } bg-danger-bg dark:bg-danger-text/40 border-danger-text/20 dark:border-danger-text text-danger-text dark:text-rose-400 hover:bg-danger-bg dark:hover:bg-danger-text/60`}
@@ -388,7 +388,7 @@ export default function DialPrincipal({
           aria-label="Ir al curso obligatorio de Puntualidad en la Academia para desbloquear tu fichaje"
           className="mt-3.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border hover:border-navy-300 text-accent dark:text-navy-300 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
         >
-          🎓 Ir a la Academia
+           Ir a la Academia
         </button>
       )}
 

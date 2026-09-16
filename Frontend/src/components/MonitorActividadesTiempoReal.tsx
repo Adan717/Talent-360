@@ -116,7 +116,7 @@ const MODULE_ICON_LIST = [
 ];
 
 export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveModule?: (mod: string) => void }) {
-  const { currentUser, currentTier, systemSettings, fetchState, isModuleUnlocked } = useAppStore();
+  const { currentUser, currentTier, systemSettings, isModuleUnlocked } = useAppStore();
 
   // Tab Principal de Cabecera (Visión General vs Onboarding)
   const [activeHeaderTab, setActiveHeaderTab] = useState<'overview' | 'onboarding'>('overview');
@@ -155,7 +155,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
   // Toast message
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isAdoptionSaving, setIsAdoptionSaving] = useState(false);
 
   // Data States
   const [users, setUsers] = useState<UserMonitorItem[]>([]);
@@ -191,7 +190,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const [accesoDenegado, setAccesoDenegado] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [mobileTab, setMobileTab] = useState<'employees' | 'feed' | 'vendors' | 'chat'>('employees');
+  const [mobileTab, setMobileTab] = useState<'employees' | 'feed'>('employees');
   // Bitácora inmutable (Capa 3): qué fichaje se está auditando en el modal de historia.
   const [fichajeEnHistoria, setFichajeEnHistoria] = useState<number | null>(null);
   // Misma regla que el servidor (PermissionMiddleware::usuarioTiene), escrita una sola vez en
@@ -220,11 +219,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const [customTaskPrompt, setCustomTaskPrompt] = useState('');
   const [assignError, setAssignError] = useState('');
 
-  const [showVendorModal, setShowVendorModal] = useState(false);
-  const [newVendorName, setNewVendorName] = useState('');
-  const [newVendorDriver, setNewVendorDriver] = useState('');
-  const [newVendorOrderRef, setNewVendorOrderRef] = useState('');
-
   const [showChatDrawer, setShowChatDrawer] = useState(false);
   const [chatInput, setChatInput] = useState('');
   /**
@@ -237,27 +231,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
    */
   const [chatDestinatario, setChatDestinatario] = useState<number | ''>('');
   const chatBottomRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll slider ref and logic for adoption modules
-  const modulesSliderRef = useRef<HTMLDivElement>(null);
-  const [activeModuleIndex, setActiveModuleIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const slider = modulesSliderRef.current;
-      if (!slider || !slider.children.length) return;
-
-      const totalCards = slider.children.length;
-      setActiveModuleIndex(prev => {
-        const nextIndex = (prev + 1) % totalCards;
-        const cardWidth = slider.scrollWidth / totalCards;
-        slider.scrollTo({ left: nextIndex * cardWidth, behavior: 'smooth' });
-        return nextIndex;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Fetch Real-time Monitor Data
   const fetchData = async () => {
@@ -316,27 +289,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
     if (showChatDrawer) chatBottomRef.current?.scrollIntoView({ block: 'nearest' });
   }, [chatMessages.length, showChatDrawer]);
 
-  // Toggle Module Adoption
-  const handleToggleModule = async (moduleKey: string, moduleName: string) => {
-    setIsAdoptionSaving(true);
-    const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
-    const isActive = activeModules.includes(moduleKey);
-    const updatedModules = isActive
-      ? activeModules.filter((m: string) => m !== moduleKey)
-      : [...activeModules, moduleKey];
-
-    try {
-      await axiosInstance.post('/sync/settings', { active_modules: updatedModules });
-      await fetchState();
-      setToastMessage(isActive ? `Módulo ${moduleName} desactivado.` : `Módulo ${moduleName} adoptado con éxito.`);
-      setTimeout(() => setToastMessage(null), 3000);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsAdoptionSaving(false);
-    }
-  };
-
   // Generate AI Work Plan. Se pinta LO QUE LA IA RESPONDIÓ, y si no respondió se dice —
   // antes cualquier resultado (incluido el bueno) terminaba en un plan inventado en el
   // navegador que se presentaba como diagnóstico de IA.
@@ -363,21 +315,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
     } finally {
       setAiLoading(false);
     }
-  };
-
-  // Sugerencia de función: ahora se ENVÍA (queda como ticket con el equipo). Antes el
-  // prompt() se agradecía y el texto se tiraba.
-  const handleSugerirFuncion = async () => {
-    const suggestion = prompt("¿Qué nueva función o módulo te gustaría ver en Talent360?");
-    if (!suggestion || !suggestion.trim()) return;
-    try {
-      const res = await axiosInstance.post('/feature-suggestions', { suggestion: suggestion.trim() });
-      setToastMessage(res.data?.message || '¡Gracias! Tu sugerencia quedó registrada con el equipo de Talent360.');
-    } catch (err: any) {
-      console.error('Error al enviar la sugerencia:', err);
-      setToastMessage(err?.response?.data?.message || 'No se pudo enviar la sugerencia. Intenta de nuevo.');
-    }
-    setTimeout(() => setToastMessage(null), 4000);
   };
 
   // Nombre legible del destinatario que sugiere la IA (puesto o persona).
@@ -409,43 +346,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
     } catch (err: any) {
       // El backend explica el candado (p. ej. "no puedes lanzarte una tarea a ti mismo").
       setAssignError(err.response?.data?.message || 'No se pudo lanzar la tarea.');
-    }
-  };
-
-  // Register New Vendor Arrival. El id lo pone el SERVIDOR: antes se fabricaba uno local
-  // ('v_' + Date.now()) y con él la salida nunca se podía registrar. Si el alta falla, no
-  // se pinta la tarjeta — un proveedor "registrado" que no existe en la bitácora es peor
-  // que un error visible.
-  const handleRegisterVendor = async () => {
-    if (!newVendorName) return;
-    try {
-      await axiosInstance.post('/admin/dashboard/vendors', {
-        vendor_name: newVendorName,
-        driver_name: newVendorDriver || 'Repartidor',
-        order_ref: newVendorOrderRef || 'S/N'
-      });
-      setNewVendorName('');
-      setNewVendorDriver('');
-      setNewVendorOrderRef('');
-      setShowVendorModal(false);
-      await fetchData();
-    } catch (err: any) {
-      console.error("Error al registrar proveedor:", err);
-      setToastMessage(err?.response?.data?.message || 'No se pudo registrar el proveedor. Intenta de nuevo.');
-      setTimeout(() => setToastMessage(null), 4000);
-    }
-  };
-
-  // Complete Vendor Visit. La URL llevaba '/api/v1' duplicado (el baseURL de axios ya lo
-  // trae): salía a /api/v1/api/v1/... y era 404 SIEMPRE, pero la tarjeta se apagaba igual.
-  const handleCompleteVendor = async (id: string) => {
-    try {
-      await axiosInstance.post(`/admin/dashboard/vendors/${id}/complete`);
-      await fetchData();
-    } catch (err: any) {
-      console.error("Error al registrar salida de proveedor:", err);
-      setToastMessage(err?.response?.data?.message || 'No se pudo registrar la salida del proveedor.');
-      setTimeout(() => setToastMessage(null), 4000);
     }
   };
 
@@ -489,7 +389,9 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const staffCount = staff.length || users.length;
   const breakCount = users.filter(u => u.status === 'break').length;
   const inPremisesVendors = vendors.filter(v => v.status === 'in_premises').length;
-  const avgEfficiency = users.length > 0 ? Math.round(users.reduce((acc, u) => acc + (u.efficiency || 100), 0) / users.length) : 100;
+  const avgEfficiency = users.length > 0
+    ? Math.round(users.reduce((acc, u) => acc + (u.efficiency || 0), 0) / users.length)
+    : null;
 
   const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
 
@@ -650,14 +552,14 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                       En Vivo (5s)
                     </span>
                   </div>
-                  <p className="text-xs text-text-3">Supervisión de colaboradores, tareas, proveedores y chat activo</p>
+                  <p className="text-xs text-text-3">Supervisión de colaboradores, tareas e incidencias en curso</p>
                 </div>
               </div>
 
               {/* Botones de Control Rápidos */}
               <div className="flex flex-wrap items-center gap-2">
                 {/* Bloque 2: sin llave de IA el botón prometía algo que no puede ocurrir. */}
-                {iaDisponible && (
+                {iaDisponible && users.length > 0 && (
                   <button
                     onClick={handleGenerateAiPlan}
                     className="px-3 py-2 rounded-xl bg-accent text-white font-semibold text-xs hover:bg-accent-hover transition-colors flex items-center justify-center gap-2"
@@ -667,18 +569,16 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                   </button>
                 )}
 
-                <button
-                  onClick={() => setShowVendorModal(true)}
-                  className="px-4 py-2.5 rounded-xl bg-page hover:bg-slate-200 text-text-1 font-bold text-xs sm:text-sm border border-border transition-all flex items-center gap-2 active:scale-95"
-                >
-                  <Truck className="w-4 h-4 text-success-text" />
-                  <span>+ Proveedor</span>
-                  {inPremisesVendors > 0 && (
-                    <span className="w-5 h-5 rounded-full bg-success-icon text-white font-bold text-xs flex items-center justify-center">
-                      {inPremisesVendors}
-                    </span>
-                  )}
-                </button>
+                {inPremisesVendors > 0 && (
+                  <button
+                    onClick={() => setActiveModule?.('reloj')}
+                    className="inline-flex items-center gap-2 rounded-xl border border-warning-text/20 bg-warning-bg px-3 py-2 text-xs font-bold text-warning-text hover:border-warning-text/40"
+                    title="Gestionar en Reloj Checador → Herramientas"
+                  >
+                    <Truck className="h-4 w-4" />
+                    {inPremisesVendors} {inPremisesVendors === 1 ? 'visita activa' : 'visitas activas'}
+                  </button>
+                )}
 
                 <button
                   onClick={() => setShowChatDrawer(!showChatDrawer)}
@@ -745,8 +645,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm sm:text-lg font-black text-text-1 leading-tight truncate">{avgEfficiency}%</div>
-                    <div className="text-[10px] sm:text-xs text-text-3 font-bold tracking-tight truncate">Eficiencia</div>
+                    <div className="text-sm sm:text-lg font-black text-text-1 leading-tight truncate">{avgEfficiency === null ? '—' : `${avgEfficiency}%`}</div>
+                    <div className="text-[10px] sm:text-xs text-text-3 font-bold tracking-tight truncate">{avgEfficiency === null ? 'Sin datos' : 'Eficiencia'}</div>
                   </div>
                 </div>
               </div>
@@ -822,12 +722,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${mobileTab === 'feed' ? 'bg-white text-accent shadow-sm' : 'text-text-2'}`}
             >
               Bitácora
-            </button>
-            <button
-              onClick={() => setMobileTab('vendors')}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${mobileTab === 'vendors' ? 'bg-white text-accent shadow-sm' : 'text-text-2'}`}
-            >
-              Proveedores ({vendors.length})
             </button>
           </div>
 
@@ -998,7 +892,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
             </div>
 
-            {/* COLUMNA BITÁCORA Y PROVEEDORES */}
+            {/* COLUMNA BITÁCORA */}
             <div className={`space-y-6 ${mobileTab === 'employees' ? 'hidden sm:block' : ''}`}>
 
               <div className="bg-white border border-border rounded-3xl p-4.5 shadow-sm space-y-3">
@@ -1063,425 +957,9 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 </div>
               </div>
 
-              <div className="bg-white border border-border rounded-3xl p-4.5 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-text-1 flex items-center gap-2 uppercase tracking-wider">
-                    <Truck className="w-4 h-4 text-success-text" />
-                    Proveedores en Sitio
-                  </h3>
-                  <button
-                    onClick={() => setShowVendorModal(true)}
-                    className="px-3 py-1 rounded-xl bg-success-bg text-success-text hover:bg-success-bg border border-success-text/20 text-xs font-extrabold flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Registrar
-                  </button>
-                </div>
-
-                <div className="space-y-2.5">
-                  {vendors.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic text-center py-4">No hay proveedores en las instalaciones</p>
-                  ) : (
-                    vendors.map(v => (
-                      <div
-                        key={v.id}
-                        className={`p-3 rounded-2xl border flex items-center justify-between gap-3 text-xs transition-all ${
-                          v.status === 'in_premises'
-                            ? 'bg-success-bg/60 border-success-text/20 text-success-text'
-                            : 'bg-page border-border text-text-3 opacity-60'
-                        }`}
-                      >
-                        <div>
-                          <div className="font-bold text-text-1">{v.vendor_name}</div>
-                          <div className="text-[11px] text-text-2 font-medium">
-                            Chofer: {v.driver_name} • Ref: {v.order_ref}
-                          </div>
-                          <div className="text-[10px] text-success-text font-semibold mt-0.5">
-                            Llegó: {v.arrival_time} • Atendió: {v.received_by}
-                          </div>
-                        </div>
-
-                        {v.status === 'in_premises' && (
-                          <button
-                            onClick={() => handleCompleteVendor(v.id)}
-                            className="px-3 py-1 rounded-xl bg-success-text hover:bg-success-text text-white font-extrabold text-[11px] shadow-sm"
-                          >
-                            Salida
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
             </div>
 
           </div>
-
-          {/* 4. SECCIÓN DE ADOPCIÓN DE MÓDULOS & ROADMAP DE INNOVACIÓN (SLIDER 3S CON BOTÓN Y TARJETA DE SUGERENCIAS) */}
-          <details className="bg-white border border-border rounded-2xl shadow-sm relative overflow-hidden group/modules">
-            <summary className="list-none cursor-pointer px-4 py-3 sm:px-5 flex items-center justify-between gap-3 text-sm font-semibold text-text-1 hover:bg-page transition-colors">
-              <span className="inline-flex items-center gap-2"><Sparkles size={16} className="text-accent" /> Explorar módulos y roadmap</span>
-              <ChevronRight size={18} className="text-text-3 transition-transform group-open/modules:rotate-90" />
-            </summary>
-            <div className="border-t border-border p-5 sm:p-6 space-y-4">
-            {/* Barra de Gradiente Superior Elegante */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent via-accent via-accent to-warning-icon"></div>
-
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border pb-4 gap-3 pt-1">
-              <div>
-                <h2 className="text-base sm:text-lg font-black text-text-1 tracking-tight flex items-center gap-2 flex-wrap">
-                  <Sparkles className="w-5 h-5 text-warning-text animate-bounce" />
-                  Nuevos Módulos Disponibles & Roadmap de Innovación
-                </h2>
-                <p className="text-xs text-text-3 font-medium">Adopta funciones a la carta o sugiere las próximas innovaciones para tu organización</p>
-              </div>
-
-              <button
-                onClick={handleSugerirFuncion}
-                className="px-4 py-2 rounded-2xl bg-gradient-to-r from-warning-icon via-warning-icon to-warning-text hover:from-warning-icon hover:to-warning-text text-text-1 font-black text-xs shadow-md shadow-warning-text/20 border border-warning-text/20 shrink-0 flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
-              >
-                <Sparkles size={16} />
-                <MessageSquare size={15} /> Sugerir una función a nuestro equipo
-              </button>
-            </div>
-
-            {/* Carrusel Deslizable Automático (Snap Slider 3s) en Celular y Escritorio */}
-            <div
-              ref={modulesSliderRef}
-              className="flex overflow-x-auto snap-x snap-mandatory gap-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-3 pt-1 text-text-1"
-            >
-
-              {/* ATS Card */}
-              {(() => {
-                const isAtsActive = activeModules.includes('ats');
-                return (
-                  <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between border-2 border-navy-300/80 bg-gradient-to-b from-navy-50/60 via-slate-50/40 to-white hover:border-navy-300 ring-1 ring-focus-ring/50">
-                    <div>
-                      {/* Imagen Alusiva al Tema */}
-                      <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-border/80">
-                        <img
-                          src="/assets/modules/ats.jpg"
-                          alt="Reclutamiento ATS"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-accent rounded-lg shadow-2xs border border-border">
-                          <Briefcase size={16} />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-start mb-2 relative z-10">
-                        <h3 className="font-bold text-text-1 text-xs">Reclutamiento ATS</h3>
-                        <button
-                          disabled={isAdoptionSaving}
-                          onClick={() => handleToggleModule('ats', 'Reclutamiento ATS')}
-                          className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
-                            isAtsActive
-                              ? 'bg-accent hover:bg-accent-hover text-white shadow-accent/30'
-                              : 'bg-white hover:bg-navy-50 text-accent border border-navy-300'
-                          }`}
-                        >
-                          {isAtsActive ? 'Adoptado' : 'Adoptar'}
-                        </button>
-                      </div>
-
-                      {/* Frase Gancho Persuasiva */}
-                      <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-accent/10 border border-navy-300/40 text-[10px] font-bold text-navy-800 leading-tight relative z-10">
-                        Contrata al mejor talento en tiempo récord antes que la competencia.
-                      </div>
-
-                      <p className="text-text-3 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Vacantes, bolsa de trabajo y entrevistas.</p>
-                    </div>
-
-                    <span className="text-xs font-black text-accent relative z-10">+$29 MXN / mes</span>
-                    <Briefcase className="absolute -right-3 -bottom-3 w-20 h-20 text-accent/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
-                  </div>
-                );
-              })()}
-
-              {/* LMS Card */}
-              {(() => {
-                const isLmsActive = activeModules.includes('academia');
-                return (
-                  <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between border-2 border-navy-300/80 bg-gradient-to-b from-navy-50/60 via-slate-50/40 to-white hover:border-navy-300 ring-1 ring-focus-ring/50">
-                    <div>
-                      {/* Imagen Alusiva al Tema */}
-                      <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-border/80">
-                        <img
-                          src="/assets/modules/academia.jpg"
-                          alt="Academia 360"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-accent rounded-lg shadow-2xs border border-border">
-                          <GraduationCap size={16} />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-start mb-2 relative z-10">
-                        <h3 className="font-bold text-text-1 text-xs">Academia 360</h3>
-                        <button
-                          disabled={isAdoptionSaving}
-                          onClick={() => handleToggleModule('academia', 'Academia 360')}
-                          className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
-                            isLmsActive
-                              ? 'bg-accent hover:bg-accent-hover text-white shadow-accent/30'
-                              : 'bg-white hover:bg-navy-50 text-accent border border-navy-300'
-                          }`}
-                        >
-                          {isLmsActive ? 'Adoptado' : 'Adoptar'}
-                        </button>
-                      </div>
-
-                      {/* Frase Gancho Persuasiva */}
-                      <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-accent/10 border border-navy-300/40 text-[10px] font-bold text-navy-800 leading-tight relative z-10">
-                        Capacita e induce a tu personal de forma automática.
-                      </div>
-
-                      <p className="text-text-3 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Cursos interactivos e inducción.</p>
-                    </div>
-
-                    <span className="text-xs font-black text-accent relative z-10">+$49 MXN / mes</span>
-                    <GraduationCap className="absolute -right-3 -bottom-3 w-20 h-20 text-accent/15 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
-                  </div>
-                );
-              })()}
-
-              {/* Reports Card */}
-              {(() => {
-                const isReportsActive = activeModules.includes('reportes');
-                return (
-                  <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between border-2 border-danger-text/80 bg-gradient-to-b from-danger-bg/60 via-slate-50/40 to-white hover:border-danger-text ring-1 ring-danger-text/50">
-                    <div>
-                      {/* Imagen Alusiva al Tema */}
-                      <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-danger-text/80">
-                        <img
-                          src="/assets/modules/reportes.jpg"
-                          alt="Reportes IA"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-danger-text rounded-lg shadow-2xs border border-danger-text/20">
-                          <BarChart3 size={16} />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-start mb-2 relative z-10">
-                        <h3 className="font-bold text-text-1 text-xs">Reportes IA</h3>
-                        <button
-                          disabled={isAdoptionSaving}
-                          onClick={() => handleToggleModule('reportes', 'Reportes IA')}
-                          className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
-                            isReportsActive
-                              ? 'bg-danger-text hover:bg-danger-text text-white shadow-danger-text/30'
-                              : 'bg-white hover:bg-danger-bg text-danger-text border border-danger-text/20'
-                          }`}
-                        >
-                          {isReportsActive ? 'Adoptado' : 'Adoptar'}
-                        </button>
-                      </div>
-
-                      {/* Frase Gancho Persuasiva */}
-                      <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-danger-text/10 border border-danger-text/40 text-[10px] font-bold text-danger-text leading-tight relative z-10">
-                        Detecta fugas de tiempo y toma decisiones operativas con IA.
-                      </div>
-
-                      <p className="text-text-3 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Faltas, retardos y analítica Ley Silla.</p>
-                    </div>
-
-                    <span className="text-xs font-black text-danger-text relative z-10">+$19 MXN / mes</span>
-                    <BarChart3 className="absolute -right-3 -bottom-3 w-20 h-20 text-danger-text/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
-                  </div>
-                );
-              })()}
-
-              {/* Archivo Digital Card */}
-              {(() => {
-                const isDocsActive = activeModules.includes('documentos');
-                return (
-                  <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between border-2 border-warning-text/80 bg-gradient-to-b from-warning-bg/60 via-slate-50/40 to-white hover:border-warning-text ring-1 ring-warning-text/50">
-                    <div>
-                      {/* Imagen Alusiva al Tema */}
-                      <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-warning-text/80">
-                        <img
-                          src="/assets/modules/documentos.jpg"
-                          alt="Archivo Digital"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-warning-text rounded-lg shadow-2xs border border-warning-text/20">
-                          <FileText size={16} />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-start mb-2 relative z-10">
-                        <h3 className="font-bold text-text-1 text-xs">Archivo Digital</h3>
-                        <button
-                          disabled={isAdoptionSaving}
-                          onClick={() => handleToggleModule('documentos', 'Archivo Digital')}
-                          className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
-                            isDocsActive
-                              ? 'bg-warning-text hover:bg-warning-text text-white shadow-warning-text/30'
-                              : 'bg-white hover:bg-warning-bg text-warning-text border border-warning-text/20'
-                          }`}
-                        >
-                          {isDocsActive ? 'Adoptado' : 'Adoptar'}
-                        </button>
-                      </div>
-
-                      {/* Frase Gancho Persuasiva */}
-                      <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-warning-text/10 border border-warning-text/40 text-[10px] font-bold text-warning-text leading-tight relative z-10">
-                        Protege tus expedientes laborales en la nube.
-                      </div>
-
-                      <p className="text-text-3 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Expedientes avanzados y contratos.</p>
-                    </div>
-
-                    <span className="text-xs font-black text-warning-text relative z-10">+$19 MXN / mes</span>
-                    <FileText className="absolute -right-3 -bottom-3 w-20 h-20 text-warning-text/15 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
-                  </div>
-                );
-              })()}
-
-              {/* Facturacion CFDI Card */}
-              {(() => {
-                const isCfdiActive = activeModules.includes('facturacion');
-                return (
-                  <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between border-2 border-success-text/80 bg-gradient-to-b from-success-bg/60 via-slate-50/40 to-white hover:border-success-text ring-1 ring-success-text/50">
-                    <div>
-                      {/* Imagen Alusiva al Tema */}
-                      <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-success-text/80">
-                        <img
-                          src="/assets/modules/facturacion.jpg"
-                          alt="Nómina CFDI 4.0"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-success-text rounded-lg shadow-2xs border border-success-text/20">
-                          <Receipt size={16} />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-start mb-2 relative z-10">
-                        <h3 className="font-bold text-text-1 text-xs">Nómina CFDI 4.0</h3>
-                        <button
-                          disabled={isAdoptionSaving}
-                          onClick={() => handleToggleModule('facturacion', 'Nómina CFDI 4.0')}
-                          className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
-                            isCfdiActive
-                              ? 'bg-success-text hover:bg-success-text text-white shadow-success-text/30'
-                              : 'bg-white hover:bg-success-bg text-success-text border border-success-text/20'
-                          }`}
-                        >
-                          {isCfdiActive ? 'Adoptado' : 'Adoptar'}
-                        </button>
-                      </div>
-
-                      {/* Frase Gancho Persuasiva */}
-                      <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-success-text/10 border border-success-text/40 text-[10px] font-bold text-success-text leading-tight relative z-10">
-                        Timbra tu nómina masiva ante el SAT desde un solo lugar.
-                      </div>
-
-                      <p className="text-text-3 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Timbrado masivo del SAT.</p>
-                    </div>
-
-                    <span className="text-xs font-black text-success-text relative z-10">+$39 MXN / mes</span>
-                    <Receipt className="absolute -right-3 -bottom-3 w-20 h-20 text-success-text/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
-                  </div>
-                );
-              })()}
-
-              {/* ROADMAP 1: Evaluación 360 */}
-              <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl bg-gradient-to-b from-brand-dark via-slate-900 to-slate-950 text-white border-2 border-warning-text/60 shadow-lg flex flex-col justify-between group hover:border-warning-text transition-all relative overflow-hidden">
-                <div className="relative z-10">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-warning-icon/20 text-warning-text border border-warning-text/40 text-[10px] font-black uppercase">
-                      Roadmap • Q3 2026
-                    </span>
-                    <Award size={18} className="text-warning-text" />
-                  </div>
-                  <h3 className="font-bold text-white text-xs mb-1">Evaluación 360° & Desempeño</h3>
-                  <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-warning-icon/10 border border-warning-text/30 text-[10px] font-bold text-warning-text leading-tight">
-                    Mide potencial, competencias y retroalimentación 360°.
-                  </div>
-                  <p className="text-slate-300 text-[10px] mb-2 leading-relaxed font-medium">Evaluaciones periódicas y matriz de talento.</p>
-                </div>
-                <span className="text-xs font-black text-warning-text relative z-10">Próximo Lanzamiento</span>
-                <Award className="absolute -right-3 -bottom-3 w-20 h-20 text-warning-text/15 pointer-events-none group-hover:scale-110 transition-transform duration-300" />
-              </div>
-
-              {/* ROADMAP 2: Firma Electrónica NOM-151 */}
-              <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl bg-gradient-to-b from-slate-900 via-brand-dark to-slate-950 text-white border-2 border-navy-300/60 shadow-lg flex flex-col justify-between group hover:border-navy-300 transition-all relative overflow-hidden">
-                <div className="relative z-10">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-navy-400/20 text-navy-100 border border-navy-300/40 text-[10px] font-black uppercase">
-                      Roadmap • Q3 2026
-                    </span>
-                    <FileText size={18} className="text-navy-300" />
-                  </div>
-                  <h3 className="font-bold text-white text-xs mb-1">Firma Electrónica Avanzada</h3>
-                  <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-navy-400/10 border border-navy-300/30 text-[10px] font-bold text-navy-100 leading-tight">
-                    Firma contratos y convenios digitalmente con validez NOM-151.
-                  </div>
-                  <p className="text-slate-300 text-[10px] mb-2 leading-relaxed font-medium">Contratos digitales e historial con sello legal.</p>
-                </div>
-                <span className="text-xs font-black text-navy-300 relative z-10">Próximo Lanzamiento</span>
-                <FileText className="absolute -right-3 -bottom-3 w-20 h-20 text-navy-300/15 pointer-events-none group-hover:scale-110 transition-transform duration-300" />
-              </div>
-
-              {/* ROADMAP 3: Bot WhatsApp */}
-              <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl bg-gradient-to-b from-slate-900 via-success-text to-slate-950 text-white border-2 border-success-text/60 shadow-lg flex flex-col justify-between group hover:border-success-text transition-all relative overflow-hidden">
-                <div className="relative z-10">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-success-icon/20 text-success-text border border-success-text/40 text-[10px] font-black uppercase">
-                      Roadmap • Q4 2026
-                    </span>
-                    <MessageSquare size={18} className="text-success-text" />
-                  </div>
-                  <h3 className="font-bold text-white text-xs mb-1">Bot Asistente WhatsApp 24/7</h3>
-                  <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-success-icon/10 border border-success-text/30 text-[10px] font-bold text-success-text leading-tight">
-                    Atención a colaboradores, recibos y vacaciones vía WhatsApp.
-                  </div>
-                  <p className="text-slate-300 text-[10px] mb-2 leading-relaxed font-medium">Respuestas automatizadas e inteligencia artificial.</p>
-                </div>
-                <span className="text-xs font-black text-success-text relative z-10">Próximo Lanzamiento</span>
-                <MessageSquare className="absolute -right-3 -bottom-3 w-20 h-20 text-success-text/15 pointer-events-none group-hover:scale-110 transition-transform duration-300" />
-              </div>
-
-              {/* CARD DEDICADA 9: SUGERIR UNA FUNCIÓN / MÓDULO */}
-              <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl bg-gradient-to-br from-warning-icon via-accent-hover to-slate-900 text-white border-2 border-warning-text/20 shadow-xl flex flex-col justify-between group relative overflow-hidden">
-                <div className="relative z-10">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white border border-white/30 text-[10px] font-black uppercase flex items-center gap-1">
-                      <Sparkles size={12} className="animate-spin" /> Tu Opinión Importa
-                    </span>
-                    <Sparkles size={20} className="text-warning-text animate-bounce" />
-                  </div>
-                  <h3 className="font-black text-white text-sm mb-1">¿Tienes una idea para Talent360?</h3>
-                  <p className="text-warning-text text-xs mb-3 font-medium leading-relaxed">
-                    Construimos la plataforma junto contigo. Dinos qué necesita tu empresa.
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleSugerirFuncion}
-                  className="w-full py-2.5 rounded-xl bg-white text-brand-dark font-black text-xs shadow-md hover:bg-warning-bg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 relative z-10"
-                >
-                  <Sparkles size={16} className="text-warning-text" />
-                  Sugerir una función ahora
-                </button>
-                <Sparkles className="absolute -right-3 -bottom-3 w-24 h-24 text-white/10 pointer-events-none group-hover:scale-110 transition-transform duration-300" />
-              </div>
-
-            </div>
-
-            {/* Puntos Indicadores del Slider Automático (3s) */}
-            <div className="flex justify-center items-center gap-1.5 pt-2">
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(idx => (
-                <div
-                  key={idx}
-                  className={`h-2 rounded-full transition-all duration-500 ${activeModuleIndex === idx ? 'w-6 bg-accent shadow-sm shadow-accent/40' : 'w-2 bg-slate-300'}`}
-                />
-              ))}
-            </div>
-            </div>
-          </details>
 
         </>
       )}
@@ -1708,75 +1186,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 className="flex-1 py-2.5 rounded-xl bg-accent text-white font-extrabold text-xs hover:bg-accent-hover shadow-md"
               >
                 Asignar Tarea
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL REGISTRAR PROVEEDOR */}
-      {showVendorModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-border rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-text-1">
-            <button
-              onClick={() => setShowVendorModal(false)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-text-2"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-2 mb-4">
-              <Truck className="w-5 h-5 text-success-text" />
-              <h2 className="text-base font-black text-text-1">Registrar Entrada de Proveedor</h2>
-            </div>
-
-            <div className="space-y-3 mb-6">
-              <div>
-                <label className="text-xs text-text-2 font-bold mb-1 block">Empresa / Proveedor</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Lácteos Lala, Coca-Cola..."
-                  value={newVendorName}
-                  onChange={e => setNewVendorName(e.target.value)}
-                  className="w-full bg-page text-text-1 text-xs rounded-xl p-3 border border-border focus:outline-none focus:border-success-text font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-text-2 font-bold mb-1 block">Nombre del Chofer / Repartidor</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Juan Pérez"
-                  value={newVendorDriver}
-                  onChange={e => setNewVendorDriver(e.target.value)}
-                  className="w-full bg-page text-text-1 text-xs rounded-xl p-3 border border-border focus:outline-none focus:border-success-text font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-text-2 font-bold mb-1 block">Factura o Remisión #</label>
-                <input
-                  type="text"
-                  placeholder="Ej: FAC-99401"
-                  value={newVendorOrderRef}
-                  onChange={e => setNewVendorOrderRef(e.target.value)}
-                  className="w-full bg-page text-text-1 text-xs rounded-xl p-3 border border-border focus:outline-none focus:border-success-text font-medium"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowVendorModal(false)}
-                className="flex-1 py-2.5 rounded-xl bg-page text-text-2 font-bold text-xs hover:bg-slate-200"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleRegisterVendor}
-                className="flex-1 py-2.5 rounded-xl bg-success-text text-white font-extrabold text-xs hover:bg-success-text shadow-md"
-              >
-                Confirmar Check-In
               </button>
             </div>
           </div>

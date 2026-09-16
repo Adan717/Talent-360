@@ -1,4 +1,5 @@
 import React from 'react';
+import { Building2, Gem, Settings, Sparkles } from 'lucide-react';
 import { CLOCK_FEATURE_TAGS_MATRIX } from '../logic/clockFeatureTags';
 import type { ClockFeatureTag } from '../logic/clockFeatureTags';
 import { useAppStore } from '../../../store/useAppStore';
@@ -24,11 +25,11 @@ export const ClockControlCenterPanel: React.FC = () => {
   const getTierBadge = (tier: ClockFeatureTag['defaultTier']) => {
     switch (tier) {
       case 'free':
-        return <span className="px-2 py-0.5 text-xs font-semibold rounded bg-success-icon/10 text-success-text border border-success-text/20">🆓 Gratuito</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded bg-success-icon/10 text-success-text border border-success-text/20"><Sparkles size={12} /> Gratuito</span>;
       case 'pro':
-        return <span className="px-2 py-0.5 text-xs font-semibold rounded bg-accent/10 text-navy-300 border border-accent/20">💎 Plan Pro</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded bg-accent/10 text-navy-300 border border-accent/20"><Gem size={12} /> Plan Pro</span>;
       case 'enterprise':
-        return <span className="px-2 py-0.5 text-xs font-semibold rounded bg-warning-icon/10 text-warning-text border border-warning-text/20">🏢 Enterprise</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded bg-warning-icon/10 text-warning-text border border-warning-text/20"><Building2 size={12} /> Enterprise</span>;
     }
   };
 
@@ -37,7 +38,7 @@ export const ClockControlCenterPanel: React.FC = () => {
       <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
         <div>
           <h2 className="text-xl font-extrabold flex items-center gap-2 text-white">
-            🎛️ Centro de Control General — Módulos del Reloj Checador
+            <Settings size={20} aria-hidden="true" /> Centro de Control General — Módulos del Reloj Checador
           </h2>
           <p className="text-xs text-slate-400 mt-1">
             Habilite o deshabilite las características del Dialer por plan. Las funciones desactivadas realizan degradación suave (fallback) sin interrumpir el fichaje básico.

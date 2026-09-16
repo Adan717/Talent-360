@@ -96,7 +96,7 @@ interface AppState {
   setDbRolePermissions: (rolePerms: any[]) => void;
   
   // Actions
-  fetchState: (explicitSimSessionId?: number | string | null) => Promise<void>;
+  fetchState: () => Promise<void>;
   updateSetting: (key: string, value: any) => Promise<void>;
   fetchPunctualityStatus: () => Promise<void>;
 
@@ -357,7 +357,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   }),
 
 
-  fetchState: async (explicitSimSessionId?: number | string | null) => {
+  fetchState: async () => {
     try {
       const hasToken = !!localStorage.getItem('talent_auth_token');
       const isUserLoaded = get().currentUser && get().currentUser?.role !== 'Loading';
@@ -421,13 +421,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         return;
       }
 
-      const activeSimSession = explicitSimSessionId || localStorage.getItem('matrix_active_sim_session_id');
-      const syncParams: any = {};
-      if (activeSimSession) {
-        syncParams.simulation_session_id = activeSimSession;
-      }
-
-      const res = await axiosInstance.get('/sync/state', { params: syncParams, timeout: 15000 });
+      const res = await axiosInstance.get('/sync/state', { timeout: 15000 });
 
       if (res.status === 200) {
         const data = res.data;
@@ -824,10 +818,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             // no con la del dispositivo, o la bitácora del día sale vacía en cuanto ambas
             // difieren.
             const todayStr = hoyEnZona(data.system_settings?.timezone);
-            // Si hay sesión de simulación activa, incluir todos los logs traídos para esa sesión simulada
-            const targetLogs = activeSimSession
-              ? data.audit_logs
-              : data.audit_logs.filter((log: any) => fechaDeFichaje(log.date) === todayStr);
+            const targetLogs = data.audit_logs.filter((log: any) => fechaDeFichaje(log.date) === todayStr);
 
             const mappedLogs = targetLogs.map((log: any) => ({
                 id: log.id,

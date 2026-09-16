@@ -5,23 +5,25 @@ import {
   ArrowUpRight, ShieldAlert, ShieldCheck, GraduationCap, Loader2,
   User, LogOut, ChevronDown, Search, Filter, Eye, Key, LogIn, Ban,
   Info, RefreshCw, X, ShieldX, KeyRound, CheckCircle2, Settings,
-  LifeBuoy, MessageSquare, Plus, Trash2, Sparkles, Monitor, Menu
+  LifeBuoy, MessageSquare, Plus, Trash2, Sparkles, Monitor, Menu, Megaphone,
+  LayoutGrid, Clock
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { SaaSPlatformBilling } from './SaaSPlatformBilling';
 import { CLOCK_FEATURE_TAGS_MATRIX } from './reloj/logic/clockFeatureTags';
 import { slugParaCorreo } from '../lib/emailSlug';
+import { ProductUpdatesAdmin } from './ProductUpdatesAdmin';
 
 /**
  * Estado de cobranza tal como lo respalda el backend (App\Support\EstadoDeCobranza).
  *
  * ANTES (2026-09-05) esta pantalla inventaba el estado por su cuenta y mentía en dos formas:
  *
- *  1. Calculaba "⚠️ Prueba Expirada" en el navegador con la sola presencia de `trial_ends_at`,
+ *  1. Calculaba " Prueba Expirada" en el navegador con la sola presencia de `trial_ends_at`,
  *     y ponía ese cálculo ANTES de mirar `subscription_status`. Las 3 empresas vivas que están
  *     en 'active' arrastrando un `trial_ends_at` viejo del alta se veían como pruebas
- *     expiradas en vez de "✓ Suscrito", que era lo que decía el backend.
+ *     expiradas en vez de " Suscrito", que era lo que decía el backend.
  *  2. Tenía un color ámbar para 'past_due' — un estado que NINGÚN código del backend escribía
  *     jamás. Era decoración de una situación que no podía ocurrir.
  *
@@ -66,7 +68,7 @@ const estadoDeCobranza = (t: any): InsigniaDeCobranza => {
 
   if (estado === 'active') {
     return {
-      etiqueta: '✓ Suscrito',
+      etiqueta: ' Suscrito',
       clases: 'text-success-text bg-success-bg border-success-text/20',
       detalle: corte ? undefined : 'Sin fecha de corte: la cobranza automática no la revisa',
     };
@@ -638,24 +640,24 @@ export const SaaSPlatformAdmin = () => {
   const getNichoBadge = (nicho?: string) => {
     const n = (nicho || '').toLowerCase();
     if (n.includes('retail') || n.includes('tienda') || n.includes('comercio') || n.includes('decoracion') || n.includes('boutique') || n.includes('minimarket') || n.includes('ferreteria')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-md shrink-0">🛍️ Tienda / Retail</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-md shrink-0"> Tienda / Retail</span>;
     }
     if (n.includes('restaurante') || n.includes('comedor') || n.includes('cafeteria') || n.includes('comida') || n.includes('bar') || n.includes('taqueria')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-md shrink-0">🍽️ Restaurante</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-md shrink-0"> Restaurante</span>;
     }
     if (n.includes('oficina') || n.includes('servicios') || n.includes('despacho') || n.includes('agencia') || n.includes('consultoria') || n.includes('inmobiliaria')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0">🏢 Servicios</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0"> Servicios</span>;
     }
     if (n.includes('taller') || n.includes('mecanico') || n.includes('manufactura') || n.includes('industrial') || n.includes('tecnico')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0">🔧 Taller / Industria</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0"> Taller / Industria</span>;
     }
     if (n.includes('salud') || n.includes('farmacia') || n.includes('clinica') || n.includes('hospital')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-md shrink-0">🩺 Salud / Clínica</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-md shrink-0"> Salud / Clínica</span>;
     }
     if (n.includes('educacion') || n.includes('escuela') || n.includes('academia') || n.includes('curso')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0">🎓 Educación</span>;
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0"> Educación</span>;
     }
-    return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-text-2 bg-page border border-border px-2 py-0.5 rounded-md shrink-0">🏬 General</span>;
+    return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-text-2 bg-page border border-border px-2 py-0.5 rounded-md shrink-0"> General</span>;
   };
 
   const getCleanDbPhone = (val: string) => {
@@ -1144,7 +1146,7 @@ export const SaaSPlatformAdmin = () => {
                         activeTab === 'dashboard' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                       }`}
                     >
-                      <span className="flex items-center gap-2">📊 Dashboard Global</span>
+                      <span className="flex items-center gap-2"><Activity size={16} /> Dashboard Global</span>
                     </button>
                   )}
 
@@ -1156,7 +1158,7 @@ export const SaaSPlatformAdmin = () => {
                         activeTab === 'pending_registrations' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                       }`}
                     >
-                      <span className="flex items-center gap-2">⏳ Registros Inconclusos</span>
+                      <span className="flex items-center gap-2"><Loader2 size={16} /> Registros Inconclusos</span>
                       {pendingRegistrations.length > 0 && (
                         <span className="bg-warning-icon text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
                           {pendingRegistrations.length}
@@ -1172,7 +1174,7 @@ export const SaaSPlatformAdmin = () => {
                       activeTab === 'tickets' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                     }`}
                   >
-                    <span className="flex items-center gap-2">🎧 Soporte Técnico / Tickets</span>
+                    <span className="flex items-center gap-2"><LifeBuoy size={16} /> Soporte Técnico / Tickets</span>
                   </button>
 
                   {isAdmin && (
@@ -1183,7 +1185,7 @@ export const SaaSPlatformAdmin = () => {
                         activeTab === 'security_logs' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                       }`}
                     >
-                      <span className="flex items-center gap-2">🛡️ Bitácora de Seguridad</span>
+                      <span className="flex items-center gap-2"><ShieldCheck size={16} /> Bitácora de Seguridad</span>
                     </button>
                   )}
 
@@ -1195,7 +1197,7 @@ export const SaaSPlatformAdmin = () => {
                         activeTab === 'social_promotions' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                       }`}
                     >
-                      <span className="flex items-center gap-2">📱 Redes Sociales & Promociones</span>
+                      <span className="flex items-center gap-2"><Monitor size={16} /> Redes Sociales & Promociones</span>
                       {socialClaims.filter(c => c.status === 'pending_approval').length > 0 && (
                         <span className="bg-accent text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
                           {socialClaims.filter(c => c.status === 'pending_approval').length}
@@ -1207,12 +1209,24 @@ export const SaaSPlatformAdmin = () => {
                   {isAdmin && (
                     <button
                       type="button"
+                      onClick={() => { setActiveTab('product_updates'); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        activeTab === 'product_updates' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2"><Megaphone size={16} /> Novedades del producto</span>
+                    </button>
+                  )}
+
+                  {isAdmin && (
+                    <button
+                      type="button"
                       onClick={() => { setActiveTab('billing'); setIsNavMenuOpen(false); }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
                         activeTab === 'billing' ? 'bg-navy-50 text-accent' : 'text-text-2 hover:bg-page'
                       }`}
                     >
-                      <span className="flex items-center gap-2">💳 Facturación Global</span>
+                      <span className="flex items-center gap-2"><CreditCard size={16} /> Facturación Global</span>
                     </button>
                   )}
                 </div>
@@ -1629,7 +1643,7 @@ export const SaaSPlatformAdmin = () => {
                                title={`Módulos habilitados (${comp.allowed_modules?.length || 0}): ${(comp.allowed_modules || []).join(', ')}`}
                                className="inline-flex items-center gap-1.5 bg-navy-50 border border-border text-accent px-2.5 py-1 rounded-lg text-xs font-extrabold cursor-help"
                              >
-                               <span>📦</span>
+                               <LayoutGrid size={14} aria-hidden="true" />
                                <span>{comp.modules_count ?? 0} / {comp.total_modules_available ?? 12}</span>
                              </span>
                           </td>
@@ -1642,7 +1656,7 @@ export const SaaSPlatformAdmin = () => {
                                title={`Total 30 días: ${comp.tx_30_days || 0} operaciones de base de datos (${comp.tx_total || 0} históricas)`}
                                className="inline-flex items-center gap-1 bg-success-bg border border-success-text/20 text-success-text px-2 py-0.5 rounded-lg text-xs font-extrabold cursor-help"
                              >
-                               <span>⚡</span>
+                               <Activity size={14} aria-hidden="true" />
                                <span>{comp.tx_daily_avg ?? 0}</span>
                                <span className="text-[9px] font-semibold text-success-text">Tx/día</span>
                              </div>
@@ -1667,7 +1681,7 @@ export const SaaSPlatformAdmin = () => {
                                    // Las insignias de evidencia son cosa del plan freemium (difusión social
                                    // a cambio de módulos). Antes también salían colgadas de "Prueba
                                    // Expirada", así que una empresa enterprise al corriente terminaba
-                                   // marcada con "📢 Publicidad Pendiente" sin deberle nada a nadie.
+                                   // marcada con " Publicidad Pendiente" sin deberle nada a nadie.
                                    if (comp.plan?.toLowerCase() !== 'freemium') {
                                       return insignia;
                                    }
@@ -1679,7 +1693,7 @@ export const SaaSPlatformAdmin = () => {
                                             : <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>}
                                          {comp.freemium_compliance_status === 'approved' ? (
                                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-full mt-1">
-                                               ✓ Evidencia Aprobada
+                                                Evidencia Aprobada
                                             </span>
                                          ) : comp.freemium_compliance_status === 'submitted' ? (
                                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-full mt-1">
@@ -1687,11 +1701,11 @@ export const SaaSPlatformAdmin = () => {
                                             </span>
                                          ) : comp.freemium_compliance_status === 'rejected' ? (
                                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-full mt-1">
-                                               ⚠️ Evidencia Rechazada
+                                                Evidencia Rechazada
                                             </span>
                                          ) : (
                                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-full mt-1">
-                                               📢 Comprobante Pendiente
+                                                Comprobante Pendiente
                                             </span>
                                          )}
                                       </div>
@@ -1780,7 +1794,7 @@ export const SaaSPlatformAdmin = () => {
           <div className="mt-6 border-t border-border pt-6">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <span>📊</span> Auditoría de Calidad por Módulo
+                <ShieldCheck size={15} aria-hidden="true" /> Auditoría de Calidad por Módulo
               </span>
               <span className="flex items-center gap-1.5 bg-success-bg text-success-text border border-success-text/50 px-2 py-0.5 rounded-full text-[9px] font-extrabold normal-case">
                 <span className="w-1.5 h-1.5 rounded-full bg-success-icon animate-pulse"></span>
@@ -1914,6 +1928,8 @@ export const SaaSPlatformAdmin = () => {
       </div>
         </>
       )}
+
+      {activeTab === 'product_updates' && <ProductUpdatesAdmin />}
 
       {activeTab === 'pending_registrations' && (
         <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-border shadow-sm animate-in fade-in duration-300">
@@ -2250,7 +2266,7 @@ export const SaaSPlatformAdmin = () => {
                   required
                   value={newPromoTitle}
                   onChange={(e) => setNewPromoTitle(e.target.value)}
-                  placeholder="ej. 🔥 Especial Día del Padre"
+                  placeholder="ej.  Especial Día del Padre"
                   className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white"
                 />
               </div>
@@ -2665,7 +2681,7 @@ export const SaaSPlatformAdmin = () => {
             {/* Sección 2: Módulos del Sistema */}
             <div>
               <h4 className="text-sm font-black text-text-1 uppercase tracking-wider mb-3 pb-1 border-b border-border flex items-center gap-1.5">
-                <span>📦</span> Módulos Incluidos en el Plan Gratuito
+                <LayoutGrid size={15} aria-hidden="true" /> Módulos Incluidos en el Plan Gratuito
               </h4>
               <p className="text-[11px] text-text-3 font-semibold mb-4">Selecciona cuáles de los siguientes módulos principales serán totalmente gratuitos para siempre (Freemium):</p>
 
@@ -2679,7 +2695,6 @@ export const SaaSPlatformAdmin = () => {
                   { id: 'portal', label: 'Portal Web', desc: 'Bolsa de trabajo pública' },
                   { id: 'academia', label: 'Academia 360', desc: 'Capacitación y cursos LMS' },
                   { id: 'documentos', label: 'Documentos', desc: 'Expediente digital y políticas de empresa' },
-                  { id: 'matrix', label: 'Matrix QA', desc: 'Entorno de simulación' },
                   { id: 'facturacion', label: 'Nómina CFDI 4.0', desc: 'Timbrado masivo del SAT' },
                   { id: 'lft', label: 'Ley Federal del Trabajo', desc: 'Reglamento y tolerancias' },
                   { id: 'organizacion', label: 'Organigrama y SOP', desc: 'Procesos, Puestos y Wiki' }
@@ -2710,7 +2725,7 @@ export const SaaSPlatformAdmin = () => {
             {/* Sección 3: Eventos y Funciones del Reloj Checador (Dialer) */}
             <div>
               <h4 className="text-sm font-black text-text-1 uppercase tracking-wider mb-3 pb-1 border-b border-border flex items-center gap-1.5">
-                <span>🕒</span> Eventos y Funciones del Reloj Checador (Dialer)
+                <Clock size={15} aria-hidden="true" /> Eventos y Funciones del Reloj Checador (Dialer)
               </h4>
               <p className="text-[11px] text-text-3 font-semibold mb-4">Selecciona qué características y eventos del Dialer estarán desbloqueados en la versión gratuita:</p>
 
@@ -2756,7 +2771,7 @@ export const SaaSPlatformAdmin = () => {
             {/* Sección 4: Funciones Especiales Globales */}
             <div>
               <h4 className="text-sm font-black text-text-1 uppercase tracking-wider mb-3 pb-1 border-b border-border flex items-center gap-1.5">
-                <span>⚡</span> Funciones Especiales Globales
+                <Settings size={15} aria-hidden="true" /> Funciones Especiales Globales
               </h4>
               <p className="text-[11px] text-text-3 font-semibold mb-4">Activa funcionalidades globales que se considerarán libres de costo en la versión gratuita:</p>
 
@@ -3101,7 +3116,6 @@ export const SaaSPlatformAdmin = () => {
                            <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Teléfono WhatsApp</label>
                            <div className="flex border border-border rounded-xl overflow-hidden focus-within:ring-1 focus-within:ring-focus-ring focus-within:border-accent bg-white">
                              <div className="bg-page px-3 py-2 text-xs text-text-3 font-bold border-r border-border flex items-center gap-1.5 select-none">
-                               <span>🇲🇽</span>
                                <span>+52</span>
                              </div>
                              <input
@@ -3229,7 +3243,7 @@ export const SaaSPlatformAdmin = () => {
                       <div className="border border-border bg-navy-50/10 rounded-2xl p-5 space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="text-xs font-black uppercase tracking-wider text-brand-dark flex items-center gap-1.5">
-                            <span>📈</span> Historial y Evolución de Plan
+                            <TrendingUp size={15} aria-hidden="true" /> Historial y Evolución de Plan
                           </h3>
                           <span className="text-[10px] font-black text-accent bg-accent-soft px-2 py-0.5 rounded">
                             {tenantDetail?.subscription_history?.length || 0} registros
@@ -3260,9 +3274,9 @@ export const SaaSPlatformAdmin = () => {
                                   </span>
                                 </div>
                                 <div className="flex flex-wrap gap-2 text-[11px] text-text-2">
-                                  <span>📦 <strong>{hist.modules_count}</strong> Módulos</span>
+                                  <span> <strong>{hist.modules_count}</strong> Módulos</span>
                                   <span>•</span>
-                                  <span>👥 <strong>{hist.max_users}</strong> Usuarios Max</span>
+                                  <span> <strong>{hist.max_users}</strong> Usuarios Max</span>
                                   <span>•</span>
                                   <span className="text-slate-400 font-mono text-[10px]">{hist.date_formatted}</span>
                                 </div>
@@ -3305,7 +3319,7 @@ export const SaaSPlatformAdmin = () => {
                         <div className="bg-page border border-border rounded-xl p-3.5 space-y-2">
                           <div className="flex justify-between items-center text-xs">
                             <span className="font-extrabold text-text-2 flex items-center gap-1">
-                              ⚡ Throughput BD (Últimos 30 días):
+                               Throughput BD (Últimos 30 días):
                             </span>
                             <span className="font-black text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-md">
                               {tenantDetail?.metrics?.tx_daily_avg ?? 0} Tx / día
@@ -3328,7 +3342,7 @@ export const SaaSPlatformAdmin = () => {
                       <div className="border border-border bg-navy-50/20 rounded-2xl p-5 space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="text-xs font-black uppercase tracking-wider text-brand-dark flex items-center gap-1.5">
-                            <span>🎛️</span> Módulos y Funciones Habilitadas
+                            <LayoutGrid size={15} aria-hidden="true" /> Módulos y Funciones Habilitadas
                           </h3>
                           <span className="text-[9px] font-black text-accent bg-accent-soft px-2 py-0.5 rounded uppercase">
                             Empresa #{tenantDetail?.tenant?.id}
@@ -3340,7 +3354,7 @@ export const SaaSPlatformAdmin = () => {
 
                         {/* Módulos Principales */}
                         <div className="space-y-2">
-                          <h4 className="text-[11px] font-extrabold text-text-2 uppercase tracking-wide">📦 Módulos de Sistema</h4>
+                          <h4 className="text-[11px] font-extrabold text-text-2 uppercase tracking-wide"> Módulos de Sistema</h4>
                           <div className="grid grid-cols-2 gap-2">
                             {[
                               { id: 'rrhh', label: 'Recursos Humanos' },
@@ -3351,7 +3365,6 @@ export const SaaSPlatformAdmin = () => {
                               { id: 'portal', label: 'Portal Web' },
                               { id: 'academia', label: 'Academia 360' },
                               { id: 'documentos', label: 'Gestor Documental' },
-                              { id: 'matrix', label: 'Matrix QA (Simulador)' },
                               { id: 'facturacion', label: 'Nómina CFDI 4.0' },
                               { id: 'lft', label: 'Ley Federal del Trabajo' },
                               { id: 'organizacion', label: 'Organigrama y SOP' }
@@ -3371,7 +3384,7 @@ export const SaaSPlatformAdmin = () => {
 
                         {/* Eventos del Reloj Checador (Dialer) */}
                         <div className="space-y-2 pt-2 border-t border-border">
-                          <h4 className="text-[11px] font-extrabold text-text-2 uppercase tracking-wide">🕒 Funciones del Dialer (Reloj)</h4>
+                          <h4 className="text-[11px] font-extrabold text-text-2 uppercase tracking-wide"> Funciones del Dialer (Reloj)</h4>
                           <div className="grid grid-cols-1 gap-2 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
                             {CLOCK_FEATURE_TAGS_MATRIX.map(tag => {
                               const isChecked = tag.isMandatory || tenantAllowedFeatures.includes(tag.key);
@@ -3399,7 +3412,7 @@ export const SaaSPlatformAdmin = () => {
 
                         {/* Funciones Especiales Globales */}
                         <div className="space-y-2 pt-2 border-t border-border">
-                          <h4 className="text-[11px] font-extrabold text-text-2 uppercase tracking-wide">⚡ Funciones Especiales</h4>
+                          <h4 className="text-[11px] font-extrabold text-text-2 uppercase tracking-wide"> Funciones Especiales</h4>
                           <div className="grid grid-cols-2 gap-2">
                             {[
                               { id: 'voice_assistant', label: 'Asistente Voz AI' },
@@ -3964,7 +3977,7 @@ export const SaaSPlatformAdmin = () => {
               disabled={isLogsLoading}
               className="bg-white hover:bg-page text-text-1 px-5 py-2.5 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer w-full sm:w-auto"
             >
-              {isLogsLoading ? 'Recargando...' : '🔄 Actualizar Bitácora'}
+              {isLogsLoading ? 'Recargando...' : ' Actualizar Bitácora'}
             </button>
           </div>
 

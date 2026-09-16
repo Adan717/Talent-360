@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Lock, Star, Briefcase, Crown, Trophy, Map, GraduationCap, ShieldCheck,
   BookOpen, Wrench, Laptop, ClipboardList, Target, Award, Key, DollarSign,
-  Store, Coffee, Package, Settings, Truck, HeartHandshake, Check, Sparkles, ChevronRight, X
+  Store, Coffee, Package, Settings, Truck, HeartHandshake, Check, Sparkles, ChevronRight, X, Printer
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { ColorMap, tokens } from '../../design/theme';
@@ -377,7 +377,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300 shadow-none'
               }`}
           >
-            {videoFinished || !ytId ? <span>📝 Presentar Evaluación</span> : <span>🔒 Completar video para evaluar</span>}
+            {videoFinished || !ytId ? <span> Presentar Evaluación</span> : <span> Completar video para evaluar</span>}
           </button>
         </div>
 
@@ -386,7 +386,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
           <div className="absolute inset-0 bg-page z-50 flex flex-col overflow-y-auto" role="dialog" aria-modal="true" aria-label="Evaluación Corporativa">
             <div className="sticky top-0 bg-white/90 backdrop-blur-md p-4 border-b border-border flex justify-between items-center z-10 shadow-sm">
               <h3 className="font-black text-lg text-text-1 tracking-tight">Evaluación Corporativa</h3>
-              <button onClick={() => setShowQuiz(false)} className="text-slate-400 hover:text-text-1 bg-page w-8 h-8 rounded-full flex items-center justify-center transition-colors">✕</button>
+              <button onClick={() => setShowQuiz(false)} className="text-slate-400 hover:text-text-1 bg-page w-8 h-8 rounded-full flex items-center justify-center transition-colors"></button>
             </div>
 
             <div className="p-4 md:p-6 pb-24 max-w-3xl mx-auto w-full">
@@ -920,7 +920,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                         }}
                         className="relative z-10 bg-navy-50 hover:bg-accent-soft text-accent px-3 py-2 rounded-xl border border-border font-black text-[11px] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
                       >
-                        <span>🖨️</span> Imprimir
+                        <Printer size={14} aria-hidden="true" /> Imprimir
                       </button>
                     </div>
                   );
@@ -1185,7 +1185,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
               style={{ backgroundColor: `${activeColor.hex}08`, borderColor: `${activeColor.hex}25`, color: activeColor.hex }}
             >
               {/* AC6: decía "En DecorArte" a los colaboradores de cualquier empresa. */}
-              🚀 <strong>¡Hola, {loggedUser?.name?.split(' ')[0]}!</strong> {loggedUser?.tenant?.name ? `En ${loggedUser.tenant.name}, cada` : 'Cada'} paso de aprendizaje te acerca al puesto de tus sueños. ¡Sigue adelante, certifícate hoy y alcanza tu máximo potencial!
+               <strong>¡Hola, {loggedUser?.name?.split(' ')[0]}!</strong> {loggedUser?.tenant?.name ? `En ${loggedUser.tenant.name}, cada` : 'Cada'} paso de aprendizaje te acerca al puesto de tus sueños. ¡Sigue adelante, certifícate hoy y alcanza tu máximo potencial!
             </div>
 
             {/* Checkbox No volver a mostrar */}

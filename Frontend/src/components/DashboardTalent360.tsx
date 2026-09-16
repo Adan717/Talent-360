@@ -5,7 +5,7 @@ import {
   Lock, Settings, LayoutDashboard, ListTodo, BarChart3, Star,
   Play, Send, CheckCircle2, MessageSquare, PlusCircle, Sparkles, MessageCircle, AlertTriangle, FileText, ChevronRight, Receipt,
   Check, AlertCircle, Utensils, Armchair, Cpu, Bot, Mic,
-  Smile, Frown, Award, Ban, UserMinus, UserCheck
+  Smile, Frown, Award, Ban, UserMinus, UserCheck, X
 } from 'lucide-react';
 import { GlobalSystemSettingsPanel } from './GlobalSystemSettingsPanel';
 import { OnboardingWizard } from './OnboardingWizard';
@@ -903,7 +903,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                                 {assignment.assistantData?.photoUrl ? (
                                   <img src={assignment.assistantData.photoUrl} alt="Evidencia" className="h-16 w-auto rounded border border-border" />
                                 ) : (
-                                  <div className="w-24 h-16 bg-slate-200 border border-slate-300 rounded flex items-center justify-center text-[10px] text-text-3 font-medium">📷 Evidencia Foto</div>
+                                  <div className="w-24 h-16 bg-slate-200 border border-slate-300 rounded flex items-center justify-center text-[10px] text-text-3 font-medium"> Evidencia Foto</div>
                                 )}
                               </div>
                             ) : task?.assistantType === 'captura_numero' ? (
@@ -1016,9 +1016,9 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                             </StatusBadge>
                           </div>
                           <div className="mt-2.5 flex items-center justify-between text-[9px] text-text-3 font-bold">
-                            <span className="flex items-center gap-0.5">⏱️ {task.estimated_mins} min</span>
+                            <span className="flex items-center gap-0.5"> {task.estimated_mins} min</span>
                             <span className="opacity-0 group-hover:opacity-100 transition-opacity text-accent font-black flex items-center gap-0.5">
-                              {isSelected ? 'Toca colaborador' : 'Arrastra ➔'}
+                              {isSelected ? 'Toca colaborador' : 'Arrastra '}
                             </span>
                           </div>
                         </div>
@@ -1499,13 +1499,13 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     onClick={() => setChatTab('chat')}
                     className={`flex-1 py-1.5 text-xs font-black tracking-tight rounded-lg transition-colors flex items-center justify-center gap-1.5 ${chatTab === 'chat' ? 'bg-navy-50 text-accent font-extrabold' : 'text-text-3 hover:text-text-2'}`}
                   >
-                    💬 Chat del Día
+                     Chat del Día
                   </button>
                   <button
                     onClick={() => setChatTab('feed')}
                     className={`flex-1 py-1.5 text-xs font-black tracking-tight rounded-lg transition-colors flex items-center justify-center gap-1.5 ${chatTab === 'feed' ? 'bg-navy-50 text-accent font-extrabold' : 'text-text-3 hover:text-text-2'}`}
                   >
-                    ⚡ Bitácora
+                     Bitácora
                   </button>
                 </div>
 
@@ -1515,16 +1515,16 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar text-left p-0.5">
                       {monitorData.chat.map((msg) => {
                         let msgBg = 'bg-page text-text-1';
-                        let typeIcon = '💬';
+                        let typeIcon = '';
                         if (msg.type === 'permission') {
                           msgBg = 'bg-navy-50 text-navy-800 border border-border';
-                          typeIcon = '🛡️';
+                          typeIcon = '';
                         } else if (msg.type === 'food_change') {
                           msgBg = 'bg-warning-bg text-warning-text border border-warning-text/20';
-                          typeIcon = '🍽️';
+                          typeIcon = '';
                         } else if (msg.type === 'announcement') {
                           msgBg = 'bg-navy-50 text-navy-800 border border-border font-bold';
-                          typeIcon = '📢';
+                          typeIcon = '';
                         }
 
                         return (
@@ -1967,7 +1967,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   onClick={() => setShowCreateTaskModal(false)}
                   className="w-7 h-7 rounded-full bg-page hover:bg-page text-text-3 hover:text-text-2 transition-colors flex items-center justify-center font-bold text-xs"
                 >
-                  ✕
+                  <X size={15} aria-hidden="true" />
                 </button>
               </div>
 
@@ -1994,7 +1994,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   <div className={`absolute top-0 right-0 text-white text-[9px] font-black uppercase px-3 py-1 rounded-bl-xl tracking-wider ${
                     !isFeatureUnlocked('voice_assistant') ? 'bg-slate-500' : 'bg-accent'
                   }`}>
-                    {!isFeatureUnlocked('voice_assistant') ? '🔒 Plan PRO' : 'Recomendado'}
+                    {!isFeatureUnlocked('voice_assistant') ? ' Plan PRO' : 'Recomendado'}
                   </div>
                   <div className={`p-3.5 rounded-2xl shrink-0 group-hover:scale-105 transition-transform shadow-md ${
                     !isFeatureUnlocked('voice_assistant')
@@ -2087,7 +2087,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     }}
                     className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 text-navy-200 hover:text-white transition-colors flex items-center justify-center font-bold text-xs"
                   >
-                    ✕
+                    <X size={15} aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -2148,9 +2148,9 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
                   {/* Summary of parsed/filled values */}
                   <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-[10px] text-text-3 font-semibold bg-black/10 p-3 rounded-xl">
-                    <div className="truncate">📌 Título: <span className="text-white font-black">{newTaskTitle || 'Pendiente'}</span></div>
-                    <div>⏱️ Tiempo: <span className="text-white font-black">{newTaskMins ? `${newTaskMins} mins` : 'Pendiente'}</span></div>
-                    <div className="truncate">👤 Asignado: <span className="text-white font-black">
+                    <div className="truncate"> Título: <span className="text-white font-black">{newTaskTitle || 'Pendiente'}</span></div>
+                    <div> Tiempo: <span className="text-white font-black">{newTaskMins ? `${newTaskMins} mins` : 'Pendiente'}</span></div>
+                    <div className="truncate"> Asignado: <span className="text-white font-black">
                       {newTaskTargetId
                         ? (newTaskTargetType === 'user'
                             ? (globalUsers.find(u => String(u.id) === newTaskTargetId)?.name || 'Colaborador')
@@ -2159,14 +2159,14 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                         : 'Cualquiera / Todos'
                       }
                     </span></div>
-                    <div>⚡ Prioridad: <span className="text-white font-black uppercase text-[9px]">{newTaskPriority}</span></div>
-                    <div>🤖 Asistente: <span className="text-white font-black">
-                      {newTaskAssistantType === 'evidencia_foto' ? '📷 Foto' :
-                       newTaskAssistantType === 'captura_numero' ? '🔢 Número' :
-                       newTaskAssistantType === 'texto' ? '📝 Texto' : 'Ninguno'}
+                    <div> Prioridad: <span className="text-white font-black uppercase text-[9px]">{newTaskPriority}</span></div>
+                    <div> Asistente: <span className="text-white font-black">
+                      {newTaskAssistantType === 'evidencia_foto' ? ' Foto' :
+                       newTaskAssistantType === 'captura_numero' ? ' Número' :
+                       newTaskAssistantType === 'texto' ? ' Texto' : 'Ninguno'}
                     </span></div>
                     {newTaskAssistantPrompt && (
-                      <div className="col-span-2 truncate">💬 Pregunta: <span className="text-white font-black italic">"{newTaskAssistantPrompt}"</span></div>
+                      <div className="col-span-2 truncate"> Pregunta: <span className="text-white font-black italic">"{newTaskAssistantPrompt}"</span></div>
                     )}
                   </div>
 
@@ -2231,7 +2231,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     }}
                     className="w-7 h-7 rounded-full bg-page hover:bg-page text-text-3 hover:text-text-2 transition-colors flex items-center justify-center font-bold text-xs"
                   >
-                    ✕
+                    <X size={15} aria-hidden="true" />
                   </button>
                 </div>
               </div>

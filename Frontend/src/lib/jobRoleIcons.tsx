@@ -63,12 +63,12 @@ export interface ProfessionMatrixItem {
  * MATRIZ MAESTRA UNIVERSAL DE ICONOS POR PROFESIONES, OFICIOS Y JERARQUÍAS
  */
 export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
-  // --- 🎨 1. GIRO: DECORARTE 360 & ARTESANAL ---
+  // ---  1. GIRO: DECORARTE 360 & ARTESANAL ---
   {
     key: 'monito-gerente',
     profession: 'Administrador Gerente',
     category: 'Decorarte 360',
-    accessory: 'Traje y Corbata 👔 + Placa Ejecutiva',
+    accessory: 'Traje y Corbata  + Placa Ejecutiva',
     industry: 'decorarte',
     nivel_mando: 1,
     keywords: ['administrador gerente', 'gerente general', 'director general', 'ceo', 'presidente', 'coordinador general']
@@ -77,7 +77,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-compras',
     profession: 'Supervisor de Compras',
     category: 'Decorarte 360',
-    accessory: 'Fajo de Billetes 💵 + Orden de Compra',
+    accessory: 'Fajo de Billetes  + Orden de Compra',
     industry: 'decorarte',
     nivel_mando: 2,
     keywords: ['supervisor de compras', 'compras', 'adquisicion', 'proveedores', 'surtimiento']
@@ -86,7 +86,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-ventas',
     profession: 'Supervisor de Ventas',
     category: 'Decorarte 360',
-    accessory: 'Caja Registradora / Terminal de Cobro 🧾',
+    accessory: 'Caja Registradora / Terminal de Cobro ',
     industry: 'decorarte',
     nivel_mando: 2,
     keywords: ['supervisor de ventas', 'jefe de ventas', 'coordinador comercial']
@@ -95,7 +95,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-produccion',
     profession: 'Supervisor de Producción',
     category: 'Decorarte 360',
-    accessory: 'Casco de Protección 👷 + Tablilla Checklist 📋',
+    accessory: 'Casco de Protección  + Tablilla Checklist ',
     industry: 'decorarte',
     nivel_mando: 2,
     keywords: ['supervisor de producción', 'supervisor de produccion', 'producción', 'produccion', 'taller', 'manufactura', 'inspeccion']
@@ -104,7 +104,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-asesor',
     profession: 'Asesor de Ventas',
     category: 'Decorarte 360',
-    accessory: 'Atención Cara a Cara a Cliente 👥💬',
+    accessory: 'Atención Cara a Cara a Cliente ',
     industry: 'decorarte',
     nivel_mando: 3,
     keywords: ['asesor de ventas', 'asesor comercial', 'atención al cliente', 'atencion al cliente', 'servicio al cliente']
@@ -113,7 +113,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-ayudante',
     profession: 'Ayudante Integral',
     category: 'Decorarte 360',
-    accessory: 'Herramientas de Trabajo Activo 🛠️',
+    accessory: 'Herramientas de Trabajo Activo ',
     industry: 'decorarte',
     nivel_mando: 3,
     keywords: ['ayudante integral', 'ayudante de piso', 'operativo', 'ensamblador']
@@ -122,18 +122,18 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-eventual',
     profession: 'Apoyo Eventual',
     category: 'Decorarte 360',
-    accessory: 'Reloj de Jornada Temporal ⏱️',
+    accessory: 'Reloj de Jornada Temporal ',
     industry: 'decorarte',
     nivel_mando: 4,
     keywords: ['apoyo eventual', 'eventual', 'cobertura', 'auxiliar temporal']
   },
 
-  // --- 🚗 2. GIRO: AUTOMOTRIZ & TALLERES MECÁNICOS ---
+  // ---  2. GIRO: AUTOMOTRIZ & TALLERES MECÁNICOS ---
   {
     key: 'monito-gerente-taller',
     profession: 'Gerente de Taller Automotriz',
     category: 'Automotriz',
-    accessory: 'Llave Inglesa 🔧 + Maletín Ejecutivo 💼',
+    accessory: 'Llave Inglesa  + Maletín Ejecutivo ',
     industry: 'automotriz',
     nivel_mando: 1,
     keywords: ['gerente de taller', 'director de taller', 'jefe de taller mecánico']
@@ -142,7 +142,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-mecanico',
     profession: 'Mecánico Automotriz',
     category: 'Automotriz',
-    accessory: 'Llave de Motor & Diagnóstico 🔧🚗',
+    accessory: 'Llave de Motor & Diagnóstico ',
     industry: 'automotriz',
     nivel_mando: 2,
     keywords: ['mecanico', 'mecanica', 'mecanico automotriz', 'tecnico automotriz', 'mecanico especialista']
@@ -151,7 +151,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-electricista-auto',
     profession: 'Técnico Autoelectrónico',
     category: 'Automotriz',
-    accessory: 'Rayo Eléctrico ⚡ + Diagnóstico',
+    accessory: 'Rayo Eléctrico  + Diagnóstico',
     industry: 'automotriz',
     nivel_mando: 2,
     keywords: ['electricista automotriz', 'autoelectrico', 'tecnico en escaner', 'diagnostico electronico']
@@ -160,18 +160,18 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-ayudante-mecanico',
     profession: 'Ayudante de Mecánico',
     category: 'Automotriz',
-    accessory: 'Neumático & Llave de Cruz 🛞🛠️',
+    accessory: 'Neumático & Llave de Cruz ',
     industry: 'automotriz',
     nivel_mando: 3,
     keywords: ['ayudante de mecanico', 'ayudante mecanico', 'auxiliar de taller', 'engrasador']
   },
 
-  // --- ⚡ 3. GIRO: SERVICIOS TÉCNICOS & MANTENIMIENTO ---
+  // ---  3. GIRO: SERVICIOS TÉCNICOS & MANTENIMIENTO ---
   {
     key: 'monito-electricista',
     profession: 'Electricista Residencial e Industrial',
     category: 'Servicios Técnicos',
-    accessory: 'Casco Dieléctrico & Rayo Eléctrico ⚡👷',
+    accessory: 'Casco Dieléctrico & Rayo Eléctrico ',
     industry: 'servicios',
     nivel_mando: 2,
     keywords: ['electricista', 'electrico', 'tecnico electricista', 'instalador electrico']
@@ -180,7 +180,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-plomero',
     profession: 'Técnico Plomero & Fontanero',
     category: 'Servicios Técnicos',
-    accessory: 'Tubería & Llave de Tubo 🚰🔧',
+    accessory: 'Tubería & Llave de Tubo ',
     industry: 'servicios',
     nivel_mando: 2,
     keywords: ['plomero', 'fontanero', 'tecnico plomero', 'instalador de tuberia']
@@ -189,18 +189,18 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-climas',
     profession: 'Técnico en Refrigeración & Climas',
     category: 'Servicios Técnicos',
-    accessory: 'Aire Acondicionado & Nieve ❄️🔧',
+    accessory: 'Aire Acondicionado & Nieve ',
     industry: 'servicios',
     nivel_mando: 2,
     keywords: ['climas', 'refrigeracion', 'aire acondicionado', 'hvac', 'tecnico en climas']
   },
 
-  // --- ⚖️ 4. GIRO: JURÍDICO & SERVICIOS LEGALES ---
+  // ---  4. GIRO: JURÍDICO & SERVICIOS LEGALES ---
   {
     key: 'monito-legal',
     profession: 'Abogado Socio / Director Legal',
     category: 'Servicios Legales',
-    accessory: 'Mazo de Justicia ⚖️ + Toga / Traje 👔',
+    accessory: 'Mazo de Justicia  + Toga / Traje ',
     industry: 'legal',
     nivel_mando: 1,
     keywords: ['abogado socio', 'director legal', 'socio del despacho', 'notario']
@@ -209,7 +209,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-abogado-senior',
     profession: 'Abogado Litigante Senior',
     category: 'Servicios Legales',
-    accessory: 'Expediente Jurídico & Maletín 💼⚖️',
+    accessory: 'Expediente Jurídico & Maletín ',
     industry: 'legal',
     nivel_mando: 2,
     keywords: ['abogado', 'abogada', 'litigante', 'asesor juridico', 'consultor legal']
@@ -218,7 +218,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-asistente-legal',
     profession: 'Asistente Legal / Secretario de Despacho',
     category: 'Servicios Legales',
-    accessory: 'Folios Legal & Pluma 📋⚖️',
+    accessory: 'Folios Legal & Pluma ',
     industry: 'legal',
     nivel_mando: 3,
     keywords: ['asistente legal', 'secretario legal', 'secretario judicial', 'asistente juridico']
@@ -227,18 +227,18 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-pasante-derecho',
     profession: 'Pasante de Derecho',
     category: 'Servicios Legales',
-    accessory: 'Libro de Leyes & Notificaciones 📚⏱️',
+    accessory: 'Libro de Leyes & Notificaciones ',
     industry: 'legal',
     nivel_mando: 4,
     keywords: ['pasante de derecho', 'pasante legal', 'auxiliar juridico', 'notificador']
   },
 
-  // --- 🏥 5. GIRO: SALUD & CLÍNICAS ---
+  // ---  5. GIRO: SALUD & CLÍNICAS ---
   {
     key: 'monito-director-medico',
     profession: 'Director Médico / Cirujano Jefe',
     category: 'Salud & Medicina',
-    accessory: 'Estetoscopio 🩺 + Traje Ejecutivo 👔',
+    accessory: 'Estetoscopio  + Traje Ejecutivo ',
     industry: 'salud',
     nivel_mando: 1,
     keywords: ['director medico', 'director de clinica', 'cirujano jefe', 'jefe de medicina']
@@ -247,7 +247,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-salud',
     profession: 'Médico Especialista / General',
     category: 'Salud & Medicina',
-    accessory: 'Estetoscopio & Bata Médica 🩺',
+    accessory: 'Estetoscopio & Bata Médica ',
     industry: 'salud',
     nivel_mando: 2,
     keywords: ['medico', 'médico', 'doctor', 'doctora', 'odontologo', 'dentista', 'pediatra']
@@ -256,7 +256,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-enfermero',
     profession: 'Enfermero(a) / Urgencias',
     category: 'Salud & Medicina',
-    accessory: 'Cruz Médica & Jeringa 💉🏥',
+    accessory: 'Cruz Médica & Jeringa ',
     industry: 'salud',
     nivel_mando: 3,
     keywords: ['enfermero', 'enfermera', 'paramedico', 'tecnico en urgencias', 'auxiliar de enfermeria']
@@ -265,18 +265,18 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-asistente-medico',
     profession: 'Asistente Médico / Expedientes',
     category: 'Salud & Medicina',
-    accessory: 'Expediente Clínico 📋🩺',
+    accessory: 'Expediente Clínico ',
     industry: 'salud',
     nivel_mando: 4,
     keywords: ['asistente medico', 'recepcionista medica', 'auxiliar de clinica']
   },
 
-  // --- 🏗️ 6. GIRO: CONSTRUCCIÓN & OBRA CIVIL ---
+  // ---  6. GIRO: CONSTRUCCIÓN & OBRA CIVIL ---
   {
     key: 'monito-arquitecto',
     profession: 'Arquitecto / Director de Obra',
     category: 'Construcción',
-    accessory: 'Casco Blanco 👷 + Plano Arquitectónico 📐',
+    accessory: 'Casco Blanco  + Plano Arquitectónico ',
     industry: 'construccion',
     nivel_mando: 1,
     keywords: ['arquitecto', 'arquitecta', 'director de obra', 'gerente de proyecto obra']
@@ -285,7 +285,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-ingeniero-civil',
     profession: 'Ingeniero Civil / Residente',
     category: 'Construcción',
-    accessory: 'Casco Amarillo 👷 + Teodolito / Nivel 📏',
+    accessory: 'Casco Amarillo  + Teodolito / Nivel ',
     industry: 'construccion',
     nivel_mando: 2,
     keywords: ['ingeniero civil', 'residente de obra', 'supervisor de obra']
@@ -294,7 +294,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-maestro-obra',
     profession: 'Maestro de Obra',
     category: 'Construcción',
-    accessory: 'Cuchara de Albañil & Casco 🛠️👷',
+    accessory: 'Cuchara de Albañil & Casco ',
     industry: 'construccion',
     nivel_mando: 3,
     keywords: ['maestro de obra', 'encargado de cuadrilla', 'cabo de obra']
@@ -303,18 +303,18 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-peon',
     profession: 'Albañil / Peón de Obra',
     category: 'Construcción',
-    accessory: 'Carretilla & Pala 🛒🔨',
+    accessory: 'Carretilla & Pala ',
     industry: 'construccion',
     nivel_mando: 4,
     keywords: ['albanil', 'albañil', 'peon', 'ayudante de obra', 'fierrero']
   },
 
-  // --- 🎓 7. GIRO: EDUCACIÓN & COLEGIOS ---
+  // ---  7. GIRO: EDUCACIÓN & COLEGIOS ---
   {
     key: 'monito-director-escolar',
     profession: 'Director Escolar / Rector',
     category: 'Educación',
-    accessory: 'Birrete 🎓 + Corbata Executive 👔',
+    accessory: 'Birrete  + Corbata Executive ',
     industry: 'educacion',
     nivel_mando: 1,
     keywords: ['director escolar', 'rector', 'directora escolar', 'decano']
@@ -323,7 +323,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-capacitador',
     profession: 'Profesor / Docente de Asignatura',
     category: 'Educación',
-    accessory: 'Birrete & Pizarrón 🎓🏫',
+    accessory: 'Birrete & Pizarrón ',
     industry: 'educacion',
     nivel_mando: 2,
     keywords: ['profesor', 'maestro', 'maestra', 'docente', 'capacitador', 'instructor']
@@ -332,29 +332,29 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-prefecto',
     profession: 'Prefecto / Coordinador Académico',
     category: 'Educación',
-    accessory: 'Silbato & Lista de Asistencia 📣📋',
+    accessory: 'Silbato & Lista de Asistencia ',
     industry: 'educacion',
     nivel_mando: 3,
     keywords: ['prefecto', 'prefecta', 'tutor academico', 'coordinador de disciplina']
   },
 
-  // --- 💇 8. GIRO: BELLEZA, ESTÉTICAS & SPA ---
+  // ---  8. GIRO: BELLEZA, ESTÉTICAS & SPA ---
   {
     key: 'monito-estilista',
     profession: 'Estilista / Barbero / Cosmetóloga',
     category: 'Belleza & Spa',
-    accessory: 'Tijeras & Peine ✂️💈',
+    accessory: 'Tijeras & Peine ',
     industry: 'belleza',
     nivel_mando: 2,
     keywords: ['estilista', 'barbero', 'barbera', 'cosmetologa', 'peluquero', 'peinador']
   },
 
-  // --- 🏪 9. GIRO: RETAIL & COMERCIO ---
+  // ---  9. GIRO: RETAIL & COMERCIO ---
   {
     key: 'monito-cajero',
     profession: 'Cajero / Supervisor de Cajas',
     category: 'Comercio & Cajas',
-    accessory: 'Módulo de Cobro con Tarjeta 💳',
+    accessory: 'Módulo de Cobro con Tarjeta ',
     industry: 'retail',
     nivel_mando: 2,
     keywords: ['cajero', 'cajera', 'cajas', 'tesoreria', 'cobros']
@@ -363,7 +363,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-almacenista',
     profession: 'Almacenista / Control de Inventario',
     category: 'Logística & Almacén',
-    accessory: 'Caja de Paquete / Carga 📦',
+    accessory: 'Caja de Paquete / Carga ',
     industry: 'retail',
     nivel_mando: 3,
     keywords: ['almacenista', 'almacen', 'bodega', 'inventario', 'surtidor']
@@ -372,18 +372,18 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-chofer',
     profession: 'Chofer & Conductor de Reparto',
     category: 'Transporte & Envíos',
-    accessory: 'Volante de Conducción / Camión 🚚',
+    accessory: 'Volante de Conducción / Camión ',
     industry: 'retail',
     nivel_mando: 3,
     keywords: ['chofer', 'repartidor', 'conductor', 'transporte', 'envios']
   },
 
-  // --- 🏢 10. GIRO: CORPORATIVO, OFICINA & TI ---
+  // ---  10. GIRO: CORPORATIVO, OFICINA & TI ---
   {
     key: 'monito-rh',
     profession: 'Especialista en Capital Humano',
     category: 'Recursos Humanos',
-    accessory: 'Expediente de Entrevista 👤+',
+    accessory: 'Expediente de Entrevista +',
     industry: 'oficina',
     nivel_mando: 2,
     keywords: ['recursos humanos', 'rh', 'reclutador', 'capital humano', 'talento']
@@ -392,7 +392,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-disenador',
     profession: 'Diseñador & Creativo Digital',
     category: 'Diseño & Marketing',
-    accessory: 'Paleta de Arte & Pincel 🎨',
+    accessory: 'Paleta de Arte & Pincel ',
     industry: 'tecnologia',
     nivel_mando: 2,
     keywords: ['diseñador', 'disenador', 'creativo', 'marketing', 'arte', 'grafico']
@@ -401,7 +401,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-programador',
     profession: 'Ingeniero en Software & TI',
     category: 'Tecnología & Software',
-    accessory: 'Laptop con Código de Programación 💻',
+    accessory: 'Laptop con Código de Programación ',
     industry: 'tecnologia',
     nivel_mando: 2,
     keywords: ['programador', 'desarrollador', 'sistemas', 'software', 'ti', 'dev']
@@ -410,7 +410,7 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-contador',
     profession: 'Contador Público & Financiero',
     category: 'Finanzas & Contabilidad',
-    accessory: 'Calculadora & Reportes 🧮',
+    accessory: 'Calculadora & Reportes ',
     industry: 'oficina',
     nivel_mando: 2,
     keywords: ['contador', 'contabilidad', 'finanzas', 'auditor', 'nominas']
@@ -419,18 +419,18 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-recepcionista',
     profession: 'Recepcionista & Conmutador',
     category: 'Recepción & Atención',
-    accessory: 'Diadema con Micrófono 🎧',
+    accessory: 'Diadema con Micrófono ',
     industry: 'oficina',
     nivel_mando: 3,
     keywords: ['recepcionista', 'recepcion', 'conmutador', 'atencion telefonica']
   },
 
-  // --- 🍽️ 11. GIRO: RESTAURANTES & GASTRONOMÍA ---
+  // ---  11. GIRO: RESTAURANTES & GASTRONOMÍA ---
   {
     key: 'monito-chef',
     profession: 'Chef & Especialista Gastronómico',
     category: 'Gastronomía & Cocina',
-    accessory: 'Gorro de Chef & Sartén 🍳',
+    accessory: 'Gorro de Chef & Sartén ',
     industry: 'restaurante',
     nivel_mando: 2,
     keywords: ['chef', 'cocinero', 'cocina', 'gastronomia']
@@ -439,18 +439,18 @@ export const JOB_ROLE_PROFESSIONS_MATRIX: ProfessionMatrixItem[] = [
     key: 'monito-mesero',
     profession: 'Mesero & Servicio de Salón',
     category: 'Restaurantes & Servicio',
-    accessory: 'Bandeja de Servicio 🍽️',
+    accessory: 'Bandeja de Servicio ',
     industry: 'restaurante',
     nivel_mando: 3,
     keywords: ['mesero', 'mesera', 'barista', 'garrotero']
   },
 
-  // --- 🛡️ 12. GIRO: SEGURIDAD & PREVENCIÓN ---
+  // ---  12. GIRO: SEGURIDAD & PREVENCIÓN ---
   {
     key: 'monito-guardia',
     profession: 'Oficial de Seguridad & Prevención',
     category: 'Seguridad & Protección',
-    accessory: 'Gorra Oficial & Escudo 🛡️',
+    accessory: 'Gorra Oficial & Escudo ',
     industry: 'servicios',
     nivel_mando: 3,
     keywords: ['guardia', 'seguridad', 'vigilante', 'prevencion']
@@ -502,7 +502,7 @@ export const MonitoCharacterBadge: React.FC<{
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
           <circle cx="8.5" cy="6.5" r="3.5" stroke="currentColor" strokeWidth="2" fill="none" />
           <path d="M2.5 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Llave de motor / Auto 🔧🚗 */}
+          {/* Llave de motor / Auto  */}
           <path d="M15 11l4 4M18.5 9.5l2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           <circle cx="15.5" cy="10" r="1.8" stroke="currentColor" strokeWidth="1.5" />
           <rect x="13.5" y="16" width="8" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity="0.2" />
@@ -517,7 +517,7 @@ export const MonitoCharacterBadge: React.FC<{
           {/* Casco Dieléctrico */}
           <path d="M5 6.5c0-2 1.5-3.5 3.5-3.5s3.5 1.5 3.5 3.5H5z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="1.2" />
           <path d="M2.5 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Rayo Eléctrico ⚡ */}
+          {/* Rayo Eléctrico  */}
           <path d="M18 9l-3 5.5h3.5L16 20l5.5-6h-3.5L20 9h-2z" fill="currentColor" />
         </svg>
       );
@@ -527,7 +527,7 @@ export const MonitoCharacterBadge: React.FC<{
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
           <circle cx="8.5" cy="6.5" r="3.5" stroke="currentColor" strokeWidth="2" fill="none" />
           <path d="M2.5 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Tubería & Llave de Tubo 🚰🔧 */}
+          {/* Tubería & Llave de Tubo  */}
           <path d="M14 10v4h6v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           <path d="M17 14v4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           <circle cx="17" cy="20" r="1" fill="currentColor" />
@@ -539,7 +539,7 @@ export const MonitoCharacterBadge: React.FC<{
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
           <circle cx="8.5" cy="6.5" r="3.5" stroke="currentColor" strokeWidth="2" fill="none" />
           <path d="M2.5 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Copo de Nieve / Aire Acondicionado ❄️ */}
+          {/* Copo de Nieve / Aire Acondicionado  */}
           <path d="M18 10v8M14 14h8M15 11l6 6M21 11l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       );
@@ -549,7 +549,7 @@ export const MonitoCharacterBadge: React.FC<{
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
           <circle cx="8" cy="6.5" r="3.5" stroke="currentColor" strokeWidth="2" fill="none" />
           <path d="M2 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Neumático & Llave de Cruz 🛞 */}
+          {/* Neumático & Llave de Cruz  */}
           <circle cx="17.5" cy="14.5" r="4" stroke="currentColor" strokeWidth="1.8" fill="currentColor" fillOpacity="0.2" />
           <circle cx="17.5" cy="14.5" r="1.5" stroke="currentColor" strokeWidth="1.2" />
         </svg>
@@ -561,7 +561,7 @@ export const MonitoCharacterBadge: React.FC<{
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
           <circle cx="8.5" cy="6.5" r="3.5" stroke="currentColor" strokeWidth="2" fill="none" />
           <path d="M2.5 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Mazo de Justicia ⚖️ */}
+          {/* Mazo de Justicia  */}
           <path d="M14 11l4 4M17.5 9.5l2 2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
           <rect x="13.5" y="15" width="8" height="2.5" rx="1" fill="currentColor" />
         </svg>
@@ -573,7 +573,7 @@ export const MonitoCharacterBadge: React.FC<{
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
           <circle cx="8.5" cy="6.5" r="3.5" stroke="currentColor" strokeWidth="2" fill="none" />
           <path d="M2.5 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Folio de Expediente Legal 📋⚖️ */}
+          {/* Folio de Expediente Legal  */}
           <rect x="14" y="9" width="7.5" height="10" rx="1" stroke="currentColor" strokeWidth="1.8" fill="currentColor" fillOpacity="0.15" />
           <path d="M16 12h3.5M16 15h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
         </svg>
@@ -587,7 +587,7 @@ export const MonitoCharacterBadge: React.FC<{
           {/* Casco de Obra */}
           <path d="M5 6.5c0-2 1.5-3.5 3.5-3.5s3.5 1.5 3.5 3.5H5z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="1.2" />
           <path d="M2.5 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Plano Arquitectónico 📐 */}
+          {/* Plano Arquitectónico  */}
           <path d="M14 10l7 7M14 17l7-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
       );
@@ -599,7 +599,7 @@ export const MonitoCharacterBadge: React.FC<{
           <circle cx="8.5" cy="7" r="3.2" stroke="currentColor" strokeWidth="2" fill="none" />
           <path d="M5 6.5c0-2 1.5-3.5 3.5-3.5s3.5 1.5 3.5 3.5H5z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="1.2" />
           <path d="M2.5 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Cuchara de Albañil / Pala 🛠️ */}
+          {/* Cuchara de Albañil / Pala  */}
           <path d="M15 17l4-5 2.5 2.5-4 5z" stroke="currentColor" strokeWidth="1.8" fill="currentColor" fillOpacity="0.2" />
         </svg>
       );
@@ -609,7 +609,7 @@ export const MonitoCharacterBadge: React.FC<{
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
           <circle cx="8.5" cy="6.5" r="3.5" stroke="currentColor" strokeWidth="2" fill="none" />
           <path d="M2.5 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Tijeras & Peine ✂️ */}
+          {/* Tijeras & Peine  */}
           <circle cx="16" cy="11" r="1.2" stroke="currentColor" strokeWidth="1.5" />
           <circle cx="19.5" cy="11" r="1.2" stroke="currentColor" strokeWidth="1.5" />
           <path d="M16.8 12l3.5 6.5M18.7 12l-3.5 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -623,7 +623,7 @@ export const MonitoCharacterBadge: React.FC<{
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
           <circle cx="8.5" cy="6.5" r="3.5" stroke="currentColor" strokeWidth="2" fill="none" />
           <path d="M2.5 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Estetoscopio / Cruz Médica 🩺 */}
+          {/* Estetoscopio / Cruz Médica  */}
           <path d="M15 10v3c0 1.5 1 2.5 2.5 2.5s2.5-1 2.5-2.5v-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           <circle cx="17.5" cy="18" r="1.5" fill="currentColor" />
         </svg>
@@ -634,7 +634,7 @@ export const MonitoCharacterBadge: React.FC<{
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
           <circle cx="8.5" cy="6.5" r="3.5" stroke="currentColor" strokeWidth="2" fill="none" />
           <path d="M2.5 20.5c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          {/* Silbato de Prefectura 📣 */}
+          {/* Silbato de Prefectura  */}
           <path d="M14 12h4v3.5h-4z" stroke="currentColor" strokeWidth="1.8" fill="currentColor" fillOpacity="0.2" />
           <circle cx="18" cy="13.7" r="1" stroke="currentColor" strokeWidth="1" />
         </svg>
@@ -1129,4 +1129,3 @@ export function getRoleSmartDescription(rol?: { name?: string; area?: string; de
 
   return `Puesto clave enfocado en la excelencia operativa y el cumplimiento de metas del área de ${area}.`;
 }
-

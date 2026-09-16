@@ -843,12 +843,12 @@ export function useClockEngine(overrideUser?: any) {
         if (!lastAlertSentRef.current || now - lastAlertSentRef.current > 60000) {
           lastAlertSentRef.current = now;
           useAppStore.getState().addMatrixEvent(
-            '🚨 Abandono de Sucursal Detectado',
+            ' Abandono de Sucursal Detectado',
             `El colaborador ${currentUser.name} se encuentra fuera del perímetro permitido (${Math.round(gpsDistance)} metros de distancia) sin un pase registrado.`,
             'warning',
             currentUser.id
           );
-          showCustomAlert(`⚠️ Alerta: Estás a ${Math.round(gpsDistance)}m de la sucursal. Se ha notificado al supervisor por abandono de perímetro.`);
+          showCustomAlert(` Alerta: Estás a ${Math.round(gpsDistance)}m de la sucursal. Se ha notificado al supervisor por abandono de perímetro.`);
         }
       }
     }
@@ -934,9 +934,6 @@ export function useClockEngine(overrideUser?: any) {
   };
 
 
-  // Matrix Tabs
-  const [matrixTab, setMatrixTab] = useState('simulador');
-
   const [weeklyHistory, setWeeklyHistory] = useState<any>({});
 
   // RESTAURADO TEMPORALMENTE PARA EVITAR PANTALLA BLANCA (Hasta completar Fase 7)
@@ -1021,13 +1018,13 @@ export function useClockEngine(overrideUser?: any) {
 
         // EVENTO DE BITACORA PARA MATRIX/SANDBOX
         useAppStore.getState().addMatrixEvent(
-            '🍽️ Reservación de Comida',
+            ' Reservación de Comida',
             `${currentUser.name} (${currentUser.role}) reservó bloque de comida iniciando a las ${firstSlot}.`,
             'info',
             currentUser.id
         );
 
-        showCustomAlert(`✅ Reservación confirmada para las ${firstSlot}.`);
+        showCustomAlert(` Reservación confirmada para las ${firstSlot}.`);
     } catch (e) {
         console.error(e);
     }
@@ -1068,12 +1065,12 @@ export function useClockEngine(overrideUser?: any) {
 
       const targetUser = globalUsers.find((u: any) => u.id === userId) || currentUser;
       useAppStore.getState().addMatrixEvent(
-        '🍽️ Cancelación de Comida',
+        ' Cancelación de Comida',
         `${targetUser.name} (${targetUser.role}) canceló su reserva de comida.`,
         'warning',
         userId
       );
-      showCustomAlert(`✅ Reservación cancelada con éxito.`);
+      showCustomAlert(` Reservación cancelada con éxito.`);
     } catch (e) {
       console.error(e);
     }
@@ -1157,12 +1154,12 @@ export function useClockEngine(overrideUser?: any) {
       window.dispatchEvent(new Event('db_sync_updated'));
 
       useAppStore.getState().addMatrixEvent(
-        '🔄 Intercambio de Comida',
+        ' Intercambio de Comida',
         `${userAObj.name} intercambió su horario de comida con ${userBObj.name}.`,
         'info',
         userAId
       );
-      showCustomAlert(`✅ Horario intercambiado con ${userBObj.name}.`);
+      showCustomAlert(` Horario intercambiado con ${userBObj.name}.`);
     } catch (e) {
       console.error(e);
     }
@@ -1179,7 +1176,7 @@ export function useClockEngine(overrideUser?: any) {
         }));
 
         useAppStore.getState().addMatrixEvent(
-          '🧘 Solicitud de Descanso',
+          ' Solicitud de Descanso',
           `${currentUser.name} ha solicitado iniciar un descanso de Ley Silla (15 min).`,
           'info',
           userId
@@ -1199,11 +1196,11 @@ export function useClockEngine(overrideUser?: any) {
           }
         }));
       }
-      showCustomAlert('✅ Solicitud de descanso enviada al supervisor.');
+      showCustomAlert(' Solicitud de descanso enviada al supervisor.');
       window.dispatchEvent(new Event('db_sync_updated'));
     } catch (e) {
       console.error(e);
-      showCustomAlert('⚠️ Error al enviar la solicitud de descanso.');
+      showCustomAlert(' Error al enviar la solicitud de descanso.');
     }
   };
 
@@ -1227,7 +1224,7 @@ export function useClockEngine(overrideUser?: any) {
         updateClockState(targetUserId, 'short_break');
 
         useAppStore.getState().addMatrixEvent(
-          '🧘 Descanso Aprobado',
+          ' Descanso Aprobado',
           `El supervisor aprobó el descanso de Ley Silla para ${targetUser.name}.`,
           'success',
           targetUserId
@@ -1257,11 +1254,11 @@ export function useClockEngine(overrideUser?: any) {
           };
         });
       }
-      showCustomAlert(`✅ Descanso aprobado para ${targetUser.name}.`);
+      showCustomAlert(` Descanso aprobado para ${targetUser.name}.`);
       window.dispatchEvent(new Event('db_sync_updated'));
     } catch (e) {
       console.error(e);
-      showCustomAlert('⚠️ Error al aprobar la solicitud.');
+      showCustomAlert(' Error al aprobar la solicitud.');
     }
   };
 
@@ -1278,7 +1275,7 @@ export function useClockEngine(overrideUser?: any) {
         });
 
         useAppStore.getState().addMatrixEvent(
-          '🧘 Descanso Rechazado',
+          ' Descanso Rechazado',
           `El supervisor rechazó la solicitud de descanso para ${targetUser.name}.`,
           'warning',
           targetUserId
@@ -1299,11 +1296,11 @@ export function useClockEngine(overrideUser?: any) {
           };
         });
       }
-      showCustomAlert(`❌ Descanso rechazado para ${targetUser.name}.`);
+      showCustomAlert(` Descanso rechazado para ${targetUser.name}.`);
       window.dispatchEvent(new Event('db_sync_updated'));
     } catch (e) {
       console.error(e);
-      showCustomAlert('⚠️ Error al rechazar la solicitud.');
+      showCustomAlert(' Error al rechazar la solicitud.');
     }
   };
 
@@ -1513,7 +1510,7 @@ export function useClockEngine(overrideUser?: any) {
 
     if (storeStatus === 'closed' && Number(currentUser?.id) === Number(activeEncargadoId) && isWithinPerimeter) {
       handleOpenStore(false);
-      showCustomAlert("📍 Encargado detectado en perímetro. Sucursal abierta automáticamente vía GPS.");
+      showCustomAlert(" Encargado detectado en perímetro. Sucursal abierta automáticamente vía GPS.");
     }
   }, [isWithinPerimeter, currentUser?.id, activeEncargadoId, storeStatus]);
 
@@ -1559,7 +1556,7 @@ export function useClockEngine(overrideUser?: any) {
         if (currentSimTime >= targetTime && activePushNotification?.type !== 'comida') {
             setActivePushNotification({
                type: 'comida',
-               text: `🍔 Es tu turno para reservar tu horario de comida.`,
+               text: ` Es tu turno para reservar tu horario de comida.`,
                action: () => {
                   setActivePushNotification(null);
                   setPhoneTab('checador');
@@ -1582,7 +1579,7 @@ export function useClockEngine(overrideUser?: any) {
       if (activePushNotification?.type !== 'apertura_transferida') {
         setActivePushNotification({
           type: 'apertura_transferida',
-          text: `🚨 Apertura de emergencia: se te ha asignado la responsabilidad de abrir hoy. Dirígete a la sucursal.`,
+          text: ` Apertura de emergencia: se te ha asignado la responsabilidad de abrir hoy. Dirígete a la sucursal.`,
           action: () => {
             setActivePushNotification(null);
           }
@@ -1631,7 +1628,7 @@ export function useClockEngine(overrideUser?: any) {
           if (!dismissedTaskNotificationsRef.current.has(delayedKey) && (activePushNotification?.type !== 'tarea_retrasada' || !activePushNotification?.text.includes(myTask?.title || ''))) {
             setActivePushNotification({
               type: 'tarea_retrasada',
-              text: `🚨 Retraso en rutina: desarrolla "${myTask?.title || 'Tarea'}". Quedan ${remainingCount} tareas.`,
+              text: ` Retraso en rutina: desarrolla "${myTask?.title || 'Tarea'}". Quedan ${remainingCount} tareas.`,
               action: () => {
                 dismissedTaskNotificationsRef.current.add(delayedKey);
                 setActivePushNotification(null);
@@ -1648,7 +1645,7 @@ export function useClockEngine(overrideUser?: any) {
           if (!dismissedTaskNotificationsRef.current.has(nextKey) && activePushNotification?.type !== 'tarea_siguiente' && activePushNotification?.type !== 'tarea_retrasada') {
             setActivePushNotification({
               type: 'tarea_siguiente',
-              text: `📋 Siguiente tarea de tu rutina: "${myTask?.title || 'Tarea'}". (${remainingCount} pendientes).`,
+              text: ` Siguiente tarea de tu rutina: "${myTask?.title || 'Tarea'}". (${remainingCount} pendientes).`,
               action: () => {
                 dismissedTaskNotificationsRef.current.add(nextKey);
                 setActivePushNotification(null);
@@ -1675,7 +1672,7 @@ export function useClockEngine(overrideUser?: any) {
           const myTask = storeState.tasks.find(t => t.id === myAssignment.taskId);
           setActivePushNotification({
             type: 'tarea_retrasada',
-            text: `🚨 Estás retrasado en tu tarea: ${myTask?.title || 'Tarea Actual'}. ¡Apresúrate!`,
+            text: ` Estás retrasado en tu tarea: ${myTask?.title || 'Tarea Actual'}. ¡Apresúrate!`,
             action: () => {
               dismissedTaskNotificationsRef.current.add(notifKey);
               setActivePushNotification(null);
@@ -1759,7 +1756,7 @@ export function useClockEngine(overrideUser?: any) {
 
             setActivePushNotification({
               type: 'advertencia_tiempo',
-              text: `⚠️ ¡Tiempo límite cerca! Tarea "${myTask.title}" al 80% de avance. Quedan ${remaining} min.`,
+              text: ` ¡Tiempo límite cerca! Tarea "${myTask.title}" al 80% de avance. Quedan ${remaining} min.`,
               action: () => {
                 setActivePushNotification(null);
                 setPhoneTab('tareas');
@@ -1851,7 +1848,7 @@ export function useClockEngine(overrideUser?: any) {
             action: () => {
               localStorage.setItem(`commute_confirmed_${currentDay}`, 'true');
               setActivePushNotification(null);
-              showCustomAlert('🟢 Trayecto confirmado. ¡Conduce con cuidado!');
+              showCustomAlert(' Trayecto confirmado. ¡Conduce con cuidado!');
             }
           });
         }
@@ -1869,7 +1866,7 @@ export function useClockEngine(overrideUser?: any) {
           playAlarm('tienda_cerrada'); // Reproducir un tono preventivo
           setActivePushNotification({
             type: 'commute_suplente_alert',
-            text: '⚠️ Alerta Preventiva: El Encargado Principal no ha confirmado su trayecto. Mantente alerta por posible cobertura de apertura.',
+            text: ' Alerta Preventiva: El Encargado Principal no ha confirmado su trayecto. Mantente alerta por posible cobertura de apertura.',
             action: () => {
               setActivePushNotification(null);
             }
@@ -1894,7 +1891,7 @@ export function useClockEngine(overrideUser?: any) {
       if (minsToStart === userClockPrefs.preShiftReminderMins && !preShiftAlarmPlayed) {
         playAlarm('alerta_tiempo');
         setPreShiftAlarmPlayed(true);
-        showCustomAlert(`🔔 Alerta de Entrada: Tu turno de entrada inicia en ${userClockPrefs.preShiftReminderMins} minutos.`);
+        showCustomAlert(` Alerta de Entrada: Tu turno de entrada inicia en ${userClockPrefs.preShiftReminderMins} minutos.`);
       }
     }
 
@@ -1907,7 +1904,7 @@ export function useClockEngine(overrideUser?: any) {
     if (isPro && userClockPrefs.alarmsEnabled && checkInTime !== undefined && !hasMealReservation && currentSimTime === checkInTime + 5 && !mealReminderAlarmPlayed) {
       playAlarm('alerta_tiempo');
       setMealReminderAlarmPlayed(true);
-      showCustomAlert("🍔 Recuerda agendar o confirmar tu horario de almuerzo de hoy.");
+      showCustomAlert(" Recuerda agendar o confirmar tu horario de almuerzo de hoy.");
     }
 
     // 2b. Free Plan simple lunch time alarm
@@ -1918,7 +1915,7 @@ export function useClockEngine(overrideUser?: any) {
       if (currentSimTime === lunchMins && !hasPlayedLunchAlarm) {
         localStorage.setItem(alarmKey, 'true');
         playAlarm('alerta_tiempo');
-        showCustomAlert("🍔 ¡Hora de tu Almuerzo! Recuerda iniciar tu horario de comida en el Reloj Checador.");
+        showCustomAlert(" ¡Hora de tu Almuerzo! Recuerda iniciar tu horario de comida en el Reloj Checador.");
       }
     }
 
@@ -1928,7 +1925,7 @@ export function useClockEngine(overrideUser?: any) {
     if (userClockPrefs.alarmsEnabled && userClockPrefs.leySillaAlert && tocaDescansoLeySilla && !leySillaAlarmPlayed) {
       playAlarm('alerta_tiempo');
       setLeySillaAlarmPlayed(true);
-      showCustomAlert("🧘 Alerta Ley Silla: Recuerda tomar un descanso de 15 minutos de pie o sentado según la Ley Silla.");
+      showCustomAlert(" Alerta Ley Silla: Recuerda tomar un descanso de 15 minutos de pie o sentado según la Ley Silla.");
     }
 
     // 4. Task expiry alerts
@@ -1940,7 +1937,7 @@ export function useClockEngine(overrideUser?: any) {
           if (minsRemaining === userClockPrefs.taskExpiryWarningMins && !expiringTasksAlerted[a.id]) {
             playAlarm('alerta_tiempo');
             setExpiringTasksAlerted(prev => ({ ...prev, [a.id]: true }));
-            showCustomAlert(`⚠️ Alerta de Tarea: Tu tarea asignada expira en ${userClockPrefs.taskExpiryWarningMins} minutos.`);
+            showCustomAlert(` Alerta de Tarea: Tu tarea asignada expira en ${userClockPrefs.taskExpiryWarningMins} minutos.`);
           }
         }
       });
@@ -1959,7 +1956,7 @@ export function useClockEngine(overrideUser?: any) {
       const hasNew = activeIds.some(id => !prevAssignmentsRef.current.includes(id));
       if (hasNew && userClockPrefs.alarmsEnabled && userClockPrefs.newTaskAlert) {
         playAlarm('ya_llegue');
-        showCustomAlert("📋 ¡Nueva Tarea Asignada! Tienes una nueva tarea en tu panel de actividades.");
+        showCustomAlert(" ¡Nueva Tarea Asignada! Tienes una nueva tarea en tu panel de actividades.");
       }
     }
     prevAssignmentsRef.current = activeIds;
@@ -2084,7 +2081,7 @@ export function useClockEngine(overrideUser?: any) {
     setContingencyLogs(prev => [log, ...prev]);
     updateClockState(currentUser.id, 'contingency');
 
-    const eventTitle = type === 'absent' ? '❌ Reporte de Falta' : '⏳ Reporte de Retraso';
+    const eventTitle = type === 'absent' ? ' Reporte de Falta' : ' Reporte de Retraso';
     const eventDesc = type === 'absent'
       ? `${currentUser.name} (${currentUser.role}) reportó falta. Motivo: ${absenceReason}. Se liberó su comedor.`
       : `${currentUser.name} (${currentUser.role}) reportó retraso${etaTime ? ` (ETA: ${etaTime})` : ''}. Motivo: ${absenceReason}.`;
@@ -2132,12 +2129,12 @@ export function useClockEngine(overrideUser?: any) {
             setOpeningStatus(updatedOpening);
             localStorage.setItem('store_daily_opening_status', JSON.stringify(updatedOpening));
          }
-         showCustomAlert(`🚑 [${formattedTime}] Contingencia registrada. Al usar el botón de reporte, la responsabilidad de abrir la tienda se transfirió a: ${globalUsers.find(u => u.id === nextEncargadoId)?.name}.`);
+         showCustomAlert(` [${formattedTime}] Contingencia registrada. Al usar el botón de reporte, la responsabilidad de abrir la tienda se transfirió a: ${globalUsers.find(u => u.id === nextEncargadoId)?.name}.`);
        } else {
-         showCustomAlert(`🚨 [${formattedTime}] Contingencia registrada. CRÍTICO: No hay más gerentes disponibles para abrir la tienda.`);
+         showCustomAlert(` [${formattedTime}] Contingencia registrada. CRÍTICO: No hay más gerentes disponibles para abrir la tienda.`);
        }
     } else {
-       showCustomAlert(`✅ [${formattedTime}] Contingencia registrada con éxito y notificada al gerente.`);
+       showCustomAlert(` [${formattedTime}] Contingencia registrada con éxito y notificada al gerente.`);
     }
 
     window.dispatchEvent(new Event('db_sync_updated'));
@@ -2150,7 +2147,7 @@ export function useClockEngine(overrideUser?: any) {
     const backupId = supervisor ? supervisor.id : (globalUsers.find(u => u.id !== currentUser.id)?.id || currentUser.id);
     setActiveEncargadoId(backupId);
     setShowAbsenceModal(false);
-    showCustomAlert(`🔴 [${formattedTime}] Emergencia registrada. Responsabilidad transferida al Segundo Encargado.`);
+    showCustomAlert(` [${formattedTime}] Emergencia registrada. Responsabilidad transferida al Segundo Encargado.`);
   };
 
   const handleAperturaForzosa = () => {
@@ -2163,7 +2160,7 @@ export function useClockEngine(overrideUser?: any) {
   const initPaseLista = (conAmnistia: boolean) => {
     const rollCallUnlocked = useAppStore.getState().isFeatureUnlocked('roll_call');
     if (!rollCallUnlocked) {
-      showCustomAlert("⚠️ El Pase de Lista es una función PRO. Por favor, actualiza tu plan.");
+      showCustomAlert(" El Pase de Lista es una función PRO. Por favor, actualiza tu plan.");
       return;
     }
     if (conAmnistia) setAmnestyActive(true);
@@ -2237,7 +2234,7 @@ export function useClockEngine(overrideUser?: any) {
 
       window.dispatchEvent(new Event('db_sync_updated'));
 
-      let msg = `🟢 [${formattedTime}] Tienda Abierta. Notificando a la matriz.`;
+      let msg = ` [${formattedTime}] Tienda Abierta. Notificando a la matriz.`;
       showCustomAlert(msg);
     } catch(e) {
       console.error(e);
@@ -2290,7 +2287,7 @@ export function useClockEngine(overrideUser?: any) {
       }
 
       setPaseListaDone(true); // <--- CORRECCION VITAL: Marcar que ya se hizo
-      showCustomAlert(`✅ Pase de Lista completado. Se dio acceso a ${registrados} empleados.`);
+      showCustomAlert(` Pase de Lista completado. Se dio acceso a ${registrados} empleados.`);
     } catch(e) {
       console.error(e);
       showCustomAlert("Error en Pase de Lista.");
@@ -2360,7 +2357,7 @@ export function useClockEngine(overrideUser?: any) {
           });
           const remaining = await offlineDb.getPunches();
           setSyncQueue(remaining);
-          showCustomAlert(`📡 Fichaje guardado localmente en cola offline IndexedDB (Sin Internet).`);
+          showCustomAlert(` Fichaje guardado localmente en cola offline IndexedDB (Sin Internet).`);
 
           let newState = 'active';
           if (type === 'waiting') newState = 'waiting';
@@ -2453,9 +2450,9 @@ export function useClockEngine(overrideUser?: any) {
          // salida." (docs/BACKEND_INTERFACES.md §6) — el usuario no veía absolutamente nada al presionar
          // el dial. Ahora se muestra el mensaje real del backend cuando existe.
          console.error(e);
-         showCustomAlert(e.response?.data?.message || '⚠️ No se pudo sincronizar el fichaje con el servidor.');
+         showCustomAlert(e.response?.data?.message || ' No se pudo sincronizar el fichaje con el servidor.');
          // Quien llamó tiene que saber que NO se registró. Antes esto devolvía undefined y el
-         // cierre de jornada seguía como si nada: "🔴 Salida registrada a las 23:08" encima del
+         // cierre de jornada seguía como si nada: " Salida registrada a las 23:08" encima del
          // aviso de que el servidor la había rechazado (checklist de cierre pendiente), y el dial
          // ofrecía "Tomar Silla" porque, de verdad, la persona seguía en turno.
          return { error: true, message: e.response?.data?.message };
@@ -2492,11 +2489,11 @@ export function useClockEngine(overrideUser?: any) {
     // GPS Geofencing Check
     if (!isGpsValidationBypassed) {
       if (gpsStatus === 'error') {
-        showCustomAlert("⚠️ Error de GPS: No se pudo determinar tu ubicación actual.");
+        showCustomAlert(" Error de GPS: No se pudo determinar tu ubicación actual.");
         return;
       }
       if (!isWithinPerimeter) {
-        showCustomAlert(`⚠️ Fichaje Denegado: Estás fuera del perímetro permitido (Distancia: ${Math.round(gpsDistance)}m).`);
+        showCustomAlert(` Fichaje Denegado: Estás fuera del perímetro permitido (Distancia: ${Math.round(gpsDistance)}m).`);
         return;
       }
     }
@@ -2522,7 +2519,7 @@ export function useClockEngine(overrideUser?: any) {
       }
     }
     if (!isGpsValidationBypassed && gpsStatus !== 'success' && !clockOpConfig.allowManualCheckIn) {
-      showCustomAlert("⚠️ Error de GPS: No se ha podido validar tu ubicación actual.");
+      showCustomAlert(" Error de GPS: No se ha podido validar tu ubicación actual.");
       return;
     }
 
@@ -2547,7 +2544,7 @@ export function useClockEngine(overrideUser?: any) {
       if (actionText === 'Registrar Entrada' || actionText === 'Registrar Entrada Manual' || actionText === 'Fichar Entrada') {
         const res = await syncToDB('check_in');
         if (res && res.entry && res.entry.late_type) {
-            showCustomAlert(`🟢 Fichaje registrado. Se detectó: ${res.entry.late_type} (${res.entry.penalty_applied}% descuento)`);
+            showCustomAlert(` Fichaje registrado. Se detectó: ${res.entry.late_type} (${res.entry.penalty_applied}% descuento)`);
             // (2026-08-22) Aquí había un candado muerto: exigía que el rol fuera 'Encargado
             // Titular', 'Segundo Encargado' o 'Supervisor' —con mayúscula— cuando los roles reales
             // son admin/supervisor/empleado. Nunca coincidía con nadie, así que este modal jamás
@@ -2557,16 +2554,16 @@ export function useClockEngine(overrideUser?: any) {
             // "Retardo sin justificar" del dial.
             setShowJustificanteModal(true);
         } else {
-            showCustomAlert(`🟢 Fichaje registrado a tiempo.`);
+            showCustomAlert(` Fichaje registrado a tiempo.`);
         }
-      } else if (actionText === '📍 Ya llegué') {
+      } else if (actionText === ' Ya llegué') {
         // BUG FIX: este botón (estado #7 de la matriz, VENTANA 2 de proximidad) nunca tenía una rama
         // en handleAction() — btnProps.isProximityCheck se seteaba pero nada lo consumía, así que
         // presionarlo no hacía nada. La acción correcta es registrar 'waiting', que es el mismo tipo
         // de entry que ClockService::processPunch() (Backend/app/Services/ClockService.php líneas 210-219)
         // busca para conceder hasAmnesty automáticamente en el check_in posterior.
         await syncToDB('waiting');
-        showCustomAlert('📍 Llegada registrada. Amnistía de puntualidad asegurada.');
+        showCustomAlert(' Llegada registrada. Amnistía de puntualidad asegurada.');
       } else if (actionText === 'Abrir Tienda') {
         handleOpenStore(false);
       } else if (actionText === 'Iniciar Comida' || actionText === 'Iniciar Horario de Comida' || actionText === 'Tomar Comida') {
@@ -2584,7 +2581,7 @@ export function useClockEngine(overrideUser?: any) {
           return;
         }
         await syncToDB('meal_start');
-        showCustomAlert('🍔 Horario de comida iniciado.');
+        showCustomAlert(' Horario de comida iniciado.');
       } else if (actionText === 'Terminar Comida' || actionText === 'Regresar de Comida') {
         // BUG FIX: getButtonProps retorna 'Terminar Comida' (clockState === meal)
         if (isMealPhotoRequired && !isSandboxMode) {
@@ -2594,7 +2591,7 @@ export function useClockEngine(overrideUser?: any) {
         }
         const res = await syncToDB('meal_end');
         if (!res?.offline) {
-          showCustomAlert('🏃 Has regresado de comer.');
+          showCustomAlert(' Has regresado de comer.');
         }
       } else if (actionText === 'Descanso' || actionText === 'Descanso Ley Silla' || actionText === 'Tomar Silla') {
         // BUG FIX: getButtonProps retorna 'Descanso', no 'Descanso Ley Silla'
@@ -2633,7 +2630,7 @@ export function useClockEngine(overrideUser?: any) {
         return { assignments: updated };
       });
       useTaskStore.getState().syncToBackend();
-      showCustomAlert('🏃 Has regresado de tu descanso. Tarea de Ley Silla completada.');
+      showCustomAlert(' Has regresado de tu descanso. Tarea de Ley Silla completada.');
     }
   };
 
@@ -2647,7 +2644,7 @@ export function useClockEngine(overrideUser?: any) {
           try {
             await axiosInstance.post('/clock/silla/request', {});
             setSillaRequestStage('requested');
-            showCustomAlert('🪑 Solicitud de silla enviada. Pide a tu supervisor que la apruebe y luego presiona de nuevo para iniciar.');
+            showCustomAlert(' Solicitud de silla enviada. Pide a tu supervisor que la apruebe y luego presiona de nuevo para iniciar.');
           } catch (e: any) {
             showCustomAlert(e?.response?.data?.message || 'No se pudo enviar la solicitud de silla.');
           }
@@ -2659,7 +2656,7 @@ export function useClockEngine(overrideUser?: any) {
           const res = await syncToDB('silla_start');
           if (!res?.offline) {
             setSillaRequestStage('none');
-            showCustomAlert('🧘 Descanso de Ley Silla iniciado (aprobado).');
+            showCustomAlert(' Descanso de Ley Silla iniciado (aprobado).');
           }
         } catch (e: any) {
           showCustomAlert(e?.response?.data?.message || 'Aún no se aprueba tu silla o no hay cupo disponible. Intenta en un momento.');
@@ -2672,7 +2669,7 @@ export function useClockEngine(overrideUser?: any) {
       } else {
         const res = await syncToDB('break_start');
         if (!res?.offline) {
-          showCustomAlert('🧘 Has iniciado tu descanso (Ley Silla - Básico).');
+          showCustomAlert(' Has iniciado tu descanso (Ley Silla - Básico).');
         }
       }
   };
@@ -2683,7 +2680,7 @@ export function useClockEngine(overrideUser?: any) {
   const approveSillaRequest = async (requestId: number, method: 'pin' | 'qr' | 'remote' = 'remote', supervisorPin?: string) => {
     try {
       await axiosInstance.post(`/clock/silla/${requestId}/approve`, { method, supervisor_pin: supervisorPin });
-      showCustomAlert('✅ Silla aprobada. El colaborador ya puede sentarse cuando haya cupo.');
+      showCustomAlert(' Silla aprobada. El colaborador ya puede sentarse cuando haya cupo.');
       return true;
     } catch (e: any) {
       showCustomAlert(e?.response?.data?.message || 'No se pudo aprobar la solicitud de silla.');
@@ -2721,7 +2718,7 @@ export function useClockEngine(overrideUser?: any) {
     const res = await syncToDB('break_start');
     if (res?.error) return;
     setShowBreakSeatModal(false);
-    if (!res?.offline) showCustomAlert('🧘 Descanso (Ley Silla) iniciado.');
+    if (!res?.offline) showCustomAlert(' Descanso (Ley Silla) iniciado.');
   };
 
   const startBreakWithSittingTask = async (taskId: number) => {
@@ -2745,7 +2742,7 @@ export function useClockEngine(overrideUser?: any) {
     useTaskStore.getState().syncToBackend();
 
     setShowBreakSeatModal(false);
-    showCustomAlert('🧘 Descanso (Ley Silla) iniciado y tarea sentado asignada.');
+    showCustomAlert(' Descanso (Ley Silla) iniciado y tarea sentado asignada.');
   };
 
   // NUEVO (estados #7 y #11 de docs/Logica Dial.md): el empleado común sin llaves avisa al encargado
@@ -2759,14 +2756,14 @@ export function useClockEngine(overrideUser?: any) {
     const message = `${currentUser?.name || 'Un colaborador'} está esperando en puerta.`;
 
     useAppStore.getState().addMatrixEvent(
-      '💬 Aviso de Presencia en Puerta',
+      ' Aviso de Presencia en Puerta',
       `${message} Se notificó a ${responsibleName} que la tienda sigue cerrada.`,
       'info',
       currentUser?.id
     );
 
     if (isSandboxMode) {
-      showCustomAlert(`💬 Aviso enviado a ${responsibleName} (Sandbox): estás esperando en puerta.`);
+      showCustomAlert(` Aviso enviado a ${responsibleName} (Sandbox): estás esperando en puerta.`);
       return;
     }
 
@@ -2781,7 +2778,7 @@ export function useClockEngine(overrideUser?: any) {
       // que no se trata como error visible para el usuario; solo se deja traza en consola.
       console.warn('door-notice endpoint no disponible aún (backend §26 pendiente):', e);
     }
-    showCustomAlert(`💬 Aviso enviado a ${responsibleName}: estás esperando en puerta.`);
+    showCustomAlert(` Aviso enviado a ${responsibleName}: estás esperando en puerta.`);
   };
 
   // NUEVO (§23): recibe el data URL de la foto capturada, la sube a POST /clock/meal-photo y, solo si
@@ -2800,7 +2797,7 @@ export function useClockEngine(overrideUser?: any) {
       });
     } catch (e: any) {
       setMealPhotoSubmitting(false);
-      showCustomAlert(e?.response?.data?.message || '❌ No se pudo subir la foto del comedor. Intenta de nuevo.');
+      showCustomAlert(e?.response?.data?.message || ' No se pudo subir la foto del comedor. Intenta de nuevo.');
       return; // No avanza el fichaje: la evidencia es obligatoria.
     }
 
@@ -2808,7 +2805,7 @@ export function useClockEngine(overrideUser?: any) {
     setMealPhotoSubmitting(false);
     setShowMealPhotoModal(false);
     if (!res?.offline) {
-      showCustomAlert(mealPhotoType === 'meal_start' ? '🍔 Comida iniciada (evidencia registrada).' : '🏃 Regreso de comida registrado (evidencia registrada).');
+      showCustomAlert(mealPhotoType === 'meal_start' ? ' Comida iniciada (evidencia registrada).' : ' Regreso de comida registrado (evidencia registrada).');
     }
   };
 
@@ -2816,38 +2813,38 @@ export function useClockEngine(overrideUser?: any) {
     const res = await syncToDB('temp_exit_start', false, 0, reason);
     if (!res?.offline) {
       setShowTempExitModal(false);
-      showCustomAlert(`🚪 Pase de Salida Temporal registrado: "${reason}".`);
+      showCustomAlert(` Pase de Salida Temporal registrado: "${reason}".`);
     }
   };
 
   const endTempExit = async () => {
     const res = await syncToDB('temp_exit_end');
     if (!res?.offline) {
-      showCustomAlert('🚶 Reingreso de salida temporal registrado.');
+      showCustomAlert(' Reingreso de salida temporal registrado.');
     }
   };
 
   const triggerPanic = (emergencyType: string, description: string) => {
     setIsPanicActive(true);
     useAppStore.getState().addMatrixEvent(
-      `🚨 EMERGENCIA CRÍTICA: ${emergencyType}`,
+      ` EMERGENCIA CRÍTICA: ${emergencyType}`,
       `Se ha reportado un incidente de tipo [${emergencyType.toUpperCase()}]: ${description}. La sucursal ha entrado en modo bloqueo de pánico.`,
       'error',
       currentUser.id
     );
     setShowPanicModal(false);
-    showCustomAlert(`🚨 Alerta de pánico activada: ${emergencyType}. Se ha notificado a administración.`);
+    showCustomAlert(` Alerta de pánico activada: ${emergencyType}. Se ha notificado a administración.`);
   };
 
   const resolvePanic = () => {
     setIsPanicActive(false);
     useAppStore.getState().addMatrixEvent(
-      `💚 EMERGENCIA RESUELTA`,
+      ` EMERGENCIA RESUELTA`,
       `El modo pánico de la sucursal ha sido desactivado y la operación vuelve a la normalidad.`,
       'success',
       currentUser.id
     );
-    showCustomAlert('💚 Modo pánico desactivado. Retornando a operaciones normales.');
+    showCustomAlert(' Modo pánico desactivado. Retornando a operaciones normales.');
   };
 
   const handleHandoverStart = () => {
@@ -2857,7 +2854,7 @@ export function useClockEngine(overrideUser?: any) {
   const completeHandover = async (delegatedToUserId: number, cashAmt: number) => {
     if (useAppStore.getState().isSandboxMode) {
       useAppStore.getState().addMatrixEvent(
-        '🔑 Entrega de Turno Completada',
+        ' Entrega de Turno Completada',
         `El encargado ${currentUser.name} entregó el turno a ${globalUsers.find(u => u.id === delegatedToUserId)?.name} con un arqueo de $${cashAmt}.`,
         'success',
         currentUser.id
@@ -2874,7 +2871,7 @@ export function useClockEngine(overrideUser?: any) {
     }
     setIsHandoverCompleted(true);
     setShowKeyDelegationModal(false);
-    showCustomAlert('🔑 Entrega de turno y arqueo de caja registrados con éxito. Ahora puedes registrar tu salida.');
+    showCustomAlert(' Entrega de turno y arqueo de caja registrados con éxito. Ahora puedes registrar tu salida.');
   };
 
   const handleClockOutRequest = () => {
@@ -2961,7 +2958,7 @@ export function useClockEngine(overrideUser?: any) {
 
   const submitClosingChecklist = async (checks: { lights_off: boolean; safe_secured: boolean; alarm_activated: boolean }) => {
     if (!checks.lights_off || !checks.safe_secured || !checks.alarm_activated) {
-      showCustomAlert('⚠️ Debes confirmar los 3 puntos del checklist antes de continuar.');
+      showCustomAlert(' Debes confirmar los 3 puntos del checklist antes de continuar.');
       return;
     }
     setClosingChecklistSubmitting(true);
@@ -2970,7 +2967,7 @@ export function useClockEngine(overrideUser?: any) {
         setClosingChecklistCompleted(true);
         localStorage.setItem('closing_checklist_completed', new Date().toLocaleDateString('sv-SE'));
         setShowClosingChecklistModal(false);
-        showCustomAlert('📋 Checklist de cierre completado (Sandbox).');
+        showCustomAlert(' Checklist de cierre completado (Sandbox).');
         continuarSalidaTrasChecklist();
         return;
       }
@@ -2987,14 +2984,14 @@ export function useClockEngine(overrideUser?: any) {
       try {
         const cierre = await axiosInstance.post('/store-opening/close');
         if (cierre.data?.success) {
-          showCustomAlert('🔒 Sucursal cerrada: quedó registrado y el checklist de cierre fue repartido.');
+          showCustomAlert(' Sucursal cerrada: quedó registrado y el checklist de cierre fue repartido.');
         }
       } catch { /* no responsable o ya cerrada: la salida sigue su curso */ }
 
       setClosingChecklistCompleted(true);
       localStorage.setItem('closing_checklist_completed', new Date().toLocaleDateString('sv-SE'));
       setShowClosingChecklistModal(false);
-      showCustomAlert('📋 Checklist de cierre completado.');
+      showCustomAlert(' Checklist de cierre completado.');
       continuarSalidaTrasChecklist();
     } catch (e: any) {
       showCustomAlert(e.response?.data?.message || 'Error al guardar el checklist de cierre.');
@@ -3012,7 +3009,7 @@ export function useClockEngine(overrideUser?: any) {
       const res = await axiosInstance.post('/store-opening/close');
       if (res.data?.success) {
         setCierreDeclarado(true);
-        showCustomAlert('🔒 Sucursal cerrada: quedó registrado y el checklist de cierre fue repartido.');
+        showCustomAlert(' Sucursal cerrada: quedó registrado y el checklist de cierre fue repartido.');
       }
     } catch (e: any) {
       showCustomAlert(e.response?.data?.message || 'No se pudo declarar el cierre.');
@@ -3029,7 +3026,7 @@ export function useClockEngine(overrideUser?: any) {
     // y es el servidor quien lo valida, exige que sea un mando distinto al colaborador, y —para
     // la entrada tardía— registra la autorización a su nombre, igual que la remota del Monitor.
     if (!supervisorPin || supervisorPin.trim().length < 4) {
-      showCustomAlert("⚠️ Teclea el PIN de kiosco de tu supervisor.");
+      showCustomAlert(" Teclea el PIN de kiosco de tu supervisor.");
       return;
     }
     const purpose = isLateEntryValidation ? 'late_entry'
@@ -3039,18 +3036,18 @@ export function useClockEngine(overrideUser?: any) {
     try {
       const val = await axiosInstance.post('/clock/supervisor-pin/authorize', { pin: supervisorPin.trim(), purpose });
       if (!val.data?.success) {
-        showCustomAlert(`⚠️ ${val.data?.message || 'PIN de supervisor no válido.'}`);
+        showCustomAlert(` ${val.data?.message || 'PIN de supervisor no válido.'}`);
         return;
       }
     } catch (e: any) {
-      showCustomAlert(`⚠️ ${e.response?.data?.message || 'No se pudo validar el PIN con el servidor.'}`);
+      showCustomAlert(` ${e.response?.data?.message || 'No se pudo validar el PIN con el servidor.'}`);
       return;
     }
 
     if (isOvertimeValidation) {
       const typeStr = isSimulatedHoliday ? 'holiday_unlocked' : 'overtime_unlocked';
       const detailStr = isSimulatedHoliday ? 'Labor en Día Feriado (LFT Art. 75) habilitado por supervisor' : 'Horas Extras desbloqueadas por supervisor';
-      const eventTitle = isSimulatedHoliday ? '📅 Labor en Feriado Habilitada' : '⏰ Horas Extras Habilitadas';
+      const eventTitle = isSimulatedHoliday ? ' Labor en Feriado Habilitada' : ' Horas Extras Habilitadas';
       const eventDesc = isSimulatedHoliday
         ? `Se autorizó a ${currentUser.name} a laborar en Día Feriado (Natalicio de Benito Juárez) mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'} (Pago Triple LFT aplicable).`
         : `Se autorizó a ${currentUser.name} a laborar en su día de descanso mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'}.`;
@@ -3079,7 +3076,7 @@ export function useClockEngine(overrideUser?: any) {
       setSupervisorPin('');
       setIsOvertimeValidation(false);
 
-      showCustomAlert(isSimulatedHoliday ? '📅 Labor en Día Feriado autorizada. Ya puedes registrar tu entrada.' : '⏰ Horas Extras autorizadas por supervisor. Ya puedes registrar tu entrada.');
+      showCustomAlert(isSimulatedHoliday ? ' Labor en Día Feriado autorizada. Ya puedes registrar tu entrada.' : ' Horas Extras autorizadas por supervisor. Ya puedes registrar tu entrada.');
       return;
     }
 
@@ -3119,16 +3116,16 @@ export function useClockEngine(overrideUser?: any) {
       }
 
       useAppStore.getState().addMatrixEvent(
-        '🔑 Entrada Tardía Autorizada',
+        ' Entrada Tardía Autorizada',
         `Se autorizó la entrada tardía de ${currentUser.name} tras vencer la tolerancia mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'}. Retardos acumulados este periodo: ${newRetardos}.`,
         'warning',
         currentUser.id
       );
 
       if (willBeBlocked) {
-        showCustomAlert(`⚠️ Entrada autorizada con penalización. Has acumulado ${newRetardos} retardos. Tu checador queda BLOQUEADO hasta completar el curso obligatorio de Puntualidad en la Academia.`);
+        showCustomAlert(` Entrada autorizada con penalización. Has acumulado ${newRetardos} retardos. Tu checador queda BLOQUEADO hasta completar el curso obligatorio de Puntualidad en la Academia.`);
       } else {
-        showCustomAlert(`✅ Entrada autorizada con penalización. Has acumulado ${newRetardos} retardos este periodo.`);
+        showCustomAlert(` Entrada autorizada con penalización. Has acumulado ${newRetardos} retardos este periodo.`);
       }
       return;
     }
@@ -3220,7 +3217,7 @@ export function useClockEngine(overrideUser?: any) {
       return; // el servidor ya explicó por qué; el turno sigue abierto y el dial lo refleja
     }
     if (!res?.offline) {
-      showCustomAlert(`🔴 Salida registrada a las ${formattedTime}.${delegatedTo ? ' 🔑 Llaves delegadas con éxito.' : ''} ${note ? ' (' + note + ')' : ''}`);
+      showCustomAlert(` Salida registrada a las ${formattedTime}.${delegatedTo ? '  Llaves delegadas con éxito.' : ''} ${note ? ' (' + note + ')' : ''}`);
     }
   };
 
@@ -3241,7 +3238,7 @@ export function useClockEngine(overrideUser?: any) {
           currentUser.id
        );
        setReportForm({ targetId: '', type: '', details: '' });
-       showCustomAlert("✅ Tu reporte anónimo ha sido enviado (Sandbox).");
+       showCustomAlert(" Tu reporte anónimo ha sido enviado (Sandbox).");
        return;
     }
 
@@ -3259,7 +3256,7 @@ export function useClockEngine(overrideUser?: any) {
 
         setShowReportModal(false);
         setReportForm({ targetId: '', type: '', details: '' });
-        showCustomAlert("✅ Tu reporte anónimo ha sido enviado a la administración con éxito.");
+        showCustomAlert(" Tu reporte anónimo ha sido enviado a la administración con éxito.");
     } catch(e) {
         console.error(e);
         showCustomAlert("Error al enviar reporte.");
@@ -3278,9 +3275,9 @@ export function useClockEngine(overrideUser?: any) {
 
     if (!hasCheckedIn && clockState === 'inactive' && hasPunctualityBlock) {
       return {
-        text: '🔒 Fichaje Bloqueado',
+        text: ' Fichaje Bloqueado',
         bg: 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed text-xs font-black shadow-none',
-        icon: '🔒',
+        icon: '',
         iconKey: 'blocked',
         disabled: true,
         subtext: 'Acumulaste 3 retardos. Completa el curso de Puntualidad en la Academia.',
@@ -3293,7 +3290,7 @@ export function useClockEngine(overrideUser?: any) {
         // Texto alineado a docs/Logica Dial.md (estado #2, "Texto Principal") — solo texto.
         text: 'Día Feriado',
         bg: 'bg-navy-50 border border-border text-accent cursor-not-allowed font-extrabold shadow-sm',
-        icon: '📅',
+        icon: '',
         iconKey: 'holiday',
         disabled: true,
         subtext: 'Natalicio de Benito Juárez. Descanso de Ley.'
@@ -3301,7 +3298,7 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay && !isOvertimeUnlocked[currentUser?.id];
-    if (isRestDay) return { text: 'Día Descanso', bg: 'bg-slate-300 text-text-3 cursor-not-allowed', icon: '🌴', iconKey: 'restday', disabled: true, subtext: 'Día libre programado' };
+    if (isRestDay) return { text: 'Día Descanso', bg: 'bg-slate-300 text-text-3 cursor-not-allowed', icon: '', iconKey: 'restday', disabled: true, subtext: 'Día libre programado' };
 
     const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
     const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
@@ -3351,22 +3348,22 @@ export function useClockEngine(overrideUser?: any) {
 
           if (currentSimTime < managerDeadlineMins && features.allow_manager_incidences !== false) {
             return {
-              text: '⚠️ Reportar Falta',
+              text: ' Reportar Falta',
               bg: 'bg-warning-text hover:bg-warning-text text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)] animate-pulse',
-              icon: '⚠️',
+              icon: '',
               iconKey: 'incidence_report',
               isIncidenceReport: true,
               isOpeningManager: true,
-              subtext: `🗝️ Límite de encargado: ${formatTimeMins(managerDeadlineMins)}`
+              subtext: ` Límite de encargado: ${formatTimeMins(managerDeadlineMins)}`
             };
           }
         } else {
           const employeeDeadlineMins = shiftStartMins - 30;
           if (currentSimTime < employeeDeadlineMins && features.allow_employee_incidences !== false) {
             return {
-              text: '⚠️ Reportar Falta',
+              text: ' Reportar Falta',
               bg: 'bg-warning-text hover:bg-warning-text text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
-              icon: '⚠️',
+              icon: '',
               iconKey: 'incidence_report',
               isIncidenceReport: true,
               subtext: `Límite para avisar: ${formatTimeMins(employeeDeadlineMins)}`
@@ -3393,9 +3390,9 @@ export function useClockEngine(overrideUser?: any) {
           return {
             // BUG FIX: unificado con el texto exacto de la matriz maestra (docs/funcionamiento_del_dial.md, estado #7)
             // para que coincida con la comparación de actionText en handleAction().
-            text: '📍 Ya llegué',
+            text: ' Ya llegué',
             bg: 'bg-success-text hover:bg-success-text text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-pulse',
-            icon: '📍',
+            icon: '',
             iconKey: 'arrived',
             isProximityCheck: true,
             subtext: 'Registrar llegada anticipada para asegurar amnistía.'
@@ -3412,16 +3409,16 @@ export function useClockEngine(overrideUser?: any) {
           return {
             text: 'En Camino',
             bg: 'bg-warning-icon hover:bg-warning-text text-white font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]',
-            icon: '📍',
+            icon: '',
             iconKey: 'in_transit',
             isIncidenceReport: true,
             subtext: `Reportar incidencia si ocurre un percance (${Math.round(gpsDistance)}m restantes)`
           };
         } else {
           return {
-            text: '📍 Cerca de Sucursal',
+            text: ' Cerca de Sucursal',
             bg: 'bg-slate-200 text-slate-400 cursor-not-allowed',
-            icon: '🔒',
+            icon: '',
             iconKey: 'gps_locked',
             disabled: true,
             subtext: `Fuera de geocerca (${Math.round(gpsDistance)}m)`
@@ -3466,9 +3463,9 @@ export function useClockEngine(overrideUser?: any) {
       const finTurnoStr = shiftConfigs[currentUser?.id]?.end || '17:00';
       const turnoYaTermino = currentSimTime > parseTimeToMins(finTurnoStr);
       return {
-        text: '🔒 Acceso Bloqueado',
+        text: ' Acceso Bloqueado',
         bg: 'bg-slate-700 text-slate-300 hover:bg-slate-800 text-white font-extrabold shadow-[0_0_20px_rgba(100,116,139,0.3)] animate-pulse',
-        icon: '🔒',
+        icon: '',
         iconKey: 'access_blocked',
         isQrUnlockRequired: true,
         subtext: turnoYaTermino
@@ -3495,7 +3492,7 @@ export function useClockEngine(overrideUser?: any) {
         return {
           text: 'Llamar Suplente',
           bg: 'bg-accent hover:bg-accent-hover text-white font-bold shadow-[0_0_20px_rgba(124,58,237,0.3)] animate-pulse',
-          icon: '📞',
+          icon: '',
           iconKey: 'call_suplente',
           isCallSuplenteMain: true,
           subtext: 'Pasar estafeta de apertura a suplente'
@@ -3526,9 +3523,9 @@ export function useClockEngine(overrideUser?: any) {
               };
             }
             return {
-              text: '🚨 Reportar Cerrado',
+              text: ' Reportar Cerrado',
               bg: 'bg-warning-icon hover:bg-warning-text text-white font-extrabold shadow-[0_0_20px_rgba(249,115,22,0.3)] animate-pulse',
-              icon: '🚨',
+              icon: '',
               iconKey: 'report_store_closed',
               isReportStoreClosed: true,
               subtext: `Encargado: ${responsibleUser?.name ? responsibleUser.name.split(' ')[0] : 'Encargado'}`
@@ -3579,7 +3576,7 @@ export function useClockEngine(overrideUser?: any) {
         return {
           text: 'Apertura Emergencia',
           bg: 'bg-danger-text hover:bg-danger-text text-white font-black shadow-[0_0_25px_rgba(225,29,72,0.35)] animate-pulse',
-          icon: '⚠️',
+          icon: '',
           iconKey: 'emergency_open',
           isEmergencyOpen: true,
           subtext: 'Requiere co-validación de 2 testigos presenciales'
@@ -3592,7 +3589,7 @@ export function useClockEngine(overrideUser?: any) {
         return {
           text: 'Abrir Tienda',
           bg: 'bg-accent hover:bg-accent-hover text-white font-black shadow-[0_0_25px_rgba(139,92,246,0.35)] animate-pulse',
-          icon: '🗝️',
+          icon: '',
           iconKey: 'open_store',
           isOpeningActive: true,
           subtext: 'Horario oficial de apertura. Suma bono.'
@@ -3601,7 +3598,7 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     if (Number(currentUser.id) === Number(activeEncargadoId) && storeStatus === 'closed' && sinTurnoAbierto) {
-      return { text: 'Abrir Tienda', bg: 'bg-accent hover:bg-accent-hover', icon: '🗝️', iconKey: 'open_store' };
+      return { text: 'Abrir Tienda', bg: 'bg-accent hover:bg-accent-hover', icon: '', iconKey: 'open_store' };
     }
 
     if (!isWithinPerimeter && (clockState === 'inactive' || clockState === 'waiting_room')) {
@@ -3611,18 +3608,18 @@ export function useClockEngine(overrideUser?: any) {
         return {
           text: 'Reportar Incidencia',
           bg: 'bg-warning-text hover:bg-warning-text text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
-          icon: '⚠️',
+          icon: '',
           iconKey: 'incidence_report',
           isIncidenceReport: true,
           isResponsibleOutside: true,
-          subtext: '🗝️ Eres el responsable de apertura de hoy. Dirígete a la sucursal para activar el botón.'
+          subtext: ' Eres el responsable de apertura de hoy. Dirígete a la sucursal para activar el botón.'
         };
       }
 
       return {
         text: 'Reportar Incidencia',
         bg: 'bg-warning-text hover:bg-warning-text text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
-        icon: '⚠️',
+        icon: '',
         iconKey: 'incidence_report',
         isIncidenceReport: true
       };
@@ -3631,10 +3628,10 @@ export function useClockEngine(overrideUser?: any) {
     // BUG FIX: Si ya hubo check_out hoy (checkOutTimes tiene registro), mostrar 'Jornada Finalizada'
     // en lugar de 'Registrar Entrada'. Esto previene dobles fichajes accidentales.
     if (clockState === 'inactive' && checkOutTimes[currentUser?.id] !== undefined) {
-      return { text: 'Fin Jornada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', iconKey: 'finished', disabled: true, subtext: 'Turno concluido hoy.' };
+      return { text: 'Fin Jornada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '', iconKey: 'finished', disabled: true, subtext: 'Turno concluido hoy.' };
     }
     if (clockState === 'inactive' || clockState === 'waiting_room') {
-      return { text: 'Fichar Entrada', bg: 'bg-slate-800 hover:bg-slate-900', icon: '🟢', iconKey: 'entrada', subtext: 'Fichaje ordinario de entrada' };
+      return { text: 'Fichar Entrada', bg: 'bg-slate-800 hover:bg-slate-900', icon: '', iconKey: 'entrada', subtext: 'Fichaje ordinario de entrada' };
     }
 
     if (clockState === 'active') {
@@ -3656,7 +3653,7 @@ export function useClockEngine(overrideUser?: any) {
              const firstSlotMins = hour * 60 + parseInt(sm);
 
              if (currentSimTime < firstSlotMins - 5) {
-                return { text: 'Tomar Comida', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60', icon: '🍔', disabled: true, subtext: `Reserva programada: ${mySlots[0]}` };
+                return { text: 'Tomar Comida', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60', icon: '', disabled: true, subtext: `Reserva programada: ${mySlots[0]}` };
              }
           } else {
              return {
@@ -3664,7 +3661,7 @@ export function useClockEngine(overrideUser?: any) {
                 // frase de 4 palabras ("Reserva tu horario primero"), fuera del límite de 2-3.
                 text: 'Apartar Turno',
                 bg: 'bg-warning-text/20 text-warning-text border border-warning-text/30 hover:bg-warning-text/30 font-bold shadow-md cursor-pointer animate-pulse',
-                icon: '🍔',
+                icon: '',
                 iconKey: 'meal_prompt',
                 isMealReservationAlert: true,
                 subtext: 'Haz clic para seleccionar tu slot en el comedor.'
@@ -3679,14 +3676,14 @@ export function useClockEngine(overrideUser?: any) {
           return {
             text: 'Tomar Comida',
             bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60',
-            icon: '🍔',
+            icon: '',
             iconKey: 'meal_start',
             disabled: true,
             subtext: `Disponible a partir de las ${formatTimeMins(minMealTimeMins)}`
           };
         }
 
-        return { text: 'Tomar Comida', bg: 'bg-warning-icon hover:bg-warning-text text-warning-text font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔', iconKey: 'meal_start', subtext: 'Haz clic para iniciar tu comida' };
+        return { text: 'Tomar Comida', bg: 'bg-warning-icon hover:bg-warning-text text-warning-text font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '', iconKey: 'meal_start', subtext: 'Haz clic para iniciar tu comida' };
       }
 
       // El descanso se OFRECE cuando la persona lleva de pie los minutos configurados por su
@@ -3697,7 +3694,7 @@ export function useClockEngine(overrideUser?: any) {
         return {
           text: 'Tomar Silla',
           bg: 'bg-accent hover:bg-accent-hover text-white font-extrabold shadow-[0_0_20px_rgba(147,51,234,0.3)] animate-pulse',
-          icon: '🧘',
+          icon: '',
           iconKey: 'break_start',
           subtext: 'Descanso Ley Silla (15 min)'
         };
@@ -3718,7 +3715,7 @@ export function useClockEngine(overrideUser?: any) {
         return {
           text: 'Entregar Turno',
           bg: 'bg-accent hover:bg-accent-hover text-white font-bold shadow-[0_0_20px_rgba(8,145,178,0.3)] animate-pulse',
-          icon: '🗝️',
+          icon: '',
           iconKey: 'handover',
           subtext: 'Realizar arqueo y entrega de llaves'
         };
@@ -3746,26 +3743,26 @@ export function useClockEngine(overrideUser?: any) {
       return {
         text: 'Fichar Salida',
         bg: 'bg-danger-text hover:bg-danger-text text-white font-black shadow-[0_0_22px_rgba(225,29,72,0.35)]',
-        icon: '🚪',
+        icon: '',
         iconKey: 'exit',
         subtext: 'Checklist cierre seguro (luces/caja)'
       };
     }
 
     if (clockState === 'meal') {
-      return { text: 'Terminar Comida', bg: 'bg-success-icon hover:bg-success-text text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)]', icon: '🏃', iconKey: 'meal_end', subtext: 'Haz clic al regresar a la sucursal' };
+      return { text: 'Terminar Comida', bg: 'bg-success-icon hover:bg-success-text text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)]', icon: '', iconKey: 'meal_end', subtext: 'Haz clic al regresar a la sucursal' };
     }
     if (clockState === 'short_break') {
-      return { text: 'Terminar Descanso', bg: 'bg-accent hover:bg-accent-hover text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '🏃', iconKey: 'break_end', subtext: 'Haz clic al reincorporarte' };
+      return { text: 'Terminar Descanso', bg: 'bg-accent hover:bg-accent-hover text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '', iconKey: 'break_end', subtext: 'Haz clic al reincorporarte' };
     }
     if (clockState === 'temp_exit') {
-      return { text: 'Fichar Reingreso', bg: 'bg-accent hover:bg-accent text-white font-bold shadow-[0_0_20px_rgba(20,184,166,0.35)]', icon: '🚶', iconKey: 'reingreso', subtext: 'Pase de salida temporal (Regreso est. 30m)' };
+      return { text: 'Fichar Reingreso', bg: 'bg-accent hover:bg-accent text-white font-bold shadow-[0_0_20px_rgba(20,184,166,0.35)]', icon: '', iconKey: 'reingreso', subtext: 'Pase de salida temporal (Regreso est. 30m)' };
     }
     if (clockState === 'absent') {
-      return { text: 'Ausencia Registrada', bg: 'bg-danger-bg text-danger-text cursor-not-allowed', icon: '🚷', iconKey: 'absent', disabled: true };
+      return { text: 'Ausencia Registrada', bg: 'bg-danger-bg text-danger-text cursor-not-allowed', icon: '', iconKey: 'absent', disabled: true };
     }
     if (clockState === 'finished') {
-      return { text: 'Fin Jornada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', iconKey: 'finished', disabled: true, subtext: 'Turno concluido hoy.' };
+      return { text: 'Fin Jornada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '', iconKey: 'finished', disabled: true, subtext: 'Turno concluido hoy.' };
     }
     return { text: 'Procesando...', bg: 'bg-slate-200', icon: '...' };
   };
@@ -3849,7 +3846,7 @@ export function useClockEngine(overrideUser?: any) {
   // 2. El Soplón (Reporte de Compañero)
   const sendEmployeeReport = async (accusedId: number, type: string, details: string) => {
     if (isSandboxMode) {
-      showCustomAlert("✅ Reporte registrado con éxito (Modo Sandbox).");
+      showCustomAlert(" Reporte registrado con éxito (Modo Sandbox).");
       return true;
     }
     try {
@@ -3858,7 +3855,7 @@ export function useClockEngine(overrideUser?: any) {
         type: type,
         details: details
       });
-      showCustomAlert("✅ Tu reporte confidencial ha sido enviado.");
+      showCustomAlert(" Tu reporte confidencial ha sido enviado.");
       return true;
     } catch (e) {
       console.error("Error al enviar reporte de conducta:", e);
@@ -3870,7 +3867,7 @@ export function useClockEngine(overrideUser?: any) {
   // 3. Buzón Anónimo de RRHH
   const sendAnonymousFeedback = async (type: string, content: string) => {
     if (isSandboxMode) {
-      showCustomAlert("✅ Feedback anónimo enviado (Modo Sandbox).");
+      showCustomAlert(" Feedback anónimo enviado (Modo Sandbox).");
       return true;
     }
     try {
@@ -3878,7 +3875,7 @@ export function useClockEngine(overrideUser?: any) {
         type: type,
         content: content
       });
-      showCustomAlert("✅ Tu feedback anónimo ha sido enviado de forma segura.");
+      showCustomAlert(" Tu feedback anónimo ha sido enviado de forma segura.");
       return true;
     } catch (e) {
       console.error("Error al enviar feedback anónimo:", e);
@@ -4031,7 +4028,6 @@ export function useClockEngine(overrideUser?: any) {
     lateUsers,
     leySillaConfig,
     masterClosePhase,
-    matrixTab,
     mealSettings,
     nextDayEncargadoId,
     parseTimeToMins,
@@ -4093,7 +4089,6 @@ export function useClockEngine(overrideUser?: any) {
     setLateUsers,
     setLeySillaConfig,
     setMasterClosePhase,
-    setMatrixTab,
     setMealSettings,
     setNextDayEncargadoId,
     setPaseListaDone,

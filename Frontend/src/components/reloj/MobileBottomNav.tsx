@@ -124,10 +124,10 @@ export function MobileBottomNav({
               'tareas',
               !isModuleUnlocked('operativo') || isTareasBlocked,
               !isModuleUnlocked('operativo')
-                ? '⚠️ Módulo Rutinas y Tareas no habilitado para tu empresa.'
+                ? ' Módulo Rutinas y Tareas no habilitado para tu empresa.'
                 : clockState === 'meal' || clockState === 'short_break'
-                  ? '⚠️ Tareas Bloqueadas: Estás en tu horario de comida.'
-                  : '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.'
+                  ? ' Tareas Bloqueadas: Estás en tu horario de comida.'
+                  : ' Debes registrar tu entrada laboral para acceder a este módulo.'
             )}
             className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
             style={phoneTab === 'tareas' ? { color: tareasColor } : {}}
@@ -152,8 +152,8 @@ export function MobileBottomNav({
               'academia',
               !isModuleUnlocked('academia') || isAcademiaBlocked,
               !isModuleUnlocked('academia')
-                ? '⚠️ Módulo Academia 360 no habilitado para tu empresa.'
-                : '⚠️ Academia Bloqueada: Enfócate en tus tareas de hoy. Estará disponible en tu hora de comida o fuera de turno.'
+                ? ' Módulo Academia 360 no habilitado para tu empresa.'
+                : ' Academia Bloqueada: Enfócate en tus tareas de hoy. Estará disponible en tu hora de comida o fuera de turno.'
             )}
             className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
             style={phoneTab === 'academia' ? { color: academiaColor } : {}}
@@ -178,8 +178,8 @@ export function MobileBottomNav({
               'nomina',
               (!isModuleUnlocked('reportes') && !isModuleUnlocked('facturacion')) || isNominaBlocked,
               (!isModuleUnlocked('reportes') && !isModuleUnlocked('facturacion'))
-                ? '⚠️ Módulo Nómina / Reportes no habilitado para tu empresa.'
-                : '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.'
+                ? ' Módulo Nómina / Reportes no habilitado para tu empresa.'
+                : ' Debes registrar tu entrada laboral para acceder a este módulo.'
             )}
             className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
             style={phoneTab === 'nomina' ? { color: nominaColor } : {}}

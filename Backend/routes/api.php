@@ -191,6 +191,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/platform/promotions', [PlatformAdminController::class, 'getPromotions']);
         Route::post('/platform/promotions', [PlatformAdminController::class, 'savePromotion']);
         Route::delete('/platform/promotions/{id}', [PlatformAdminController::class, 'deletePromotion']);
+        Route::get('/platform/product-updates', [PlatformAdminController::class, 'getProductUpdates']);
+        Route::put('/platform/product-updates', [PlatformAdminController::class, 'saveProductUpdates']);
         Route::get('/platform/social-claims', [PlatformAdminController::class, 'getSocialClaims']);
         Route::post('/platform/social-claims/{id}/approve', [PlatformAdminController::class, 'approveSocialClaim']);
         Route::post('/platform/social-claims/{id}/reject', [PlatformAdminController::class, 'rejectSocialClaim']);
@@ -202,7 +204,19 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/store/promotions/active', [\App\Http\Controllers\StoreAddonController::class, 'activePromotion']);
         Route::post('/store/addons/claim-social-grace', [\App\Http\Controllers\StoreAddonController::class, 'claimSocialGrace']);
         Route::post('/store/addons/subscribe', [\App\Http\Controllers\StoreAddonController::class, 'subscribe']);
+        Route::get('/product-updates', [PlatformAdminController::class, 'getPublishedProductUpdates']);
     });
+
+    // El antiguo "Matrix QA" no se publica como producto. Sus endpoints quedan disponibles
+    // exclusivamente en desarrollo/pruebas para conservar las pruebas de aislamiento del reloj;
+    // en producción ni existen en el router ni pueden ser descubiertos por un cliente.
+    if (app()->isLocal() || app()->runningUnitTests()) {
+        Route::middleware(['auth:sanctum', 'role:admin,supervisor,platform_admin'])->group(function () {
+            Route::get('/matrix/session/active', [ClockController::class, 'getActiveSimulatorSession']);
+            Route::post('/matrix/session/new', [ClockController::class, 'startNewSimulatorSession']);
+            Route::post('/sync/reset', [ClockController::class, 'reset']);
+        });
+    }
 
 
     // Operaciones destructivas de QA: SÓLO platform_admin y sólo fuera de producción.
@@ -595,14 +609,6 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::get('/admin/exams', [ObsidianController::class, 'getAdminAttempts']);
             Route::post('/admin/exams/{attemptId}/reset', [ObsidianController::class, 'resetAttempt']);
         });
-    });
-
-    // Simulador Matrix — Sesiones y Purga (aislado de datos reales por simulation_session_id,
-    // ya no es un TRUNCATE global, seguro para admin/supervisor de la propia empresa).
-    Route::middleware(['auth:sanctum', 'role:admin,supervisor,platform_admin', 'tenant.active'])->group(function () {
-        Route::get('/matrix/session/active', [ClockController::class, 'getActiveSimulatorSession']);
-        Route::post('/matrix/session/new', [ClockController::class, 'startNewSimulatorSession']);
-        Route::post('/sync/reset', [ClockController::class, 'resetDb']);
     });
 
     // =========================================================================

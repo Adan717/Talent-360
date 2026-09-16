@@ -63,7 +63,7 @@ class PlatformAdminController extends Controller
             $planCode = strtolower($tenant->plan ?? 'freemium');
             $billingPlan = $tenant->billingPlan ?: \App\Models\BillingPlan::where('code', $planCode)->first();
 
-            $allModules = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos', 'matrix', 'facturacion', 'lft', 'organizacion'];
+            $allModules = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos', 'facturacion', 'lft', 'organizacion'];
             if ($modules === null) {
                 $tenantModulesConfig = DB::table('system_settings')
                     ->where('tenant_id', $tenant->id)
@@ -232,7 +232,7 @@ class PlatformAdminController extends Controller
             ->where('key', 'nicho_configurado')
             ->pluck('value', 'tenant_id');
 
-        $allModulesList = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos', 'matrix', 'facturacion', 'lft', 'organizacion'];
+        $allModulesList = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos', 'facturacion', 'lft', 'organizacion'];
 
         $tenants = $query->orderBy('created_at', 'desc')->get()->map(function($tenant) use ($settingsByTenant, $allModulesList) {
             $rawNicho = $settingsByTenant->get($tenant->id);
@@ -373,7 +373,7 @@ class PlatformAdminController extends Controller
             ->where('key', 'tenant_allowed_features')
             ->first();
 
-        $allModules = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos', 'matrix', 'facturacion', 'lft', 'organizacion'];
+        $allModules = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos', 'facturacion', 'lft', 'organizacion'];
         $allFeatures = [
             'basic_punch', 'offline_contingency', 'emergency_open', 'store_closed_report', 
             'store_opening', 'keys_control', 'meal_reservation', 'meal_timers', 
@@ -1714,6 +1714,88 @@ class PlatformAdminController extends Controller
     }
 
     /**
+     * Avisos de producto administrados por Talent 360. Sustituyen el roadmap permanente
+     * del dashboard: si no hay una novedad activa, el cliente no muestra ningún distractor.
+     */
+    public function getProductUpdates()
+    {
+        if (!$this->checkPlatformAdminAccess()) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        return response()->json(['updates' => $this->readProductUpdates()]);
+    }
+
+    public function saveProductUpdates(Request $request)
+    {
+        if (!$this->checkPlatformAdminAccess()) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $validated = $request->validate([
+            'updates' => 'required|array|max:20',
+            'updates.*.id' => 'required|string|max:80',
+            'updates.*.title' => 'required|string|max:120',
+            'updates.*.summary' => 'required|string|max:500',
+            'updates.*.published_at' => 'required|date',
+            'updates.*.is_active' => 'required|boolean',
+            'updates.*.target_module' => 'nullable|string|max:40',
+        ]);
+
+        $updates = collect($validated['updates'])
+            ->map(fn (array $update) => [
+                'id' => $update['id'],
+                'title' => trim($update['title']),
+                'summary' => trim($update['summary']),
+                'published_at' => \Illuminate\Support\Carbon::parse($update['published_at'])->toIso8601String(),
+                'is_active' => (bool) $update['is_active'],
+                'target_module' => $update['target_module'] ?? null,
+            ])
+            ->sortByDesc('published_at')
+            ->values()
+            ->all();
+
+        DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => null, 'key' => 'product_updates'],
+            ['value' => json_encode($updates, JSON_UNESCAPED_UNICODE), 'updated_at' => now()]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Novedades publicadas correctamente.',
+            'updates' => $updates,
+        ]);
+    }
+
+    public function getPublishedProductUpdates()
+    {
+        $updates = collect($this->readProductUpdates())
+            ->filter(fn (array $update) => ($update['is_active'] ?? false)
+                && !empty($update['published_at'])
+                && \Illuminate\Support\Carbon::parse($update['published_at'])->lte(now()))
+            ->sortByDesc('published_at')
+            ->take(10)
+            ->values();
+
+        return response()->json(['updates' => $updates]);
+    }
+
+    private function readProductUpdates(): array
+    {
+        $setting = DB::table('system_settings')
+            ->whereNull('tenant_id')
+            ->where('key', 'product_updates')
+            ->first();
+
+        if (!$setting) {
+            return [];
+        }
+
+        $decoded = json_decode($setting->value, true);
+        return is_array($decoded) ? array_values($decoded) : [];
+    }
+
+    /**
      * Listado de promociones de temporada (SuperAdmin)
      */
     public function getPromotions()
@@ -1869,4 +1951,3 @@ class PlatformAdminController extends Controller
         ]);
     }
 }
-

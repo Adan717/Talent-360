@@ -1181,7 +1181,7 @@ export function WebPublicaOrganizacion() {
       <div className="absolute top-10 left-10 w-96 h-96 bg-[#8b102e]/5 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#bf953f]/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-      {/* 🛡️ USER LOGIN / REGISTRATION DIALOG MODAL */}
+      {/*  USER LOGIN / REGISTRATION DIALOG MODAL */}
       {showPasscodeModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <form 
@@ -1344,7 +1344,7 @@ export function WebPublicaOrganizacion() {
         </div>
       )}
 
-      {/* 🔮 PASSCODE SUCCESS WELCOME MODAL */}
+      {/*  PASSCODE SUCCESS WELCOME MODAL */}
       {showWelcomeModal && (() => {
         const isMarisol = currentUser?.email === 'marisoldecorarte@gmail.com' && (currentUser?.role === 'admin' || currentUser?.role === 'supervisor');
         
@@ -2427,7 +2427,7 @@ export function WebPublicaOrganizacion() {
         </div>
       )}
 
-      {/* 🔮 ORACLE FLOATING SUB-MENU */}
+      {/*  ORACLE FLOATING SUB-MENU */}
       {isOpen && !loading && !hideOracleButton && showOracleMenu && (
         <div className="fixed bottom-24 right-6 flex flex-col items-end gap-3.5 z-40 select-none animate-in fade-in slide-in-from-bottom-5 duration-200">
           {/* Option 1: AI Oracle Assistant */}
@@ -2492,7 +2492,7 @@ export function WebPublicaOrganizacion() {
         </div>
       )}
 
-      {/* 🔮 MAIN FLOATING BUTTON */}
+      {/*  MAIN FLOATING BUTTON */}
       {isOpen && !loading && !hideOracleButton && (
         <button 
           onClick={() => setShowOracleMenu(!showOracleMenu)}
@@ -2512,7 +2512,7 @@ export function WebPublicaOrganizacion() {
         </button>
       )}
 
-      {/* 🌟 MILESTONE 50% MOTIVATIONAL MODAL */}
+      {/*  MILESTONE 50% MOTIVATIONAL MODAL */}
       {showMilestone50 && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#f6ecda] w-full max-w-sm rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-center items-center justify-center">
@@ -2533,7 +2533,7 @@ export function WebPublicaOrganizacion() {
         </div>
       )}
 
-      {/* 🎉 MILESTONE 95% GRATITUDE MODAL */}
+      {/*  MILESTONE 95% GRATITUDE MODAL */}
       {showMilestone95 && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#f6ecda] w-full max-w-sm rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-center items-center justify-center">
@@ -2554,7 +2554,7 @@ export function WebPublicaOrganizacion() {
         </div>
       )}
 
-      {/* 📜 DIPLOMA DE EXCELENCIA MODAL */}
+      {/*  DIPLOMA DE EXCELENCIA MODAL */}
       {showDiplomaModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-[#fcf8f0] w-full max-w-2xl rounded-3xl p-8 relative border-8 border-double border-[#b38728] shadow-2xl flex flex-col items-center justify-center text-center space-y-6 select-none print:hidden animate-in zoom-in-95 duration-300">
@@ -2654,7 +2654,7 @@ export function WebPublicaOrganizacion() {
         </div>
       )}
 
-      {/* 📝 SUGGESTION MODAL OVERLAY */}
+      {/*  SUGGESTION MODAL OVERLAY */}
       {isSuggesting && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <form 

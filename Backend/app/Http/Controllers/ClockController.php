@@ -214,9 +214,11 @@ class ClockController extends Controller
         // Optimización (§1–§42): limitar registros históricos masivos a la última semana.
         $oneWeekAgo = now()->subDays(7)->format('Y-m-d');
 
-        // Soporte para la Matrix QA (§13): si se pasa simulation_session_id (o 'active'),
-        // consultar los datos de esa sesión simulada en lugar de los reales.
-        $simSessionId = $request->query('simulation_session_id') ?? $request->input('simulation_session_id');
+        // Las sesiones simuladas son infraestructura de pruebas. En producción el parámetro se
+        // ignora incluso si un cliente antiguo o una petición manual intenta enviarlo.
+        $simSessionId = (app()->isLocal() || app()->runningUnitTests())
+            ? ($request->query('simulation_session_id') ?? $request->input('simulation_session_id'))
+            : null;
         if ($simSessionId === 'active') {
             $activeSession = DB::table('simulator_sessions')
                 ->where('tenant_id', $tenantId)
@@ -500,7 +502,7 @@ class ClockController extends Controller
             }
 
             // Check all potential modules
-            $modulesToCheck = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'portal', 'documentos', 'matrix', 'facturacion', 'lft', 'organizacion'];
+            $modulesToCheck = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'portal', 'documentos', 'facturacion', 'lft', 'organizacion'];
             $allowedModules = array_values(array_filter($modulesToCheck, function($m) use ($tenant) {
                 return $tenant->isModuleUnlocked($m);
             }));
@@ -873,7 +875,8 @@ class ClockController extends Controller
         $type = $request->input('type');
 
         // §13: un store_log del simulador se liga a la sesión activa (aislado de reportes reales).
-        $isSimulator = $request->boolean('is_simulator') || $request->input('is_simulator') === true;
+        $isSimulator = (app()->isLocal() || app()->runningUnitTests())
+            && ($request->boolean('is_simulator') || $request->input('is_simulator') === true);
         $simSessionId = null;
         if ($isSimulator) {
             $activeSession = DB::table('simulator_sessions')

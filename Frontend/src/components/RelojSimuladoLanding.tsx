@@ -393,16 +393,16 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
     let desc = '';
     let icon = null;
     let badgeText = '';
-    let badgeColorClass = 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20';
+    let badgeColorClass = 'bg-navy-50 text-navy-800 border border-navy-100';
 
     switch (phoneTab) {
       case 'checador':
         title = 'Reloj Checador';
         desc = 'Control de Asistencia';
-        icon = <Clock className="text-[#2dce89] animate-spin-once" />;
+        icon = <Clock className="text-accent animate-spin-once" />;
         badgeText = tier === 'pro' ? 'v4.3-pro' : 'Gratuito';
         badgeColorClass = tier === 'pro'
-          ? 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20'
+          ? 'bg-navy-50 text-navy-800 border border-navy-100'
           : 'bg-page text-text-2 border border-border';
         break;
       case 'tareas':
@@ -437,17 +437,17 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       default:
         title = 'Reloj Checador';
         desc = 'Control de Asistencia';
-        icon = <Clock className="text-[#2dce89]" />;
+        icon = <Clock className="text-accent" />;
         badgeText = 'Talent 360';
-        badgeColorClass = 'bg-[#e6f4ea] text-[#137333] border';
+        badgeColorClass = 'bg-navy-50 text-navy-800 border border-navy-100';
     }
 
     return (
       <div
         className={`absolute top-2.5 left-2.5 right-2.5 z-[75] flex items-center justify-between px-3 py-2.5 text-left rounded-xl border transition-all duration-200 select-none ${
           isDark
-            ? 'bg-slate-900/90 backdrop-blur-md border-slate-800 shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-slate-100'
-            : 'bg-white/95 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.05)] text-text-1'
+            ? 'bg-slate-900/90 backdrop-blur-md border-slate-800 shadow-[0_8px_32px_rgba(16,24,40,0.3)] text-slate-100'
+            : 'bg-white/95 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(16,24,40,0.05)] text-text-1'
         }`}
         style={{ transform: 'scale(1.05)', transformOrigin: 'top center' }}
       >
@@ -470,7 +470,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               )}
             </div>
             <p className={`text-[7.5px] font-bold mt-0.5 leading-none truncate ${
-              isDark ? 'text-slate-400' : 'text-[#525f7f]'
+              isDark ? 'text-slate-400' : 'text-text-2'
             }`}>
               {desc}
             </p>

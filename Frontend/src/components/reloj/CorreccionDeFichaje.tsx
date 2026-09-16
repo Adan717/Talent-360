@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Pencil } from 'lucide-react';
 import axiosInstance from '../../lib/axios';
 
 /**
@@ -7,7 +8,7 @@ import axiosInstance from '../../lib/axios';
  * Tres piezas que se usan en las dos pantallas donde se ven fichajes, porque las dos audiencias
  * necesitan cosas distintas del mismo hecho:
  *
- *   · `EtiquetaCorregido`  — el aviso "⚠️ Corregido". Lo ve TAMBIÉN el colaborador, y no es un
+ *   · `EtiquetaCorregido`  — el aviso " Corregido". Lo ve TAMBIÉN el colaborador, y no es un
  *      adorno: la persona tiene derecho a saber que le movieron un registro de su asistencia. Es
  *      la mitad visible de la transparencia que la ley espera; la otra mitad es el aviso privado
  *      que el servidor le manda a su reloj.
@@ -47,7 +48,7 @@ export const EtiquetaCorregido: React.FC<{ onVerHistoria?: () => void; compacta?
 }) => {
   const contenido = (
     <>
-      <span aria-hidden="true">⚠️</span>
+      <Pencil size={13} aria-hidden="true" />
       <span>Corregido</span>
     </>
   );

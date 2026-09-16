@@ -145,7 +145,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                   Para ejercer sus <strong>Derechos ARCO</strong>, deberá enviar una solicitud al correo electrónico oficial:
                 </p>
                 <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center font-mono text-navy-300 font-bold text-xs">
-                  📧 privacidad@talent360.com.mx
+                   privacidad@talent360.com.mx
                 </div>
                 <p className="text-[11px] text-slate-400">
                   Requisitos: Adjuntar identificación oficial vigente (INE/Pasaporte), nombre de la empresa suscriptora y detalle preciso del derecho a ejercer. Plazo de respuesta legal: <strong>20 (veinte) días hábiles</strong>.
@@ -302,7 +302,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                   Cualquier colaborador o representante puede solicitar el ejercicio de sus derechos enviando un correo electrónico con el asunto <strong>"Solicitud ARCO - Talent360"</strong> a:
                 </p>
                 <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center font-mono text-navy-300 font-bold text-sm">
-                  📧 privacidad@talent360.com.mx
+                   privacidad@talent360.com.mx
                 </div>
                 <div className="space-y-1 text-slate-300">
                   <p className="font-bold text-white text-xs">Documentación requerida en el correo:</p>
@@ -406,7 +406,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
 
         {/* Modal Footer */}
         <div className="flex shrink-0 items-center justify-between border-t border-slate-700 bg-brand-dark px-6 py-4">
-          <p className="text-[10px] font-medium text-slate-300">Talent 360 © {new Date().getFullYear()}</p>
+          <p className="text-[10px] font-medium text-slate-300">Talent 360  {new Date().getFullYear()}</p>
           <button
             type="button"
             onClick={onClose}

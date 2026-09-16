@@ -325,7 +325,7 @@ export const KioskScreen = () => {
             result?.ok ? 'bg-success-icon' : 'bg-danger-icon'
           }`}
         >
-          {result?.ok ? <span className="text-6xl">✓</span> : <X size={56} className="text-white" />}
+          {result?.ok ? <ShieldCheck size={56} className="text-white" /> : <X size={56} className="text-white" />}
         </div>
         <div className="text-3xl font-black text-white mb-2">{result?.title}</div>
         <div className="text-white/80 text-lg max-w-md mx-auto">{result?.detail}</div>

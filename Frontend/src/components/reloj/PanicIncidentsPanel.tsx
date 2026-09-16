@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ShieldAlert } from 'lucide-react';
 import axiosInstance from '../../lib/axios';
 
 /**
@@ -79,7 +80,7 @@ export const PanicIncidentsPanel = () => {
   return (
     <div className="bg-danger-text text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-danger-text/20 animate-pulse-slow">
       <div className="flex items-center gap-2">
-        <span className="text-xl">🚨</span>
+        <ShieldAlert size={20} className="shrink-0" aria-hidden="true" />
         <div>
           <p className="font-black text-xs sm:text-sm">Emergencias Activas (Botón de Pánico)</p>
           <p className="text-[9px] sm:text-[10px] text-danger-text opacity-90 leading-tight">
@@ -123,7 +124,7 @@ export const PanicIncidentsPanel = () => {
               disabled={resolvingId === i.id}
               className="bg-white/90 hover:bg-white text-danger-text font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
             >
-              ✓ Marcar resuelto
+               Marcar resuelto
             </button>
           </div>
         ))}

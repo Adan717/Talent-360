@@ -102,14 +102,14 @@ export const LateAuthorizationsPanel = () => {
                   disabled={resolvingId === r.id}
                   className="bg-success-icon hover:bg-success-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
-                  ✓ Autorizar
+                   Autorizar
                 </button>
                 <button
                   onClick={() => resolve(r.id, 'rejected')}
                   disabled={resolvingId === r.id}
                   className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
-                  ✕ Rechazar
+                   Rechazar
                 </button>
               </div>
             )}

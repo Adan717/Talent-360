@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Building2, Briefcase, UserPlus, Clock, CheckCircle2, ChevronRight, AlertCircle, Loader2, MessageSquare, Send, BookOpen, BarChart3, Users, Key, ShieldCheck, Lock, Database, Scale, FileText, Receipt, ListTodo, GraduationCap, Crown, Zap, Check, CheckSquare } from 'lucide-react';
+import { Sparkles, Building2, Briefcase, UserPlus, Clock, CheckCircle2, ChevronRight, AlertCircle, Loader2, MessageSquare, Send, BookOpen, BarChart3, Users, Key, ShieldCheck, Lock, Database, Scale, FileText, Receipt, ListTodo, GraduationCap, Crown, Zap, Check, CheckSquare, Package, ShoppingBag, Utensils, Factory, Settings } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import OrganigramaPuestos from './OrganigramaPuestos';
 import { useAppStore } from '../store/useAppStore';
@@ -41,7 +41,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     const rawPlan = (currentUser?.tenant?.plan || 'enterprise').toLowerCase();
     if (rawPlan === 'enterprise') {
       return {
-        title: 'Plan Enterprise Activado ⚡',
+        title: 'Plan Enterprise Activado ',
         subtitle: 'Acceso Total Ilimitado a la Suite Completa 360',
         badge: 'ENTERPRISE',
         badgeColor: 'bg-warning-bg text-warning-text border-warning-text/20',
@@ -56,7 +56,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       };
     } else if (rawPlan === 'pro') {
       return {
-        title: 'Plan Pro Activado 🚀',
+        title: 'Plan Pro Activado ',
         subtitle: 'Módulos Avanzados, Inteligencia Artificial & Analítica',
         badge: 'PLAN PRO',
         badgeColor: 'bg-accent-soft text-navy-800 border-navy-300',
@@ -71,7 +71,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       };
     } else if (rawPlan === 'standard') {
       return {
-        title: 'Plan Standard Activado 💼',
+        title: 'Plan Standard Activado ',
         subtitle: 'Gestión Operativa Profesional & Reloj Checador PWA',
         badge: 'STANDARD',
         badgeColor: 'bg-success-bg text-success-text border-success-text/20',
@@ -86,7 +86,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       };
     } else {
       return {
-        title: 'Prueba Premium / Plan Inicial 🎁',
+        title: 'Prueba Premium / Plan Inicial ',
         subtitle: '30 Días de Evaluación Completa de la Suite 360',
         badge: 'DEMO PRO',
         badgeColor: 'bg-accent-soft text-navy-800 border-navy-300',
@@ -163,35 +163,35 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
 
   // Mappings y presets interactivos para la precarga del wizard
-  const SUB_NICHOS: Record<string, { id: string; label: string; icon: string }[]> = {
+  const SUB_NICHOS: Record<string, { id: string; label: string; icon: React.ReactNode }[]> = {
     materias_primas: [
-      { id: 'reposteria', label: 'Insumos para Repostería & Panadería', icon: '🧁' },
-      { id: 'empaques', label: 'Empaques y Materias Primas Mayoreo', icon: '📦' },
-      { id: 'chocolateria', label: 'Chocolatería, Confitería y Decoración', icon: '🍫' },
+      { id: 'reposteria', label: 'Insumos para Repostería & Panadería', icon: <Package size={18} aria-hidden="true" /> },
+      { id: 'empaques', label: 'Empaques y Materias Primas Mayoreo', icon: <Package size={18} aria-hidden="true" /> },
+      { id: 'chocolateria', label: 'Chocolatería, Confitería y Decoración', icon: <Sparkles size={18} aria-hidden="true" /> },
     ],
     retail: [
-      { id: 'decoracion', label: 'Decoración, Hogar y Regalos', icon: '🎨' },
-      { id: 'boutique', label: 'Boutique / Ropa y Calzado', icon: '👗' },
-      { id: 'minimarket', label: 'Minimarket / Abarrotes', icon: '🛒' },
-      { id: 'ferreteria', label: 'Ferretería / Herramientas', icon: '🔧' },
-      { id: 'farmacia', label: 'Farmacia / Salud', icon: '💊' },
+      { id: 'decoracion', label: 'Decoración, Hogar y Regalos', icon: <Sparkles size={18} aria-hidden="true" /> },
+      { id: 'boutique', label: 'Boutique / Ropa y Calzado', icon: <ShoppingBag size={18} aria-hidden="true" /> },
+      { id: 'minimarket', label: 'Minimarket / Abarrotes', icon: <ShoppingBag size={18} aria-hidden="true" /> },
+      { id: 'ferreteria', label: 'Ferretería / Herramientas', icon: <Settings size={18} aria-hidden="true" /> },
+      { id: 'farmacia', label: 'Farmacia / Salud', icon: <ShieldCheck size={18} aria-hidden="true" /> },
     ],
     restaurante: [
-      { id: 'servicio_completo', label: 'Restaurante Servicio Completo', icon: '🍽️' },
-      { id: 'cafeteria', label: 'Cafetería / Panadería y Postres', icon: '☕' },
-      { id: 'comida_rapida', label: 'Comida Rápida / Taquería', icon: '🌮' },
-      { id: 'bar', label: 'Bar / Bar & Grill', icon: '🍹' },
+      { id: 'servicio_completo', label: 'Restaurante Servicio Completo', icon: <Utensils size={18} aria-hidden="true" /> },
+      { id: 'cafeteria', label: 'Cafetería / Panadería y Postres', icon: <Utensils size={18} aria-hidden="true" /> },
+      { id: 'comida_rapida', label: 'Comida Rápida / Taquería', icon: <Utensils size={18} aria-hidden="true" /> },
+      { id: 'bar', label: 'Bar / Bar & Grill', icon: <Utensils size={18} aria-hidden="true" /> },
     ],
     oficina: [
-      { id: 'despacho', label: 'Despacho Contable / Legal', icon: '⚖️' },
-      { id: 'agencia', label: 'Agencia de Marketing / Software', icon: '💻' },
-      { id: 'consultoria', label: 'Consultoría Corporativa', icon: '📈' },
-      { id: 'inmobiliaria', label: 'Inmobiliaria / Bienes Raíces', icon: '🏠' },
+      { id: 'despacho', label: 'Despacho Contable / Legal', icon: <Scale size={18} aria-hidden="true" /> },
+      { id: 'agencia', label: 'Agencia de Marketing / Software', icon: <Briefcase size={18} aria-hidden="true" /> },
+      { id: 'consultoria', label: 'Consultoría Corporativa', icon: <BarChart3 size={18} aria-hidden="true" /> },
+      { id: 'inmobiliaria', label: 'Inmobiliaria / Bienes Raíces', icon: <Building2 size={18} aria-hidden="true" /> },
     ],
     taller: [
-      { id: 'mecanico', label: 'Taller Mecánico / Automotriz', icon: '🚗' },
-      { id: 'tecnico', label: 'Centro Técnico / Electrónica', icon: '🔌' },
-      { id: 'manufactura', label: 'Taller de Manufactura / Carpintería', icon: '🔨' },
+      { id: 'mecanico', label: 'Taller Mecánico / Automotriz', icon: <Settings size={18} aria-hidden="true" /> },
+      { id: 'tecnico', label: 'Centro Técnico / Electrónica', icon: <Zap size={18} aria-hidden="true" /> },
+      { id: 'manufactura', label: 'Taller de Manufactura / Carpintería', icon: <Factory size={18} aria-hidden="true" /> },
     ]
   };
 
@@ -805,7 +805,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }
 
     const inviteUrl = `${getQrOrigin(qrIpOverride)}/invite?pin=${createdEmpPin}`;
-    const message = `*TALENT 360* | ¡Bienvenido al Equipo! 👋\n\nHola, *${empName}*, te damos la más cordial bienvenida a *${companyName}*. 🏢\n\nTu cuenta ha sido registrada con éxito en nuestra plataforma de asistencia y gestión laboral. Para activar tu Reloj Checador móvil (PWA) de forma segura y configurar tu perfil, haz clic en el enlace de invitación:\n\n🔑 *Tu PIN temporal de acceso es:* ${createdEmpPin}\n\n¡Mucho éxito en tu jornada laboral! 🚀\n\n${inviteUrl}`;
+    const message = `*TALENT 360* | ¡Bienvenido al Equipo! \n\nHola, *${empName}*, te damos la más cordial bienvenida a *${companyName}*. \n\nTu cuenta ha sido registrada con éxito en nuestra plataforma de asistencia y gestión laboral. Para activar tu Reloj Checador móvil (PWA) de forma segura y configurar tu perfil, haz clic en el enlace de invitación:\n\n *Tu PIN temporal de acceso es:* ${createdEmpPin}\n\n¡Mucho éxito en tu jornada laboral! \n\n${inviteUrl}`;
 
     const waUrl = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank');
@@ -836,7 +836,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       }
     }
 
-    const adminMessage = `¡Hola, *${currentUser?.name || 'Administrador'}*! 👋 Gracias por crear tu cuenta de empresa con nosotros en nuestra plataforma.\n\nTu entorno de control ya está listo para operar, te compartimos tu acceso rápido al panel administrativo para gestionar a tus colaboradores en tiempo real:\n\n👤 *Usuario/Email:* ${currentUser?.email || ''}\n🔑 *PIN de prueba del empleado:* ${createdEmpPin} (${empName})\n\n¡Hagamos crecer tu negocio juntos! 🚀\n\n${window.location.origin}`;
+    const adminMessage = `¡Hola, *${currentUser?.name || 'Administrador'}*!  Gracias por crear tu cuenta de empresa con nosotros en nuestra plataforma.\n\nTu entorno de control ya está listo para operar, te compartimos tu acceso rápido al panel administrativo para gestionar a tus colaboradores en tiempo real:\n\n *Usuario/Email:* ${currentUser?.email || ''}\n *PIN de prueba del empleado:* ${createdEmpPin} (${empName})\n\n¡Hagamos crecer tu negocio juntos! \n\n${window.location.origin}`;
 
     const waUrl = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(adminMessage)}`;
     window.open(waUrl, '_blank');
@@ -969,7 +969,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-text-2">
                         {planInfo.features.map((feat, idx) => (
                           <div key={idx} className="flex items-start gap-1.5 leading-tight">
-                            <span className="text-success-text font-bold shrink-0">✓</span>
+                            <Check size={14} className="text-success-text shrink-0" aria-hidden="true" />
                             <span className="font-semibold text-text-2 text-[11px]">{feat}</span>
                           </div>
                         ))}
@@ -1105,7 +1105,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
-                      <span className="text-2xl">🧁</span>
+                      <Package size={24} aria-hidden="true" />
                       <span className="text-xs font-bold text-text-2 text-center">Materias Primas / Repostería</span>
                     </button>
 
@@ -1118,7 +1118,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
-                      <span className="text-2xl">🛍️</span>
+                      <ShoppingBag size={24} aria-hidden="true" />
                       <span className="text-xs font-bold text-text-2 text-center">Retail / Tienda</span>
                     </button>
 
@@ -1131,7 +1131,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
-                      <span className="text-2xl">🍔</span>
+                      <Utensils size={24} aria-hidden="true" />
                       <span className="text-xs font-bold text-text-2 text-center">Restaurante</span>
                     </button>
 
@@ -1144,7 +1144,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
-                      <span className="text-2xl">🏢</span>
+                      <Building2 size={24} aria-hidden="true" />
                       <span className="text-xs font-bold text-text-2 text-center">Oficina / Servicio</span>
                     </button>
 
@@ -1157,7 +1157,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
-                      <span className="text-2xl">⚙️</span>
+                      <Factory size={24} aria-hidden="true" />
                       <span className="text-xs font-bold text-text-2 text-center">Taller / Fábrica</span>
                     </button>
 
@@ -1170,7 +1170,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           : 'border-border hover:border-slate-300 hover:bg-page/50'
                       }`}
                     >
-                      <span className="text-2xl">🤖</span>
+                      <Sparkles size={24} aria-hidden="true" />
                       <span className="text-xs font-bold text-text-2 text-center">Personalizado IA</span>
                     </button>
                   </div>
@@ -1269,7 +1269,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <div className="bg-white p-3.5 rounded-2xl border border-border shadow-sm space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold text-text-1 flex items-center gap-1.5">
-                        <span>📋</span> Puestos Sugeridos ({selectedPuestos.length}/{activePreset.puestos.length})
+                        <Briefcase size={15} aria-hidden="true" /> Puestos Sugeridos ({selectedPuestos.length}/{activePreset.puestos.length})
                       </span>
                       <div className="flex items-center gap-1.5">
                         <button
@@ -1352,7 +1352,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <div className="bg-white p-3.5 rounded-2xl border border-border shadow-sm space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <span className="text-xs font-extrabold text-text-1 flex items-center gap-1.5">
-                        <span>✅</span> Tareas Seleccionadas ({selectedTareas.length}/{activePreset.tareas.length})
+                        <CheckSquare size={15} aria-hidden="true" /> Tareas Seleccionadas ({selectedTareas.length}/{activePreset.tareas.length})
                       </span>
                       <div className="flex items-center gap-1.5">
                         <button
@@ -1442,11 +1442,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   {/* Resumen Final de Cursos y Vacantes */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                     <div className="bg-navy-50/50 p-2.5 rounded-xl border border-border flex flex-col gap-1">
-                      <span className="font-extrabold text-accent flex items-center gap-1">🎓 Cursos Incluidos</span>
+                      <span className="font-extrabold text-accent flex items-center gap-1"> Cursos Incluidos</span>
                       <span className="text-text-2 text-[10px] truncate">{activePreset.cursos.map(c => c.title).join(' • ')}</span>
                     </div>
                     <div className="bg-success-bg/50 p-2.5 rounded-xl border border-success-text/20 flex flex-col gap-1">
-                      <span className="font-extrabold text-success-text flex items-center gap-1">💼 Vacantes ATS</span>
+                      <span className="font-extrabold text-success-text flex items-center gap-1"> Vacantes ATS</span>
                       <span className="text-text-2 text-[10px] truncate">{activePreset.vacantes.map(v => v.title).join(' • ')}</span>
                     </div>
                   </div>
@@ -1481,7 +1481,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <div className="bg-white p-3.5 rounded-2xl border border-border shadow-sm space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <span className="text-xs font-extrabold text-text-1 flex items-center gap-1.5">
-                        <span>🎓</span> Cursos LMS a Inyectar ({selectedCursos.length}/{activePreset.cursos.length})
+                        <GraduationCap size={15} aria-hidden="true" /> Cursos LMS a Inyectar ({selectedCursos.length}/{activePreset.cursos.length})
                       </span>
                       <div className="flex items-center gap-1.5">
                         <button
@@ -1531,7 +1531,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                               <p className="text-xs font-bold leading-tight mb-1">{curso.title}</p>
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className={`text-[9px] px-2 py-0.5 rounded font-black ${isLft ? 'bg-warning-bg text-warning-text border border-warning-text/20' : 'bg-navy-50 text-accent border border-border'}`}>
-                                  {isLft ? '📜 Ley Silla / LFT' : '🧁 Capacitación Giro'}
+                                  {isLft ? ' Ley Silla / LFT' : ' Capacitación Giro'}
                                 </span>
                                 {curso.role && (
                                   <span className="text-[9px] text-text-3 font-medium">Dirigido a: {curso.role}</span>
@@ -1643,7 +1643,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
                         {sinJefe.length > 1 && (
                           <div className="p-3 rounded-xl bg-warning-bg border border-warning-text/20 text-[11px] font-bold text-warning-text">
-                            ⚠️ Hay {sinJefe.length} puestos sin nadie por encima:{' '}
+                             Hay {sinJefe.length} puestos sin nadie por encima:{' '}
                             {sinJefe.map(r => r.name).join(', ')}. Sólo el puesto de mando debería
                             quedar así — a los demás nadie les autorizaría sus tareas.
                           </div>
@@ -1720,7 +1720,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 <div className="relative">
                   <div className="flex border border-border focus-within:border-accent focus-within:ring-1 focus-within:ring-focus-ring rounded-xl overflow-hidden bg-white">
                     <div className="bg-page px-3 py-3 text-xs text-text-3 font-bold border-r border-border flex items-center gap-1 select-none">
-                      <span>🇲🇽</span>
                       <span>+52</span>
                     </div>
                     <input
@@ -1765,7 +1764,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 <div className="relative">
                   <div className="flex border border-border focus-within:border-accent focus-within:ring-1 focus-within:ring-focus-ring rounded-xl overflow-hidden bg-white">
                     <div className="bg-page px-3 py-3 text-xs text-text-3 font-bold border-r border-border flex items-center gap-1 select-none">
-                      <span>🇲🇽</span>
                       <span>+52</span>
                     </div>
                     <input
@@ -1898,7 +1896,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 <div className="relative">
                   <div className="flex border border-border focus-within:border-accent focus-within:ring-1 focus-within:ring-focus-ring rounded-xl overflow-hidden bg-white">
                     <div className="bg-page px-3 py-3 text-xs text-text-3 font-bold border-r border-border flex items-center gap-1 select-none">
-                      <span>🇲🇽</span>
                       <span>+52</span>
                     </div>
                     <input
@@ -2043,7 +2040,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <div className="p-3.5 bg-warning-bg border border-warning-text/80 rounded-xl text-left">
                       <div className="flex items-center gap-1.5 text-warning-text font-bold text-xs mb-1">
                         <AlertCircle size={14} className="text-warning-text" />
-                        <span>🔌 Desarrollo Local: Configuración de QR</span>
+                        <span> Desarrollo Local: Configuración de QR</span>
                       </div>
                       <p className="text-[11px] text-warning-text leading-relaxed mb-2.5">
                         Al desarrollar localmente, <code className="bg-warning-bg/80 px-1 rounded font-mono">localhost</code> no funciona desde el navegador de tu celular. Ingresa la dirección IP local de esta computadora (ej: <code className="bg-warning-bg/80 px-1 rounded font-mono">192.168.1.75:5173</code>) para actualizar el código QR y poder escanearlo:
@@ -2116,8 +2113,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               </p>
 
               {/* LOS ACCESOS NO SE ENVÍAN SOLOS (2026-08-16).
-                  Aquí se disparaba `POST /admin/onboarding/send-whatsapp` y se pintaba un ✅
-                  "Notificaciones enviadas vía WhatsApp — Enviado 🟢" por cada teléfono. Ese
+                  Aquí se disparaba `POST /admin/onboarding/send-whatsapp` y se pintaba un
+                  "Notificaciones enviadas vía WhatsApp — Enviado " por cada teléfono. Ese
                   endpoint sólo escribía una línea en la bitácora del servidor y respondía éxito:
                   no existe —ni existió— ninguna integración con WhatsApp, así que el dueño
                   terminaba su alta creyendo que a su colaborador le había llegado el PIN.
@@ -2156,7 +2153,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
               {/* Tarjeta de Datos Demo Opcionales */}
               <div className="bg-page border border-border/80 rounded-2xl p-4 sm:p-5 max-w-md mx-auto mb-6 text-left space-y-3">
-                <h4 className="text-xs font-bold text-text-2 uppercase tracking-wider">🛠️ ¿Deseas cargar datos de demostración?</h4>
+                <h4 className="text-xs font-bold text-text-2 uppercase tracking-wider"> ¿Deseas cargar datos de demostración?</h4>
                 <p className="text-[11px] text-text-3 leading-normal">
                   Explora la plataforma con puestos y colaboradores ficticios preconfigurados. Podrás eliminarlos en cualquier momento.
                 </p>

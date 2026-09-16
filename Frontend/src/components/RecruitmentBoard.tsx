@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Eye, FileText, UserSquare, CheckCircle } from 'lucide-react';
+import { Settings, Eye, FileText, UserSquare, CheckCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 
@@ -325,19 +325,19 @@ export const RecruitmentBoard: React.FC = () => {
                 que de verdad ocurre, incluido lo que queda pendiente. */}
             <div className="bg-page p-5 rounded-2xl border border-border/60 mb-6 text-left space-y-3">
               <div className="flex items-center gap-2 text-xs font-bold text-text-2">
-                <span className="text-success-text text-sm">✓</span>
+                <CheckCircle2 size={16} className="text-success-text shrink-0" aria-hidden="true" />
                 <span>Se le crea su expediente de colaborador</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-bold text-text-2">
-                <span className="text-success-text text-sm">✓</span>
+                <CheckCircle2 size={16} className="text-success-text shrink-0" aria-hidden="true" />
                 <span>PIN de invitación para que active su cuenta y fije su contraseña</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-bold text-text-2">
-                <span className="text-success-text text-sm">✓</span>
+                <CheckCircle2 size={16} className="text-success-text shrink-0" aria-hidden="true" />
                 <span>Hereda el horario de la empresa</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-bold text-warning-text">
-                <span className="text-warning-text text-sm">⚠</span>
+                <AlertTriangle size={16} className="text-warning-text shrink-0" aria-hidden="true" />
                 <span>Su sueldo NO se captura aquí: hay que ponerlo en RRHH o la nómina usará un valor por defecto</span>
               </div>
             </div>

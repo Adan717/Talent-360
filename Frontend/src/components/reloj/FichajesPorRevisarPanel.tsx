@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Flag } from 'lucide-react';
 import axiosInstance from '../../lib/axios';
 
 /**
@@ -133,7 +134,7 @@ export const FichajesPorRevisarPanel = () => {
     <div className="bg-white border border-danger-text/20 rounded-2xl p-4 shadow-sm mb-3 flex flex-col gap-3 text-left">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xl">🚩</span>
+          <Flag size={20} className="text-danger-text" aria-hidden="true" />
           <div>
             <p className="font-black text-xs sm:text-sm text-text-1">Fichajes por revisar</p>
             <p className="text-[9px] sm:text-[10px] text-text-3 leading-tight">

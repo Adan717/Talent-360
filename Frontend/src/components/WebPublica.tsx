@@ -487,7 +487,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
               Términos
             </button>
           </div>
-          <span className="flex items-center gap-1 font-semibold">Desarrollado con <span className="text-danger-text">♥</span> por <span className="text-white">Talent360</span></span>
+          <span className="font-semibold">Desarrollado por <span className="text-white">Talent360</span></span>
         </div>
       </footer>
 

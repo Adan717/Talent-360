@@ -3,7 +3,7 @@ import type { AppModule } from './types';
 import { Routes, Route, Navigate, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, GraduationCap, Clock,
-  CheckSquare, Globe, Terminal, ChevronLeft, Menu, Briefcase, ListTodo,
+  CheckSquare, Globe, ChevronLeft, Menu, Briefcase, ListTodo,
   FileText, X, Lock, Sparkles, ShieldCheck, Zap, Settings, User,
   Coffee, Calendar, MapPin, Heart, Bell, Database, Receipt, Scale, Activity
 } from 'lucide-react';
@@ -25,7 +25,6 @@ const RelojChecador = lazy(() => import('./components/RelojChecador'));
 const KioskScreen = lazy(() => import('./components/KioskScreen'));
 const RecursosHumanos = lazy(() => import('./components/RecursosHumanos'));
 const DashboardTalent360 = lazy(() => import('./components/DashboardTalent360'));
-const PanelSimulador = lazy(() => import('./components/reloj/PanelSimulador'));
 const PanelTareasRutinas = lazy(() => import('./components/tareas_rutinas/PanelTareasRutinas').then(module => ({ default: module.PanelTareasRutinas })));
 const WebPublica = lazy(() => import('./components/WebPublica').then(module => ({ default: module.WebPublica })));
 const GestorAcademia = lazy(() => import('./components/GestorAcademia').then(module => ({ default: module.GestorAcademia })));
@@ -40,6 +39,9 @@ const LftManager = lazy(() => import('./components/LftManager'));
 const OrgVaultManager = lazy(() => import('./components/OrgVaultManager').then(m => ({ default: m.OrgVaultManager })));
 const WebPublicaOrganizacion = lazy(() => import('./components/WebPublicaOrganizacion').then(m => ({ default: m.WebPublicaOrganizacion })));
 const MonitorActividadesTiempoReal = lazy(() => import('./components/MonitorActividadesTiempoReal').then(m => ({ default: m.MonitorActividadesTiempoReal })));
+const SaaSLandingLab = import.meta.env.DEV
+  ? lazy(() => import('./components/SaaSLandingLab').then(m => ({ default: m.SaaSLandingLab })))
+  : null;
 import { ModuleUnlockModal } from './components/ModuleUnlockModal';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { EmployeeMobileOnboarding } from './components/EmployeeMobileOnboarding';
@@ -51,6 +53,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { MyAccountModal } from './components/MyAccountModal';
 import { PantallaConsentimiento } from './components/PantallaConsentimiento';
 import { EnlaceAlAviso } from './components/AvisoDePrivacidad';
+import { ProductUpdatesButton } from './components/ProductUpdatesButton';
 
 /**
  * (2026-09-05) Rutas PÚBLICAS donde el candado del aviso de privacidad no debe aparecer.
@@ -59,7 +62,18 @@ import { EnlaceAlAviso } from './components/AvisoDePrivacidad';
  * como el enlace abre otra pestaña de esta misma aplicación, sin esta lista la persona se toparía
  * ahí con el candado otra vez y no podría leer nunca lo que se le pide aceptar.
  */
-const RUTAS_SIN_CANDADO = ['/privacidad', '/certificado', '/vacantes', '/organizacion', '/login', '/inicio'];
+const RUTAS_SIN_CANDADO = [
+  '/privacidad', '/certificado', '/vacantes', '/organizacion', '/login', '/inicio',
+  ...(import.meta.env.DEV ? ['/landing-lab'] : []),
+];
+
+const PRODUCTION_MODULE_IDS = new Set([
+  'dashboard', 'rrhh', 'reloj', 'operativo', 'reportes', 'ats', 'academia',
+  'documentos', 'facturacion', 'lft', 'organizacion', 'settings',
+]);
+
+const normalizeProductionModule = (moduleId: string | null) =>
+  moduleId && PRODUCTION_MODULE_IDS.has(moduleId) ? moduleId : 'dashboard';
 
 const IconMap: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard size={20} />,
@@ -117,18 +131,21 @@ const RootRoute = () => {
 
 function MainLayout() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialModule = searchParams.get('module') || localStorage.getItem('talent360_active_module') || 'dashboard';
+  const initialModule = normalizeProductionModule(
+    searchParams.get('module') || localStorage.getItem('talent360_active_module'),
+  );
   const [activeModule, setActiveModuleState] = useState<string>(initialModule);
 
   const setActiveModule = (modId: string) => {
-    setActiveModuleState(modId);
+    const safeModuleId = normalizeProductionModule(modId);
+    setActiveModuleState(safeModuleId);
     try {
-      localStorage.setItem('talent360_active_module', modId);
+      localStorage.setItem('talent360_active_module', safeModuleId);
     } catch {}
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
-      if (next.get('module') !== modId) {
-        next.set('module', modId);
+      if (next.get('module') !== safeModuleId) {
+        next.set('module', safeModuleId);
         next.delete('tab');
       }
       return next;
@@ -137,10 +154,22 @@ function MainLayout() {
 
   useEffect(() => {
     const urlModule = searchParams.get('module');
-    if (urlModule && urlModule !== activeModule) {
-      setActiveModuleState(urlModule);
+    const safeUrlModule = normalizeProductionModule(urlModule);
+    if (urlModule && urlModule !== safeUrlModule) {
+      setActiveModuleState(safeUrlModule);
       try {
-        localStorage.setItem('talent360_active_module', urlModule);
+        localStorage.setItem('talent360_active_module', safeUrlModule);
+      } catch {}
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('module', safeUrlModule);
+        next.delete('tab');
+        return next;
+      }, { replace: true });
+    } else if (urlModule && safeUrlModule !== activeModule) {
+      setActiveModuleState(safeUrlModule);
+      try {
+        localStorage.setItem('talent360_active_module', safeUrlModule);
       } catch {}
     } else if (!urlModule && activeModule) {
       setSearchParams(prev => {
@@ -239,7 +268,7 @@ function MainLayout() {
 
   const isModuleUnlocked = (moduleId: string) => {
     const targetModuleId = moduleId;
-    if (targetModuleId === 'dashboard' || targetModuleId === 'settings' || targetModuleId === 'matrix' || targetModuleId === 'organizacion') {
+    if (targetModuleId === 'dashboard' || targetModuleId === 'settings' || targetModuleId === 'organizacion') {
       return true;
     }
     if (currentUser?.system_role === 'platform_admin' || currentUser?.role === 'platform_admin') {
@@ -351,15 +380,6 @@ function MainLayout() {
       version: 'v1.0'
     },
     {
-      id: 'matrix',
-      title: 'Matrix QA',
-      desc: 'Entorno de simulación',
-      icon: <Terminal size={20} />,
-      color: 'bg-page text-text-1 border-border',
-      minTier: 'freemium',
-      version: 'v1.0'
-    },
-    {
       id: 'lft',
       title: 'Ley Federal del Trabajo',
       desc: 'Reglamento y tolerancias',
@@ -410,7 +430,7 @@ function MainLayout() {
 
   const visibleModules = customizedModules.filter(mod => {
     // 1. Módulos esenciales del sistema siempre accesibles para administración
-    if (mod.id === 'dashboard' || mod.id === 'settings' || mod.id === 'matrix') {
+    if (mod.id === 'dashboard' || mod.id === 'settings') {
       return true;
     }
 
@@ -441,7 +461,7 @@ function MainLayout() {
     // gatea DENTRO de ReportesManager (solo admin), y los datos, en el servidor
     // (permission:manage_payroll).
     if (currentUser?.role === 'supervisor') {
-      return !['matrix', 'settings'].includes(mod.id);
+      return mod.id !== 'settings';
     }
 
     return true;
@@ -637,6 +657,8 @@ function MainLayout() {
 
             {/* Right Section: User Profile & Subscription License & Trial Countdown */}
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              <ProductUpdatesButton userId={currentUser?.id} onOpenModule={setActiveModule} />
+
               {/* Trial Countdown Indicator (Dynamic pill badge next to profile) */}
               {trialActive && (
                 <div className="flex flex-col items-end shrink-0 select-none">
@@ -758,7 +780,6 @@ function MainLayout() {
             {activeModule === 'facturacion' && <FacturacionManager />}
             {activeModule === 'reloj' && <RelojChecador />}
             {activeModule === 'reportes' && <ReportesManager />}
-            {activeModule === 'matrix' && <PanelSimulador />}
             {activeModule === 'lft' && <LftManager />}
             {activeModule === 'settings' && <GlobalSystemSettingsPanel />}
           </Suspense>
@@ -807,10 +828,15 @@ function App() {
   const setCurrentUser = useAppStore(state => state.setCurrentUser);
   const location = useLocation();
 
-  // R87 (merge FE): alarma de traslado (aviso local N min antes del turno). Montada aquí —una
-  // sola vez, sobre el currentUser real— y NO en el motor del reloj, que el PanelSimulador
-  // multiplica por cada teléfono simulado.
+  // R87 (merge FE): alarma de traslado (aviso local N min antes del turno). Montada aquí una
+  // sola vez sobre el currentUser real, para no multiplicarla por cada vista del reloj.
   usePreShiftAlarm();
+
+  useEffect(() => {
+    // Matrix QA ya no forma parte del producto. Elimina cualquier sesión residual guardada
+    // por una versión anterior antes de que fetchState construya peticiones de sincronización.
+    localStorage.removeItem('matrix_active_sim_session_id');
+  }, []);
 
   useEffect(() => {
     const handleBan = (e: Event) => {
@@ -909,6 +935,16 @@ function App() {
       <Route path="/reset-password" element={<PasswordRecovery reset />} />
       <Route path="/register" element={<Navigate to="/inicio" replace />} />
       <Route path="/inicio" element={<SaaSLandingPage />} />
+      {import.meta.env.DEV && SaaSLandingLab && (
+        <Route
+          path="/landing-lab"
+          element={
+            <Suspense fallback={<LoadingScreen message="Cargando laboratorio de landing..." />}>
+              <SaaSLandingLab />
+            </Suspense>
+          }
+        />
+      )}
       {/* Verificación pública de un certificado de la Academia. Sin sesión a propósito: quien
           recibe el papel —otra empresa, un candidato— tiene que poder comprobarlo. Con folio en
           la dirección se verifica solo, para que el enlace se comparta tal cual. */}

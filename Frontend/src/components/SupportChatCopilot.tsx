@@ -14,7 +14,7 @@ export const SupportChatCopilot = () => {
     const [messages, setMessages] = useState<Message[]>([
         {
             sender: 'bot',
-            text: '¡Hola! Soy tu Copiloto de Soporte de Talent 360. 🤖 ¿En qué puedo ayudarte hoy? Puedo resolver dudas sobre el Reloj Checador V2, geolocalización, sincronización offline, planes de suscripción o la facturación CFDI 4.0.',
+            text: '¡Hola! Soy tu Copiloto de Soporte de Talent 360.  ¿En qué puedo ayudarte hoy? Puedo resolver dudas sobre el Reloj Checador V2, geolocalización, sincronización offline, planes de suscripción o la facturación CFDI 4.0.',
             timestamp: new Date()
         }
     ]);
@@ -56,7 +56,7 @@ export const SupportChatCopilot = () => {
                 ...prev,
                 {
                     sender: 'bot',
-                    text: '⚠️ Ocurrió un error al conectar con el servidor de inteligencia artificial. Por favor, inténtalo de nuevo.',
+                    text: ' Ocurrió un error al conectar con el servidor de inteligencia artificial. Por favor, inténtalo de nuevo.',
                     timestamp: new Date()
                 }
             ]);
@@ -81,7 +81,7 @@ export const SupportChatCopilot = () => {
                 ...prev,
                 {
                     sender: 'bot',
-                    text: '✅ ¡Ticket creado con éxito! Uno de nuestros agentes de soporte del Call Center le dará seguimiento de inmediato.',
+                    text: ' ¡Ticket creado con éxito! Uno de nuestros agentes de soporte del Call Center le dará seguimiento de inmediato.',
                     timestamp: new Date()
                 }
             ]);

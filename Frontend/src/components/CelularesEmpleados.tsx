@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React from 'react';
+import { CalendarDays, LogIn, Store, User } from 'lucide-react';
 
 export const CelularesEmpleados = ({
   globalUsers,
@@ -75,7 +76,7 @@ export const CelularesEmpleados = ({
               <div className="px-4 pb-4 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-accent-soft flex items-center justify-center text-xl overflow-hidden">
-                    {u.avatar ? <img src={u.avatar} alt={u.name} /> : '👤'}
+                    {u.avatar ? <img src={u.avatar} alt={u.name} /> : <User size={20} aria-hidden="true" />}
                   </div>
                   <div>
                     <p className="font-bold text-text-1 text-sm leading-tight">{u.name}</p>
@@ -107,17 +108,17 @@ export const CelularesEmpleados = ({
                 <div className="flex-1 flex items-center justify-center">
                    {config.restDay === currentDay ? (
                      <div className="text-center p-4">
-                       <span className="text-5xl block mb-2">🌴</span>
+                       <CalendarDays size={44} className="mx-auto mb-2 text-slate-400" aria-hidden="true" />
                        <p className="font-bold text-slate-400">Día de Descanso</p>
                      </div>
                    ) : storeStatus === 'closed' ? (
                      <div className="text-center p-4">
-                       <span className="text-5xl block mb-2">🏪</span>
+                       <Store size={44} className="mx-auto mb-2 text-slate-400" aria-hidden="true" />
                        <p className="font-bold text-slate-400">Tienda Cerrada</p>
                      </div>
                    ) : state === 'inactive' ? (
                      <button onClick={() => onCheckIn(u.id)} className="w-full h-32 rounded-3xl bg-accent text-white font-bold text-xl shadow-lg shadow-accent/30 active:scale-95 transition-transform flex flex-col items-center justify-center gap-2">
-                       <span className="text-3xl">👉</span>
+                       <LogIn size={28} aria-hidden="true" />
                        Registrar Entrada
                      </button>
                    ) : state === 'waiting_room' ? (

@@ -214,7 +214,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::middleware(['auth:sanctum', 'role:admin,supervisor,platform_admin'])->group(function () {
             Route::get('/matrix/session/active', [ClockController::class, 'getActiveSimulatorSession']);
             Route::post('/matrix/session/new', [ClockController::class, 'startNewSimulatorSession']);
-            Route::post('/sync/reset', [ClockController::class, 'reset']);
+            Route::post('/sync/reset', [ClockController::class, 'resetDb']);
         });
     }
 

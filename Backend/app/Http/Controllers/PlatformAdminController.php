@@ -1733,7 +1733,9 @@ class PlatformAdminController extends Controller
         }
 
         $validated = $request->validate([
-            'updates' => 'required|array|max:20',
+            // Una lista vacía es válida: es la forma explícita de retirar todas las
+            // novedades publicadas sin dejar registros obsoletos en el cliente.
+            'updates' => 'present|array|max:20',
             'updates.*.id' => 'required|string|max:80',
             'updates.*.title' => 'required|string|max:120',
             'updates.*.summary' => 'required|string|max:500',

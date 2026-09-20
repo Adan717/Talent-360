@@ -467,6 +467,17 @@ function MainLayout() {
     return true;
   });
 
+  // El filtrado del menú no basta: una URL guardada, un marcador o el `module` de la pestaña
+  // puede apuntar a ATS/Academia después de que el plan haya cambiado. Sin esta guarda la
+  // navegación lateral los ocultaba, pero el lienzo seguía montando el componente bloqueado.
+  // Esperamos la hidratación del tenant para no mandar fugazmente a un cliente Pro al monitor.
+  const activeModuleIsAllowed = visibleModules.some(mod => mod.id === activeModule);
+  useEffect(() => {
+    if (!isLoadingDB && !activeModuleIsAllowed) {
+      setActiveModule('dashboard');
+    }
+  }, [activeModuleIsAllowed, isLoadingDB, setActiveModule]);
+
   return (
     <div className="flex h-[100dvh] bg-page font-sans overflow-hidden selection:bg-accent-soft relative">
 

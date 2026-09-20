@@ -459,7 +459,7 @@ export const LegacySaaSLandingPage = () => {
             {/* Bloque 1: Propuesta de Valor */}
             <div className="col-span-1 lg:col-span-5 text-left space-y-6 order-1">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-50 border border-border text-[11px] font-bold text-accent shadow-sm">
-                <Sparkles size={12} className="text-accent" /> Registro con correo, Google o Apple
+                <Sparkles size={12} className="text-accent" /> Registro con correo o Google
               </div>
 
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-text-1 leading-tight">
@@ -1303,7 +1303,7 @@ export const LegacySaaSLandingPage = () => {
                       <div className="space-y-1">
                         <h4 className="font-extrabold text-text-1 text-lg">Crea tu cuenta de Administrador</h4>
                         <p className="text-xs text-text-3 leading-relaxed max-w-xs mx-auto">
-                          Usa Google, Apple o completa tus datos para registrar tu cuenta.
+                          Usa Google o completa tus datos para registrar tu cuenta.
                         </p>
                       </div>
 

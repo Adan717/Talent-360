@@ -202,7 +202,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   dbPermissions: [],
   dbRolePermissions: [],
   currentUser: { id: 1, name: 'Loading...', role: 'Loading', system_role: 'Loading', email: '', tenant_id: 1, avatar: '', mealMinutes: 60, job_role_id: 1 },
-  currentTier: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || 'pro', // Inicializado en freemium real
+  // Arrancar cerrado es importante: antes de que /me y /sync/state hidraten el tenant no se
+  // deben encender módulos de pago ni presentar la cuenta como Pro. En unos milisegundos el
+  // backend reemplaza este valor por el plan real; mientras tanto Freemium es el fallback seguro.
+  currentTier: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || 'freemium',
   systemSettings: {
     leySillaConfig: { enabled: true, consecutiveMinutes: 120, breakMinutes: 15 },
     featureFlags: { 

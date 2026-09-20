@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Company;
 use App\Models\User;
 use App\Models\Employee;
+use App\Models\Tenant;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 
@@ -567,6 +568,8 @@ class OnboardingController extends Controller
             $catalogo['puestos']
         );
 
+        $tenant = Tenant::find(auth()->user()->tenant_id ?? 1);
+
         return response()->json([
             'success' => true,
             'nicho' => $nicho,
@@ -575,7 +578,77 @@ class OnboardingController extends Controller
             // `configureNicho`, y la selección del asistente no llegaba nunca al servidor).
             'cursos' => $catalogo['cursos'] ?? [],
             'tareas' => $catalogo['tareas'],
+            // El frontend usa estas capacidades para no presentar pasos que el plan no puede
+            // terminar. `configureNicho` las calcula de nuevo al guardar: esta respuesta no es
+            // un permiso que el cliente pueda ampliar.
+            'capabilities' => $this->capacidadesOnboarding($tenant),
         ]);
+    }
+
+    /**
+     * Módulos que una empresa puede poblar durante el onboarding.
+     *
+     * No usamos `Tenant::isModuleUnlocked()` aquí porque ese método también habilita módulos
+     * durante una prueba temporal. El plan seleccionado al registrarse sigue siendo el límite de
+     * datos iniciales: una cuenta Freemium no debe recibir cursos LMS o vacantes ATS de pago sólo
+     * porque haya un trial, ni aunque alguien construya el POST a mano.
+     */
+    private function capacidadesOnboarding(?Tenant $tenant): array
+    {
+        $conocidos = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'portal', 'documentos', 'facturacion', 'lft', 'organizacion'];
+
+        if (!$tenant) {
+            return ['tareas' => false, 'vacantes_ats' => false, 'cursos_academia' => false];
+        }
+
+        if ((int) $tenant->id === 1 || (int) $tenant->id === 33 || $tenant->subdomain === 'talent360') {
+            $modulos = $conocidos;
+        } else {
+            // Un override explícito del superadministrador es la fuente de verdad del tenant y
+            // puede restringir incluso un plan pagado. Es la misma precedencia del panel de
+            // Plataforma; se filtran ids desconocidos antes de exponerlos.
+            $override = \DB::table('system_settings')
+                ->where('tenant_id', $tenant->id)
+                ->where('key', 'tenant_allowed_modules')
+                ->first();
+
+            if ($override) {
+                $modulos = json_decode($override->value, true);
+                $modulos = is_array($modulos) ? array_values(array_intersect($conocidos, $modulos)) : [];
+            } else {
+                $tenant->loadMissing('billingPlan');
+                $plan = strtolower($tenant->billingPlan?->code ?? $tenant->plan ?? 'freemium');
+                $modulosDelPlan = $tenant->billingPlan?->features_json['modules'] ?? [];
+
+                if ($plan === 'enterprise') {
+                    $modulos = $conocidos;
+                } elseif (is_array($modulosDelPlan) && !empty($modulosDelPlan)) {
+                    $modulos = array_values(array_intersect($conocidos, $modulosDelPlan));
+                } elseif ($plan === 'pro') {
+                    $modulos = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'portal', 'documentos', 'academia', 'facturacion', 'lft', 'organizacion'];
+                } else {
+                    $globalFree = \DB::table('system_settings')
+                        ->whereNull('tenant_id')
+                        ->where('key', 'freemium_allowed_modules')
+                        ->first();
+                    $modulos = $globalFree ? json_decode($globalFree->value, true) : ['reloj', 'rrhh', 'operativo'];
+                    $modulos = is_array($modulos) ? array_values(array_intersect($conocidos, $modulos)) : ['reloj', 'rrhh', 'operativo'];
+                }
+
+                // Add-ons comprados individualmente se suman al plan; no convierten el resto de
+                // la cuenta Freemium en Pro.
+                $extras = $tenant->allowed_modules_json ?: [];
+                if (is_array($extras)) {
+                    $modulos = array_values(array_unique(array_merge($modulos, array_intersect($conocidos, $extras))));
+                }
+            }
+        }
+
+        return [
+            'tareas' => in_array('operativo', $modulos, true),
+            'vacantes_ats' => in_array('ats', $modulos, true),
+            'cursos_academia' => in_array('academia', $modulos, true),
+        ];
     }
 
     /**
@@ -597,6 +670,8 @@ class OnboardingController extends Controller
         ]);
 
         $tenantId = auth()->user()->tenant_id ?? 1;
+        $tenant = Tenant::find($tenantId);
+        $capabilities = $this->capacidadesOnboarding($tenant);
         $nicho = strtolower($request->nicho);
         $subNicho = $request->sub_nicho;
         $customDescription = $request->custom_nicho_description;
@@ -617,6 +692,13 @@ class OnboardingController extends Controller
                     $puestos = $catalogo['puestos'];
                     $tareas = $catalogo['tareas'];
                 }
+            }
+
+            // La autorización se vuelve a evaluar en el servidor porque este endpoint también
+            // puede invocarse sin pasar por el wizard. Un payload alterado no puede sembrar
+            // datos de módulos bloqueados en la empresa.
+            if (!$capabilities['tareas']) {
+                $tareas = [];
             }
 
             // GUARDARRAÍL: toda tarea debe declarar sus minutos. La alternativa era el default
@@ -654,9 +736,15 @@ class OnboardingController extends Controller
                 }
             }
 
-            // Limpiar tareas y vacantes de la plantilla previa del tenant para cargar las del giro seleccionado
-            \DB::table('tasks')->where('tenant_id', $tenantId)->delete();
-            \DB::table('vacancies')->where('tenant_id', $tenantId)->delete();
+            // Sólo se sustituyen datos de módulos que este tenant tiene habilitados. No borres
+            // datos existentes de ATS/Tareas porque una cuenta fue degradada o porque un cliente
+            // intentó reaplicar el onboarding con un plan que ya no incluye ese módulo.
+            if ($capabilities['tareas']) {
+                \DB::table('tasks')->where('tenant_id', $tenantId)->delete();
+            }
+            if ($capabilities['vacantes_ats']) {
+                \DB::table('vacancies')->where('tenant_id', $tenantId)->delete();
+            }
 
             // 1. Inyectar Puestos en base de datos (`job_roles`)
             $roleIdsMap = [];
@@ -746,21 +834,23 @@ class OnboardingController extends Controller
             // `StoreOpeningService::triggerOpeningChecklist` no reparte nada al abrir la tienda y
             // toda tarea hay que darla de alta a mano — en un módulo que se anuncia como
             // "Automatiza Rutinas".
-            $this->crearRutinasDelGiro($tenantId, $tareas, $taskIdsPorTitulo, $roleIdsMap, $puestos, $firstGerenteRole);
+            if ($capabilities['tareas']) {
+                $this->crearRutinasDelGiro($tenantId, $tareas, $taskIdsPorTitulo, $roleIdsMap, $puestos, $firstGerenteRole);
+            }
 
             // 3. Inyectar Vacantes Iniciales en Bolsa de Trabajo (`vacancies`)
             $vacanciesData = [];
-            if ($nicho === 'retail') {
+            if ($capabilities['vacantes_ats'] && $nicho === 'retail') {
                 $vacanciesData = [
                     ['title' => 'Asesor de Ventas y Piso', 'department' => 'Piso de Ventas', 'salary_min' => 8000, 'salary_max' => 9500, 'employment_type' => 'Tiempo Completo', 'description' => 'Buscamos asesor de ventas proactivo para atención al cliente y acomodo de mercancía.'],
                     ['title' => 'Cajero(a) de Tienda', 'department' => 'Cajas', 'salary_min' => 7800, 'salary_max' => 8800, 'employment_type' => 'Tiempo Completo', 'description' => 'Atención en cajas, cobro de mercancía y arqueos diarios.']
                 ];
-            } elseif ($nicho === 'restaurante') {
+            } elseif ($capabilities['vacantes_ats'] && $nicho === 'restaurante') {
                 $vacanciesData = [
                     ['title' => 'Mesero(a) con Experiencia', 'department' => 'Servicio', 'salary_min' => 7500, 'salary_max' => 9000, 'employment_type' => 'Tiempo Completo', 'description' => 'Atención a comensales, toma de comandas y limpieza de área.'],
                     ['title' => 'Ayudante de Cocina', 'department' => 'Cocina', 'salary_min' => 8000, 'salary_max' => 8800, 'employment_type' => 'Tiempo Completo', 'description' => 'Apoyo en preparación de insumos, picado y limpieza de cocina.']
                 ];
-            } else {
+            } elseif ($capabilities['vacantes_ats']) {
                 $vacanciesData = [
                     ['title' => 'Ejecutivo de Atención y Ventas', 'department' => 'Operaciones', 'salary_min' => 9000, 'salary_max' => 11000, 'employment_type' => 'Tiempo Completo', 'description' => 'Atención a clientes y coordinación operativa.']
                 ];
@@ -797,7 +887,9 @@ class OnboardingController extends Controller
             // edita quien conoce el negocio y viajan completos de ida y vuelta.
             $cursos = $request->input('selected_cursos');
 
-            if (empty($cursos)) {
+            if (!$capabilities['cursos_academia']) {
+                $cursos = [];
+            } elseif (is_null($cursos)) {
                 // Un giro sin catálogo propio (p. ej. 'custom') hereda el de oficina, que es la
                 // lista que le tocaba antes en la rama `else`: los dos cursos normativos de LFT
                 // más la inducción al software. Sin esto, una empresa personalizada se quedaría

@@ -18,7 +18,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const { fetchState, updateSetting, currentUser, setCurrentUser, isModuleUnlocked, globalRoles } = useAppStore();
+  const { fetchState, updateSetting, currentUser, setCurrentUser, currentTier, isModuleUnlocked, globalRoles } = useAppStore();
 
   const [subStep, setSubStep] = useState<'giro' | 'puestos' | 'tareas' | 'cursos' | 'organigrama'>('giro');
   const [activeRoleFilterTab, setActiveRoleFilterTab] = useState<string>('all');
@@ -26,7 +26,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const allPlatformModules = [
     { id: 'rrhh', name: 'Recursos Humanos', desc: 'Expedientes, puestos y organigrama', icon: Users, tag: 'Gratis', color: 'emerald' },
     { id: 'reloj', name: 'Reloj Checador (PWA)', desc: 'Asistencia con PIN, retardo y GPS', icon: Clock, tag: 'Gratis', color: 'emerald' },
-    { id: 'tareas', name: 'Tareas & Rutinas 360', desc: 'Checklists con foto y números', icon: ListTodo, tag: 'Incluido', color: 'emerald' },
+    // El id de autorización de este módulo es "operativo". "tareas" era sólo el nombre de
+    // la vista y hacía que el catálogo dijera que una cuenta Free no tenía una función incluida.
+    { id: 'operativo', name: 'Tareas & Rutinas 360', desc: 'Checklists con foto y números', icon: ListTodo, tag: 'Incluido', color: 'emerald' },
     { id: 'llaves', name: 'Control de Llaves N1-N5', desc: 'Jerarquías y aperturadores', icon: Key, tag: 'Pro / Ent', color: 'indigo' },
     { id: 'ats', name: 'Reclutamiento ATS', desc: 'Portal de vacantes y candidatos', icon: UserPlus, tag: 'Pro / Ent', color: 'indigo' },
     { id: 'academia', name: 'Academia LMS', desc: 'Cursos en video, PDFs e inducción', icon: GraduationCap, tag: 'Pro / Ent', color: 'indigo' },
@@ -38,8 +40,15 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const activePlanModules = allPlatformModules.filter(mod => isModuleUnlocked(mod.id));
 
+  // `currentTier` llega de /sync/state, que es la fuente de verdad de la sesión. El objeto de
+  // /me puede llegar aún sin `tenant.plan` al abrir el wizard; usar Enterprise como fallback
+  // convertía visualmente una cuenta gratuita recién creada en Enterprise.
+  const tenantPlan = String(currentUser?.tenant?.plan || '').toLowerCase();
+  const rawPlan = ['freemium', 'pro', 'enterprise', 'standard'].includes(tenantPlan)
+    ? tenantPlan
+    : currentTier;
+
   const getPlanBadgeInfo = () => {
-    const rawPlan = (currentUser?.tenant?.plan || 'enterprise').toLowerCase();
     if (rawPlan === 'enterprise') {
       return {
         title: 'Plan Enterprise Activado ',
@@ -87,17 +96,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       };
     } else {
       return {
-        title: 'Prueba Premium / Plan Inicial ',
-        subtitle: '30 Días de Evaluación Completa de la Suite 360',
-        badge: 'DEMO PRO',
-        badgeColor: 'bg-accent-soft text-navy-800 border-navy-300',
-        iconBg: 'bg-navy-50 text-accent',
-        borderColor: 'border-border',
+        title: 'Plan Gratuito Activado ',
+        subtitle: 'Lo esencial para organizar a tu equipo y registrar asistencia.',
+        badge: 'FREEMIUM',
+        badgeColor: 'bg-success-bg text-success-text border-success-text/20',
+        iconBg: 'bg-success-bg text-success-text',
+        borderColor: 'border-success-text/20',
         features: [
-          'Acceso completo a todos los módulos durante el periodo de prueba',
-          'Sin necesidad de ingresar tarjeta durante la evaluación',
-          'Al finalizar conservas el plan de por vida para tu empresa',
-          'Asistencia y soporte directo para la configuración inicial'
+          'Directorio y expedientes básicos de colaboradores',
+          'Reloj Checador PWA con PIN de seguridad',
+          'Tareas y rutinas operativas incluidas',
+          'Puedes activar módulos avanzados cuando tu operación lo requiera'
         ]
       };
     }
@@ -448,26 +457,45 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   // catálogo), para que no haya dos implementaciones de la misma convención.
   const [organigrama, setOrganigrama] = useState<Record<string, string | null>>({});
 
-  const [catalogo, setCatalogo] = useState<{ puestos: PuestoCatalogo[]; cursos: CursoCatalogo[]; tareas: TareaCatalogo[] } | null>(null);
+  type CapacidadesOnboarding = {
+    tareas: boolean;
+    vacantes_ats: boolean;
+    cursos_academia: boolean;
+  };
+
+  const [catalogo, setCatalogo] = useState<{
+    puestos: PuestoCatalogo[];
+    cursos: CursoCatalogo[];
+    tareas: TareaCatalogo[];
+    capabilities?: CapacidadesOnboarding;
+  } | null>(null);
   const [catalogoError, setCatalogoError] = useState(false);
   const [reintentoCatalogo, setReintentoCatalogo] = useState(0);
 
   const presetLocal = PRESET_DATA[selectedNicho] || PRESET_DATA.retail;
+  // Mientras el catálogo llega se falla cerrado para los módulos de pago. El servidor manda
+  // estas capacidades junto con el catálogo y vuelve a aplicarlas al guardar: la pantalla no es
+  // la barrera de seguridad, sólo refleja la misma decisión.
+  const onboardingCapabilities: CapacidadesOnboarding = catalogo?.capabilities ?? {
+    tareas: isModuleUnlocked('operativo'),
+    vacantes_ats: false,
+    cursos_academia: false,
+  };
   const activePreset = {
     puestos: catalogo?.puestos ?? [],
-    tareas: catalogo?.tareas ?? [],
+    tareas: onboardingCapabilities.tareas ? (catalogo?.tareas ?? []) : [],
     // El JSX de abajo pinta `curso.title`, `curso.type` y `curso.role`: se mantiene esa forma.
     // `role` sale del `target_role_name` del catálogo; sin puesto declarado el curso es para
     // toda la plantilla, que es lo que el asistente dice ahora en vez de callarse (AC2).
-    cursos: (catalogo?.cursos ?? []).map(c => ({
+    cursos: onboardingCapabilities.cursos_academia ? (catalogo?.cursos ?? []).map(c => ({
       title: c.title,
       type: c.course_type === 'induction' ? 'Inducción'
         : c.course_type === 'promotion' ? 'Promoción'
         : c.course_type === 'recertification' ? 'Recertificación'
         : 'Entrenamiento',
       role: c.target_role_name || 'Toda la plantilla'
-    })),
-    vacantes: presetLocal.vacantes
+    })) : [],
+    vacantes: onboardingCapabilities.vacantes_ats ? presetLocal.vacantes : []
   };
   const [selectedPuestos, setSelectedPuestos] = useState<string[]>([]);
   const [selectedTareas, setSelectedTareas] = useState<string[]>([]);
@@ -484,10 +512,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       .then(({ data }) => {
         if (!vigente) return;
         const cursos: CursoCatalogo[] = data.cursos ?? [];
-        setCatalogo({ puestos: data.puestos, cursos, tareas: data.tareas });
+        const capabilities: CapacidadesOnboarding = data.capabilities ?? {
+          // Compatibilidad segura si la página se actualiza antes que el servidor: nunca
+          // mostramos Academia ni ATS por defecto, pero sí respetamos Tareas si ya están activas.
+          tareas: isModuleUnlocked('operativo'),
+          vacantes_ats: false,
+          cursos_academia: false,
+        };
+        setCatalogo({ puestos: data.puestos, cursos, tareas: data.tareas, capabilities });
         setSelectedPuestos(data.puestos.map((p: PuestoCatalogo) => p.name));
-        setSelectedTareas(data.tareas.map((t: TareaCatalogo) => t.title));
-        setSelectedCursos(cursos.map(c => c.title));
+        setSelectedTareas(capabilities.tareas ? data.tareas.map((t: TareaCatalogo) => t.title) : []);
+        setSelectedCursos(capabilities.cursos_academia ? cursos.map(c => c.title) : []);
         // Sugerencia del servidor: el admin la revisa y la ajusta en el bloque 1E.
         setOrganigrama(Object.fromEntries(
           data.puestos.map((p: PuestoCatalogo) => [p.name, p.reporta_a ?? null])
@@ -495,7 +530,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       })
       .catch(() => { if (vigente) setCatalogoError(true); });
     return () => { vigente = false; };
-  }, [selectedNicho, reintentoCatalogo]);
+  }, [selectedNicho, reintentoCatalogo, isModuleUnlocked]);
 
   // Al cambiar de giro, resetear selección; puestos y tareas los repone el efecto del catálogo
   const handleSelectNicho = (nichoKey: 'materias_primas' | 'retail' | 'restaurante' | 'oficina' | 'taller' | 'custom') => {
@@ -511,10 +546,35 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   const togglePuestoSelection = (name: string) => {
-    setSelectedPuestos(prev =>
-      prev.includes(name) ? prev.filter(p => p !== name) : [...prev, name]
-    );
+    setSelectedPuestos(prev => {
+      const next = prev.includes(name) ? prev.filter(p => p !== name) : [...prev, name];
+      // No dejes una tarea marcada para un puesto que ya se desmarcó: el backend tendría que
+      // asignarla a otro puesto de forma implícita y el contador dejaría de decir la verdad.
+      const tareasPermitidas = new Set(
+        activePreset.tareas
+          .filter(t => next.includes(t.target_role_name || ''))
+          .map(t => t.title)
+      );
+      setSelectedTareas(actuales => actuales.filter(t => tareasPermitidas.has(t)));
+      return next;
+    });
   };
+
+  const seleccionarTodosLosPuestos = () => {
+    const puestos = activePreset.puestos.map(p => p.name);
+    setSelectedPuestos(puestos);
+    setSelectedTareas(activePreset.tareas
+      .filter(t => puestos.includes(t.target_role_name || ''))
+      .map(t => t.title));
+  };
+
+  const limpiarPuestos = () => {
+    setSelectedPuestos([]);
+    setSelectedTareas([]);
+    setActiveRoleFilterTab('all');
+  };
+
+  const tareasElegibles = activePreset.tareas.filter(t => selectedPuestos.includes(t.target_role_name || ''));
 
   const toggleTareaSelection = (title: string) => {
     setSelectedTareas(prev =>
@@ -684,13 +744,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               const jefe = organigrama[p.name] ?? null;
               return { ...p, reporta_a: jefe && selectedPuestos.includes(jefe) ? jefe : null };
             });
-      const filteredTareas = selectedNicho === 'custom'
+      const filteredTareas = !onboardingCapabilities.tareas
+        ? []
+        : selectedNicho === 'custom'
         ? undefined
         : (catalogo?.tareas ?? []).filter(t => selectedTareas.includes(t.title));
       // AC1: los cursos elegidos también viajan, y COMPLETOS (descripción, tipo, puesto al que
       // van y su examen). Antes esta selección no salía del navegador: el dueño marcaba
       // casillas y el servidor inyectaba de todos modos su propia lista.
-      const filteredCursos = selectedNicho === 'custom'
+      const filteredCursos = !onboardingCapabilities.cursos_academia
+        ? []
+        : selectedNicho === 'custom'
         ? undefined
         : (catalogo?.cursos ?? []).filter(c => selectedCursos.includes(c.title));
 
@@ -1065,20 +1129,24 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   >
                     2. Puestos
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setSubStep('tareas')}
-                    className={`px-2 py-1 rounded-lg text-xs font-black transition-all ${subStep === 'tareas' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
-                  >
-                    3. Tareas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSubStep('cursos')}
-                    className={`px-2 py-1 rounded-lg text-xs font-black transition-all ${subStep === 'cursos' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
-                  >
-                    4. Cursos
-                  </button>
+                  {onboardingCapabilities.tareas && (
+                    <button
+                      type="button"
+                      onClick={() => setSubStep('tareas')}
+                      className={`px-2 py-1 rounded-lg text-xs font-black transition-all ${subStep === 'tareas' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
+                    >
+                      3. Tareas
+                    </button>
+                  )}
+                  {onboardingCapabilities.cursos_academia && (
+                    <button
+                      type="button"
+                      onClick={() => setSubStep('cursos')}
+                      className={`px-2 py-1 rounded-lg text-xs font-black transition-all ${subStep === 'cursos' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
+                    >
+                      4. Cursos
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setSubStep('organigrama')}
@@ -1275,14 +1343,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => setSelectedPuestos(activePreset.puestos.map(p => p.name))}
+                          onClick={seleccionarTodosLosPuestos}
                           className="text-xs font-bold text-accent hover:text-accent bg-navy-50 px-2 py-1 rounded-lg"
                         >
                           Todos
                         </button>
                         <button
                           type="button"
-                          onClick={() => setSelectedPuestos([])}
+                          onClick={limpiarPuestos}
                           className="text-xs font-bold text-text-3 hover:text-text-2 bg-page px-2 py-1 rounded-lg"
                         >
                           Ninguno
@@ -1333,11 +1401,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSubStep('tareas')}
+                      onClick={() => setSubStep(onboardingCapabilities.tareas ? 'tareas' : 'organigrama')}
                       disabled={selectedPuestos.length === 0}
                       className="flex-1 py-3.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
                     >
-                      Ver Checklists y Tareas ({selectedTareas.length}) <ChevronRight size={18} />
+                      {onboardingCapabilities.tareas
+                        ? <>Ver Checklists y Tareas ({selectedPuestos.length > 0 ? selectedTareas.length : 0}) <ChevronRight size={18} /></>
+                        : <>Siguiente: Revisar Organigrama <ChevronRight size={18} /></>}
                     </button>
                   </div>
                 </div>
@@ -1353,12 +1423,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <div className="bg-white p-3.5 rounded-2xl border border-border shadow-sm space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <span className="text-xs font-extrabold text-text-1 flex items-center gap-1.5">
-                        <CheckSquare size={15} aria-hidden="true" /> Tareas Seleccionadas ({selectedTareas.length}/{activePreset.tareas.length})
+                        <CheckSquare size={15} aria-hidden="true" /> Tareas Seleccionadas ({selectedTareas.length}/{tareasElegibles.length})
                       </span>
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => setSelectedTareas(activePreset.tareas.map(t => t.title))}
+                          onClick={() => setSelectedTareas(tareasElegibles.map(t => t.title))}
                           className="text-xs font-bold text-accent hover:text-accent bg-navy-50 px-2 py-1 rounded-lg"
                         >
                           Todas
@@ -1384,10 +1454,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                             : 'bg-page text-text-2 hover:bg-slate-200'
                         }`}
                       >
-                        Todos ({activePreset.tareas.length})
+                        Todos ({tareasElegibles.length})
                       </button>
-                      {activePreset.puestos.map((p) => {
-                        const roleTaskCount = activePreset.tareas.filter(t => t.target_role_name === p.name).length;
+                      {activePreset.puestos.filter(p => selectedPuestos.includes(p.name)).map((p) => {
+                        const roleTaskCount = tareasElegibles.filter(t => t.target_role_name === p.name).length;
                         if (roleTaskCount === 0) return null;
                         const isTabActive = activeRoleFilterTab === p.name;
                         return (
@@ -1412,7 +1482,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
                     {/* Tareas Filtradas */}
                     <div className="space-y-1.5 max-h-60 sm:max-h-72 overflow-y-auto custom-scrollbar pr-1">
-                      {activePreset.tareas
+                      {tareasElegibles
                         .filter(t => activeRoleFilterTab === 'all' || t.target_role_name === activeRoleFilterTab)
                         .map((tarea) => {
                           const isChecked = selectedTareas.includes(tarea.title);
@@ -1440,17 +1510,24 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     </div>
                   </div>
 
-                  {/* Resumen Final de Cursos y Vacantes */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                    <div className="bg-navy-50/50 p-2.5 rounded-xl border border-border flex flex-col gap-1">
-                      <span className="font-extrabold text-accent flex items-center gap-1"> Cursos Incluidos</span>
-                      <span className="text-text-2 text-xs truncate">{activePreset.cursos.map(c => c.title).join(' • ')}</span>
+                  {/* Sólo se anticipan datos de módulos que el tenant puede usar. Antes una
+                      cuenta Free veía (y terminaba sembrando) cursos LMS y vacantes ATS Pro. */}
+                  {(onboardingCapabilities.cursos_academia || onboardingCapabilities.vacantes_ats) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                      {onboardingCapabilities.cursos_academia && (
+                        <div className="bg-navy-50/50 p-2.5 rounded-xl border border-border flex flex-col gap-1">
+                          <span className="font-extrabold text-accent flex items-center gap-1">Cursos LMS incluidos</span>
+                          <span className="text-text-2 text-xs truncate">{activePreset.cursos.map(c => c.title).join(' • ')}</span>
+                        </div>
+                      )}
+                      {onboardingCapabilities.vacantes_ats && (
+                        <div className="bg-success-bg/50 p-2.5 rounded-xl border border-success-text/20 flex flex-col gap-1">
+                          <span className="font-extrabold text-success-text flex items-center gap-1">Vacantes ATS</span>
+                          <span className="text-text-2 text-xs truncate">{activePreset.vacantes.map(v => v.title).join(' • ')}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="bg-success-bg/50 p-2.5 rounded-xl border border-success-text/20 flex flex-col gap-1">
-                      <span className="font-extrabold text-success-text flex items-center gap-1"> Vacantes ATS</span>
-                      <span className="text-text-2 text-xs truncate">{activePreset.vacantes.map(v => v.title).join(' • ')}</span>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Acciones Finales del Bloque 1C */}
                   <div className="pt-2 flex items-center gap-2">
@@ -1463,17 +1540,19 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSubStep('cursos')}
+                      onClick={() => setSubStep(onboardingCapabilities.cursos_academia ? 'cursos' : 'organigrama')}
                       className="flex-1 py-3.5 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
                     >
-                      Ver Cursos LMS & LFT ({selectedCursos.length}) <ChevronRight size={18} />
+                      {onboardingCapabilities.cursos_academia
+                        ? <>Ver Cursos LMS & LFT ({selectedCursos.length}) <ChevronRight size={18} /></>
+                        : <>Siguiente: Revisar Organigrama <ChevronRight size={18} /></>}
                     </button>
                   </div>
                 </div>
               )}
 
               {/* BLOQUE 1D: CURSOS DE CAPACITACIÓN LMS (LFT & GIRO) */}
-              {subStep === 'cursos' && (
+              {subStep === 'cursos' && onboardingCapabilities.cursos_academia && (
                 <div className="space-y-4 animate-in fade-in duration-200">
                   <p className="text-xs text-text-3 leading-relaxed">
                     Selecciona los cursos de inducción y capacitación que se precargarán en la <strong>Academia LMS</strong> de tus colaboradores (incluye Ley Federal del Trabajo y Ley Silla).
@@ -1653,10 +1732,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         <div className="pt-2 flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => setSubStep('cursos')}
+                            onClick={() => setSubStep(onboardingCapabilities.cursos_academia ? 'cursos' : (onboardingCapabilities.tareas ? 'tareas' : 'puestos'))}
                             className="py-3.5 px-4 border border-border hover:bg-page text-text-2 rounded-xl font-bold text-xs shrink-0"
                           >
-                            ← Cursos
+                            ← {onboardingCapabilities.cursos_academia ? 'Cursos' : (onboardingCapabilities.tareas ? 'Tareas' : 'Puestos')}
                           </button>
                           <button
                             onClick={handleConfigureNicho}

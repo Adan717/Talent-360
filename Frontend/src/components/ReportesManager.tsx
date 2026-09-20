@@ -682,8 +682,7 @@ export default function ReportesManager() {
 
       </div>
 
-      {/* Resultado REAL de la autorización: qué se autorizó y qué quedó pendiente. El
-          timbrado CFDI es un paso aparte, en Facturación Electrónica. */}
+      {/* Resultado REAL de la autorización: qué se autorizó y qué quedó pendiente. */}
       {approveResult && (
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
            <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-500">
@@ -704,7 +703,7 @@ export default function ReportesManager() {
                 </p>
               )}
               <p className="text-slate-400 mb-8 text-xs">
-                El timbrado CFDI se hace en el módulo de Facturación Electrónica, sobre las nóminas ya autorizadas.
+                Puedes exportar esta pre-nómina para que tu contador continúe el proceso fiscal. El timbrado CFDI nativo no está disponible en esta versión.
               </p>
               <button
                 onClick={() => setApproveResult(null)}

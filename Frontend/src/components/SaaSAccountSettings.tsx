@@ -1005,7 +1005,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                                 </span>
                                 <h3 className="text-base font-black text-text-1">Módulos Profesionales</h3>
                               </div>
-                              <span className="text-xs text-slate-450 font-bold">Cálculo de nóminas, reportes e integraciones SAT</span>
+                              <span className="text-xs text-slate-450 font-bold">Pre-nómina, reportes e integraciones operativas</span>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                               {proModules.map((mod, idx) => renderModuleCard(mod, idx))}

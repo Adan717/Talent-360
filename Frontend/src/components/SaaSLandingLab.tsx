@@ -295,7 +295,7 @@ export const SaaSLandingLab = () => {
                 <button ref={heroCtaRef} className="lab-button lab-button--warm lab-button--large" onClick={() => handleBuy('Freemium')}>Crear cuenta gratis <ArrowUpRight size={18} /></button>
                 <a className="lab-text-link" href={productAnchor}><span className="lab-play-icon"><Play size={12} fill="currentColor" /></span> Explorar la plataforma</a>
               </div>
-              <p className="lab-hero-note"><Check size={14} /> Plan gratuito disponible <span /> Correo, Google o Apple</p>
+              <p className="lab-hero-note"><Check size={14} /> Plan gratuito disponible <span /> Correo o Google</p>
             </div>
             <PlatformOverview />
           </div>
@@ -416,7 +416,7 @@ export const SaaSLandingLab = () => {
                       <div className="space-y-1">
                         <h4 className="font-extrabold text-text-1 text-lg">Crea tu cuenta de Administrador</h4>
                         <p className="text-xs text-text-3 leading-relaxed max-w-xs mx-auto">
-                          Usa Google, Apple o completa tus datos para registrar tu cuenta.
+                          Usa Google o completa tus datos para registrar tu cuenta.
                         </p>
                       </div>
 

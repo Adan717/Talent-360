@@ -19,6 +19,10 @@ import PropuestaDeReglamento, { type Propuesta } from './PropuestaDeReglamento';
  * la ley — un `max` de HTML se salta con las herramientas de desarrollador.
  */
 const TECHO_LFT_MINUTOS_SEMANA = 540;
+const FORMATO_MONTO_MXN = new Intl.NumberFormat('es-MX', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 export default function LftManager() {
   const [latesPerAbsence, setLatesPerAbsence] = useState(3);
@@ -929,7 +933,7 @@ export default function LftManager() {
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-400 font-bold">Descuento de Faltas:</span>
-                    <span className="text-danger-text font-extrabold">-${simResult.descuentoFaltas.toLocaleString()} MXN</span>
+                    <span className="text-danger-text font-extrabold">-${FORMATO_MONTO_MXN.format(simResult.descuentoFaltas)} MXN</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-400 font-bold">Proporción 7mo Día:</span>
@@ -937,19 +941,19 @@ export default function LftManager() {
                   </div>
                   <div className="flex justify-between text-xs border-b border-border pb-2">
                     <span className="text-slate-400 font-bold">Descuento 7mo Día:</span>
-                    <span className="text-danger-text font-extrabold">-${simResult.descuentoSeptimoDia.toLocaleString()} MXN</span>
+                    <span className="text-danger-text font-extrabold">-${FORMATO_MONTO_MXN.format(simResult.descuentoSeptimoDia)} MXN</span>
                   </div>
 
                   {simResult.holidayWorkedPay > 0 && (
                     <div className="flex justify-between text-xs bg-success-bg p-2 rounded-xl border border-success-text/20">
                       <span className="text-success-text font-bold">Bono Festivo (+200% LFT):</span>
-                      <span className="text-success-text font-extrabold">+${simResult.holidayWorkedPay.toLocaleString()} MXN</span>
+                      <span className="text-success-text font-extrabold">+${FORMATO_MONTO_MXN.format(simResult.holidayWorkedPay)} MXN</span>
                     </div>
                   )}
 
                   <div className="flex justify-between text-sm items-center pt-1">
                     <span className="text-text-1 font-black">Neto Semanal a Pagar:</span>
-                    <span className="text-success-text font-black text-base">${simResult.netoSemanal.toLocaleString()} MXN</span>
+                    <span className="text-success-text font-black text-base">${FORMATO_MONTO_MXN.format(simResult.netoSemanal)} MXN</span>
                   </div>
                 </div>
 

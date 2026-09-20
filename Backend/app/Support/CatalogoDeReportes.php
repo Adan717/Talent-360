@@ -95,7 +95,7 @@ class CatalogoDeReportes
         // Con dinero: sólo lo ve quien tiene la capacidad de nómina (ver `esDeNomina`).
         'nomina_historica' => [
             'titulo' => 'Pre-nómina Histórica',
-            'descripcion' => 'lo que se pagó en periodos anteriores: netos, deducciones, firmas y timbrado',
+            'descripcion' => 'lo que se pagó en periodos anteriores: netos, deducciones, firmas y estado de autorización',
             'dias' => 90,
             'nomina' => true,
         ],

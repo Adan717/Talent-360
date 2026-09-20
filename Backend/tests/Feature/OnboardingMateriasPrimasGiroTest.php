@@ -21,6 +21,9 @@ class OnboardingMateriasPrimasGiroTest extends TestCase
         $tenant = Tenant::create([
             'name' => 'Empresa Repostería Test',
             'subdomain' => 'reposteriatest',
+            // Este caso verifica la siembra completa (ATS y Academia incluidos), por lo que
+            // debe declarar el plan que realmente tiene esos módulos.
+            'plan' => 'enterprise',
             'is_active' => true,
         ]);
 

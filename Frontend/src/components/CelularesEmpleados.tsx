@@ -80,10 +80,10 @@ export const CelularesEmpleados = ({
                   </div>
                   <div>
                     <p className="font-bold text-text-1 text-sm leading-tight">{u.name}</p>
-                    <p className="text-[10px] text-text-3">{u.role}</p>
+                    <p className="text-xs text-text-3">{u.role}</p>
                   </div>
                 </div>
-                <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${statusColor}`}>
+                <div className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${statusColor}`}>
                   {statusBadge}
                 </div>
               </div>
@@ -96,11 +96,11 @@ export const CelularesEmpleados = ({
 
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   <div className="bg-white border border-border rounded-xl p-3 text-center">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Entrada</p>
+                    <p className="text-xs text-slate-400 font-bold uppercase mb-1">Entrada</p>
                     <p className="font-bold text-text-2">{config.start}</p>
                   </div>
                   <div className="bg-white border border-border rounded-xl p-3 text-center">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Salida</p>
+                    <p className="text-xs text-slate-400 font-bold uppercase mb-1">Salida</p>
                     <p className="font-bold text-text-2">{config.end}</p>
                   </div>
                 </div>

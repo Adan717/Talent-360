@@ -1,3 +1,4 @@
+import { notify } from '../lib/appDialogs';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
 import { Briefcase, CalendarDays, CircleDollarSign, CheckCircle2, Building2, ArrowRight, X, Share2, Copy, Check, Send, ChevronDown, Mail, Phone } from 'lucide-react';
@@ -139,7 +140,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
   const handleAlertSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!alertForm.email.trim() || !alertForm.jobRoleName.trim()) {
-      alert("Por favor, completa todos los campos.");
+      notify("Por favor, completa todos los campos.");
       return;
     }
     setSubmittingAlert(true);
@@ -153,7 +154,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
       setAlertForm({ email: '', jobRoleName: '' });
     } catch (err) {
       console.error("Error creating vacancy alert:", err);
-      alert("Hubo un error al guardar tu alerta. Intenta nuevamente.");
+      notify("Hubo un error al guardar tu alerta. Intenta nuevamente.");
     } finally {
       setSubmittingAlert(false);
     }
@@ -336,13 +337,13 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
 
               {/* Badges de Modalidad y Disponibilidad (Esquina Superior Izquierda/Derecha) */}
               <div className="absolute top-3 left-3 flex gap-2">
-                <span className="inline-block bg-white/95 backdrop-blur-sm text-text-1 text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm border border-white/20">
+                <span className="inline-block bg-white/95 backdrop-blur-sm text-text-1 text-xs uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm border border-white/20">
                   {vacancy.work_type}
                 </span>
               </div>
               {!isActive && (
                 <div className="absolute top-3 right-3">
-                  <span className="inline-block bg-danger-text/90 text-white text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm backdrop-blur-sm">
+                  <span className="inline-block bg-danger-text/90 text-white text-xs uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm backdrop-blur-sm">
                     Pausada / Ocupada
                   </span>
                 </div>
@@ -468,7 +469,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
         </div>
 
         {/* Línea inferior de copyright */}
-        <div className="max-w-6xl mx-auto border-t border-slate-800/80 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-text-3">
+        <div className="max-w-6xl mx-auto border-t border-slate-800/80 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-text-3">
           <span>{customSettings.footer_text || `© ${new Date().getFullYear()} ${tenant.name}. Todos los derechos reservados.`}</span>
           <div className="flex items-center gap-3">
             <button
@@ -527,13 +528,13 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
 
                 {/* Badges de Modalidad y Disponibilidad */}
                 <div className="absolute top-3 left-3 flex gap-2">
-                  <span className="inline-block bg-white/95 backdrop-blur-sm text-text-1 text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm border border-white/20">
+                  <span className="inline-block bg-white/95 backdrop-blur-sm text-text-1 text-xs uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm border border-white/20">
                     {selectedVacancy.work_type}
                   </span>
                 </div>
                 {!isActive && (
                   <div className="absolute top-3 right-3">
-                    <span className="inline-block bg-danger-text/90 text-white text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm backdrop-blur-sm">
+                    <span className="inline-block bg-danger-text/90 text-white text-xs uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg shadow-sm backdrop-blur-sm">
                       Pausada / Ocupada
                     </span>
                   </div>
@@ -553,7 +554,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                   <div className="flex items-start gap-3">
                     <CalendarDays className="text-brand shrink-0 mt-0.5" size={18} />
                     <div className="text-left">
-                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jornada y Horario</span>
+                      <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Jornada y Horario</span>
                       <span className="block text-sm font-bold text-text-2 mt-0.5">{days || 'No especificado'}</span>
                       {hours && <span className="block text-xs font-semibold text-text-3 mt-0.5">{hours}</span>}
                     </div>
@@ -561,7 +562,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                   <div className="flex items-start gap-3 border-t md:border-t-0 md:border-l border-border pt-3 md:pt-0 md:pl-4 text-left">
                     <CircleDollarSign className="text-success-text shrink-0 mt-0.5" size={18} />
                     <div className="text-left">
-                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sueldo Ofrecido</span>
+                      <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Sueldo Ofrecido</span>
                       <span className="block text-sm font-extrabold text-success-text mt-0.5">{selectedVacancy.salary_range}</span>
                     </div>
                   </div>
@@ -779,7 +780,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                 <button
                   onClick={() => {
                     if (!candidateForm.name.trim() || !candidateForm.email.trim() || !candidateForm.phone.trim()) {
-                      alert("Por favor, completa todos los campos.");
+                      notify("Por favor, completa todos los campos.");
                       return;
                     }
                     setShowSocialAuthModal(false);
@@ -931,14 +932,14 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                         acepta_aviso: aceptaAviso
                       };
                       await axiosInstance.post('/public/candidates', payload);
-                      alert(`¡Listo! Tu postulación llegó a Recursos Humanos de ${tenant.name}. Te contactarán al correo o teléfono que dejaste.`);
+                      notify(`¡Listo! Tu postulación llegó a Recursos Humanos de ${tenant.name}. Te contactarán al correo o teléfono que dejaste.`);
                       setShowInduction(false);
                       setSelectedVacancy(null);
                       setAceptaAviso(false);
                       setCandidateForm({ name: '', email: '', phone: '', answers: { q1: 'Puntualidad' } });
                     } catch (err: any) {
                       console.error("Error submitting candidate:", err);
-                      alert(err?.response?.data?.message || "Hubo un error al enviar tu postulación. Intenta nuevamente.");
+                      notify(err?.response?.data?.message || "Hubo un error al enviar tu postulación. Intenta nuevamente.");
                     }
                   }}
                   disabled={!aceptaAviso}

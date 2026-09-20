@@ -45,7 +45,7 @@ export default function QuienEstaEnTienda({ isDark = false }) {
           <Store size={14} className="text-accent" />
           <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-400">¿Quién está en tienda?</h4>
         </div>
-        <span className="text-[10px] font-black text-text-3">
+        <span className="text-xs font-black text-text-3">
           {present.length} presente{present.length === 1 ? '' : 's'}
         </span>
       </div>
@@ -66,7 +66,7 @@ export default function QuienEstaEnTienda({ isDark = false }) {
                 <p className="text-[11px] font-bold text-text-2 dark:text-slate-200 truncate flex-1 min-w-0">{u.name}</p>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className={`w-2 h-2 rounded-full ${p.dot}`} />
-                  <span className="text-[9.5px] font-bold text-text-3">{p.label}</span>
+                  <span className="text-xs font-bold text-text-3">{p.label}</span>
                 </div>
               </div>
             );

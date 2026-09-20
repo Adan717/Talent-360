@@ -1,3 +1,4 @@
+import { notify } from '../lib/appDialogs';
 import React, { useState, useEffect } from 'react';
 import { Save, Image as ImageIcon, Video, Link, MessageSquare, Smartphone, CheckCircle2, ClipboardList, Check } from 'lucide-react';
 import axiosInstance from '../lib/axios';
@@ -90,7 +91,7 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
     } catch (err) {
       console.error(err);
       setIsSaving(false);
-      alert("Error al guardar la configuración de bienvenida");
+      notify("Error al guardar la configuración de bienvenida");
     }
   };
 
@@ -108,7 +109,7 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
       setIsImporting(true);
       const appState = useAppStore.getState();
       if (appState.isSandboxMode) {
-          alert(`Importación simulada: ${selectedTemplates.length} puestos agregados.`);
+          notify(`Importación simulada: ${selectedTemplates.length} puestos agregados.`);
           finishAssistant();
           return;
       }
@@ -117,11 +118,11 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
           axiosInstance.post(`/job-role-templates/${id}/import`)
         )
       );
-      alert("Puestos importados exitosamente.");
+      notify("Puestos importados exitosamente.");
       finishAssistant();
     } catch (e) {
       console.error("Failed to import templates", e);
-      alert("Ocurrió un error al importar los puestos seleccionados.");
+      notify("Ocurrió un error al importar los puestos seleccionados.");
     } finally {
       setIsImporting(false);
     }
@@ -370,7 +371,7 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
                         <div className="flex justify-between items-start">
                           <div>
                             <h4 className="font-bold text-text-1 text-sm leading-snug">{tpl.name}</h4>
-                            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-0.5">{tpl.area}</p>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mt-0.5">{tpl.area}</p>
                           </div>
                           <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
                             isSelected ? 'border-accent bg-accent text-white' : 'border-slate-300'

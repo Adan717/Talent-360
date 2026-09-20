@@ -75,7 +75,7 @@ export const LateJustificationsPanel = () => {
         <AlertTriangle size={20} className="shrink-0" aria-hidden="true" />
         <div>
           <p className="font-black text-xs sm:text-sm">Justificantes de Retardo</p>
-          <p className="text-[9px] sm:text-[10px] text-warning-text opacity-90 leading-tight">
+          <p className="text-xs sm:text-xs text-warning-text opacity-90 leading-tight">
             Aprobar exime el descuento de ese retardo en la nómina
           </p>
         </div>
@@ -89,15 +89,15 @@ export const LateJustificationsPanel = () => {
             <div className="flex flex-col text-left">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-black text-white">{r.employee_name || 'Colaborador'}</span>
-                <span className="text-[9px] text-warning-text shrink-0">
+                <span className="text-xs text-warning-text shrink-0">
                   {r.date}
                   {r.requested_late_minutes != null && <> · {r.requested_late_minutes} min</>}
                 </span>
               </div>
-              <span className="text-[10px] text-warning-text italic leading-snug mt-0.5">"{r.reason}"</span>
+              <span className="text-xs text-warning-text italic leading-snug mt-0.5">"{r.reason}"</span>
             </div>
             {Number(r.user_id) === Number(currentUser?.id) ? (
-              <span className="text-[9.5px] font-bold text-warning-text bg-warning-text/40 border border-warning-text/30 rounded-lg px-2.5 py-1.5">
+              <span className="text-xs font-bold text-warning-text bg-warning-text/40 border border-warning-text/30 rounded-lg px-2.5 py-1.5">
                 Tu justificante · debe resolverlo otro admin o supervisor
               </span>
             ) : (
@@ -105,14 +105,14 @@ export const LateJustificationsPanel = () => {
                 <button
                   onClick={() => resolve(r.id, 'approved')}
                   disabled={resolvingId === r.id}
-                  className="bg-success-icon hover:bg-success-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-success-icon hover:bg-success-text text-white font-extrabold text-xs px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                    Aprobar
                 </button>
                 <button
                   onClick={() => resolve(r.id, 'rejected')}
                   disabled={resolvingId === r.id}
-                  className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-xs px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                    Rechazar
                 </button>

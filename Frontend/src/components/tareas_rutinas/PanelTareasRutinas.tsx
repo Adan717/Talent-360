@@ -1,3 +1,4 @@
+import { notify } from '../../lib/appDialogs';
 import React, { useState, useEffect } from 'react';
 import { Settings, Clock, Lock, Brain, Bot, Rocket, Plus, X, Camera, Hash, FileText, Search, LayoutList, Workflow, Armchair, Mic, Check, ChevronRight, ChevronLeft, Sparkles, Briefcase, ListFilter, Gauge, ShieldCheck, AlertTriangle, CheckCircle2, GraduationCap, ClipboardList, Trash2 } from 'lucide-react';
 import { MobileModuleBottomDock } from '../common/MobileModuleBottomDock';
@@ -158,7 +159,7 @@ export function PanelTareasRutinas() {
     const handleAiQuickMic = () => {
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            alert('Tu navegador no soporta dictado por voz. Puedes escribir la descripción de la tarea directamente.');
+            notify('Tu navegador no soporta dictado por voz. Puedes escribir la descripción de la tarea directamente.');
             return;
         }
         const rec = new SpeechRecognition();
@@ -211,7 +212,7 @@ export function PanelTareasRutinas() {
             setCreatorStep(1);
         } catch (e) {
             console.error('Error al interpretar la tarea por IA', e);
-            alert('No se pudo interpretar la descripción. Puedes llenar el formulario manualmente.');
+            notify('No se pudo interpretar la descripción. Puedes llenar el formulario manualmente.');
         } finally {
             setAiQuickLoading(false);
         }
@@ -429,7 +430,7 @@ export function PanelTareasRutinas() {
                           >
                               <LayoutList size={18} className={activeTab === 'tareas' ? 'text-accent' : 'text-slate-400'} />
                               <span className="whitespace-nowrap text-center leading-tight">Tareas</span>
-                              <span className={`relative px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                              <span className={`relative px-1.5 py-0.5 rounded-full text-xs font-black leading-none ${
                                   activeTab === 'tareas'
                                       ? 'bg-accent-soft text-navy-800 border border-border'
                                       : 'bg-slate-200 text-text-2 border border-slate-300'
@@ -447,7 +448,7 @@ export function PanelTareasRutinas() {
                           >
                               <Workflow size={18} className={activeTab === 'rutinas' ? 'text-accent' : 'text-slate-400'} />
                               <span className="whitespace-nowrap text-center leading-tight">Rutinas</span>
-                              <span className={`relative px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                              <span className={`relative px-1.5 py-0.5 rounded-full text-xs font-black leading-none ${
                                   activeTab === 'rutinas'
                                       ? 'bg-accent-soft text-navy-800 border border-border'
                                       : 'bg-slate-200 text-text-2 border border-slate-300'
@@ -542,7 +543,7 @@ export function PanelTareasRutinas() {
                         {/* Barra de Filtros Rápidos (Puesto y Estado) */}
                         <div className="flex flex-wrap items-center gap-3 bg-page/60 p-3.5 rounded-2xl border border-border">
                             <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold text-text-3 uppercase tracking-wider">Filtrar por:</span>
+                                <span className="text-xs font-bold text-text-3 uppercase tracking-wider">Filtrar por:</span>
                             </div>
 
                             {/* Selector de Puesto / Rol */}
@@ -561,7 +562,7 @@ export function PanelTareasRutinas() {
                                         </option>
                                     ))}
                                 </select>
-                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▼</div>
+                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">▼</div>
                             </div>
 
                             {/* Selector de Estado de Validación */}
@@ -576,7 +577,7 @@ export function PanelTareasRutinas() {
                                     <option value="validated">Validadas</option>
                                     <option value="pending">Pendientes de revisión</option>
                                 </select>
-                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▼</div>
+                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">▼</div>
                             </div>
 
                             {/* Limpiar Filtros */}
@@ -604,48 +605,48 @@ export function PanelTareasRutinas() {
                                     <button onClick={() => handleEditTaskClick(t)} className="text-slate-400 hover:text-accent transition-colors" title="Editar Tarea"><Settings size={18}/></button>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mb-4">
-                                    <span className="px-2.5 py-1 bg-page text-text-2 text-[10px] font-bold rounded-md flex items-center gap-1">
+                                    <span className="px-2.5 py-1 bg-page text-text-2 text-xs font-bold rounded-md flex items-center gap-1">
                                         <Clock size={12}/> {t.estimatedMins} min
                                     </span>
                                     {t.priority === 'bloqueante' && (
-                                        <span className="px-2.5 py-1 bg-danger-bg text-danger-text text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-danger-bg text-danger-text text-xs font-bold rounded-md flex items-center gap-1">
                                             <Lock size={12}/> Bloqueante
                                         </span>
                                     )}
                                     {t.isAutoCapture && (
-                                        <span className="px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-navy-50 text-accent text-xs font-bold rounded-md flex items-center gap-1">
                                             <Brain size={12}/> Autocaptura
                                         </span>
                                     )}
                                     {t.canBeDoneSitting && (
-                                        <span className="px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-navy-50 text-accent text-xs font-bold rounded-md flex items-center gap-1">
                                             <Armchair size={12}/> Ley Silla (Sentado)
                                         </span>
                                     )}
                                     {t.assistantType !== 'ninguno' && (
-                                        <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-xs font-bold rounded-md flex items-center gap-1">
                                             <Bot size={12}/> Asistente
                                         </span>
                                     )}
                                     {t.validationMode === 'auto' ? (
-                                        <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-success-bg text-success-text text-xs font-bold rounded-md flex items-center gap-1">
                                             <Gauge size={12} /> Auto-aprobación
                                         </span>
                                     ) : t.validationMode === 'dynamic' ? (
-                                        <span className="px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-navy-50 text-accent text-xs font-bold rounded-md flex items-center gap-1">
                                             <ShieldCheck size={12} /> Supervisión dinámica
                                         </span>
                                     ) : (
-                                        <span className="px-2.5 py-1 bg-page text-text-2 text-[10px] font-bold rounded-md flex items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-page text-text-2 text-xs font-bold rounded-md flex items-center gap-1">
                                             <Lock size={12} /> Supervisión forzada
                                         </span>
                                     )}
                                     {t.is_validated ? (
-                                        <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-bold rounded-md flex items-center gap-1 border border-success-text/50">
+                                        <span className="px-2.5 py-1 bg-success-bg text-success-text text-xs font-bold rounded-md flex items-center gap-1 border border-success-text/50">
                                             <CheckCircle2 size={12} /> Validada
                                         </span>
                                     ) : (
-                                        <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-[10px] font-bold rounded-md flex items-center gap-1 border border-warning-text/50">
+                                        <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-xs font-bold rounded-md flex items-center gap-1 border border-warning-text/50">
                                             <AlertTriangle size={12} /> Pendiente
                                         </span>
                                     )}
@@ -807,14 +808,14 @@ export function PanelTareasRutinas() {
                                     {/* Vista previa en vivo: así la verá el colaborador en su lista de tareas */}
                                     <div className="p-3.5 rounded-xl border border-dashed border-slate-300 bg-page/60 flex items-center justify-between gap-3">
                                         <div className="min-w-0">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Vista previa para el colaborador</p>
+                                            <p className="text-xs font-bold text-slate-400 uppercase mb-1">Vista previa para el colaborador</p>
                                             <p className="text-sm font-extrabold text-text-1 truncate">{newTaskTitle || 'Título de la tarea…'}</p>
                                         </div>
                                         <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-white border border-border text-text-3">{newTaskMins} min</span>
-                                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-navy-50 border border-border text-accent">{CATEGORY_LABELS[effectiveCategory]}</span>
+                                            <span className="text-xs font-black uppercase px-2 py-0.5 rounded-md bg-white border border-border text-text-3">{newTaskMins} min</span>
+                                            <span className="text-xs font-black uppercase px-2 py-0.5 rounded-md bg-navy-50 border border-border text-accent">{CATEGORY_LABELS[effectiveCategory]}</span>
                                             {newTaskPriority === 'bloqueante' && (
-                                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-danger-bg border border-danger-text/20 text-danger-text">Bloqueante</span>
+                                                <span className="text-xs font-black uppercase px-2 py-0.5 rounded-md bg-danger-bg border border-danger-text/20 text-danger-text">Bloqueante</span>
                                             )}
                                         </div>
                                     </div>
@@ -845,7 +846,7 @@ export function PanelTareasRutinas() {
                                                 </button>
                                             ))}
                                             {newTaskCategoryOverride === null && (
-                                                <span className="text-[10px] text-slate-400 italic">(detectada automáticamente por el título)</span>
+                                                <span className="text-xs text-slate-400 italic">(detectada automáticamente por el título)</span>
                                             )}
                                         </div>
 
@@ -908,7 +909,7 @@ export function PanelTareasRutinas() {
                                                     type="time"
                                                     className="w-full p-3.5 sm:p-4 rounded-xl border border-border focus:ring-2 focus-visible:ring-focus-ring focus:outline-none text-sm"
                                                 />
-                                                <p className="text-[10px] text-slate-400 mt-1">Opcional — ordena el plan de trabajo del día por hora.</p>
+                                                <p className="text-xs text-slate-400 mt-1">Opcional — ordena el plan de trabajo del día por hora.</p>
                                             </div>
                                         </div>
 
@@ -929,14 +930,14 @@ export function PanelTareasRutinas() {
                                                     {/* Decía "(IA)": no hay IA aquí. Solo guarda cuánto tardó cada quien
                                                         de verdad para afinar el tiempo estimado con datos reales. */}
                                                     <span className="font-bold text-brand-dark block text-xs flex items-center gap-1"><Brain size={14}/> Medir tiempo real</span>
-                                                    <span className="text-[10px] text-accent">Guarda cuánto tardó cada quien para afinar el estimado.</span>
+                                                    <span className="text-xs text-accent">Guarda cuánto tardó cada quien para afinar el estimado.</span>
                                                 </div>
                                             </label>
                                             <label className="flex items-center gap-3 p-3.5 bg-navy-50/50 border border-border rounded-xl cursor-pointer hover:bg-accent-soft/50 transition-colors">
                                                 <input type="checkbox" checked={newTaskCanBeDoneSitting} onChange={e => setNewTaskCanBeDoneSitting(e.target.checked)} className="w-5 h-5 text-accent rounded border-slate-400" />
                                                 <div>
                                                     <span className="font-bold text-brand-dark block text-xs flex items-center gap-1"><Armchair size={14}/> Tarea Sentada (Ley Silla)</span>
-                                                    <span className="text-[10px] text-accent">Apta para tomar sentado.</span>
+                                                    <span className="text-xs text-accent">Apta para tomar sentado.</span>
                                                 </div>
                                             </label>
                                         </div>
@@ -969,13 +970,13 @@ export function PanelTareasRutinas() {
                                                         >
                                                             <opt.Icon size={18} className={active ? 'text-accent' : 'text-slate-400'} />
                                                             <span className="text-[11px] font-bold">{opt.label}</span>
-                                                            <span className="text-[8.5px] text-slate-400 leading-tight">{opt.hint}</span>
+                                                            <span className="text-xs text-slate-400 leading-tight">{opt.hint}</span>
                                                         </button>
                                                     );
                                                 })}
                                             </div>
                                             {newTaskValidationMode === 'ai_comparison' && newTaskAssistant !== 'evidencia_foto' && (
-                                                <p className="text-[10px] text-warning-text font-bold mt-1.5">La Comparación (IA) requiere que el Mini-Asistente sea "Evidencia Fotográfica" (más abajo).</p>
+                                                <p className="text-xs text-warning-text font-bold mt-1.5">La Comparación (IA) requiere que el Mini-Asistente sea "Evidencia Fotográfica" (más abajo).</p>
                                             )}
                                         </div>
 
@@ -983,7 +984,7 @@ export function PanelTareasRutinas() {
                                         {newTaskValidationMode === 'ai_comparison' && newTaskAssistant === 'evidencia_foto' && (
                                             <div className="p-4 sm:p-5 bg-navy-50/50 rounded-2xl border border-border space-y-3">
                                                 <label className="text-sm font-bold text-brand-dark flex items-center gap-2"><Bot size={16} /> Imágenes de Referencia (3-5)</label>
-                                                <p className="text-[10px] text-accent">La IA comparará la foto del empleado contra estas imágenes al completar la tarea.</p>
+                                                <p className="text-xs text-accent">La IA comparará la foto del empleado contra estas imágenes al completar la tarea.</p>
                                                 <div className="flex flex-wrap gap-2">
                                                     {newTaskAiReferenceImages.map((img, idx) => (
                                                         <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-border">
@@ -991,7 +992,7 @@ export function PanelTareasRutinas() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setNewTaskAiReferenceImages(prev => prev.filter((_, i) => i !== idx))}
-                                                                className="absolute top-0 right-0 w-4 h-4 bg-danger-text text-white rounded-bl-md flex items-center justify-center text-[9px] border-none cursor-pointer"
+                                                                className="absolute top-0 right-0 w-4 h-4 bg-danger-text text-white rounded-bl-md flex items-center justify-center text-xs border-none cursor-pointer"
                                                             >
                                                                 <X size={11} />
                                                             </button>
@@ -1022,7 +1023,7 @@ export function PanelTareasRutinas() {
                                                     )}
                                                 </div>
                                                 {newTaskAiReferenceImages.length > 0 && newTaskAiReferenceImages.length < 3 && (
-                                                    <p className="text-[10px] text-warning-text font-bold">Se recomiendan al menos 3 imágenes para una comparación confiable.</p>
+                                                    <p className="text-xs text-warning-text font-bold">Se recomiendan al menos 3 imágenes para una comparación confiable.</p>
                                                 )}
                                                 <label className="text-sm font-bold text-brand-dark block mt-2">Descripción de Tolerancia</label>
                                                 <textarea
@@ -1069,7 +1070,7 @@ export function PanelTareasRutinas() {
                                                     <option key={c.id} value={c.id}>{c.title}</option>
                                                 ))}
                                             </select>
-                                            <p className="text-[10px] text-slate-400 mt-2">Antes de iniciar esta tarea, el colaborador verá el video de esa lección — cuenta como progreso real en su Academia.</p>
+                                            <p className="text-xs text-slate-400 mt-2">Antes de iniciar esta tarea, el colaborador verá el video de esa lección — cuenta como progreso real en su Academia.</p>
                                         </div>
                                     </div>
                                     )}
@@ -1280,7 +1281,7 @@ export function PanelTareasRutinas() {
                                                     />
                                                     <div className="text-left">
                                                         <span className="block font-bold text-xs sm:text-sm text-text-1">{t.title}</span>
-                                                        <span className="text-[10px] sm:text-xs text-text-3 flex items-center gap-1 mt-1"><Clock size={10}/> {t.estimatedMins} min {t.priority === 'bloqueante' && '• Bloqueante'}</span>
+                                                        <span className="text-xs sm:text-xs text-text-3 flex items-center gap-1 mt-1"><Clock size={10}/> {t.estimatedMins} min {t.priority === 'bloqueante' && '• Bloqueante'}</span>
                                                     </div>
                                                 </label>
                                             ))}

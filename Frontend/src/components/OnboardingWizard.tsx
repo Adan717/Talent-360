@@ -4,6 +4,7 @@ import axiosInstance from '../lib/axios';
 import OrganigramaPuestos from './OrganigramaPuestos';
 import { useAppStore } from '../store/useAppStore';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
+import { promptForText, notify } from '../lib/appDialogs';
 
 interface OnboardingWizardProps {
   onComplete: () => void;
@@ -32,7 +33,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     { id: 'reportes', name: 'IA Asistente & Analítica', desc: 'Fotos por IA, voz y KPIs', icon: Sparkles, tag: 'Pro / Ent', color: 'purple' },
     { id: 'vault', name: 'Bóveda Cifrada Vault', desc: 'Firmas, contratos y respaldos', icon: Lock, tag: 'Enterprise', color: 'amber' },
     { id: 'simulador', name: 'Simulador LFT', desc: 'Ley Silla, horas extra y turnos', icon: Scale, tag: 'Pro / Ent', color: 'indigo' },
-    { id: 'billing', name: 'Facturación & Timbres SAT', desc: 'Nómina fiscal, CSD y facturas', icon: Receipt, tag: 'Pro / Ent', color: 'blue' }
+    { id: 'facturacion', name: 'Pre-nómina para tu contador', desc: 'Referencias fiscales y exportación', icon: Receipt, tag: 'Pro / Ent', color: 'blue' }
   ];
 
   const activePlanModules = allPlatformModules.filter(mod => isModuleUnlocked(mod.id));
@@ -788,11 +789,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const handleSendEmployeeWhatsApp = async () => {
     let phone = empPhone.trim();
     if (!phone) {
-      const userVal = prompt("Ingresa el WhatsApp del colaborador a 10 dígitos (ej. 462 123 4567):", "");
+      const userVal = await promptForText("Ingresa el WhatsApp del colaborador a 10 dígitos (ej. 462 123 4567):", "", { title: 'WhatsApp del colaborador', placeholder: '462 123 4567' });
       if (!userVal) return;
       const cleanPhone = getCleanDbPhone(userVal);
       if (cleanPhone.length !== 12 || !cleanPhone.startsWith('52')) {
-        alert("Número inválido. Deben ser 10 dígitos.");
+        notify("Número inválido. Deben ser 10 dígitos.");
         return;
       }
       phone = cleanPhone;
@@ -814,11 +815,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const handleSendAdminWhatsApp = async () => {
     let phone = adminPhone.trim();
     if (!phone) {
-      const userVal = prompt("Ingresa tu WhatsApp a 10 dígitos (ej. 462 123 4567):", "");
+      const userVal = await promptForText("Ingresa tu WhatsApp a 10 dígitos (ej. 462 123 4567):", "", { title: 'WhatsApp del administrador', placeholder: '462 123 4567' });
       if (!userVal) return;
       const cleanPhone = getCleanDbPhone(userVal);
       if (cleanPhone.length !== 12 || !cleanPhone.startsWith('52')) {
-        alert("Número inválido. Deben ser 10 dígitos.");
+        notify("Número inválido. Deben ser 10 dígitos.");
         return;
       }
       phone = cleanPhone;
@@ -951,7 +952,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h4 className="font-black text-text-1 text-sm sm:text-base tracking-tight">{planInfo.title}</h4>
-                          <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border shrink-0 ${planInfo.badgeColor}`}>
+                          <span className={`text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border shrink-0 ${planInfo.badgeColor}`}>
                             {planInfo.badge}
                           </span>
                         </div>
@@ -1004,9 +1005,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center justify-between gap-1 mb-0.5">
                                     <span className="text-[11px] font-extrabold text-text-1 truncate">{mod.name}</span>
-                                    <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${badgeColor}`}>{unlocked ? 'Activo' : mod.tag}</span>
+                                    <span className={`text-xs font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${badgeColor}`}>{unlocked ? 'Activo' : mod.tag}</span>
                                   </div>
-                                  <p className="text-[10px] text-text-3 line-clamp-1">{mod.desc}</p>
+                                  <p className="text-xs text-text-3 line-clamp-1">{mod.desc}</p>
                                 </div>
                               </div>
                             );
@@ -1038,7 +1039,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <Sparkles size={20} className="text-accent" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-black text-accent tracking-wider uppercase">Paso 1 de 4 • Estructura</span>
+                    <span className="text-xs font-black text-accent tracking-wider uppercase">Paso 1 de 4 • Estructura</span>
                     <h3 className="text-lg font-black text-text-1 tracking-tight">
                       {subStep === 'giro' && '1A. Giro Comercial y Especialidad'}
                       {subStep === 'puestos' && '1B. Puestos de Trabajo Sugeridos'}
@@ -1053,35 +1054,35 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <button
                     type="button"
                     onClick={() => setSubStep('giro')}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'giro' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
+                    className={`px-2 py-1 rounded-lg text-xs font-black transition-all ${subStep === 'giro' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
                   >
                     1. Giro
                   </button>
                   <button
                     type="button"
                     onClick={() => setSubStep('puestos')}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'puestos' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
+                    className={`px-2 py-1 rounded-lg text-xs font-black transition-all ${subStep === 'puestos' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
                   >
                     2. Puestos
                   </button>
                   <button
                     type="button"
                     onClick={() => setSubStep('tareas')}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'tareas' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
+                    className={`px-2 py-1 rounded-lg text-xs font-black transition-all ${subStep === 'tareas' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
                   >
                     3. Tareas
                   </button>
                   <button
                     type="button"
                     onClick={() => setSubStep('cursos')}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'cursos' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
+                    className={`px-2 py-1 rounded-lg text-xs font-black transition-all ${subStep === 'cursos' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
                   >
                     4. Cursos
                   </button>
                   <button
                     type="button"
                     onClick={() => setSubStep('organigrama')}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'organigrama' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
+                    className={`px-2 py-1 rounded-lg text-xs font-black transition-all ${subStep === 'organigrama' ? 'bg-accent text-white shadow-xs' : 'text-text-3 hover:text-text-1'}`}
                   >
                     5. Organigrama
                   </button>
@@ -1213,7 +1214,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       />
                       <label
                         htmlFor="customNichoDesc"
-                        className="absolute left-4 text-[10px] font-bold text-text-3 transition-all pointer-events-none -top-1 bg-white px-1 peer-placeholder-shown:text-xs peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3 peer-focus:-top-1 peer-focus:text-[10px] peer-focus:text-accent"
+                        className="absolute left-4 text-xs font-bold text-text-3 transition-all pointer-events-none -top-1 bg-white px-1 peer-placeholder-shown:text-xs peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3 peer-focus:-top-1 peer-focus:text-xs peer-focus:text-accent"
                       >
                         Describe tu giro de negocio (ej: Clínica Vet, Escuela, Gimnasio)
                       </label>
@@ -1275,14 +1276,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         <button
                           type="button"
                           onClick={() => setSelectedPuestos(activePreset.puestos.map(p => p.name))}
-                          className="text-[10px] font-bold text-accent hover:text-accent bg-navy-50 px-2 py-1 rounded-lg"
+                          className="text-xs font-bold text-accent hover:text-accent bg-navy-50 px-2 py-1 rounded-lg"
                         >
                           Todos
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedPuestos([])}
-                          className="text-[10px] font-bold text-text-3 hover:text-text-2 bg-page px-2 py-1 rounded-lg"
+                          className="text-xs font-bold text-text-3 hover:text-text-2 bg-page px-2 py-1 rounded-lg"
                         >
                           Ninguno
                         </button>
@@ -1310,10 +1311,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                             />
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-extrabold truncate">{puesto.name}</p>
-                              <span className="text-[10px] text-text-3 font-medium">{puesto.area}</span>
+                              <span className="text-xs text-text-3 font-medium">{puesto.area}</span>
                             </div>
                             {puesto.esAperturador && (
-                              <span className="text-[8px] bg-warning-bg text-warning-text border border-warning-text/20 px-1.5 py-0.5 rounded font-black shrink-0">Llaves</span>
+                              <span className="text-xs bg-warning-bg text-warning-text border border-warning-text/20 px-1.5 py-0.5 rounded font-black shrink-0">Llaves</span>
                             )}
                           </label>
                         );
@@ -1358,14 +1359,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         <button
                           type="button"
                           onClick={() => setSelectedTareas(activePreset.tareas.map(t => t.title))}
-                          className="text-[10px] font-bold text-accent hover:text-accent bg-navy-50 px-2 py-1 rounded-lg"
+                          className="text-xs font-bold text-accent hover:text-accent bg-navy-50 px-2 py-1 rounded-lg"
                         >
                           Todas
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedTareas([])}
-                          className="text-[10px] font-bold text-text-3 hover:text-text-2 bg-page px-2 py-1 rounded-lg"
+                          className="text-xs font-bold text-text-3 hover:text-text-2 bg-page px-2 py-1 rounded-lg"
                         >
                           Ninguna
                         </button>
@@ -1401,7 +1402,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                             }`}
                           >
                             <span>{p.name.split(' ')[0]}</span>
-                            <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${isTabActive ? 'bg-navy-800 text-white' : 'bg-slate-200 text-text-2'}`}>
+                            <span className={`text-xs px-1.5 py-0.2 rounded-full font-black ${isTabActive ? 'bg-navy-800 text-white' : 'bg-slate-200 text-text-2'}`}>
                               {roleTaskCount}
                             </span>
                           </button>
@@ -1432,7 +1433,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                                 className="w-4 h-4 rounded text-accent focus-visible:ring-focus-ring border-slate-300 shrink-0"
                               />
                               <span className="text-xs font-medium leading-tight flex-1">{tarea.title}</span>
-                              <span className="text-[9px] bg-page text-text-2 px-2 py-0.5 rounded-lg font-bold shrink-0">{tarea.target_role_name}</span>
+                              <span className="text-xs bg-page text-text-2 px-2 py-0.5 rounded-lg font-bold shrink-0">{tarea.target_role_name}</span>
                             </label>
                           );
                         })}
@@ -1443,11 +1444,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                     <div className="bg-navy-50/50 p-2.5 rounded-xl border border-border flex flex-col gap-1">
                       <span className="font-extrabold text-accent flex items-center gap-1"> Cursos Incluidos</span>
-                      <span className="text-text-2 text-[10px] truncate">{activePreset.cursos.map(c => c.title).join(' • ')}</span>
+                      <span className="text-text-2 text-xs truncate">{activePreset.cursos.map(c => c.title).join(' • ')}</span>
                     </div>
                     <div className="bg-success-bg/50 p-2.5 rounded-xl border border-success-text/20 flex flex-col gap-1">
                       <span className="font-extrabold text-success-text flex items-center gap-1"> Vacantes ATS</span>
-                      <span className="text-text-2 text-[10px] truncate">{activePreset.vacantes.map(v => v.title).join(' • ')}</span>
+                      <span className="text-text-2 text-xs truncate">{activePreset.vacantes.map(v => v.title).join(' • ')}</span>
                     </div>
                   </div>
 
@@ -1487,14 +1488,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         <button
                           type="button"
                           onClick={() => setSelectedCursos(activePreset.cursos.map(c => c.title))}
-                          className="text-[10px] font-bold text-accent hover:text-accent bg-navy-50 px-2 py-1 rounded-lg"
+                          className="text-xs font-bold text-accent hover:text-accent bg-navy-50 px-2 py-1 rounded-lg"
                         >
                           Todos
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedCursos([])}
-                          className="text-[10px] font-bold text-text-3 hover:text-text-2 bg-page px-2 py-1 rounded-lg"
+                          className="text-xs font-bold text-text-3 hover:text-text-2 bg-page px-2 py-1 rounded-lg"
                         >
                           Ninguno
                         </button>
@@ -1530,11 +1531,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-bold leading-tight mb-1">{curso.title}</p>
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className={`text-[9px] px-2 py-0.5 rounded font-black ${isLft ? 'bg-warning-bg text-warning-text border border-warning-text/20' : 'bg-navy-50 text-accent border border-border'}`}>
+                                <span className={`text-xs px-2 py-0.5 rounded font-black ${isLft ? 'bg-warning-bg text-warning-text border border-warning-text/20' : 'bg-navy-50 text-accent border border-border'}`}>
                                   {isLft ? ' Ley Silla / LFT' : ' Capacitación Giro'}
                                 </span>
                                 {curso.role && (
-                                  <span className="text-[9px] text-text-3 font-medium">Dirigido a: {curso.role}</span>
+                                  <span className="text-xs text-text-3 font-medium">Dirigido a: {curso.role}</span>
                                 )}
                               </div>
                             </div>
@@ -1737,7 +1738,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       WhatsApp del Administrador (opcional)
                     </label>
                   </div>
-                  <p className="text-[9px] text-slate-400 mt-1 pl-1">
+                  <p className="text-xs text-slate-400 mt-1 pl-1">
                     Ingresa los 10 dígitos si deseas recibir alertas y resúmenes de tu sucursal por WhatsApp.
                   </p>
                 </div>
@@ -1788,7 +1789,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <span className="text-xs font-extrabold text-text-3 uppercase tracking-wider block mb-3">Horario de Operación (Tienda)</span>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hora de Apertura</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase block mb-1">Hora de Apertura</label>
                       <input
                         type="time"
                         value={storeOpenTime}
@@ -1797,7 +1798,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hora de Cierre</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase block mb-1">Hora de Cierre</label>
                       <input
                         type="time"
                         value={storeCloseTime}
@@ -1913,7 +1914,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       WhatsApp del Colaborador (Obligatorio)
                     </label>
                   </div>
-                  <p className="text-[9px] text-slate-400 mt-1 pl-1">
+                  <p className="text-xs text-slate-400 mt-1 pl-1">
                     Solo ingresa los 10 dígitos. El prefijo de México (+52) se agrega automáticamente.
                   </p>
                 </div>
@@ -1934,7 +1935,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   >
                     Fecha de Ingreso (Obligatoria)
                   </label>
-                  <p className="text-[9px] text-slate-400 mt-1 pl-1">
+                  <p className="text-xs text-slate-400 mt-1 pl-1">
                     El día que empieza a trabajar. De aquí salen su antigüedad y el seguimiento de su inducción.
                   </p>
                 </div>
@@ -2003,12 +2004,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       />
                     </div>
                     <div className="text-left space-y-1">
-                      <span className="text-[10px] font-bold text-accent tracking-wider uppercase">Acceso Móvil Instantáneo (PWA)</span>
+                      <span className="text-xs font-bold text-accent tracking-wider uppercase">Acceso Móvil Instantáneo (PWA)</span>
                       <h4 className="font-bold text-text-1 text-sm">Escanea para activar la cuenta de {empName}</h4>
                       <p className="text-[11px] text-text-3 leading-normal">
                         Apunta la cámara de tu celular aquí para abrir la App del reloj checador en tu móvil, o usa el PIN temporal <strong className="text-accent tracking-widest">{createdEmpPin}</strong>.
                       </p>
-                      <div className="pt-1 text-[10px] text-slate-400 break-all select-all font-mono">
+                      <div className="pt-1 text-xs text-slate-400 break-all select-all font-mono">
                         Enlace: {`${getQrOrigin(qrIpOverride)}/invite?pin=${createdEmpPin}`}
                       </div>
                     </div>
@@ -2170,7 +2171,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     />
                     <div>
                       <span className="font-bold block">Puestos de trabajo de prueba</span>
-                      <span className="text-[10px] text-slate-400">Inserta 4 puestos (Gerente, Cajero, etc.) con sus horarios y tareas automáticas.</span>
+                      <span className="text-xs text-slate-400">Inserta 4 puestos (Gerente, Cajero, etc.) con sus horarios y tareas automáticas.</span>
                     </div>
                   </label>
 
@@ -2184,7 +2185,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     />
                     <div>
                       <span className={`font-bold block ${!loadDemoRoles ? 'text-slate-400' : ''}`}>Colaboradores adicionales demo</span>
-                      <span className="text-[10px] text-slate-400">Agrega 5 empleados ficticios asignados a los puestos demo para ver flujo en tiempo real.</span>
+                      <span className="text-xs text-slate-400">Agrega 5 empleados ficticios asignados a los puestos demo para ver flujo en tiempo real.</span>
                     </div>
                   </label>
                 </div>

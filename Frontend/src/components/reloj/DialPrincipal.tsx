@@ -317,7 +317,7 @@ export default function DialPrincipal({
                 aria-label={`Tiempo trabajado ${workedElapsedLabel}`}
               >
                 <span className="font-black tracking-tight text-success-text tabular-nums">{workedElapsedLabel}</span>
-                <span className={`font-bold uppercase tracking-wider text-success-text/70 ${isMobile ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1'}`}>
+                <span className={`font-bold uppercase tracking-wider text-success-text/70 ${isMobile ? 'text-xs mt-0.5' : 'text-xs mt-1'}`}>
                   Tiempo trabajado
                 </span>
               </div>
@@ -355,7 +355,7 @@ export default function DialPrincipal({
                 {getDialBottomLabel()}
               </span>
               {btnProps.subtext && !['entrada', 'verifying_gps', 'verifying_selfie', 'success_check', 'break_start', 'break_end', 'meal_prompt', 'meal_start', 'exit'].includes(btnProps.iconKey || '') && (
-                <span className={`text-[9px] font-extrabold mt-0.5 leading-none block select-none uppercase truncate max-w-full ${isGpsError ? 'text-danger-text' : 'text-text-3 dark:text-slate-400'}`}>
+                <span className={`text-xs font-extrabold mt-0.5 leading-none block select-none uppercase truncate max-w-full ${isGpsError ? 'text-danger-text' : 'text-text-3 dark:text-slate-400'}`}>
                   {btnProps.subtext}
                 </span>
               )}
@@ -386,7 +386,7 @@ export default function DialPrincipal({
           type="button"
           onClick={onGoToRequiredCourseClick}
           aria-label="Ir al curso obligatorio de Puntualidad en la Academia para desbloquear tu fichaje"
-          className="mt-3.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border hover:border-navy-300 text-accent dark:text-navy-300 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
+          className="mt-3.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border hover:border-navy-300 text-accent dark:text-navy-300 font-extrabold text-xs uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
         >
            Ir a la Academia
         </button>
@@ -397,7 +397,7 @@ export default function DialPrincipal({
           type="button"
           onClick={onMealSwapClick}
           aria-label="Intercambiar turno de comida con un compañero"
-          className="mt-3.5 py-1.5 px-4 bg-warning-bg dark:bg-warning-text/20 border border-warning-text/20 hover:border-warning-text text-warning-text dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-warning-bg transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+          className="mt-3.5 py-1.5 px-4 bg-warning-bg dark:bg-warning-text/20 border border-warning-text/20 hover:border-warning-text text-warning-text dark:text-amber-400 font-extrabold text-xs uppercase tracking-wider rounded-full shadow-sm hover:bg-warning-bg transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
           <Coffee size={12} className="text-warning-text" />
           Intercambiar Comida
@@ -409,7 +409,7 @@ export default function DialPrincipal({
           type="button"
           onClick={onEarlyDepartureClick}
           aria-label="Registrar salida anticipada, antes del fin de tu turno"
-          className="mt-2.5 py-1.5 px-4 bg-danger-bg dark:bg-danger-text/20 border border-danger-text/20 hover:border-danger-text text-danger-text dark:text-rose-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-danger-bg transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
+          className="mt-2.5 py-1.5 px-4 bg-danger-bg dark:bg-danger-text/20 border border-danger-text/20 hover:border-danger-text text-danger-text dark:text-rose-400 font-extrabold text-xs uppercase tracking-wider rounded-full shadow-sm hover:bg-danger-bg transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
         >
           <LogOut size={12} className="text-danger-text" />
           Salida Anticipada
@@ -424,7 +424,7 @@ export default function DialPrincipal({
           type="button"
           onClick={onOvertimeClick}
           aria-label="Habilitar el fichaje para laborar horas extras en tu día de descanso o feriado"
-          className="mt-3.5 py-1.5 px-4 bg-warning-bg dark:bg-warning-text/20 border border-warning-text/20 hover:border-warning-text text-warning-text dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-warning-bg transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
+          className="mt-3.5 py-1.5 px-4 bg-warning-bg dark:bg-warning-text/20 border border-warning-text/20 hover:border-warning-text text-warning-text dark:text-amber-400 font-extrabold text-xs uppercase tracking-wider rounded-full shadow-sm hover:bg-warning-bg transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
         >
           <Fingerprint size={12} className="text-warning-text animate-pulse" />
           Laborar Horas Extras
@@ -437,7 +437,7 @@ export default function DialPrincipal({
           type="button"
           onClick={onCallManagerClick}
           aria-label="Llamar por teléfono al encargado de llaves"
-          className="mt-2.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border text-accent dark:text-navy-300 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+          className="mt-2.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border text-accent dark:text-navy-300 font-extrabold text-xs uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
           <Phone size={12} className="text-accent" />
           Llamar a Encargado de Llaves
@@ -454,7 +454,7 @@ export default function DialPrincipal({
           type="button"
           onClick={onSendDoorNoticeClick}
           aria-label="Enviar mensaje al encargado avisando que ya estás en puerta"
-          className="mt-2.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border text-accent dark:text-navy-300 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+          className="mt-2.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border text-accent dark:text-navy-300 font-extrabold text-xs uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
           <MessageSquare size={12} className="text-accent" />
           Enviar Mensaje
@@ -470,7 +470,7 @@ export default function DialPrincipal({
           type="button"
           onClick={onCallSuplenteClick}
           aria-label="Marcar por teléfono al suplente de llaves"
-          className="mt-2.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border text-accent dark:text-navy-300 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+          className="mt-2.5 py-1.5 px-4 bg-navy-50 dark:bg-brand-dark/20 border border-border text-accent dark:text-navy-300 font-extrabold text-xs uppercase tracking-wider rounded-full shadow-sm hover:bg-accent-soft transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
           <Phone size={12} className="text-accent" />
           Marcar a Suplente
@@ -514,7 +514,7 @@ export default function DialPrincipal({
                 type="button"
                 onClick={handleRetryGps}
                 aria-label="Reintentar obtención de ubicación GPS"
-                className="w-full py-2.5 bg-gradient-to-r from-danger-icon to-danger-text hover:from-danger-text hover:to-danger-text text-white font-black text-[10px] uppercase tracking-wider rounded-xl shadow-md transition-all duration-300 transform active:scale-95 border-none cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 bg-gradient-to-r from-danger-icon to-danger-text hover:from-danger-text hover:to-danger-text text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all duration-300 transform active:scale-95 border-none cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <MapPin size={12} />
                 Reintentar Ubicación

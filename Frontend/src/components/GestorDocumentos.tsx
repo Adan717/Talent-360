@@ -5,6 +5,7 @@ import {
   BookOpen, ChevronRight, FileCheck, Download, Trash2, XCircle
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { confirmAction, notify } from '../lib/appDialogs';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 // ============================================================================
@@ -202,7 +203,7 @@ export const GestorDocumentos = () => {
       if (selectedIdRef.current === employeeId) refetches.push(fetchExpediente(employeeId));
       await Promise.all(refetches);
     } catch (e: any) {
-      alert(apiError(e, 'No se pudo subir el documento. Solo PDF/JPG/PNG de hasta 10 MB.'));
+      notify(apiError(e, 'No se pudo subir el documento. Solo PDF/JPG/PNG de hasta 10 MB.'));
     } finally {
       setUploadingType(null);
       setUploadProgress(0);
@@ -215,18 +216,18 @@ export const GestorDocumentos = () => {
       if (selectedEmployeeId !== null) await Promise.all([fetchExpediente(selectedEmployeeId), fetchSummary()]);
       return true;
     } catch (e: any) {
-      alert(apiError(e, 'No se pudo actualizar el documento.'));
+      notify(apiError(e, 'No se pudo actualizar el documento.'));
       return false;
     }
   };
 
   const handleDelete = async (doc: EmployeeDoc) => {
-    if (!window.confirm(`¿Quitar "${doc.original_name}" del expediente?`)) return;
+    if (!await confirmAction(`¿Quitar "${doc.original_name}" del expediente?`, { title: 'Quitar documento', confirmLabel: 'Quitar', tone: 'error' })) return;
     try {
       await axiosInstance.delete(`/admin/documentos/${doc.id}`);
       if (selectedEmployeeId !== null) await Promise.all([fetchExpediente(selectedEmployeeId), fetchSummary()]);
     } catch (e: any) {
-      alert(apiError(e, 'No se pudo eliminar el documento.'));
+      notify(apiError(e, 'No se pudo eliminar el documento.'));
     }
   };
 
@@ -254,7 +255,7 @@ export const GestorDocumentos = () => {
         triggerDownload(url, name);
       }
     } catch (e: any) {
-      alert(apiError(e, 'No se pudo descargar el documento.'));
+      notify(apiError(e, 'No se pudo descargar el documento.'));
     } finally {
       setLoadingPreviewId(null);
     }
@@ -275,7 +276,7 @@ export const GestorDocumentos = () => {
     try {
       triggerDownload(await fetchBlobUrl(docId, scope), name);
     } catch (e: any) {
-      alert(apiError(e, 'No se pudo descargar el documento.'));
+      notify(apiError(e, 'No se pudo descargar el documento.'));
     }
   };
 
@@ -295,7 +296,7 @@ export const GestorDocumentos = () => {
 
   const handleCorpUpload = async () => {
     if (!corpFile || !corpCategory.trim()) {
-      alert('Elige un archivo y escribe la categoría.');
+      notify('Elige un archivo y escribe la categoría.');
       return;
     }
     setCorpUploading(true);
@@ -311,7 +312,7 @@ export const GestorDocumentos = () => {
       setCorpCategory('');
       await fetchCorporate();
     } catch (e: any) {
-      alert(apiError(e, 'No se pudo subir el manual. Solo PDF/JPG/PNG de hasta 10 MB.'));
+      notify(apiError(e, 'No se pudo subir el manual. Solo PDF/JPG/PNG de hasta 10 MB.'));
     } finally {
       setCorpUploading(false);
     }
@@ -326,7 +327,7 @@ export const GestorDocumentos = () => {
       setIsLinkingDoc(null);
       await fetchCorporate();
     } catch (e: any) {
-      alert(apiError(e, 'No se pudo vincular el manual.'));
+      notify(apiError(e, 'No se pudo vincular el manual.'));
     }
   };
 
@@ -347,21 +348,21 @@ export const GestorDocumentos = () => {
   const statusBadge = (doc: EmployeeDoc) => {
     if (doc.status === 'validado')
       return (
-        <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-0.5 text-xs font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-full">
           <CheckCircle2 size={10} /> Validado
         </span>
       );
     if (doc.status === 'rechazado')
       return (
         <span
-          className="inline-flex items-center gap-0.5 text-[9px] font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-full"
+          className="inline-flex items-center gap-0.5 text-xs font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-full"
           title={doc.rejection_reason || undefined}
         >
           <XCircle size={10} /> Rechazado
         </span>
       );
     return (
-      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-full">
+      <span className="inline-flex items-center gap-0.5 text-xs font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-full">
         <AlertCircle size={10} /> Pendiente
       </span>
     );
@@ -374,15 +375,15 @@ export const GestorDocumentos = () => {
           <FileText size={18} />
         </div>
         <div className="min-w-0">
-          {label && <span className="block text-[8px] font-black uppercase tracking-wider text-slate-400">{label}</span>}
+          {label && <span className="block text-xs font-black uppercase tracking-wider text-slate-400">{label}</span>}
           <h5 className="font-bold text-text-1 text-xs truncate">{doc.original_name}</h5>
-          <div className="flex items-center gap-2 mt-0.5 text-[9px] font-semibold text-slate-400">
+          <div className="flex items-center gap-2 mt-0.5 text-xs font-semibold text-slate-400">
             <span>Tamaño: {formatBytes(doc.size_bytes)}</span>
             <span>•</span>
             <span>F. Carga: {formatDate(doc.created_at)}</span>
           </div>
           {doc.status === 'rechazado' && doc.rejection_reason && (
-            <p className="text-[9px] font-semibold text-danger-text mt-0.5 truncate" title={doc.rejection_reason}>
+            <p className="text-xs font-semibold text-danger-text mt-0.5 truncate" title={doc.rejection_reason}>
               Motivo: {doc.rejection_reason}
             </p>
           )}
@@ -396,14 +397,14 @@ export const GestorDocumentos = () => {
           <>
             <button
               onClick={() => handleValidate(doc, 'validar')}
-              className="px-2 py-1 rounded-lg text-[9px] font-black bg-success-text text-white hover:bg-success-text transition-colors"
+              className="px-2 py-1 rounded-lg text-xs font-black bg-success-text text-white hover:bg-success-text transition-colors"
               title="Validar documento"
             >
               Validar
             </button>
             <button
               onClick={() => { setRejectingDoc(doc); setRejectReason(''); }}
-              className="px-2 py-1 rounded-lg text-[9px] font-black bg-danger-bg text-danger-text border border-danger-text/20 hover:bg-danger-bg transition-colors"
+              className="px-2 py-1 rounded-lg text-xs font-black bg-danger-bg text-danger-text border border-danger-text/20 hover:bg-danger-bg transition-colors"
               title="Rechazar documento"
             >
               Rechazar
@@ -439,7 +440,7 @@ export const GestorDocumentos = () => {
 
   const uploadButton = (docType: string, compact = false) => (
     <label
-      className={`inline-flex items-center gap-1.5 ${compact ? 'px-2 py-1' : 'px-3 py-1.5'} bg-navy-50 text-accent hover:bg-accent-soft rounded-lg text-[10px] font-bold cursor-pointer transition-colors border border-border ${uploadingType ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={`inline-flex items-center gap-1.5 ${compact ? 'px-2 py-1' : 'px-3 py-1.5'} bg-navy-50 text-accent hover:bg-accent-soft rounded-lg text-xs font-bold cursor-pointer transition-colors border border-border ${uploadingType ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <UploadCloud size={12} />
       {uploadingType === docType ? `${uploadProgress}%` : compact ? 'Subir' : 'Subir Documento'}
@@ -563,25 +564,25 @@ export const GestorDocumentos = () => {
                         </div>
                         <div className="overflow-hidden">
                           <h4 className="font-extrabold text-text-1 text-xs truncate leading-snug">{u.name}</h4>
-                          <p className="text-[10px] text-slate-400 font-semibold truncate mt-0.5">{u.role}</p>
+                          <p className="text-xs text-slate-400 font-semibold truncate mt-0.5">{u.role}</p>
                           <div className="flex flex-wrap gap-1 mt-2">
-                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-text-3 bg-page px-2 py-0.5 rounded-full">
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-text-3 bg-page px-2 py-0.5 rounded-full">
                               <FileCheck size={10} /> {u.validados}/{u.subidos} validados
                             </span>
                             {/* (2026-08-22) El rechazado ya cuenta dentro de "faltantes" —hay que
                                 volver a subirlo—, pero se nombra aparte: no es lo mismo perseguir
                                 un documento que nunca llegó que uno que llegó mal. */}
                             {(u.rechazados ?? 0) > 0 && (
-                              <span className="inline-block text-[9px] font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-full">
+                              <span className="inline-block text-xs font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-full">
                                 {u.rechazados} por repetir
                               </span>
                             )}
                             {u.faltantes > 0 ? (
-                              <span className="inline-block text-[9px] font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-full">
+                              <span className="inline-block text-xs font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-full">
                                 {u.faltantes} faltante{u.faltantes === 1 ? '' : 's'}
                               </span>
                             ) : (
-                              <span className="inline-block text-[9px] font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-full">
+                              <span className="inline-block text-xs font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-full">
                                 Completo
                               </span>
                             )}
@@ -605,7 +606,7 @@ export const GestorDocumentos = () => {
                     </div>
                     <div>
                       <h3 className="font-black text-text-1 text-sm leading-tight">{expediente?.employee.name || selectedSummary?.name}</h3>
-                      <p className="text-[10px] text-text-3 font-medium">Expediente Personal del Colaborador</p>
+                      <p className="text-xs text-text-3 font-medium">Expediente Personal del Colaborador</p>
                     </div>
                   </div>
                   <button
@@ -627,7 +628,7 @@ export const GestorDocumentos = () => {
                     {/* Barra de progreso REAL del upload en curso */}
                     {uploadingType && (
                       <div className="p-3 bg-page border border-border rounded-xl">
-                        <div className="flex justify-between text-[10px] font-bold text-text-2 mb-1">
+                        <div className="flex justify-between text-xs font-bold text-text-2 mb-1">
                           <span className="flex items-center gap-1"><Loader2 size={10} className="animate-spin text-accent" /> Transfiriendo archivo...</span>
                           <span>{uploadProgress}%</span>
                         </div>
@@ -638,7 +639,7 @@ export const GestorDocumentos = () => {
                     )}
 
                     {/* Checklist de 6 requeridos — faltantes honestos */}
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Documentos Requeridos</span>
+                    <span className="text-xs font-black uppercase text-slate-400 tracking-wider">Documentos Requeridos</span>
                     <div className="border border-border rounded-2xl overflow-hidden divide-y divide-border">
                       {expediente.checklist.map((item) =>
                         item.doc ? (
@@ -651,7 +652,7 @@ export const GestorDocumentos = () => {
                               </div>
                               <div className="min-w-0">
                                 <h5 className="font-bold text-text-1 text-xs truncate">{item.label}</h5>
-                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-danger-text mt-0.5">
+                                <span className="inline-flex items-center gap-0.5 text-xs font-bold text-danger-text mt-0.5">
                                   <AlertCircle size={10} /> FALTANTE
                                 </span>
                               </div>
@@ -664,7 +665,7 @@ export const GestorDocumentos = () => {
 
                     {/* Otros documentos */}
                     <div className="flex items-center justify-between pt-2">
-                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Otros Documentos</span>
+                      <span className="text-xs font-black uppercase text-slate-400 tracking-wider">Otros Documentos</span>
                       {uploadButton('otro')}
                     </div>
                     {expediente.extras.length === 0 ? (
@@ -741,10 +742,10 @@ export const GestorDocumentos = () => {
                     <div>
                       <div className="flex justify-between items-start mb-3">
                         <span className="p-2 bg-navy-50 text-accent rounded-xl group-hover:scale-105 transition-transform"><BookOpen size={20} /></span>
-                        <span className="text-[9px] font-black uppercase tracking-widest bg-page text-text-2 px-2.5 py-1 rounded border border-border">{d.category}</span>
+                        <span className="text-xs font-black uppercase tracking-widest bg-page text-text-2 px-2.5 py-1 rounded border border-border">{d.category}</span>
                       </div>
                       <h4 className="font-extrabold text-text-1 text-sm leading-snug">{d.name}</h4>
-                      <p className="text-[10px] text-slate-400 font-semibold mt-2">
+                      <p className="text-xs text-slate-400 font-semibold mt-2">
                         {formatBytes(d.size_bytes)} • Subido el {formatDate(d.created_at)}
                       </p>
                     </div>
@@ -753,17 +754,17 @@ export const GestorDocumentos = () => {
                       <div className="flex justify-between items-center text-xs mb-4">
                         <span className="text-slate-400 font-bold">Vinculado a:</span>
                         {d.course ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 px-2.5 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-accent bg-navy-50 px-2.5 py-0.5 rounded-full">
                             <CheckCircle2 size={10} /> {d.course.title}
                           </span>
                         ) : d.linked_course_id !== null ? (
                           // El curso vinculado fue borrado en Academia (soft-delete: el FK no
                           // dispara). Decirlo — y dejar el botón de quitar el vínculo activo.
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2.5 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2.5 py-0.5 rounded-full">
                             <AlertCircle size={10} /> Curso eliminado
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-page px-2.5 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-400 bg-page px-2.5 py-0.5 rounded-full">
                             Sin vincular
                           </span>
                         )}
@@ -885,7 +886,7 @@ export const GestorDocumentos = () => {
                   >
                     <div>
                       <span className="block font-extrabold text-text-1 text-xs">{course.title}</span>
-                      <span className="text-[9px] text-slate-400 font-medium">{course.course_type === 'induction' ? 'Inducción de Puesto' : 'Capacitación Continua'}</span>
+                      <span className="text-xs text-slate-400 font-medium">{course.course_type === 'induction' ? 'Inducción de Puesto' : 'Capacitación Continua'}</span>
                     </div>
                     <ArrowRight size={14} className="text-slate-300 group-hover:text-accent group-hover:translate-x-1 transition-all" />
                   </div>
@@ -930,7 +931,7 @@ export const GestorDocumentos = () => {
               </button>
             </div>
 
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Categoría</label>
+            <label className="text-xs font-black uppercase text-slate-400 tracking-wider mb-1">Categoría</label>
             <input
               type="text"
               list="corp-categorias"
@@ -1023,7 +1024,7 @@ export const GestorDocumentos = () => {
               <button
                 onClick={async () => {
                   if (!rejectReason.trim()) {
-                    alert('El motivo es obligatorio para rechazar.');
+                    notify('El motivo es obligatorio para rechazar.');
                     return;
                   }
                   // Cerrar solo si el servidor aceptó — si falla, el motivo escrito no se pierde.

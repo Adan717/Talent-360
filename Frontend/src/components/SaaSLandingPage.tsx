@@ -1,7 +1,7 @@
 import { SocialSignIn } from './SocialSignIn';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair, RotateCcw, Tag, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Unlock, Crown, Globe2, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair, RotateCcw, Tag, ArrowRight } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { RelojSimuladoLanding } from './RelojSimuladoLanding';
@@ -362,7 +362,7 @@ export const LegacySaaSLandingPage = () => {
                     <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center font-black text-xs text-white">T</div>
                     <span className="font-extrabold text-sm text-navy-100">Menú de Navegación</span>
                   </div>
-                  <span className="text-[10px] font-bold text-navy-100 bg-navy-800 px-2 py-0.5 rounded-full border border-navy-600">
+                  <span className="text-xs font-bold text-navy-100 bg-navy-800 px-2 py-0.5 rounded-full border border-navy-600">
                     SaaS Online
                   </span>
                 </div>
@@ -496,24 +496,24 @@ export const LegacySaaSLandingPage = () => {
                     <button
                       type="button"
                       onClick={() => setSimulatedTier('free')}
-                      className={`flex-1 py-2.5 px-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-xs md:text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
                         simulatedTier === 'free'
                           ? 'bg-white text-text-1 shadow-md shadow-navy-100/50'
                           : 'text-text-3 hover:text-text-2 font-bold'
                       }`}
                     >
-                      <span>🔓</span> Básica
+                      <Unlock size={14} aria-hidden="true" /> Básica
                     </button>
                     <button
                       type="button"
                       onClick={() => setSimulatedTier('pro')}
-                      className={`flex-1 py-2.5 px-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-xs md:text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
                         simulatedTier === 'pro'
                           ? 'bg-accent text-white shadow-md shadow-accent/10'
                           : 'text-text-3 hover:text-text-2 font-bold'
                       }`}
                     >
-                      <span>👑</span> Pro
+                      <Crown size={14} aria-hidden="true" /> Pro
                     </button>
                   </div>
 
@@ -561,7 +561,7 @@ export const LegacySaaSLandingPage = () => {
                   {/* Right Side: Comparative Detail Card */}
                   <div className="flex-1 max-w-sm text-left bg-white border border-border/80 p-6 rounded-3xl shadow-xl shadow-navy-50/50 space-y-4 order-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">{simulatedTier === 'pro' ? '👑' : '🔓'}</span>
+                      {simulatedTier === 'pro' ? <Crown size={20} className="text-accent" aria-hidden="true" /> : <Unlock size={20} className="text-accent" aria-hidden="true" />}
                       <h4 className="text-sm font-black text-text-1 tracking-tight uppercase">
                         {simulatedTier === 'pro' ? 'Reloj Checador Pro' : 'Reloj Checador Básico'}
                       </h4>
@@ -573,7 +573,7 @@ export const LegacySaaSLandingPage = () => {
                     </p>
 
                     <div className="border-t border-border pt-3 space-y-2.5">
-                      <h5 className="text-[9px] font-black uppercase tracking-wider text-text-3">Características de esta versión</h5>
+                      <h5 className="text-xs font-black uppercase tracking-wider text-text-3">Características de esta versión</h5>
                       <ul className="space-y-2">
                         {simulatedTier === 'pro' ? (
                           <>
@@ -629,7 +629,7 @@ export const LegacySaaSLandingPage = () => {
                       <div className="w-2.5 h-2.5 rounded-full bg-navy-600"></div>
                       <div className="w-2.5 h-2.5 rounded-full bg-navy-100"></div>
                     </div>
-                    <div className="flex-1 max-w-sm mx-auto bg-page rounded-lg py-1 px-3 text-[10px] font-bold text-text-3 flex items-center gap-1.5 shadow-inner">
+                    <div className="flex-1 max-w-sm mx-auto bg-page rounded-lg py-1 px-3 text-xs font-bold text-text-3 flex items-center gap-1.5 shadow-inner">
                       <Lock size={10} className="text-text-3" />
                       <span>https://talent360.com.mx/app?module={activeTab === 'rrhh' ? 'rrhh' : 'ats'}</span>
                     </div>
@@ -650,19 +650,19 @@ export const LegacySaaSLandingPage = () => {
                               hoveredNodeId === 1 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId !== null && (hoveredNodeId === 2 || hoveredNodeId === 3) ? 'border-navy-600 ring-2 ring-focus-ring/10' : 'border-navy-100 bg-navy-50'
                             }`}>
                               <div className="mb-1.5">
-                                <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-navy-100 bg-navy-50 text-navy-800">
+                                <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-navy-100 bg-navy-50 text-navy-800">
                                   Dirección General (Nivel 1)
                                 </span>
                               </div>
                               <div className="font-black text-xs text-text-1 uppercase tracking-widest mb-0.5">ADMINISTRADOR GENERAL</div>
-                              <div className="text-[8px] font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Administración</div>
+                              <div className="text-xs font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Administración</div>
 
                               <div className="flex items-center gap-2 bg-page border border-border p-1.5 rounded-2xl">
                                 <div className="w-7 h-7 rounded-full bg-accent-soft text-accent font-black text-xs flex items-center justify-center flex-shrink-0">
                                   FV
                                 </div>
                                 <div className="text-left overflow-hidden">
-                                  <div className="text-[10px] font-black text-text-1 truncate leading-tight">Francisco Vega</div>
+                                  <div className="text-xs font-black text-text-1 truncate leading-tight">Francisco Vega</div>
                                   <div className="text-[7.5px] font-medium text-text-3 truncate">francisco@decorarte360.com</div>
                                 </div>
                               </div>
@@ -684,19 +684,19 @@ export const LegacySaaSLandingPage = () => {
                                 hoveredNodeId === 2 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId === 1 ? 'border-accent ring-2 ring-focus-ring/10' : 'border-navy-100 bg-navy-50'
                               }`}>
                                 <div className="mb-1.5">
-                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-navy-100 bg-navy-50 text-accent">
+                                  <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-navy-100 bg-navy-50 text-accent">
                                     Supervisión (Nivel 2)
                                   </span>
                                 </div>
                                 <div className="font-black text-xs text-text-1 uppercase tracking-widest mb-0.5">SUPERVISOR DE VENTAS</div>
-                                <div className="text-[8px] font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Ventas</div>
+                                <div className="text-xs font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Ventas</div>
 
                                 <div className="flex items-center gap-2 bg-page border border-border p-1.5 rounded-2xl">
                                   <div className="w-7 h-7 rounded-full bg-accent-soft text-accent font-black text-xs flex items-center justify-center flex-shrink-0">
                                     LC
                                   </div>
                                   <div className="text-left overflow-hidden">
-                                    <div className="text-[10px] font-black text-text-1 truncate leading-tight">Liz Camacho</div>
+                                    <div className="text-xs font-black text-text-1 truncate leading-tight">Liz Camacho</div>
                                     <div className="text-[7.5px] font-medium text-text-3 truncate">liz@decorarte360.com</div>
                                   </div>
                                 </div>
@@ -713,19 +713,19 @@ export const LegacySaaSLandingPage = () => {
                                 hoveredNodeId === 3 ? 'border-accent ring-4 ring-focus-ring/20 scale-102 shadow-accent/50' : hoveredNodeId === 1 ? 'border-accent ring-2 ring-focus-ring/10' : 'border-navy-100 bg-navy-50'
                               }`}>
                                 <div className="mb-1.5">
-                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-navy-100 bg-navy-50 text-navy-800">
+                                  <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-navy-100 bg-navy-50 text-navy-800">
                                     Operaciones (Nivel 3)
                                   </span>
                                 </div>
                                 <div className="font-black text-xs text-text-1 uppercase tracking-widest mb-0.5">AYUDANTE GENERAL</div>
-                                <div className="text-[8px] font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Producción</div>
+                                <div className="text-xs font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-2">Producción</div>
 
                                 <div className="flex items-center gap-2 bg-page border border-border p-1.5 rounded-2xl">
                                   <div className="w-7 h-7 rounded-full bg-accent-soft text-accent font-black text-xs flex items-center justify-center flex-shrink-0">
                                     HC
                                   </div>
                                   <div className="text-left overflow-hidden">
-                                    <div className="text-[10px] font-black text-text-1 truncate leading-tight">Hiraym Castillo</div>
+                                    <div className="text-xs font-black text-text-1 truncate leading-tight">Hiraym Castillo</div>
                                     <div className="text-[7.5px] font-medium text-text-3 truncate">hiraym@decorarte360.com</div>
                                   </div>
                                 </div>
@@ -739,15 +739,15 @@ export const LegacySaaSLandingPage = () => {
                     {activeTab === 'reclutamiento' && (
                       <div className="w-full text-center flex flex-col justify-center min-w-[500px]">
                         <div className="flex justify-between items-center mb-4 px-2">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-accent">Tablero ATS (Vacantes)</span>
-                          <span className="text-[9px] font-bold text-text-3">Puesto: Agente de Ventas</span>
+                          <span className="text-xs font-black uppercase tracking-wider text-accent">Tablero ATS (Vacantes)</span>
+                          <span className="text-xs font-bold text-text-3">Puesto: Agente de Ventas</span>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                           {/* Col 1: Prospectos */}
                           <div className="flex flex-col bg-page/70 border border-border/50 rounded-2xl p-2.5">
-                            <p className="text-[9px] font-black text-text-3 uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
+                            <p className="text-xs font-black text-text-3 uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
                               <span>Prospecto</span>
-                              <span className="bg-white text-text-3 font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
+                              <span className="bg-white text-text-3 font-bold px-1.5 py-0.5 rounded-full text-xs shadow-sm">
                                 {atsCandidates.filter(c => c.status === 'prospect').length}
                               </span>
                             </p>
@@ -763,10 +763,10 @@ export const LegacySaaSLandingPage = () => {
                                     <h5 className="text-[10.5px] font-black text-text-1 leading-none">{c.name}</h5>
                                     <span className="text-[7.5px] bg-page text-text-3 font-bold px-1.5 py-0.5 rounded-md">CV</span>
                                   </div>
-                                  <p className="text-[8px] text-text-3 font-bold mb-2.5">{c.vacancy}</p>
+                                  <p className="text-xs text-text-3 font-bold mb-2.5">{c.vacancy}</p>
                                   <div className="flex items-center justify-between border-t border-border pt-2">
                                     <span className="text-[7.5px] text-text-3 font-medium">{c.time}</span>
-                                    <span className="text-[8px] font-black text-accent flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
+                                    <span className="text-xs font-black text-accent flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
                                   </div>
                                 </button>
                               ))}
@@ -775,9 +775,9 @@ export const LegacySaaSLandingPage = () => {
 
                           {/* Col 2: Entrevista */}
                           <div className="flex flex-col bg-page/70 border border-border/50 rounded-2xl p-2.5">
-                            <p className="text-[9px] font-black text-accent uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
+                            <p className="text-xs font-black text-accent uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
                               <span>Entrevista</span>
-                              <span className="bg-white text-accent font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
+                              <span className="bg-white text-accent font-bold px-1.5 py-0.5 rounded-full text-xs shadow-sm">
                                 {atsCandidates.filter(c => c.status === 'interview').length}
                               </span>
                             </p>
@@ -793,10 +793,10 @@ export const LegacySaaSLandingPage = () => {
                                     <h5 className="text-[10.5px] font-black text-text-1 leading-none">{c.name}</h5>
                                     <span className="text-[7.5px] bg-navy-50 text-accent font-bold px-1.5 py-0.5 rounded-md">Cita</span>
                                   </div>
-                                  <p className="text-[8px] text-text-3 font-bold mb-2.5">{c.vacancy}</p>
+                                  <p className="text-xs text-text-3 font-bold mb-2.5">{c.vacancy}</p>
                                   <div className="flex items-center justify-between border-t border-border pt-2">
                                     <span className="text-[7.5px] text-accent font-bold">{c.time}</span>
-                                    <span className="text-[8px] font-black text-accent flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
+                                    <span className="text-xs font-black text-accent flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
                                   </div>
                                 </button>
                               ))}
@@ -805,9 +805,9 @@ export const LegacySaaSLandingPage = () => {
 
                           {/* Col 3: Contratados */}
                           <div className="flex flex-col bg-page/70 border border-border/50 rounded-2xl p-2.5">
-                            <p className="text-[9px] font-black text-accent uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
+                            <p className="text-xs font-black text-accent uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
                               <span>Contratados</span>
-                              <span className="bg-white text-accent font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
+                              <span className="bg-white text-accent font-bold px-1.5 py-0.5 rounded-full text-xs shadow-sm">
                                 {atsCandidates.filter(c => c.status === 'hired').length}
                               </span>
                             </p>
@@ -823,10 +823,10 @@ export const LegacySaaSLandingPage = () => {
                                     <h5 className="text-[10.5px] font-black text-text-1 leading-none">{c.name}</h5>
                                     <span className="text-[7.5px] bg-navy-50 text-navy-800 font-bold px-1.5 py-0.5 rounded-md">Contratado</span>
                                   </div>
-                                  <p className="text-[8px] text-text-3 font-bold mb-2.5">{c.vacancy}</p>
+                                  <p className="text-xs text-text-3 font-bold mb-2.5">{c.vacancy}</p>
                                   <div className="flex items-center justify-between border-t border-border pt-2">
                                     <span className="text-[7.5px] text-accent font-black">{c.time}</span>
-                                    <span className="text-[8px] font-black text-accent flex items-center gap-0.5">Reciclar <ChevronRight size={8} /></span>
+                                    <span className="text-xs font-black text-accent flex items-center gap-0.5">Reciclar <ChevronRight size={8} /></span>
                                   </div>
                                 </button>
                               ))}
@@ -855,7 +855,7 @@ export const LegacySaaSLandingPage = () => {
 
               {/* Selector de Pestañas Interactivas */}
               <div className="space-y-2.5 border-t border-border pt-6">
-                <p className="text-[9px] font-black text-text-3 uppercase tracking-widest px-1">Explora las interfaces clave (Toca para interactuar)</p>
+                <p className="text-xs font-black text-text-3 uppercase tracking-widest px-1">Explora las interfaces clave (Toca para interactuar)</p>
                 <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory scroll-smooth">
                   <button
                     type="button"
@@ -867,7 +867,7 @@ export const LegacySaaSLandingPage = () => {
                     </div>
                     <div>
                       <p className="text-xs font-black">Reloj Checador Premium V2</p>
-                      <p className="text-[10px] text-text-3 font-semibold">Asistencia con geocerca, biométricos y firma digital</p>
+                      <p className="text-xs text-text-3 font-semibold">Asistencia con geocerca, biométricos y firma digital</p>
                     </div>
                   </button>
 
@@ -881,7 +881,7 @@ export const LegacySaaSLandingPage = () => {
                     </div>
                     <div>
                       <p className="text-xs font-black">Organigrama & Recursos Humanos</p>
-                      <p className="text-[10px] text-text-3 font-semibold">Visualización de personal y jerarquías relacionales</p>
+                      <p className="text-xs text-text-3 font-semibold">Visualización de personal y jerarquías relacionales</p>
                     </div>
                   </button>
 
@@ -895,7 +895,7 @@ export const LegacySaaSLandingPage = () => {
                     </div>
                     <div>
                       <p className="text-xs font-black">Reclutamiento ATS</p>
-                      <p className="text-[10px] text-text-3 font-semibold">Tablero Kanban para el seguimiento de candidatos</p>
+                      <p className="text-xs text-text-3 font-semibold">Tablero Kanban para el seguimiento de candidatos</p>
                     </div>
                   </button>
                 </div>
@@ -912,7 +912,7 @@ export const LegacySaaSLandingPage = () => {
       >
         <div className="max-w-md mx-auto flex flex-col items-center text-center space-y-6">
           <div className="space-y-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-accent bg-navy-50 border border-border">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider text-accent bg-navy-50 border border-border">
               <Sparkles size={10} /> Demo Interactiva
             </span>
             <h3 className="text-2xl font-black text-text-1 leading-tight">
@@ -929,24 +929,24 @@ export const LegacySaaSLandingPage = () => {
               <button
                 type="button"
                 onClick={() => setSimulatedTier('free')}
-                className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
                   simulatedTier === 'free'
                     ? 'bg-white text-text-1 shadow-md'
                     : 'text-text-3 hover:text-text-2 bg-transparent'
                 }`}
               >
-                <span>🔓</span> Básica
+                <Unlock size={14} aria-hidden="true" /> Básica
               </button>
               <button
                 type="button"
                 onClick={() => setSimulatedTier('pro')}
-                className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
                   simulatedTier === 'pro'
                     ? 'bg-accent text-white shadow-md'
                     : 'text-text-3 hover:text-text-2 bg-transparent'
                 }`}
               >
-                <span>👑</span> Pro
+                <Crown size={14} aria-hidden="true" /> Pro
               </button>
             </div>
 
@@ -1010,7 +1010,7 @@ export const LegacySaaSLandingPage = () => {
                 </div>
               </div>
               <div className="p-6 text-left">
-                <span className="text-[10px] font-black text-accent uppercase tracking-widest">Configuración Rápida</span>
+                <span className="text-xs font-black text-accent uppercase tracking-widest">Configuración Rápida</span>
                 <h4 className="font-bold text-text-1 text-base mt-1 mb-2">Onboarding y Cuentas</h4>
                 <p className="text-text-3 text-xs leading-relaxed">
                   Configura tu sucursal, áreas de trabajo y puestos en pocos pasos a través de nuestro asistente inteligente.
@@ -1030,7 +1030,7 @@ export const LegacySaaSLandingPage = () => {
                 </div>
               </div>
               <div className="p-6 text-left">
-                <span className="text-[10px] font-black text-accent uppercase tracking-widest">Asistencia</span>
+                <span className="text-xs font-black text-accent uppercase tracking-widest">Asistencia</span>
                 <h4 className="font-bold text-text-1 text-base mt-1 mb-2">Reloj Checador Biométrico</h4>
                 <p className="text-text-3 text-xs leading-relaxed">
                   Control de horarios con acceso personal o kiosco con PIN, validación de ubicación y registro en tiempo real.
@@ -1050,7 +1050,7 @@ export const LegacySaaSLandingPage = () => {
                 </div>
               </div>
               <div className="p-6 text-left">
-                <span className="text-[10px] font-black text-accent uppercase tracking-widest">Reclutamiento</span>
+                <span className="text-xs font-black text-accent uppercase tracking-widest">Reclutamiento</span>
                 <h4 className="font-bold text-text-1 text-base mt-1 mb-2">Portal de Empleos Integrado</h4>
                 <p className="text-text-3 text-xs leading-relaxed">
                   Publica vacantes de forma pública, gestiona candidatos y califica postulantes de forma inteligente.
@@ -1087,7 +1087,7 @@ export const LegacySaaSLandingPage = () => {
               {/* El ahorro sale de las dos tarifas del servidor. Este "20%" estaba escrito a
                   mano y era falso para PRO, cuyo ahorro real es 17.2% ($29 → $24). */}
               {tarifario && tarifario.descuento_anual_maximo_pct > 0 && (
-                <span className="text-[9px] font-black text-white bg-accent px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                <span className="text-xs font-black text-white bg-accent px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
                   Ahorra hasta {tarifario.descuento_anual_maximo_pct}%
                 </span>
               )}
@@ -1106,7 +1106,7 @@ export const LegacySaaSLandingPage = () => {
                   <span className="text-text-3 font-bold text-xs uppercase">MXN</span>
                   <span className="text-text-3 font-bold">/mes</span>
                 </div>
-                <span className="text-[10px] text-text-3 font-bold mt-1.5">Sin plazos forzosos, gratis para siempre</span>
+                <span className="text-xs text-text-3 font-bold mt-1.5">Sin plazos forzosos, gratis para siempre</span>
               </div>
               <ul className="space-y-3.5 mb-8 flex-1">
                 {/* El tope sale del tarifario del servidor: el backend caía a 5 y esta línea
@@ -1127,7 +1127,7 @@ export const LegacySaaSLandingPage = () => {
 
             {/* PROFESSIONAL PLAN CARD WITH SLIDER */}
             <div className="bg-white border-2 border-accent rounded-3xl p-8 flex flex-col relative shadow-[0_10px_35px_rgba(16,24,40,0.08)] text-left transform md:-translate-y-4">
-              <div className="absolute top-0 right-8 -translate-y-1/2 bg-accent text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md flex items-center gap-1">
+              <div className="absolute top-0 right-8 -translate-y-1/2 bg-accent text-white text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md flex items-center gap-1">
                 <Sparkles size={12} /> Plan Recomendado
               </div>
               <h4 className="text-2xl font-black text-text-1 mb-1">Plan Profesional</h4>
@@ -1174,7 +1174,7 @@ export const LegacySaaSLandingPage = () => {
                   onChange={e => setProEmployeesCount(parseInt(e.target.value))}
                   className="w-full h-2 bg-navy-100 rounded-lg appearance-none cursor-pointer accent-focus-ring focus:outline-none"
                 />
-                <div className="flex justify-between text-[10px] text-text-3 font-bold mt-1">
+                <div className="flex justify-between text-xs text-text-3 font-bold mt-1">
                   <span>6 colab.</span>
                   <span>25 colab.</span>
                   <span>50 colab.</span>
@@ -1271,7 +1271,7 @@ export const LegacySaaSLandingPage = () => {
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
               {error && (
                 <div className="mb-4 bg-navy-50 border border-navy-100 text-navy-800 text-xs font-bold p-3 rounded-xl flex gap-1.5 items-start">
-                  <span>⚠️</span> <span>{error}</span>
+                  <AlertCircle size={16} className="shrink-0" aria-hidden="true" /> <span>{error}</span>
                 </div>
               )}
 
@@ -1312,14 +1312,14 @@ export const LegacySaaSLandingPage = () => {
                       {/* Divisor */}
                       <div className="relative flex py-2 items-center w-full max-w-xs mx-auto">
                         <div className="flex-grow border-t border-border"></div>
-                        <span className="flex-shrink mx-3 text-[10px] text-text-3 font-black uppercase tracking-wider">o regístrate con tu correo</span>
+                        <span className="flex-shrink mx-3 text-xs text-text-3 font-black uppercase tracking-wider">o regístrate con tu correo</span>
                         <div className="flex-grow border-t border-border"></div>
                       </div>
 
                       {/* Formulario tradicional */}
                       <form onSubmit={handleTraditionalRegister} className="space-y-4 text-left w-full max-w-xs mx-auto">
                         <div>
-                          <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Tu Nombre Completo</label>
+                          <label className="text-xs font-black text-text-3 uppercase tracking-wider mb-1 block">Tu Nombre Completo</label>
                           <input
                             type="text"
                             required
@@ -1331,7 +1331,7 @@ export const LegacySaaSLandingPage = () => {
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Tu Correo de Registro</label>
+                          <label className="text-xs font-black text-text-3 uppercase tracking-wider mb-1 block">Tu Correo de Registro</label>
                           <input
                             type="email"
                             required
@@ -1343,7 +1343,7 @@ export const LegacySaaSLandingPage = () => {
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Contraseña</label>
+                          <label className="text-xs font-black text-text-3 uppercase tracking-wider mb-1 block">Contraseña</label>
                           <input
                             type="password"
                             required
@@ -1360,13 +1360,13 @@ export const LegacySaaSLandingPage = () => {
                               <AlertCircle size={14} className="text-navy-600 shrink-0" />
                               Esta cuenta ya existe
                             </p>
-                            <p className="text-[10px] text-text-3 font-medium leading-relaxed">
+                            <p className="text-xs text-text-3 font-medium leading-relaxed">
                               La dirección de correo electrónico ya está registrada. Puedes iniciar sesión directamente.
                             </p>
                             <button
                               type="button"
                               onClick={() => navigate(`/login?email=${encodeURIComponent(googleEmail)}`)}
-                              className="w-full bg-navy-800 hover:bg-navy-600 text-white font-black py-2 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1 shadow-sm"
+                              className="w-full bg-navy-800 hover:bg-navy-600 text-white font-black py-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1 shadow-sm"
                             >
                               <LogIn size={11} /> Iniciar Sesión Ahora
                             </button>
@@ -1396,13 +1396,13 @@ export const LegacySaaSLandingPage = () => {
                     </div>
                     <div className="text-left">
                       <p className="text-xs font-black text-text-1">{googleUser.name}</p>
-                      <p className="text-[10px] text-text-3 font-semibold">{googleUser.email}</p>
+                      <p className="text-xs text-text-3 font-semibold">{googleUser.email}</p>
                     </div>
                     {/* 2026-07-26 (auditoría en vivo): esta insignia decía siempre "Cuenta social",
                         incluso cuando el alta se hizo con correo y contraseña — afirmaba una
                         validación con Google que no había ocurrido. Ahora refleja el método real:
                         el registro por correo deja `google_id` vacío, el de Google lo llena. */}
-                    <div className={`ml-auto text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
+                    <div className={`ml-auto text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
                       googleUser.google_id
                         ? 'bg-navy-50 text-accent border-border'
                         : 'bg-page text-text-3 border-border'
@@ -1429,7 +1429,7 @@ export const LegacySaaSLandingPage = () => {
                             ? (cotizacionEnterprise ? pesos(cotizacionEnterprise.totalACobrar) : '—')
                             : '0'}
                       </span>
-                      <span className="block text-[9px] text-accent font-bold uppercase">
+                      <span className="block text-xs text-accent font-bold uppercase">
                         {billingCycle === 'yearly' ? 'MXN / año (Pago Anual)' : 'MXN / mes'}
                       </span>
                     </div>
@@ -1438,7 +1438,7 @@ export const LegacySaaSLandingPage = () => {
                   {/* Fields */}
                   <div className="space-y-4 text-left">
                     <div>
-                      <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Nombre de la Empresa</label>
+                      <label className="text-xs font-black text-text-3 uppercase tracking-wider mb-1 block">Nombre de la Empresa</label>
                       <input
                         type="text"
                         value={formData.company_name}
@@ -1457,7 +1457,7 @@ export const LegacySaaSLandingPage = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Identificador único de tu empresa</label>
+                      <label className="text-xs font-black text-text-3 uppercase tracking-wider mb-1 block">Identificador único de tu empresa</label>
                       <div className="flex border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-focus-ring bg-white">
                         <input
                           type="text"
@@ -1471,8 +1471,8 @@ export const LegacySaaSLandingPage = () => {
                           className="w-full bg-white px-4 py-3 font-medium outline-none text-sm text-text-1"
                         />
                       </div>
-                      <p className="text-[9.5px] text-accent bg-navy-50/70 border border-border rounded-xl p-2.5 mt-2 font-bold flex items-start gap-1.5 leading-normal">
-                        <span className="text-xs">🌐</span>
+                      <p className="text-xs text-accent bg-navy-50/70 border border-border rounded-xl p-2.5 mt-2 font-bold flex items-start gap-1.5 leading-normal">
+                        <Globe2 size={14} className="shrink-0" aria-hidden="true" />
                         <span>Este identificador separa los datos de tu empresa. El acceso real para administradores y empleados es <strong className="font-black text-navy-800">https://talent360.com.mx/login</strong>.</span>
                       </p>
                     </div>
@@ -1534,7 +1534,7 @@ export const LegacySaaSLandingPage = () => {
             <div className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center text-white font-black text-xs">360</div>
             <div>
               <span className="text-sm font-black text-white tracking-tight">Talent360</span>
-              <p className="text-[10px] text-text-3 font-semibold">Plataforma SaaS de Asistencia, RRHH y Operaciones</p>
+              <p className="text-xs text-text-3 font-semibold">Plataforma SaaS de Asistencia, RRHH y Operaciones</p>
             </div>
           </div>
 
@@ -1561,7 +1561,7 @@ export const LegacySaaSLandingPage = () => {
             </button>
           </div>
 
-          <div className="text-[10px] text-text-2 font-medium text-center md:text-right">
+          <div className="text-xs text-text-2 font-medium text-center md:text-right">
             © {new Date().getFullYear()} Talent360. Todos los derechos reservados.
           </div>
         </div>

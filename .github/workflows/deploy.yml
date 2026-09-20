@@ -98,6 +98,14 @@ jobs:
         working-directory: Frontend
         run: npm ci
 
+      - name: 🔎 Validar reglas críticas del frontend
+        working-directory: Frontend
+        run: npm run lint
+
+      - name: 🧪 Ejecutar pruebas del frontend
+        working-directory: Frontend
+        run: npm test
+
       - name: 🔨 Build producción
         working-directory: Frontend
         run: npm run build

@@ -83,7 +83,7 @@ export const PanicIncidentsPanel = () => {
         <ShieldAlert size={20} className="shrink-0" aria-hidden="true" />
         <div>
           <p className="font-black text-xs sm:text-sm">Emergencias Activas (Botón de Pánico)</p>
-          <p className="text-[9px] sm:text-[10px] text-danger-text opacity-90 leading-tight">
+          <p className="text-xs sm:text-xs text-danger-text opacity-90 leading-tight">
             Incidentes declarados desde el reloj que siguen sin resolver
           </p>
         </div>
@@ -98,7 +98,7 @@ export const PanicIncidentsPanel = () => {
               <span className="text-xs font-black text-white">
                 {CATEGORY_LABELS[i.category] || i.category}
               </span>
-              <span className="text-[10px] text-danger-text">
+              <span className="text-xs text-danger-text">
                 {i.employee_name || 'Colaborador'} ·{' '}
                 {new Date(i.created_at.replace(' ', 'T')).toLocaleTimeString('es-MX', {
                   hour: '2-digit',
@@ -122,7 +122,7 @@ export const PanicIncidentsPanel = () => {
             <button
               onClick={() => resolve(i.id)}
               disabled={resolvingId === i.id}
-              className="bg-white/90 hover:bg-white text-danger-text font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
+              className="bg-white/90 hover:bg-white text-danger-text font-extrabold text-xs px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
             >
                Marcar resuelto
             </button>

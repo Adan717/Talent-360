@@ -121,7 +121,7 @@ export function MobileModuleBottomDock({
                       })
                     : item.icon}
                 </div>
-                <span className={`text-[8px] xs:text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+                <span className={`text-xs xs:text-xs uppercase tracking-wider font-extrabold mt-0.5 ${
                   isActive ? `font-black ${theme.activeText}` : 'text-slate-400 dark:text-slate-500'
                 }`}>
                   {item.label} {item.badge !== undefined && `(${item.badge})`}

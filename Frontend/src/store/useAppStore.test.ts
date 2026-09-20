@@ -10,7 +10,7 @@ vi.mock('../lib/axios', () => ({
 }));
 
 import axiosInstance from '../lib/axios';
-import { useAppStore } from './useAppStore';
+import { PLAN_FEATURES, PRO_MODULES, useAppStore } from './useAppStore';
 
 const todayStr = new Date().toLocaleDateString('sv-SE');
 
@@ -117,5 +117,23 @@ describe('useAppStore.fetchState() — hidratación de globalClockStates', () =>
     await useAppStore.getState().fetchState();
 
     expect(useAppStore.getState().globalClockStates[9]).toBeUndefined();
+  });
+});
+
+describe('useAppStore — simulación de planes', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useAppStore.setState({ simulatedTierOverride: null });
+  });
+
+  it('simula PRO con el mismo catálogo de módulos y funciones del servidor', () => {
+    useAppStore.getState().setSimulatedTierOverride('pro');
+
+    expect(useAppStore.getState().allowedModules).toEqual([...PRO_MODULES]);
+    expect(useAppStore.getState().allowedFeatures).toEqual([...PLAN_FEATURES]);
+    expect(useAppStore.getState().isModuleUnlocked('facturacion')).toBe(true);
+    expect(useAppStore.getState().isModuleUnlocked('lft')).toBe(true);
+    expect(useAppStore.getState().isFeatureUnlocked('system_backups')).toBe(true);
+    expect(useAppStore.getState().isFeatureUnlocked('roll_call')).toBe(true);
   });
 });

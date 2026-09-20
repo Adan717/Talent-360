@@ -36,7 +36,7 @@ export default function IOSInstallGuide() {
           </div>
           <div>
             <h4 className="font-extrabold text-sm text-slate-100">Instala Talent360 en tu iPhone</h4>
-            <p className="text-slate-400 text-[10px] mt-0.5">Ficha sin abrir el navegador</p>
+            <p className="text-slate-400 text-xs mt-0.5">Ficha sin abrir el navegador</p>
           </div>
         </div>
         <button

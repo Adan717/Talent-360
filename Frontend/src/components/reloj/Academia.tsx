@@ -1,3 +1,4 @@
+import { notify } from '../../lib/appDialogs';
 import React, { useState, useEffect } from 'react';
 import {
   Lock, Star, Briefcase, Crown, Trophy, Map, GraduationCap, ShieldCheck,
@@ -239,7 +240,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
 
     for (let i = 0; i < questions.length; i++) {
       if (selectedAnswers[i] === undefined) {
-        alert("Por favor responde todas las preguntas antes de enviar.");
+        notify("Por favor responde todas las preguntas antes de enviar.");
         return;
       }
     }
@@ -264,7 +265,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
           setFailedAttempts(intentos);
           setShowQuiz(false);
           setVideoFinished(false);
-          alert(
+          notify(
             intentos >= 2
               ? `Volviste a reprobar (${intentos} intentos, ${resultado.score}% en el último). Repasa el video con calma antes de intentarlo de nuevo; tu administrador puede ver tus intentos.`
               : `Respuesta incorrecta (${resultado.score}%). Vuelve a ver el video y préstale más atención antes de reintentar.`
@@ -272,7 +273,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
           return null;
         }
 
-        alert(`¡Felicidades! Aprobaste el examen con ${resultado.score}%. Nivel Completado.`);
+        notify(`¡Felicidades! Aprobaste el examen con ${resultado.score}%. Nivel Completado.`);
         setShowQuiz(false);
         setActiveCourse(null);
         return axiosInstance.get('/academy/courses');
@@ -296,7 +297,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
           // propio dial lo dice ("puedes registrar tu entrada normalmente"). El colaborador
           // que leía esto creía que había estado impedido de fichar. Si la inducción debe
           // bloquear el fichaje de verdad, es decisión de producto y hoy no existe.
-          alert('¡Inducción completada! Queda registrada en tu expediente y tu administrador puede verla en la Academia.');
+          notify('¡Inducción completada! Queda registrada en tu expediente y tu administrador puede verla en la Academia.');
         }
         // Auditoría reloj checador (2026-07-22), Hallazgo 1: ya no se detecta el curso de puntualidad
         // por coincidencia de texto en el título (frágil) sino por el id real configurado por el
@@ -304,12 +305,12 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
         // se refresca desde el backend (course_completed pasa a true ahí), no tocando localStorage.
         if (loggedUser && Number(activeCourse.id) === Number(systemSettings?.punctuality_course_id)) {
           useAppStore.getState().fetchPunctualityStatus();
-          alert('¡Excelente! Tu checador ha sido desbloqueado tras completar tu capacitación de Puntualidad.');
+          notify('¡Excelente! Tu checador ha sido desbloqueado tras completar tu capacitación de Puntualidad.');
         }
       })
       .catch(err => {
         console.error("Error saving progress:", err);
-        alert(err?.response?.data?.message || "Error al guardar tu progreso en el servidor.");
+        notify(err?.response?.data?.message || "Error al guardar tu progreso en el servidor.");
       });
   };
 
@@ -337,8 +338,8 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
           <div className="flex gap-2">
             {/* AC3: el conteo es el del servidor, así que ya no se puede pasar de 2 "vidas"
                 cerrando el curso. Se muestra el número real de intentos fallidos. */}
-            {failedAttempts > 0 && <span className="text-[10px] font-bold px-2 py-1 bg-danger-bg text-danger-text rounded-md border border-danger-text/20">{failedAttempts === 1 ? '1 intento fallido' : `${failedAttempts} intentos fallidos`}</span>}
-            <span className="text-[10px] font-bold px-2 py-1 bg-navy-50 text-accent rounded-md border border-border uppercase tracking-widest">EN CURSO</span>
+            {failedAttempts > 0 && <span className="text-xs font-bold px-2 py-1 bg-danger-bg text-danger-text rounded-md border border-danger-text/20">{failedAttempts === 1 ? '1 intento fallido' : `${failedAttempts} intentos fallidos`}</span>}
+            <span className="text-xs font-bold px-2 py-1 bg-navy-50 text-accent rounded-md border border-border uppercase tracking-widest">EN CURSO</span>
           </div>
         </div>
 
@@ -519,8 +520,8 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
             style={activeTab === 'plan' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
           >
             <Map size={18} className={activeTab === 'plan' ? 'text-white' : 'text-slate-400'} />
-            <span className="text-[9px] font-black uppercase mt-1">Carrera</span>
-            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+            <span className="text-xs font-black uppercase mt-1">Carrera</span>
+            <span className={`absolute -top-1 -right-1 text-xs font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
               activeTab === 'plan'
                 ? 'bg-white border-white'
                 : 'bg-page text-text-2 border-border'
@@ -543,8 +544,8 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
             style={activeTab === 'logros' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
           >
             <Trophy size={18} className={activeTab === 'logros' ? 'text-white' : 'text-slate-400'} />
-            <span className="text-[9px] font-black uppercase mt-1">Logros</span>
-            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+            <span className="text-xs font-black uppercase mt-1">Logros</span>
+            <span className={`absolute -top-1 -right-1 text-xs font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
               activeTab === 'logros'
                 ? 'bg-white border-white'
                 : 'bg-page text-text-2 border-border'
@@ -617,14 +618,14 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                                   style={{ width: `${(completedRoleCourses.length / roleCourses.length) * 100}%` }}
                                 ></div>
                               </div>
-                              <span className="text-[9px] font-extrabold text-slate-400 shrink-0">
+                              <span className="text-xs font-extrabold text-slate-400 shrink-0">
                                 {completedRoleCourses.length}/{roleCourses.length} mod.
                               </span>
                             </div>
                           );
                         }
                         return (
-                          <span className="text-[9px] font-extrabold text-slate-400 block mt-1.5">
+                          <span className="text-xs font-extrabold text-slate-400 block mt-1.5">
                             Módulos generales únicamente
                           </span>
                         );
@@ -661,7 +662,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                       </div>
                       <div>
                         <h4 className="font-black text-[13.5px] leading-tight text-text-1">{selectedRole?.name || 'Ruta de Carrera'}</h4>
-                        <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider">Meta Profesional</p>
+                        <p className="text-xs text-slate-400 font-extrabold uppercase tracking-wider">Meta Profesional</p>
                       </div>
                     </div>
 
@@ -670,14 +671,14 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                         setTargetRoleId(null);
                         setSelectedCourseForDrawer(null);
                       }}
-                      className="text-[9.5px] font-black uppercase tracking-wider bg-page hover:bg-page text-text-3 hover:text-text-1 px-2.5 py-1.5 rounded-xl border border-border transition-all cursor-pointer border-none bg-transparent"
+                      className="text-xs font-black uppercase tracking-wider bg-page hover:bg-page text-text-3 hover:text-text-1 px-2.5 py-1.5 rounded-xl border border-border transition-all cursor-pointer border-none bg-transparent"
                     >
                       Cambiar
                     </button>
                   </div>
 
                   <div className="mt-3 bg-page/50 p-2.5 rounded-xl border border-border/50">
-                    <div className="flex justify-between items-center text-[10px] font-extrabold text-text-3 mb-1">
+                    <div className="flex justify-between items-center text-xs font-extrabold text-text-3 mb-1">
                       <span>Progreso de Certificación</span>
                       <span className="text-success-text">{overallPercent}% ({completedCoursesCount}/{totalCoursesCount})</span>
                     </div>
@@ -799,7 +800,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
 
                       {/* Star floating marker for the active node */}
                       {isActive && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-warning-icon text-warning-text text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm border border-warning-text/20 uppercase tracking-wider animate-pulse flex items-center gap-0.5 z-20">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-warning-icon text-warning-text text-xs font-black px-2 py-0.5 rounded-full shadow-sm border border-warning-text/20 uppercase tracking-wider animate-pulse flex items-center gap-0.5 z-20">
                           <Star className="w-2.5 h-2.5 fill-warning-text text-warning-text" />
                           Siguiente
                         </div>
@@ -807,7 +808,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
 
                       {/* Small index badge below the node */}
                       <div className="absolute -bottom-5 left-0 right-0 text-center pointer-events-none">
-                        <span className="text-[10px] font-extrabold text-text-3 bg-page/90 backdrop-blur-xs px-2 py-0.5 rounded-full border border-border">
+                        <span className="text-xs font-extrabold text-text-3 bg-page/90 backdrop-blur-xs px-2 py-0.5 rounded-full border border-border">
                           Módulo {index + 1}
                         </span>
                       </div>
@@ -855,10 +856,10 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                       </div>
                       <div className="relative z-10 flex-1 min-w-0 pr-4">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[8px] font-black tracking-widest bg-warning-icon text-warning-text px-2 py-0.5 rounded-full uppercase">Puesto Alcanzado</span>
+                          <span className="text-xs font-black tracking-widest bg-warning-icon text-warning-text px-2 py-0.5 rounded-full uppercase">Puesto Alcanzado</span>
                         </div>
                         <h4 className="text-sm font-black truncate mt-1 leading-tight">{role.name}</h4>
-                        <p className="text-[10px] text-white/80 font-bold truncate mt-0.5">{role.description || "Ruta culminada con éxito"}</p>
+                        <p className="text-xs text-white/80 font-bold truncate mt-0.5">{role.description || "Ruta culminada con éxito"}</p>
                       </div>
                     </div>
                   );
@@ -907,7 +908,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                       </div>
                       <div className="relative z-10 flex-1 min-w-0 pr-4">
                         <h4 className="text-xs font-black text-text-1 mb-0.5 leading-tight truncate">{cert.course_title}</h4>
-                        <p className="text-[9.5px] text-success-text font-extrabold uppercase tracking-wider">
+                        <p className="text-xs text-success-text font-extrabold uppercase tracking-wider">
                           Folio {cert.folio}
                         </p>
                       </div>
@@ -939,7 +940,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
             <div>
               <h4 className="font-black text-text-1 mb-3.5 tracking-tight flex items-center justify-between">
                 <span>Insignias de Desempeño</span>
-                <span className="text-[10px] text-accent bg-navy-50 px-2.5 py-0.5 rounded-full font-black">
+                <span className="text-xs text-accent bg-navy-50 px-2.5 py-0.5 rounded-full font-black">
                   {(() => {
                     const is1Done = courses.some(c => c.title.toLowerCase().includes('atención') && userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
                     const is2Done = courses.some(c => c.title.toLowerCase().includes('seguridad') && userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
@@ -970,8 +971,8 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                         }`}>
                           <Star size={26} className={is1Done ? 'animate-pulse' : ''} />
                         </div>
-                        <span className="text-[10px] font-black text-text-1 leading-tight">Atención Excelencia</span>
-                        <span className="text-[8px] text-slate-400 font-bold mt-1 text-center leading-none">Curso Atención</span>
+                        <span className="text-xs font-black text-text-1 leading-tight">Atención Excelencia</span>
+                        <span className="text-xs text-slate-400 font-bold mt-1 text-center leading-none">Curso Atención</span>
                         {!is1Done && <Lock size={12} className="absolute top-2 right-2 text-slate-400" />}
                       </div>
 
@@ -986,8 +987,8 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                         }`}>
                           <ShieldCheck size={26} />
                         </div>
-                        <span className="text-[10px] font-black text-text-1 leading-tight">Guardián de Seguridad</span>
-                        <span className="text-[8px] text-slate-400 font-bold mt-1 text-center leading-none">Curso Seguridad</span>
+                        <span className="text-xs font-black text-text-1 leading-tight">Guardián de Seguridad</span>
+                        <span className="text-xs text-slate-400 font-bold mt-1 text-center leading-none">Curso Seguridad</span>
                         {!is2Done && <Lock size={12} className="absolute top-2 right-2 text-slate-400" />}
                       </div>
 
@@ -1002,8 +1003,8 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                         }`}>
                           <Crown size={26} />
                         </div>
-                        <span className="text-[10px] font-black text-text-1 leading-tight">Líder Multitareas</span>
-                        <span className="text-[8px] text-slate-400 font-bold mt-1 text-center leading-none">Inducción Completa</span>
+                        <span className="text-xs font-black text-text-1 leading-tight">Líder Multitareas</span>
+                        <span className="text-xs text-slate-400 font-bold mt-1 text-center leading-none">Inducción Completa</span>
                         {!isAllInductionsDone && <Lock size={12} className="absolute top-2 right-2 text-slate-400" />}
                       </div>
                     </>
@@ -1062,7 +1063,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
 
             <div className="flex justify-between items-start mb-4">
               <div>
-                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${courseTypeColor} tracking-wider`}>
+                <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase border ${courseTypeColor} tracking-wider`}>
                   {courseTypeLabel}
                 </span>
                 <h3 className="text-lg font-black text-text-1 mt-2 leading-tight">
@@ -1079,7 +1080,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
 
             <div className="space-y-4 mb-6">
               <div>
-                <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">Objetivo de este tema</h4>
+                <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-1">Objetivo de este tema</h4>
                 <p className="text-text-2 text-sm leading-relaxed font-medium">
                   {course.description || 'Sin descripción disponible para este módulo de entrenamiento.'}
                 </p>
@@ -1098,7 +1099,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
               <div>
                 <div className="flex justify-between items-center text-xs font-bold mb-1.5">
                   <span className="text-slate-400 font-bold">Progreso en este módulo</span>
-                  <span className={`${progressColor} font-black uppercase tracking-wider text-[10px]`}>{progressText}</span>
+                  <span className={`${progressColor} font-black uppercase tracking-wider text-xs`}>{progressText}</span>
                 </div>
                 <div className="w-full bg-page h-2.5 rounded-full overflow-hidden">
                   <div
@@ -1202,7 +1203,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                 }}
                 className="w-3.5 h-3.5 text-accent border-slate-300 rounded focus-visible:ring-focus-ring cursor-pointer"
               />
-              <label htmlFor="dontShowAgain" className="text-[10px] text-text-3 font-bold cursor-pointer">
+              <label htmlFor="dontShowAgain" className="text-xs text-text-3 font-bold cursor-pointer">
                 No volver a mostrar este mensaje
               </label>
             </div>

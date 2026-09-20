@@ -221,7 +221,7 @@ export default function MatrizDePermisos() {
                     <button
                       type="button"
                       onClick={() => aplicarBaseSupervisor(p.id)}
-                      className="text-[10px] font-bold text-accent hover:text-navy-800 bg-transparent border-none cursor-pointer underline"
+                      className="text-xs font-bold text-accent hover:text-navy-800 bg-transparent border-none cursor-pointer underline"
                       title={'Deja a "' + p.name + '" con la base de un supervisor: ' + baseSupervisor.join(', ')}
                     >
                       base de supervisor
@@ -235,7 +235,7 @@ export default function MatrizDePermisos() {
                 <tr key={cap.name} className="hover:bg-page/60">
                   <td className="py-3 px-4 align-top">
                     <div className="font-bold text-text-1">{cap.description}</div>
-                    <div className="text-[10px] text-slate-400 font-mono">{cap.name}</div>
+                    <div className="text-xs text-slate-400 font-mono">{cap.name}</div>
                   </td>
                   {puestos.map(p => (
                     <td key={p.id} className="py-3 px-3 text-center align-top">
@@ -254,7 +254,7 @@ export default function MatrizDePermisos() {
                 <tr key={cap.name} className="bg-page/80 text-slate-400">
                   <td className="py-3 px-4 align-top">
                     <div className="font-bold flex items-center gap-1.5"><Lock size={12} /> {cap.description}</div>
-                    <div className="text-[10px] font-mono">{cap.name} · sólo el administrador dueño</div>
+                    <div className="text-xs font-mono">{cap.name} · sólo el administrador dueño</div>
                   </td>
                   {puestos.map(p => (
                     <td key={p.id} className="py-3 px-3 text-center align-top">

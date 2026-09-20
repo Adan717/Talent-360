@@ -27,7 +27,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-black text-text-1 tracking-tight">Perfil de la Empresa & Licencias</h2>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-accent-soft text-accent border border-border">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-accent-soft text-accent border border-border">
                   <ShieldCheck size={11} /> Enterprise Tenant
                 </span>
               </div>

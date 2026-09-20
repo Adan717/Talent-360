@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Plus, Edit2, Trash2, Video, FileText, Search, GraduationCap, PlayCircle, Trophy, BookOpen, X, FileQuestion, FileBadge, CheckSquare, Users } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { confirmAction, notify } from '../lib/appDialogs';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 interface QuizQuestion {
@@ -135,20 +136,20 @@ export const GestorAcademia = () => {
           target_job_role_id: null
         };
         setCourses([...courses, mockCourse]);
-        alert("Curso importado exitosamente (Simulado en modo Sandbox).");
+        notify("Curso importado exitosamente (Simulado en modo Sandbox).");
         setShowImportModal(false);
         setSelectedImportTemplate(null);
         return;
       }
 
       await axiosInstance.post(`/academy/course-templates/${selectedImportTemplate.id}/import`);
-      alert("Curso importado exitosamente.");
+      notify("Curso importado exitosamente.");
       setShowImportModal(false);
       setSelectedImportTemplate(null);
       await fetchCourses();
     } catch (e) {
       console.error("Error importing course template", e);
-      alert("Ocurrió un error al importar la plantilla de curso.");
+      notify("Ocurrió un error al importar la plantilla de curso.");
     } finally {
       setImportingTemplate(false);
     }
@@ -175,8 +176,8 @@ export const GestorAcademia = () => {
     setIsTemplateModalOpen(false);
   };
 
-  const handleDeleteTemplate = (id: number) => {
-    if (!confirm("¿Estás seguro de eliminar esta plantilla?")) return;
+  const handleDeleteTemplate = async (id: number) => {
+    if (!await confirmAction("¿Estás seguro de eliminar esta plantilla?", { title: 'Eliminar plantilla', confirmLabel: 'Eliminar', tone: 'error' })) return;
     const newTemplates = templates.filter(t => t.id !== id);
     setTemplates(newTemplates);
     updateSetting('certificate_templates', JSON.stringify(newTemplates));
@@ -202,12 +203,12 @@ export const GestorAcademia = () => {
       fetchCourses();
     } catch (e) {
       console.error(e);
-      alert("Error al guardar el curso");
+      notify("Error al guardar el curso");
     }
   };
 
   const handleDelete = async (id: number) => {
-    if(!confirm("¿Estás seguro de eliminar este curso?")) return;
+    if(!await confirmAction("¿Estás seguro de eliminar este curso?", { title: 'Eliminar curso', confirmLabel: 'Eliminar', tone: 'error' })) return;
     try {
       await axiosInstance.delete(`/academy/courses/${id}`);
       fetchCourses();
@@ -386,7 +387,7 @@ export const GestorAcademia = () => {
               <div key={template.id} className="bg-white rounded-2xl p-6 border border-border hover:border-navy-300 hover:shadow-md transition-all flex flex-col group cursor-pointer relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: template.primary_color }}></div>
                 <div className="flex justify-between items-start mb-4 mt-2">
-                  <span className="px-3 py-1 text-[10px] uppercase tracking-wider font-black rounded-lg bg-navy-50 text-accent border border-border">
+                  <span className="px-3 py-1 text-xs uppercase tracking-wider font-black rounded-lg bg-navy-50 text-accent border border-border">
                     Plantilla
                   </span>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -454,7 +455,7 @@ export const GestorAcademia = () => {
                       <h4 className="text-sm font-black text-text-1 tracking-tight uppercase">
                         {group.roleName}
                       </h4>
-                      <span className="bg-page text-text-3 border border-border text-[10px] font-black px-2 py-0.5 rounded-md">
+                      <span className="bg-page text-text-3 border border-border text-xs font-black px-2 py-0.5 rounded-md">
                         {group.courses.length} {group.courses.length === 1 ? 'Curso' : 'Cursos'}
                       </span>
                     </div>
@@ -469,7 +470,7 @@ export const GestorAcademia = () => {
                                 'bg-accent'
                               }`}></div>
                             <div className="flex justify-between items-start mb-4 mt-1">
-                              <span className={`px-2.5 py-1 text-[9px] uppercase tracking-wider font-black rounded-lg ${
+                              <span className={`px-2.5 py-1 text-xs uppercase tracking-wider font-black rounded-lg ${
                                 course.course_type === 'induction' ? 'bg-navy-50 text-accent border border-border' :
                                 course.course_type === 'training' ? 'bg-success-bg text-success-text border border-success-text/20' :
                                 'bg-navy-50 text-accent border border-border'
@@ -486,7 +487,7 @@ export const GestorAcademia = () => {
                             <p className="text-text-3 text-xs line-clamp-3 mb-6 font-medium leading-relaxed">{course.description}</p>
                           </div>
 
-                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 border-t border-border pt-4 mt-auto">
+                          <div className="flex items-center justify-between text-xs font-bold text-slate-400 border-t border-border pt-4 mt-auto">
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1"><Video size={12} className={course.video_url ? 'text-accent' : ''}/> {course.video_url ? 'Video' : 'Material'}</div>
                               <div className="flex items-center gap-1"><FileQuestion size={12} className={course.quiz_data?.length ? 'text-warning-text' : ''}/> {course.quiz_data?.length || 0} Preguntas</div>
@@ -529,7 +530,7 @@ export const GestorAcademia = () => {
                                 'bg-accent'
                               }`}></div>
                             <div className="flex justify-between items-start mb-4 mt-1">
-                              <span className={`px-2.5 py-1 text-[9px] uppercase tracking-wider font-black rounded-lg ${
+                              <span className={`px-2.5 py-1 text-xs uppercase tracking-wider font-black rounded-lg ${
                                 course.course_type === 'induction' ? 'bg-navy-50 text-accent border border-border' :
                                 course.course_type === 'training' ? 'bg-success-bg text-success-text border border-success-text/20' :
                                 'bg-navy-50 text-accent border border-border'
@@ -543,13 +544,13 @@ export const GestorAcademia = () => {
                             </div>
 
                             <h3 className="text-base font-extrabold text-text-1 mb-1 leading-snug group-hover:text-accent transition-colors">{course.title}</h3>
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2.5 block">
+                            <span className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2.5 block">
                               <span className="inline-flex items-center gap-1"><Users size={11} /> {role ? role.name : 'Todos los puestos'}</span>
                             </span>
                             <p className="text-text-3 text-xs line-clamp-3 mb-6 font-medium leading-relaxed">{course.description}</p>
                           </div>
 
-                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 border-t border-border pt-4 mt-auto">
+                          <div className="flex items-center justify-between text-xs font-bold text-slate-400 border-t border-border pt-4 mt-auto">
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1"><Video size={12} className={course.video_url ? 'text-accent' : ''}/> {course.video_url ? 'Video' : 'Material'}</div>
                               <div className="flex items-center gap-1"><FileQuestion size={12} className={course.quiz_data?.length ? 'text-warning-text' : ''}/> {course.quiz_data?.length || 0} Preguntas</div>
@@ -894,7 +895,7 @@ export const GestorAcademia = () => {
                     <div className="flex-1 pr-4">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-bold text-text-1 text-base">{tpl.title}</h4>
-                        <span className={`px-2 py-0.5 text-[9px] uppercase tracking-wider font-black rounded-md ${
+                        <span className={`px-2 py-0.5 text-xs uppercase tracking-wider font-black rounded-md ${
                           tpl.course_type === 'induction' ? 'bg-navy-50 text-accent border border-border' :
                           tpl.course_type === 'training' ? 'bg-success-bg text-success-text border border-success-text/20' :
                           'bg-navy-50 text-accent border border-border'

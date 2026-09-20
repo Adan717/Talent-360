@@ -9,6 +9,7 @@ import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
 import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
+import { confirmAction, notify } from '../lib/appDialogs';
 
 interface DocIndexItem {
   id: number;
@@ -70,15 +71,15 @@ export function OrgVaultManager() {
   };
 
   const handleResetAttempt = async (attemptId: number) => {
-    if (!window.confirm("¿Estás seguro de restablecer esta evaluación? Esto eliminará el intento anterior y permitirá al colaborador volver a presentarlo de inmediato.")) {
+    if (!await confirmAction("¿Estás seguro de restablecer esta evaluación? Esto eliminará el intento anterior y permitirá al colaborador volver a presentarlo de inmediato.", { title: 'Restablecer evaluación', confirmLabel: 'Restablecer', tone: 'warning' })) {
       return;
     }
     try {
       const res = await axiosInstance.post(`/org-vault/admin/exams/${attemptId}/reset`);
-      alert(res.data.message);
+      notify(res.data.message);
       await fetchExamsReport();
     } catch (e: any) {
-      alert(e.response?.data?.error || "Error al restablecer la evaluación.");
+      notify(e.response?.data?.error || "Error al restablecer la evaluación.");
     }
   };
 
@@ -221,10 +222,10 @@ export function OrgVaultManager() {
       });
 
       await axiosInstance.post('/org-vault/matrix', { mappings });
-      alert('Matriz de visibilidad de puestos guardada exitosamente.');
+      notify('Matriz de visibilidad de puestos guardada exitosamente.');
     } catch (err) {
       console.error('Error saving matrix:', err);
-      alert('Error al guardar la matriz.');
+      notify('Error al guardar la matriz.');
     } finally {
       setSavingMatrix(false);
     }
@@ -362,7 +363,7 @@ export function OrgVaultManager() {
       setIsSpeaking(true);
       window.speechSynthesis.speak(utterance);
     } else {
-      alert("La narración de voz no es soportada en este navegador.");
+      notify("La narración de voz no es soportada en este navegador.");
     }
   };
 
@@ -377,11 +378,11 @@ export function OrgVaultManager() {
         proposed_content: proposedContent,
         comment: suggestionComment
       });
-      alert('Sugerencia enviada con éxito. Un administrador la revisará.');
+      notify('Sugerencia enviada con éxito. Un administrador la revisará.');
       setIsSuggesting(false);
       setSuggestionComment('');
     } catch (err: any) {
-      alert('Error al enviar la sugerencia: ' + (err.response?.data?.message || err.message));
+      notify('Error al enviar la sugerencia: ' + (err.response?.data?.message || err.message));
     } finally {
       setSubmittingSuggestion(false);
     }
@@ -392,10 +393,10 @@ export function OrgVaultManager() {
     e.preventDefault();
     try {
       const res = await axiosInstance.post('/org-vault/settings', vaultSettings);
-      alert('Configuración guardada correctamente.');
+      notify('Configuración guardada correctamente.');
       setVaultSettings(res.data.vault);
     } catch (err: any) {
-      alert('Error al guardar: ' + (err.response?.data?.message || err.message));
+      notify('Error al guardar: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -435,7 +436,7 @@ export function OrgVaultManager() {
           job_role_id: userForm.job_role_id ? parseInt(userForm.job_role_id) : null,
           role: userForm.role
         });
-        alert('Usuario actualizado con éxito.');
+        notify('Usuario actualizado con éxito.');
       } else {
         await axiosInstance.post('/org-vault/users', {
           name: userForm.name,
@@ -444,25 +445,25 @@ export function OrgVaultManager() {
           job_role_id: userForm.job_role_id ? parseInt(userForm.job_role_id) : null,
           role: userForm.role
         });
-        alert('Usuario creado con éxito.');
+        notify('Usuario creado con éxito.');
       }
       setShowUserModal(false);
       setEditingUser(null);
       setUserForm({ name: '', email: '', password: '', job_role_id: '', role: 'colaborador' });
       fetchUsersAndProgress();
     } catch (err: any) {
-      alert('Error al guardar usuario: ' + (err.response?.data?.error || err.message));
+      notify('Error al guardar usuario: ' + (err.response?.data?.error || err.message));
     }
   };
 
   const handleDeleteUser = async (id: number) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este usuario de acceso del manual?')) return;
+    if (!await confirmAction('¿Seguro que deseas eliminar este usuario de acceso del manual?', { title: 'Eliminar acceso', confirmLabel: 'Eliminar', tone: 'error' })) return;
     try {
       await axiosInstance.delete(`/org-vault/users/${id}`);
-      alert('Usuario de acceso al manual eliminado.');
+      notify('Usuario de acceso al manual eliminado.');
       fetchUsersAndProgress();
     } catch (err: any) {
-      alert('Error al eliminar usuario: ' + (err.response?.data?.message || err.message));
+      notify('Error al eliminar usuario: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -485,10 +486,10 @@ export function OrgVaultManager() {
       const res = await axiosInstance.post('/org-vault/sync-local', {
         local_path: vaultSettings.local_path
       });
-      alert(`Sincronización exitosa: ${res.data.count} documentos procesados.`);
+      notify(`Sincronización exitosa: ${res.data.count} documentos procesados.`);
       fetchIndex();
     } catch (err: any) {
-      alert('Error en la sincronización local: ' + (err.response?.data?.message || err.message));
+      notify('Error en la sincronización local: ' + (err.response?.data?.message || err.message));
     } finally {
       setSyncing(false);
     }
@@ -505,11 +506,11 @@ export function OrgVaultManager() {
       const res = await axiosInstance.post('/org-vault/sync-zip', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      alert(`Sincronización de ZIP exitosa: ${res.data.count} documentos procesados.`);
+      notify(`Sincronización de ZIP exitosa: ${res.data.count} documentos procesados.`);
       setZipFile(null);
       fetchIndex();
     } catch (err: any) {
-      alert('Error al procesar el archivo ZIP: ' + (err.response?.data?.message || err.message));
+      notify('Error al procesar el archivo ZIP: ' + (err.response?.data?.message || err.message));
     } finally {
       setSyncing(false);
     }
@@ -517,18 +518,18 @@ export function OrgVaultManager() {
 
   // Purge vault documents
   const handlePurgeVault = async () => {
-    if (!window.confirm('¿Está seguro de que desea depurar y vaciar todo el baúl? Se eliminarán permanentemente todos los documentos y enlaces cargados.')) {
+    if (!await confirmAction('¿Está seguro de que desea depurar y vaciar todo el baúl? Se eliminarán permanentemente todos los documentos y enlaces cargados.', { title: 'Vaciar todo el baúl', confirmLabel: 'Vaciar permanentemente', tone: 'error' })) {
       return;
     }
     setSyncing(true);
     try {
       await axiosInstance.post('/org-vault/purge');
-      alert('El baúl se ha depurado/vaciado con éxito.');
+      notify('El baúl se ha depurado/vaciado con éxito.');
       setIndex({});
       setActiveDoc(null);
       setActiveSlug('');
     } catch (err: any) {
-      alert('Error al depurar el baúl: ' + (err.response?.data?.message || err.message));
+      notify('Error al depurar el baúl: ' + (err.response?.data?.message || err.message));
     } finally {
       setSyncing(false);
     }
@@ -539,10 +540,10 @@ export function OrgVaultManager() {
     setSyncing(true);
     try {
       await axiosInstance.post('/org-vault/rebuild-cache');
-      alert('Los enlaces se han reconstruido exitosamente.');
+      notify('Los enlaces se han reconstruido exitosamente.');
       fetchIndex();
     } catch (err: any) {
-      alert('Error al reconstruir enlaces: ' + (err.response?.data?.message || err.message));
+      notify('Error al reconstruir enlaces: ' + (err.response?.data?.message || err.message));
     } finally {
       setSyncing(false);
     }
@@ -560,12 +561,12 @@ export function OrgVaultManager() {
         type: editType,
         icon: editIcon
       });
-      alert('Documento actualizado correctamente.');
+      notify('Documento actualizado correctamente.');
       setAdminTab('view');
       fetchIndex();
       fetchDocument(activeSlug);
     } catch (err: any) {
-      alert('Error al guardar edición: ' + (err.response?.data?.message || err.message));
+      notify('Error al guardar edición: ' + (err.response?.data?.message || err.message));
     } finally {
       setSavingEdit(false);
     }
@@ -578,7 +579,7 @@ export function OrgVaultManager() {
     const url = `/org-vault/suggestions/${reviewingSuggestion.id}/${approved ? 'approve' : 'reject'}`;
     try {
       const res = await axiosInstance.post(url, { review_comment: reviewComment });
-      alert(res.data.message);
+      notify(res.data.message);
       setReviewingSuggestion(null);
       setReviewComment('');
 
@@ -587,7 +588,7 @@ export function OrgVaultManager() {
       if (activeSlug) fetchDocument(activeSlug);
       fetchAdminData();
     } catch (err: any) {
-      alert('Error al procesar propuesta: ' + (err.response?.data?.message || err.message));
+      notify('Error al procesar propuesta: ' + (err.response?.data?.message || err.message));
     } finally {
       setProcessingReview(false);
     }
@@ -676,7 +677,7 @@ export function OrgVaultManager() {
           ) : (
             Object.entries(filteredIndex()).map(([category, items]) => (
               <div key={category} className="space-y-1.5">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-1.5">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest px-2 mb-1.5">
                   {getCategoryTitle(category)}
                 </h4>
                 {(items as DocIndexItem[]).map((item: DocIndexItem) => {
@@ -717,14 +718,14 @@ export function OrgVaultManager() {
             <AlertCircle size={16} className="text-accent shrink-0 mt-0.5" />
             <div className="flex flex-col text-left">
               <span className="text-[11px] font-black text-text-1">Publicado Online</span>
-              <p className="text-[10px] text-text-3 font-medium leading-relaxed mt-0.5">
+              <p className="text-xs text-text-3 font-medium leading-relaxed mt-0.5">
                 Este baúl está enlazado a una página pública de solo lectura. Cualquiera puede ver la estructura.
               </p>
               <a
                 href={`/organizacion/${currentUser?.tenant?.public_slug || currentUser?.tenant?.subdomain || 'decorarte360'}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[10px] text-accent hover:text-accent font-bold mt-1.5 flex items-center gap-1"
+                className="text-xs text-accent hover:text-accent font-bold mt-1.5 flex items-center gap-1"
               >
                 <Eye size={12} /> Ver Web Pública
               </a>
@@ -756,7 +757,7 @@ export function OrgVaultManager() {
               >
                 <GitPullRequest size={14} /> Propuestas de Cambio
                 {suggestions.filter(s => s.status === 'pending').length > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-danger-icon text-white font-black text-[9px] rounded-full flex items-center justify-center animate-bounce">
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-danger-icon text-white font-black text-xs rounded-full flex items-center justify-center animate-bounce">
                     {suggestions.filter(s => s.status === 'pending').length}
                   </span>
                 )}
@@ -910,7 +911,7 @@ export function OrgVaultManager() {
                         {getIcon(activeDoc.icon)}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase text-accent tracking-widest leading-none mb-1.5">{activeCategoryTitle}</span>
+                        <span className="text-xs font-black uppercase text-accent tracking-widest leading-none mb-1.5">{activeCategoryTitle}</span>
                         <h1 className="text-2xl sm:text-3xl font-black text-text-1 tracking-tight leading-tight">{activeDoc.title}</h1>
                       </div>
                     </div>
@@ -962,7 +963,7 @@ export function OrgVaultManager() {
               <div className="w-full lg:w-60 shrink-0 flex flex-col gap-5 text-left border-t lg:border-t-0 lg:border-l border-border pt-5 lg:pt-0 lg:pl-5">
                 {/* Linked Documents (Outgoing) */}
                 <div className="space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Enlaces en esta Nota</span>
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Enlaces en esta Nota</span>
                   {links.length === 0 ? (
                     <span className="text-xs text-slate-400 font-medium italic block pl-1">No contiene enlaces de salida.</span>
                   ) : (
@@ -983,7 +984,7 @@ export function OrgVaultManager() {
 
                 {/* Backlinks (Incoming) */}
                 <div className="space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Vínculos de Retroceso</span>
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Vínculos de Retroceso</span>
                   {backlinks.length === 0 ? (
                     <span className="text-xs text-slate-400 font-medium italic block pl-1">Ninguna nota enlaza a esta.</span>
                   ) : (
@@ -1004,7 +1005,7 @@ export function OrgVaultManager() {
 
                 {/* Categories description helper */}
                 <div className="p-4 bg-page border border-border rounded-2xl mt-auto">
-                  <span className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1.5">Guía de Iconos</span>
+                  <span className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1.5">Guía de Iconos</span>
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-xs font-bold text-text-2">
                       <div className="p-1 bg-slate-200/60 rounded text-text-3"><Briefcase size={12} /></div>
@@ -1075,7 +1076,7 @@ export function OrgVaultManager() {
                     className="w-full px-4 py-2.5 border border-border bg-white rounded-2xl focus:outline-none focus:border-accent text-sm font-medium"
                     placeholder="AIzaSy..."
                   />
-                  <p className="text-[10px] text-slate-400 mt-1 font-semibold leading-normal text-text-3">
+                  <p className="text-xs text-slate-400 mt-1 font-semibold leading-normal text-text-3">
                     Clave privada utilizada para habilitar consultas al Oráculo y generación automática de exámenes. Si no se provee, se usará la del servidor global.
                   </p>
                 </div>
@@ -1123,7 +1124,7 @@ export function OrgVaultManager() {
                 ) : (
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-text-2">Arrastra tu archivo .zip aquí o haz clic para explorar</span>
-                    <span className="text-[10px] text-slate-400 font-bold mt-1">Límite de tamaño: 20MB</span>
+                    <span className="text-xs text-slate-400 font-bold mt-1">Límite de tamaño: 20MB</span>
                   </div>
                 )}
               </div>
@@ -1181,7 +1182,7 @@ export function OrgVaultManager() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Título del Documento</label>
+                <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Título del Documento</label>
                 <input
                   type="text"
                   value={editTitle}
@@ -1191,7 +1192,7 @@ export function OrgVaultManager() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Tipo de Documento</label>
+                <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Tipo de Documento</label>
                 <select
                   value={editType}
                   onChange={(e) => setEditType(e.target.value)}
@@ -1204,7 +1205,7 @@ export function OrgVaultManager() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Icono (Lucide)</label>
+                <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Icono (Lucide)</label>
                 <select
                   value={editIcon}
                   onChange={(e) => setEditIcon(e.target.value)}
@@ -1219,7 +1220,7 @@ export function OrgVaultManager() {
             </div>
 
             <div className="flex-1 flex flex-col min-h-[300px]">
-              <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Contenido Markdown</label>
+              <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Contenido Markdown</label>
               <textarea
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
@@ -1275,7 +1276,7 @@ export function OrgVaultManager() {
 
                 {reviewingSuggestion.comment && (
                   <div className="bg-page border border-border rounded-2xl p-4">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Comentario del Colaborador</span>
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1">Comentario del Colaborador</span>
                     <p className="text-xs text-text-2 font-medium italic">"{reviewingSuggestion.comment}"</p>
                   </div>
                 )}
@@ -1303,7 +1304,7 @@ export function OrgVaultManager() {
                 {/* Action Form */}
                 <div className="space-y-3 pt-2">
                   <div>
-                    <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Nota de Revisión (Comentario para el empleado)</label>
+                    <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Nota de Revisión (Comentario para el empleado)</label>
                     <input
                       type="text"
                       value={reviewComment}
@@ -1353,7 +1354,7 @@ export function OrgVaultManager() {
                         <td className="px-4 py-3 text-left">{s.user?.name || s.author_name}</td>
                         <td className="px-4 py-3 text-left">{new Date(s.created_at).toLocaleDateString()}</td>
                         <td className="px-4 py-3 text-left">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-black uppercase ${
                             s.status === 'pending' ? 'bg-warning-bg text-warning-text' :
                             s.status === 'approved' ? 'bg-success-bg text-success-text' :
                             'bg-slate-200 text-text-2'
@@ -1366,12 +1367,12 @@ export function OrgVaultManager() {
                           {s.status === 'pending' ? (
                             <button
                               onClick={() => setReviewingSuggestion(s)}
-                              className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-black text-[10px]"
+                              className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-black text-xs"
                             >
                               Revisar
                             </button>
                           ) : (
-                            <span className="text-[10px] text-slate-450 italic">Evaluado</span>
+                            <span className="text-xs text-slate-450 italic">Evaluado</span>
                           )}
                         </td>
                       </tr>
@@ -1437,12 +1438,12 @@ export function OrgVaultManager() {
                               <td className="px-4 py-3 text-left font-bold text-text-1">{u.name}</td>
                               <td className="px-4 py-3 text-left">{u.email}</td>
                               <td className="px-4 py-3 text-left">
-                                <span className="px-2 py-0.5 rounded bg-page text-text-2 font-bold text-[10px]">
+                                <span className="px-2 py-0.5 rounded bg-page text-text-2 font-bold text-xs">
                                   {u.job_role?.name ?? 'General / Admin'}
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-left">
-                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-black uppercase ${
                                   u.role === 'admin' ? 'bg-accent-soft text-navy-800' : 'bg-slate-150 text-text-1'
                                 }`}>
                                   {u.role === 'admin' ? 'Admin' : 'Lector'}
@@ -1489,7 +1490,7 @@ export function OrgVaultManager() {
                           <div className="flex justify-between items-start">
                             <div>
                               <h4 className="text-xs font-bold text-text-1 leading-none">{p.name}</h4>
-                              <span className="text-[10px] text-text-3 font-medium block mt-1">{p.job_role}</span>
+                              <span className="text-xs text-text-3 font-medium block mt-1">{p.job_role}</span>
                             </div>
                             <span className="text-xs font-black text-accent">{p.percentage}%</span>
                           </div>
@@ -1502,7 +1503,7 @@ export function OrgVaultManager() {
                             />
                           </div>
 
-                          <span className="text-[10px] text-slate-450 font-bold block text-right">
+                          <span className="text-xs text-slate-450 font-bold block text-right">
                             {p.read_count} / {p.total_docs} temas vistos
                           </span>
                         </div>
@@ -1520,7 +1521,7 @@ export function OrgVaultManager() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
                   <div>
                     <h4 className="text-sm font-black text-text-1">Matriz de Visibilidad por Puesto</h4>
-                    <p className="text-[10px] font-medium text-text-3 mt-1">
+                    <p className="text-xs font-medium text-text-3 mt-1">
                       Selecciona qué temas y capítulos del manual debe de visualizar cada puesto en su cuenta de lector lectora individual.
                     </p>
                   </div>
@@ -1554,7 +1555,7 @@ export function OrgVaultManager() {
                                   <button
                                     type="button"
                                     onClick={() => handleToggleAllForRole(role.id, !allAssigned)}
-                                    className={`text-[9px] font-black underline mt-0.5 ${allAssigned ? 'text-danger-text' : 'text-accent'}`}
+                                    className={`text-xs font-black underline mt-0.5 ${allAssigned ? 'text-danger-text' : 'text-accent'}`}
                                   >
                                     {allAssigned ? 'Desmarcar Todos' : 'Marcar Todos'}
                                   </button>
@@ -1573,7 +1574,7 @@ export function OrgVaultManager() {
                             <tr key={doc.id} className="hover:bg-page/60 transition-colors">
                               <td className="p-3 flex items-center justify-between gap-3 font-bold text-text-2 min-w-[240px]">
                                 <div className="flex items-center gap-2 truncate">
-                                  <span className="text-[10px] text-slate-400 capitalize bg-page px-2 py-0.5 rounded font-black tracking-wider">
+                                  <span className="text-xs text-slate-400 capitalize bg-page px-2 py-0.5 rounded font-black tracking-wider">
                                     {doc.type}
                                   </span>
                                   <span className="truncate" title={doc.title}>{doc.title}</span>
@@ -1581,7 +1582,7 @@ export function OrgVaultManager() {
                                 <button
                                   type="button"
                                   onClick={() => handleToggleAllForDoc(doc.id, !allRolesAssigned)}
-                                  className={`text-[9px] font-black underline shrink-0 ${allRolesAssigned ? 'text-danger-text' : 'text-accent'}`}
+                                  className={`text-xs font-black underline shrink-0 ${allRolesAssigned ? 'text-danger-text' : 'text-accent'}`}
                                 >
                                   {allRolesAssigned ? 'Nadie' : 'Todos'}
                                 </button>
@@ -1613,7 +1614,7 @@ export function OrgVaultManager() {
               <div className="flex-1 flex flex-col space-y-6 text-left">
                 <div className="border-b border-border pb-4">
                   <h4 className="text-sm font-black text-text-1">Certificaciones y Evaluaciones por Puesto</h4>
-                  <p className="text-[10px] font-medium text-text-3 mt-1">
+                  <p className="text-xs font-medium text-text-3 mt-1">
                     Consulta el estatus de avance y calificaciones de los colaboradores lectores. Puedes resetear intentos fallidos para permitirles volver a presentar de inmediato.
                   </p>
                 </div>
@@ -1650,7 +1651,7 @@ export function OrgVaultManager() {
                               <tr key={row.user_id} className="hover:bg-page/50 transition-colors">
                                 <td className="p-3">
                                   <div className="font-bold text-text-1">{row.name}</div>
-                                  <div className="text-[10px] text-slate-400 font-normal">{row.email}</div>
+                                  <div className="text-xs text-slate-400 font-normal">{row.email}</div>
                                 </td>
                                 <td className="p-3 font-bold text-text-2">{row.job_role}</td>
                                 <td className="p-3 min-w-[140px]">
@@ -1661,7 +1662,7 @@ export function OrgVaultManager() {
                                         style={{ width: `${row.progress_percentage}%` }}
                                       />
                                     </div>
-                                    <span className="text-[10px] font-bold text-text-3 shrink-0">{row.progress_percentage}%</span>
+                                    <span className="text-xs font-bold text-text-3 shrink-0">{row.progress_percentage}%</span>
                                   </div>
                                 </td>
                                 <td className="p-3 text-center font-bold text-text-2">
@@ -1669,15 +1670,15 @@ export function OrgVaultManager() {
                                 </td>
                                 <td className="p-3 text-center">
                                   {row.certified ? (
-                                    <span className="px-2 py-0.5 rounded-full bg-success-bg text-success-text text-[9px] font-bold border border-success-text/20">
+                                    <span className="px-2 py-0.5 rounded-full bg-success-bg text-success-text text-xs font-bold border border-success-text/20">
                                       Certificado
                                     </span>
                                   ) : row.progress_percentage >= 100 ? (
-                                    <span className="px-2 py-0.5 rounded-full bg-warning-bg text-warning-text text-[9px] font-bold border border-warning-text/20">
+                                    <span className="px-2 py-0.5 rounded-full bg-warning-bg text-warning-text text-xs font-bold border border-warning-text/20">
                                       Listo para Examen
                                     </span>
                                   ) : (
-                                    <span className="px-2 py-0.5 rounded-full bg-page text-slate-400 text-[9px] font-bold border border-border">
+                                    <span className="px-2 py-0.5 rounded-full bg-page text-slate-400 text-xs font-bold border border-border">
                                       Leyendo
                                     </span>
                                   )}
@@ -1720,7 +1721,7 @@ export function OrgVaultManager() {
                       <div className="flex items-center justify-between border-b border-border pb-3 shrink-0">
                         <div>
                           <h3 className="text-sm font-black text-text-1">Historial de Intentos</h3>
-                          <p className="text-[10px] font-medium text-text-3 mt-0.5">
+                          <p className="text-xs font-medium text-text-3 mt-0.5">
                             Historial para: <span className="font-bold text-accent">{selectedAttemptDetails.name}</span> ({selectedAttemptDetails.job_role})
                           </p>
                         </div>
@@ -1737,12 +1738,12 @@ export function OrgVaultManager() {
                           <div key={att.id} className="border border-border rounded-2xl p-5 space-y-4 bg-page/40">
                             <div className="flex justify-between items-center border-b border-border/50 pb-2">
                               <div>
-                                <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">Intento #{selectedAttemptDetails.attempts.length - idx}</span>
-                                <span className="text-[10px] text-text-3 font-semibold">{new Date(att.created_at).toLocaleString()}</span>
+                                <span className="text-xs font-black text-slate-400 block uppercase tracking-wider">Intento #{selectedAttemptDetails.attempts.length - idx}</span>
+                                <span className="text-xs text-text-3 font-semibold">{new Date(att.created_at).toLocaleString()}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="font-black text-sm text-text-2">{att.score}/10</span>
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${
+                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${
                                   att.passed ? "bg-success-bg text-success-text border border-success-text/20" : "bg-danger-bg text-danger-text border border-danger-text/20"
                                 }`}>
                                   {att.passed ? "Aprobado" : "Reprobado"}
@@ -1753,7 +1754,7 @@ export function OrgVaultManager() {
                             {/* Detailed answers breakdown */}
                             {att.answers && att.answers.length > 0 && (
                               <div className="space-y-3 pl-2">
-                                <span className="text-[9px] font-black text-text-3 uppercase tracking-widest block">Detalle de Respuestas</span>
+                                <span className="text-xs font-black text-text-3 uppercase tracking-widest block">Detalle de Respuestas</span>
                                 <div className="space-y-2.5">
                                   {att.answers.map((ans: any, aIdx: number) => (
                                     <div key={aIdx} className="text-xs leading-normal">
@@ -1761,7 +1762,7 @@ export function OrgVaultManager() {
                                         <span>{aIdx + 1}.</span>
                                         <span>{ans.question_text}</span>
                                       </div>
-                                      <div className="mt-1 flex items-center gap-3 pl-4 font-semibold font-mono text-[10px]">
+                                      <div className="mt-1 flex items-center gap-3 pl-4 font-semibold font-mono text-xs">
                                         <span className="flex items-center gap-1">
                                           Respuesta: <span className={`px-1.5 py-0.5 rounded font-black ${
                                             ans.is_correct ? "bg-success-bg text-success-text" : "bg-danger-bg text-danger-text"
@@ -1820,7 +1821,7 @@ export function OrgVaultManager() {
 
                   <div className="space-y-3">
                     <div>
-                      <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Nombre Completo</label>
+                      <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Nombre Completo</label>
                       <input
                         type="text"
                         required
@@ -1832,7 +1833,7 @@ export function OrgVaultManager() {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Usuario o Correo</label>
+                      <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Usuario o Correo</label>
                       <input
                         type="text"
                         required
@@ -1844,7 +1845,7 @@ export function OrgVaultManager() {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">
+                      <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">
                         Contraseña {editingUser && '(Dejar en blanco para no cambiar)'}
                       </label>
                       <input
@@ -1858,7 +1859,7 @@ export function OrgVaultManager() {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Puesto (Para Filtrado de Contenido)</label>
+                      <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Puesto (Para Filtrado de Contenido)</label>
                       <select
                         value={userForm.job_role_id}
                         onChange={(e) => setUserForm({ ...userForm, job_role_id: e.target.value })}
@@ -1872,7 +1873,7 @@ export function OrgVaultManager() {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-text-3 uppercase tracking-widest block mb-1">Rol de Acceso</label>
+                      <label className="text-xs font-black text-text-3 uppercase tracking-widest block mb-1">Rol de Acceso</label>
                       <select
                         value={userForm.role}
                         onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}

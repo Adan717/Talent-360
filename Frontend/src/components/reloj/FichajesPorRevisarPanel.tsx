@@ -137,7 +137,7 @@ export const FichajesPorRevisarPanel = () => {
           <Flag size={20} className="text-danger-text" aria-hidden="true" />
           <div>
             <p className="font-black text-xs sm:text-sm text-text-1">Fichajes por revisar</p>
-            <p className="text-[9px] sm:text-[10px] text-text-3 leading-tight">
+            <p className="text-xs sm:text-xs text-text-3 leading-tight">
               Aceptados pero marcados: hora puesta por el cliente con deriva grande, o entrada sin foto
             </p>
           </div>
@@ -151,11 +151,11 @@ export const FichajesPorRevisarPanel = () => {
 
       {reincidentes.length > 0 && (
         <div className="rounded-xl bg-danger-bg border border-danger-text/20 p-2.5">
-          <p className="text-[10px] font-bold text-danger-text uppercase tracking-wider mb-1">
+          <p className="text-xs font-bold text-danger-text uppercase tracking-wider mb-1">
             Reincidencia (últimos 90 días)
           </p>
           {reincidentes.some(r => Number(r.anulados) > 0) && (
-            <p className="text-[10px] text-danger-text mb-1.5 leading-tight">
+            <p className="text-xs text-danger-text mb-1.5 leading-tight">
               Anuladas = la marca sigue contando aunque una corrección la haya retirado. Quién la
               retiró, abajo.
             </p>
@@ -177,10 +177,10 @@ export const FichajesPorRevisarPanel = () => {
 
       {diferidosReincidentes.length > 0 && (
         <div className="rounded-xl bg-warning-bg border border-warning-text/20 p-2.5">
-          <p className="text-[10px] font-bold text-warning-text uppercase tracking-wider mb-1">
+          <p className="text-xs font-bold text-warning-text uppercase tracking-wider mb-1">
             Fichajes diferidos (sincronizados sin red, últimos 90 días)
           </p>
-          <p className="text-[10px] text-warning-text mb-1.5 leading-tight">
+          <p className="text-xs text-warning-text mb-1.5 leading-tight">
             No son un señalamiento: un corte de red real es normal. Lo que importa es quien ficha
             así muchos días distintos.
           </p>
@@ -201,10 +201,10 @@ export const FichajesPorRevisarPanel = () => {
 
       {correctoresActivos.length > 0 && (
         <div className="rounded-xl bg-page border border-slate-300 p-2.5">
-          <p className="text-[10px] font-bold text-text-1 uppercase tracking-wider mb-1">
+          <p className="text-xs font-bold text-text-1 uppercase tracking-wider mb-1">
             Quién corrige fichajes (últimos 90 días)
           </p>
-          <p className="text-[10px] text-text-2 mb-1.5 leading-tight">
+          <p className="text-xs text-text-2 mb-1.5 leading-tight">
             Anular un duplicado es higiene; dar de alta un fichaje lo CREA. Corregir la propia
             asistencia se marca aparte.
           </p>
@@ -222,7 +222,7 @@ export const FichajesPorRevisarPanel = () => {
                     {' '}· {c.total} correcci{Number(c.total) === 1 ? 'ón' : 'ones'} sobre{' '}
                     {c.empleados_distintos} {Number(c.empleados_distintos) === 1 ? 'persona' : 'personas'}
                   </span>
-                  <div className="text-[10px] text-text-3 mt-0.5">
+                  <div className="text-xs text-text-3 mt-0.5">
                     {c.anulaciones} anulaci{Number(c.anulaciones) === 1 ? 'ón' : 'ones'} ·{' '}
                     {c.sustituciones} sustituci{Number(c.sustituciones) === 1 ? 'ón' : 'ones'} ·{' '}
                     <span className={Number(c.altas) > 0 ? 'font-bold text-text-1' : ''}>
@@ -231,7 +231,7 @@ export const FichajesPorRevisarPanel = () => {
                   </div>
                 </div>
                 {Number(c.a_si_mismo) > 0 && (
-                  <span className="px-2 py-0.5 rounded-lg bg-danger-bg text-danger-text border border-danger-text/20 text-[10px] font-extrabold whitespace-nowrap">
+                  <span className="px-2 py-0.5 rounded-lg bg-danger-bg text-danger-text border border-danger-text/20 text-xs font-extrabold whitespace-nowrap">
                     {c.a_si_mismo} a sí mismo
                   </span>
                 )}
@@ -248,7 +248,7 @@ export const FichajesPorRevisarPanel = () => {
               <span className="font-bold text-text-1">{f.employee_name_at_time ?? `Usuario ${f.user_id}`}</span>
               <span className="text-text-3"> — {porQue(f)}</span>
             </div>
-            <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
+            <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
               {f.date} {String(f.time).slice(0, 5)}
             </span>
           </div>

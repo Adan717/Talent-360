@@ -56,7 +56,18 @@ export function useClockEngine(overrideUser?: any) {
     fetchPunctualityStatus
   } = useAppStore();
 
-  const currentUser = overrideUser || globalUser;
+  const resolvedCurrentUser = overrideUser || globalUser;
+  // Los hooks no pueden quedar detrás de un retorno condicional. Durante la hidratación existe
+  // una ventana breve sin identidad; usamos un objeto inerte para completar siempre el mismo
+  // árbol de hooks y devolvemos el estado de carga sólo al final del hook.
+  const currentUser = resolvedCurrentUser || {
+    id: 0,
+    name: '',
+    role: '',
+    tenant_id: null,
+    job_role_id: null,
+    mealMinutes: 0,
+  };
   const setCurrentUser = overrideUser ? () => {} : setGlobalUser;
   const isSimulator = !!overrideUser;
 
@@ -490,13 +501,6 @@ export function useClockEngine(overrideUser?: any) {
 
   const timeMode = systemSettings?.time_mode || 'simulated';
   const isRealTimeMode = timeMode === 'realtime';
-
-  if (!currentUser) {
-    if (globalUsers.length === 0) {
-      return { isGlobalLoading: true } as any;
-    }
-    return { dbEmpty: true } as any;
-  }
 
   const baseTimeMinutes = 7 * 60 + 30; // 450 (7:30 AM)
 
@@ -1241,7 +1245,13 @@ export function useClockEngine(overrideUser?: any) {
           const nextPending = { ...s.globalPendingBreakRequests };
           delete nextPending[targetUserId];
 
-          return {
+  if (!resolvedCurrentUser) {
+    return globalUsers.length === 0
+      ? ({ isGlobalLoading: true } as any)
+      : ({ dbEmpty: true } as any);
+  }
+
+  return {
             globalPendingBreakRequests: nextPending,
             globalClockStates: {
               ...s.globalClockStates,

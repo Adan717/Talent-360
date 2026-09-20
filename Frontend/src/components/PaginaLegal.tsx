@@ -27,7 +27,7 @@ export const PaginaLegal: React.FC<{ pestanaInicial?: LegalDocType }> = ({ pesta
       <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur">
         <div className="max-w-4xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-navy-300">Talent 360</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-navy-300">Talent 360</p>
             <h1 className="text-lg font-black text-white">Aviso de Privacidad y Términos</h1>
           </div>
           {/* A /inicio y NO a /app: en el dominio, la ruta /app la enruta Caddy al websocket
@@ -68,7 +68,7 @@ export const PaginaLegal: React.FC<{ pestanaInicial?: LegalDocType }> = ({ pesta
 
       <footer className="border-t border-slate-800 mt-8">
         <div className="max-w-4xl mx-auto px-5 py-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[10px] text-text-3 font-medium">
+          <p className="text-xs text-text-3 font-medium">
             Talent360 © 2026 — Plataforma Cumplimiento LFPDPPP &amp; LFT
           </p>
           <a

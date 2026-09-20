@@ -43,7 +43,7 @@ export function LandingFaqModal({ isOpen, onClose }: LandingFaqModalProps) {
           <div className="flex items-start gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-accent ring-1 ring-navy-100"><HelpCircle size={20} /></span>
             <div>
-              <p className="text-[10px] font-bold tracking-[.14em] text-text-3">TALENT 360</p>
+              <p className="text-xs font-bold tracking-[.14em] text-text-3">TALENT 360</p>
               <h2 id="landing-faq-title" className="mt-1 text-xl font-semibold tracking-tight text-text-1">Preguntas frecuentes</h2>
               <p className="mt-1 text-sm text-text-2">Lo esencial antes de crear tu cuenta.</p>
             </div>

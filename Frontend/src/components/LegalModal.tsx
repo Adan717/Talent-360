@@ -111,7 +111,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                 </p>
                 <ul className="list-disc pl-5 space-y-1 text-slate-300">
                   <li>La fotografía se captura con el único propósito de acreditar el uso efectivo del periodo de comida.</li>
-                  <li>Las imágenes se almacenan en el <strong>almacenamiento privado del servidor</strong> (no en una carpeta pública), accesibles únicamente mediante una petición autenticada y con aislamiento por inquilino (<code className="bg-slate-800 text-navy-100 px-1 py-0.5 rounded font-mono text-[10px]">TenantScope</code>). <strong>No se cifran en reposo</strong>; la protección es de acceso, no criptográfica. Se depuran automáticamente a los 90 días.</li>
+                  <li>Las imágenes se almacenan en el <strong>almacenamiento privado del servidor</strong> (no en una carpeta pública), accesibles únicamente mediante una petición autenticada y con aislamiento por inquilino (<code className="bg-slate-800 text-navy-100 px-1 py-0.5 rounded font-mono text-xs">TenantScope</code>). <strong>No se cifran en reposo</strong>; la protección es de acceso, no criptográfica. Se depuran automáticamente a los 90 días.</li>
                   <li>No se venderán, comercializarán ni compartirán estas imágenes con ningún tercero bajo ninguna circunstancia.</li>
                 </ul>
               </section>
@@ -158,7 +158,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                   <RefreshCcw className="w-4 h-4 text-navy-300" /> 7. Uso de Cookies y Almacenamiento Local (LocalStorage)
                 </h4>
                 <p>
-                  Talent360 utiliza cookies HttpOnly de sesión y tecnología de almacenamiento local en el navegador (<code className="bg-slate-800 text-navy-100 px-1 py-0.5 rounded font-mono text-[10px]">LocalStorage / IndexedDB</code>) para:
+                  Talent360 utiliza cookies HttpOnly de sesión y tecnología de almacenamiento local en el navegador (<code className="bg-slate-800 text-navy-100 px-1 py-0.5 rounded font-mono text-xs">LocalStorage / IndexedDB</code>) para:
                 </p>
                 <ul className="list-disc pl-5 space-y-1 text-slate-300">
                   <li>Mantener la sesión autenticada de manera segura (Laravel Sanctum).</li>
@@ -253,7 +253,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                 </h4>
                 <ul className="list-disc pl-5 space-y-1.5 text-slate-300">
                   <li><strong>Propiedad de la Plataforma:</strong> Talent360, su código fuente (Laravel/React), arquitectura, bases de datos, marcas, logotipos, interfaces, algoritmos y diseño son propiedad exclusiva de Talent360.</li>
-                  <li><strong>Propiedad de los Datos del Cliente:</strong> El Cliente mantendrá en todo momento la titularidad exclusiva sobre la información, expedientes de empleados, reportes de asistencia y documentos cargados en su bóveda privada (<code className="bg-slate-800 text-navy-100 px-1 py-0.5 rounded font-mono text-[10px]">Vault</code>).</li>
+                  <li><strong>Propiedad de los Datos del Cliente:</strong> El Cliente mantendrá en todo momento la titularidad exclusiva sobre la información, expedientes de empleados, reportes de asistencia y documentos cargados en su bóveda privada (<code className="bg-slate-800 text-navy-100 px-1 py-0.5 rounded font-mono text-xs">Vault</code>).</li>
                 </ul>
               </section>
 
@@ -367,7 +367,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
             </div>
             <div>
               <h2 id="legal-modal-title" className="flex items-center gap-2 text-base font-semibold text-white">
-                Documentos legales <span className="rounded-full border border-navy-600 bg-navy-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-navy-100">Talent 360</span>
+                Documentos legales <span className="rounded-full border border-navy-600 bg-navy-800 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-navy-100">Talent 360</span>
               </h2>
               <p className="text-xs font-medium text-slate-300">Privacidad, términos del servicio y derechos ARCO.</p>
             </div>
@@ -406,7 +406,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
 
         {/* Modal Footer */}
         <div className="flex shrink-0 items-center justify-between border-t border-slate-700 bg-brand-dark px-6 py-4">
-          <p className="text-[10px] font-medium text-slate-300">Talent 360  {new Date().getFullYear()}</p>
+          <p className="text-xs font-medium text-slate-300">Talent 360  {new Date().getFullYear()}</p>
           <button
             type="button"
             onClick={onClose}

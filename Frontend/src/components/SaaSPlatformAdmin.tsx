@@ -14,6 +14,7 @@ import { SaaSPlatformBilling } from './SaaSPlatformBilling';
 import { CLOCK_FEATURE_TAGS_MATRIX } from './reloj/logic/clockFeatureTags';
 import { slugParaCorreo } from '../lib/emailSlug';
 import { ProductUpdatesAdmin } from './ProductUpdatesAdmin';
+import { confirmAction, notify } from '../lib/appDialogs';
 
 /**
  * Estado de cobranza tal como lo respalda el backend (App\Support\EstadoDeCobranza).
@@ -281,15 +282,15 @@ export const SaaSPlatformAdmin = () => {
   };
 
   const handleDeletePendingRegistration = async (id: number, email: string) => {
-    if (!window.confirm(`¿Estás seguro de que deseas eliminar permanentemente el registro inconcluso de "${email}"? Esta acción liberará la dirección de correo para futuros registros.`)) return;
+    if (!await confirmAction(`¿Estás seguro de que deseas eliminar permanentemente el registro inconcluso de "${email}"? Esta acción liberará la dirección de correo para futuros registros.`, { title: 'Eliminar registro inconcluso', confirmLabel: 'Eliminar permanentemente', tone: 'error' })) return;
 
     try {
       const res = await axiosInstance.delete(`/platform/pending-registrations/${id}`);
-      alert(res.data.message || "Registro inconcluso eliminado con éxito.");
+      notify(res.data.message || "Registro inconcluso eliminado con éxito.");
       fetchPendingRegistrations();
     } catch (error: any) {
       console.error("Error deleting pending registration:", error);
-      alert(error.response?.data?.error || "Error al eliminar el registro.");
+      notify(error.response?.data?.error || "Error al eliminar el registro.");
     }
   };
 
@@ -335,7 +336,7 @@ export const SaaSPlatformAdmin = () => {
       setTicketDetailData(res.data);
     } catch (error) {
       console.error("Error fetching ticket details:", error);
-      alert("Error al cargar los detalles del ticket.");
+      notify("Error al cargar los detalles del ticket.");
       setIsTicketDetailOpen(false);
     } finally {
       setIsTicketDetailLoading(false);
@@ -351,7 +352,7 @@ export const SaaSPlatformAdmin = () => {
       fetchTickets();
     } catch (error) {
       console.error("Error updating ticket status:", error);
-      alert("Error al actualizar el estado.");
+      notify("Error al actualizar el estado.");
     }
   };
 
@@ -364,7 +365,7 @@ export const SaaSPlatformAdmin = () => {
       fetchTickets();
     } catch (error) {
       console.error("Error updating ticket priority:", error);
-      alert("Error al actualizar la prioridad.");
+      notify("Error al actualizar la prioridad.");
     }
   };
 
@@ -377,7 +378,7 @@ export const SaaSPlatformAdmin = () => {
       fetchTickets();
     } catch (error) {
       console.error("Error updating ticket assignment:", error);
-      alert("Error al asignar el ticket.");
+      notify("Error al asignar el ticket.");
     }
   };
 
@@ -391,7 +392,7 @@ export const SaaSPlatformAdmin = () => {
       setTicketDetailData(res.data);
     } catch (error) {
       console.error("Error adding internal note:", error);
-      alert("Error al agregar nota interna.");
+      notify("Error al agregar nota interna.");
     } finally {
       setIsAddingNote(false);
     }
@@ -410,7 +411,7 @@ export const SaaSPlatformAdmin = () => {
       }
     } catch (error) {
       console.error("Error suggesting IA response:", error);
-      alert("No se pudo obtener sugerencia de la IA.");
+      notify("No se pudo obtener sugerencia de la IA.");
     } finally {
       setIsSuggestingIA(false);
     }
@@ -418,7 +419,7 @@ export const SaaSPlatformAdmin = () => {
 
   const handleCreateTicket = async () => {
     if (!newTicketTitle.trim() || !newTicketDesc.trim()) {
-      alert("El título y la descripción son requeridos.");
+      notify("El título y la descripción son requeridos.");
       return;
     }
     setIsCreatingTicket(true);
@@ -444,14 +445,14 @@ export const SaaSPlatformAdmin = () => {
       fetchTickets();
     } catch (error) {
       console.error("Error creating ticket:", error);
-      alert("Error al crear el ticket.");
+      notify("Error al crear el ticket.");
     } finally {
       setIsCreatingTicket(false);
     }
   };
 
   const handleDeleteTicket = async (id: number) => {
-    if (!window.confirm("¿Estás seguro de que deseas eliminar este ticket permanentemente?")) return;
+    if (!await confirmAction("¿Estás seguro de que deseas eliminar este ticket permanentemente?", { title: 'Eliminar ticket', confirmLabel: 'Eliminar permanentemente', tone: 'error' })) return;
     try {
       await axiosInstance.delete(`/platform/tickets/${id}`);
       fetchTickets();
@@ -460,7 +461,7 @@ export const SaaSPlatformAdmin = () => {
       }
     } catch (error) {
       console.error("Error deleting ticket:", error);
-      alert("Error al eliminar el ticket.");
+      notify("Error al eliminar el ticket.");
     }
   };
 
@@ -551,11 +552,11 @@ export const SaaSPlatformAdmin = () => {
     setIsSavingSimulator(true);
     try {
       await axiosInstance.post('/platform/landing-simulator-settings', simulatorConfig);
-      alert("Configuración del simulador guardada y actualizada con éxito.");
+      notify("Configuración del simulador guardada y actualizada con éxito.");
       setIsSimulatorConfigOpen(false);
     } catch (error: any) {
       console.error("Error saving simulator config:", error);
-      alert(error.response?.data?.error || "Error al guardar la configuración del simulador.");
+      notify(error.response?.data?.error || "Error al guardar la configuración del simulador.");
     } finally {
       setIsSavingSimulator(false);
     }
@@ -640,24 +641,24 @@ export const SaaSPlatformAdmin = () => {
   const getNichoBadge = (nicho?: string) => {
     const n = (nicho || '').toLowerCase();
     if (n.includes('retail') || n.includes('tienda') || n.includes('comercio') || n.includes('decoracion') || n.includes('boutique') || n.includes('minimarket') || n.includes('ferreteria')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-md shrink-0"> Tienda / Retail</span>;
+      return <span className="inline-flex items-center gap-1 text-xs font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-md shrink-0"> Tienda / Retail</span>;
     }
     if (n.includes('restaurante') || n.includes('comedor') || n.includes('cafeteria') || n.includes('comida') || n.includes('bar') || n.includes('taqueria')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-md shrink-0"> Restaurante</span>;
+      return <span className="inline-flex items-center gap-1 text-xs font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-md shrink-0"> Restaurante</span>;
     }
     if (n.includes('oficina') || n.includes('servicios') || n.includes('despacho') || n.includes('agencia') || n.includes('consultoria') || n.includes('inmobiliaria')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0"> Servicios</span>;
+      return <span className="inline-flex items-center gap-1 text-xs font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0"> Servicios</span>;
     }
     if (n.includes('taller') || n.includes('mecanico') || n.includes('manufactura') || n.includes('industrial') || n.includes('tecnico')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0"> Taller / Industria</span>;
+      return <span className="inline-flex items-center gap-1 text-xs font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0"> Taller / Industria</span>;
     }
     if (n.includes('salud') || n.includes('farmacia') || n.includes('clinica') || n.includes('hospital')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-md shrink-0"> Salud / Clínica</span>;
+      return <span className="inline-flex items-center gap-1 text-xs font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-md shrink-0"> Salud / Clínica</span>;
     }
     if (n.includes('educacion') || n.includes('escuela') || n.includes('academia') || n.includes('curso')) {
-      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0"> Educación</span>;
+      return <span className="inline-flex items-center gap-1 text-xs font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-md shrink-0"> Educación</span>;
     }
-    return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-text-2 bg-page border border-border px-2 py-0.5 rounded-md shrink-0"> General</span>;
+    return <span className="inline-flex items-center gap-1 text-xs font-bold text-text-2 bg-page border border-border px-2 py-0.5 rounded-md shrink-0"> General</span>;
   };
 
   const getCleanDbPhone = (val: string) => {
@@ -761,27 +762,27 @@ export const SaaSPlatformAdmin = () => {
       });
     } catch (error) {
       console.error("Error creating tenant:", error);
-      alert("Hubo un error al crear la empresa de prueba.");
+      notify("Hubo un error al crear la empresa de prueba.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteTenant = async (id: number, name: string) => {
-    const confirmDelete = window.confirm(`¿Estás seguro de que deseas eliminar la empresa "${name}"? Esta acción borrará permanentemente todos sus usuarios, vacantes, candidatos y datos asociados de forma irreversible.`);
+    const confirmDelete = await confirmAction(`¿Estás seguro de que deseas eliminar la empresa "${name}"? Esta acción borrará permanentemente todos sus usuarios, vacantes, candidatos y datos asociados de forma irreversible.`, { title: 'Eliminar empresa', confirmLabel: 'Eliminar empresa', tone: 'error' });
     if (!confirmDelete) return;
 
     setIsLoading(true);
     try {
       await axiosInstance.delete(`/platform/tenants/${id}`);
       await fetchGlobalData(searchQuery, planFilter, statusFilter);
-      alert(`La empresa "${name}" ha sido eliminada con éxito.`);
+      notify(`La empresa "${name}" ha sido eliminada con éxito.`);
       if (selectedTenantId === id) {
         setIsDetailOpen(false);
       }
     } catch (error: any) {
       console.error("Error deleting tenant:", error);
-      alert(error.response?.data?.error || "Hubo un error al eliminar la empresa.");
+      notify(error.response?.data?.error || "Hubo un error al eliminar la empresa.");
     } finally {
       setIsLoading(false);
     }
@@ -815,7 +816,7 @@ export const SaaSPlatformAdmin = () => {
       setTenantAllowedFeatures(Array.isArray(data.tenant?.allowed_features) ? data.tenant.allowed_features : []);
     } catch (error) {
       console.error("Error loading tenant details:", error);
-      alert("Error al cargar los detalles de la empresa.");
+      notify("Error al cargar los detalles de la empresa.");
       setIsDetailOpen(false);
     } finally {
       setIsDetailLoading(false);
@@ -830,11 +831,11 @@ export const SaaSPlatformAdmin = () => {
         modules: tenantAllowedModules,
         features: tenantAllowedFeatures
       });
-      alert("Módulos y funciones personalizadas guardadas con éxito para esta empresa.");
+      notify("Módulos y funciones personalizadas guardadas con éxito para esta empresa.");
       await handleOpenDetails(selectedTenantId);
     } catch (error: any) {
       console.error("Error saving tenant features:", error);
-      alert(error.response?.data?.error || "Error al guardar los permisos de la empresa.");
+      notify(error.response?.data?.error || "Error al guardar los permisos de la empresa.");
     } finally {
       setIsSavingTenantFeatures(false);
     }
@@ -856,7 +857,7 @@ export const SaaSPlatformAdmin = () => {
   const handleSaveTenantEdit = async () => {
     if (!selectedTenantId) return;
     if (!editTenantName.trim() || !editAdminName.trim() || !editAdminEmail.trim()) {
-      alert("Por favor completa todos los campos requeridos.");
+      notify("Por favor completa todos los campos requeridos.");
       return;
     }
 
@@ -872,7 +873,7 @@ export const SaaSPlatformAdmin = () => {
         admin_phone: editAdminPhone || null
       });
 
-      alert("Datos de la empresa y del administrador actualizados con éxito.");
+      notify("Datos de la empresa y del administrador actualizados con éxito.");
       setIsEditing(false);
       setEditAdminPassword('');
 
@@ -881,7 +882,7 @@ export const SaaSPlatformAdmin = () => {
       await handleOpenDetails(selectedTenantId);
     } catch (error: any) {
       console.error("Error updating tenant details:", error);
-      alert(error.response?.data?.error || "Error al actualizar los datos de la empresa.");
+      notify(error.response?.data?.error || "Error al actualizar los datos de la empresa.");
     } finally {
       setIsSavingEdit(false);
     }
@@ -898,7 +899,7 @@ export const SaaSPlatformAdmin = () => {
   };
 
   // Activar o Suspender Inquilino
-  const handleToggleStatus = (id: number, name: string, isActive: boolean) => {
+  const handleToggleStatus = async (id: number, name: string, isActive: boolean) => {
     if (isActive) {
       // Si está activo, proceder a suspender (abrir modal de razón)
       setSuspensionTenantId(id);
@@ -908,7 +909,7 @@ export const SaaSPlatformAdmin = () => {
       setIsSuspensionModalOpen(true);
     } else {
       // Si está inactivo, activar inmediatamente
-      const confirmActivate = window.confirm(`¿Deseas activar la empresa "${name}" de nuevo?`);
+      const confirmActivate = await confirmAction(`¿Deseas activar la empresa "${name}" de nuevo?`, { title: 'Reactivar empresa', confirmLabel: 'Activar', tone: 'info' });
       if (!confirmActivate) return;
 
       triggerToggleStatus(id, true, null);
@@ -923,7 +924,7 @@ export const SaaSPlatformAdmin = () => {
         suspension_reason: reason
       });
 
-      alert(targetActive ? "Empresa activada exitosamente." : "Empresa suspendida exitosamente.");
+      notify(targetActive ? "Empresa activada exitosamente." : "Empresa suspendida exitosamente.");
       setIsSuspensionModalOpen(false);
 
       // Recargar lista y detalles si están abiertos
@@ -933,7 +934,7 @@ export const SaaSPlatformAdmin = () => {
       }
     } catch (error: any) {
       console.error("Error changing status:", error);
-      alert(error.response?.data?.error || "Error al cambiar el estado de la empresa.");
+      notify(error.response?.data?.error || "Error al cambiar el estado de la empresa.");
     } finally {
       setIsLoading(false);
     }
@@ -949,7 +950,7 @@ export const SaaSPlatformAdmin = () => {
   const handleResetPassword = async () => {
     if (!selectedTenantId || !newPassword.trim()) return;
     if (newPassword.length < 6) {
-      alert("La contraseña debe tener al menos 6 caracteres.");
+      notify("La contraseña debe tener al menos 6 caracteres.");
       return;
     }
 
@@ -958,12 +959,12 @@ export const SaaSPlatformAdmin = () => {
       await axiosInstance.post(`/platform/tenants/${selectedTenantId}/reset-password`, {
         password: newPassword
       });
-      alert("Contraseña actualizada con éxito.");
+      notify("Contraseña actualizada con éxito.");
       setNewPassword('');
       setIsResetFormVisible(false);
     } catch (error: any) {
       console.error("Error resetting password:", error);
-      alert(error.response?.data?.error || "Error al restablecer la contraseña.");
+      notify(error.response?.data?.error || "Error al restablecer la contraseña.");
     } finally {
       setIsResetting(false);
     }
@@ -971,7 +972,7 @@ export const SaaSPlatformAdmin = () => {
 
   // Impersonación de Inquilino
   const handleImpersonate = async (id: number) => {
-    const confirmImpersonation = window.confirm("¿Deseas iniciar sesión temporalmente como el administrador de esta empresa? Podrás volver a tu cuenta de Super Admin en cualquier momento.");
+    const confirmImpersonation = await confirmAction("¿Deseas iniciar sesión temporalmente como el administrador de esta empresa? Podrás volver a tu cuenta de Super Admin en cualquier momento.", { title: 'Acceder como administrador', confirmLabel: 'Iniciar sesión temporal', tone: 'warning' });
     if (!confirmImpersonation) return;
 
     setIsLoading(true);
@@ -992,7 +993,7 @@ export const SaaSPlatformAdmin = () => {
       window.location.href = '/app';
     } catch (error: any) {
       console.error("Error starting impersonation:", error);
-      alert(error.response?.data?.error || "Error al iniciar sesión como administrador de la empresa.");
+      notify(error.response?.data?.error || "Error al iniciar sesión como administrador de la empresa.");
       setIsLoading(false);
     }
   };
@@ -1009,7 +1010,7 @@ export const SaaSPlatformAdmin = () => {
       }
     } catch (error) {
       console.error("Error loading freemium config:", error);
-      alert("Error al cargar la configuración freemium.");
+      notify("Error al cargar la configuración freemium.");
     } finally {
       setIsLoading(false);
     }
@@ -1028,11 +1029,11 @@ export const SaaSPlatformAdmin = () => {
       updateSetting('freemium_allowed_modules', freemiumModules);
       updateSetting('global_trial_days', globalTrialDays);
 
-      alert("Configuración de plan gratuito y días de prueba guardada con éxito.");
+      notify("Configuración de plan gratuito y días de prueba guardada con éxito.");
       setIsFreemiumConfigOpen(false);
     } catch (error) {
       console.error("Error saving freemium config:", error);
-      alert("Error al guardar la configuración.");
+      notify("Error al guardar la configuración.");
     } finally {
       setIsSavingFreemium(false);
     }
@@ -1055,7 +1056,7 @@ export const SaaSPlatformAdmin = () => {
       }
     } catch (error) {
       console.error("Error loading bank config:", error);
-      alert("Error al cargar la configuración bancaria.");
+      notify("Error al cargar la configuración bancaria.");
     } finally {
       setIsLoading(false);
     }
@@ -1063,22 +1064,22 @@ export const SaaSPlatformAdmin = () => {
 
   const handleSaveBankConfig = async () => {
     if (bankConfigData.clabe && bankConfigData.clabe.length !== 18) {
-      alert("La CLABE debe tener exactamente 18 dígitos.");
+      notify("La CLABE debe tener exactamente 18 dígitos.");
       return;
     }
     if (bankConfigData.card_number && bankConfigData.card_number.length !== 16) {
-      alert("El número de tarjeta debe tener exactamente 16 dígitos.");
+      notify("El número de tarjeta debe tener exactamente 16 dígitos.");
       return;
     }
 
     setIsSavingBank(true);
     try {
       await axiosInstance.post('/platform/bank-config', bankConfigData);
-      alert("Configuración bancaria guardada con éxito.");
+      notify("Configuración bancaria guardada con éxito.");
       setIsBankConfigOpen(false);
     } catch (error) {
       console.error("Error saving bank config:", error);
-      alert("Error al guardar la configuración bancaria.");
+      notify("Error al guardar la configuración bancaria.");
     } finally {
       setIsSavingBank(false);
     }
@@ -1135,7 +1136,7 @@ export const SaaSPlatformAdmin = () => {
                 <div className="fixed inset-0 z-10" onClick={() => setIsNavMenuOpen(false)}></div>
                 <div className="absolute right-0 mt-2 w-64 bg-white border border-border rounded-2xl shadow-xl p-2.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150 space-y-1">
                   <div className="px-3 py-1.5 border-b border-border mb-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Secciones de Plataforma</p>
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Secciones de Plataforma</p>
                   </div>
 
                   {isAdmin && (
@@ -1160,7 +1161,7 @@ export const SaaSPlatformAdmin = () => {
                     >
                       <span className="flex items-center gap-2"><Loader2 size={16} /> Registros Inconclusos</span>
                       {pendingRegistrations.length > 0 && (
-                        <span className="bg-warning-icon text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                        <span className="bg-warning-icon text-white text-xs font-black px-2 py-0.5 rounded-full animate-pulse">
                           {pendingRegistrations.length}
                         </span>
                       )}
@@ -1199,7 +1200,7 @@ export const SaaSPlatformAdmin = () => {
                     >
                       <span className="flex items-center gap-2"><Monitor size={16} /> Redes Sociales & Promociones</span>
                       {socialClaims.filter(c => c.status === 'pending_approval').length > 0 && (
-                        <span className="bg-accent text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                        <span className="bg-accent text-white text-xs font-black px-2 py-0.5 rounded-full animate-pulse">
                           {socialClaims.filter(c => c.status === 'pending_approval').length}
                         </span>
                       )}
@@ -1250,7 +1251,7 @@ export const SaaSPlatformAdmin = () => {
               </div>
               <div className="text-center leading-tight max-w-[120px] truncate">
                 <p className="text-[11px] font-black text-text-1 truncate">{currentUser?.name || 'Administrador'}</p>
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider truncate">{currentUser?.role || 'Super Admin'}</p>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider truncate">{currentUser?.role || 'Super Admin'}</p>
               </div>
             </button>
 
@@ -1324,7 +1325,7 @@ export const SaaSPlatformAdmin = () => {
                         <p className="font-bold flex items-center gap-1.5 text-slate-100">
                           <Eye size={14} className="text-navy-300" /> Cerrar por esta sesión
                         </p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Se volverá a mostrar al recargar.</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Se volverá a mostrar al recargar.</p>
                       </button>
                       <button
                         type="button"
@@ -1338,7 +1339,7 @@ export const SaaSPlatformAdmin = () => {
                         <p className="font-bold flex items-center gap-1.5 text-danger-text">
                           <Ban size={14} /> No volver a mostrar
                         </p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Ocultar de forma permanente.</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Ocultar de forma permanente.</p>
                       </button>
                     </div>
                   </>
@@ -1347,7 +1348,7 @@ export const SaaSPlatformAdmin = () => {
 
               <div className="relative z-10 flex-1 pr-8">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="bg-danger-icon/90 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full animate-pulse">
+                  <span className="bg-danger-icon/90 text-white text-xs font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full animate-pulse">
                     Plataforma Central
                   </span>
                   <span className="text-slate-400 text-xs font-bold">Modo Dueño del SaaS</span>
@@ -1362,8 +1363,8 @@ export const SaaSPlatformAdmin = () => {
                 {/* Selector Modo de Tiempo Compacto */}
                 <div className="bg-slate-800/90 p-2 rounded-xl border border-slate-700 backdrop-blur-md flex items-center gap-2 flex-1 sm:flex-initial">
                   <div className="text-left px-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Tiempo (DB)</span>
-                    <span className={`text-[10px] font-bold ${timeMode === 'simulated' ? 'text-navy-300' : 'text-success-text'}`}>
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-wider block">Tiempo (DB)</span>
+                    <span className={`text-xs font-bold ${timeMode === 'simulated' ? 'text-navy-300' : 'text-success-text'}`}>
                       {timeMode === 'simulated' ? 'Simulado' : 'Tiempo Real'}
                     </span>
                   </div>
@@ -1371,14 +1372,14 @@ export const SaaSPlatformAdmin = () => {
                     <button
                       type="button"
                       onClick={() => updateSetting('time_mode', 'simulated')}
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'simulated' ? 'bg-accent text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
+                      className={`text-xs font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'simulated' ? 'bg-accent text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
                     >
                       Simulado
                     </button>
                     <button
                       type="button"
                       onClick={() => updateSetting('time_mode', 'real')}
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'real' ? 'bg-success-text text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
+                      className={`text-xs font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'real' ? 'bg-success-text text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
                     >
                       Real
                     </button>
@@ -1426,7 +1427,7 @@ export const SaaSPlatformAdmin = () => {
             />
 
             <div className="flex items-center justify-between relative z-10">
-              <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-wider truncate">
+              <span className="text-xs sm:text-[11px] font-black text-slate-400 uppercase tracking-wider truncate">
                 {stat.label}
               </span>
               <ArrowUpRight size={13} className="text-slate-300 group-hover:text-accent transition-colors shrink-0 hidden sm:block" />
@@ -1439,7 +1440,7 @@ export const SaaSPlatformAdmin = () => {
             </div>
 
             <div className="relative z-10 flex items-center justify-between">
-              <span className="text-[9px] sm:text-[10px] font-bold text-text-3 bg-page px-1.5 py-0.5 rounded border border-border/80 inline-block truncate max-w-full">
+              <span className="text-xs sm:text-xs font-bold text-text-3 bg-page px-1.5 py-0.5 rounded border border-border/80 inline-block truncate max-w-full">
                 {stat.trend}
               </span>
             </div>
@@ -1513,10 +1514,10 @@ export const SaaSPlatformAdmin = () => {
                       <div>
                          <h4 className="font-extrabold text-text-1 text-sm leading-snug">{comp.name}</h4>
                          <div className="mt-1">{getNichoBadge(comp.nicho)}</div>
-                         <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{comp.date}</span>
+                         <span className="text-xs text-slate-400 font-semibold block mt-0.5">{comp.date}</span>
                       </div>
                       <div className="text-right">
-                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase ${
                             comp.plan === 'PRO' ? 'bg-warning-bg text-warning-text' :
                             comp.plan === 'Enterprise' ? 'bg-accent-soft text-accent' :
                             'bg-slate-200 text-text-2'
@@ -1524,30 +1525,30 @@ export const SaaSPlatformAdmin = () => {
                             {comp.plan}
                          </span>
                          <div className="text-[11px] font-extrabold text-text-1 mt-1">
-                            ${comp.monthly_price ?? 0} <span className="text-[9px] text-text-3 font-semibold">/mes</span>
+                            ${comp.monthly_price ?? 0} <span className="text-xs text-text-3 font-semibold">/mes</span>
                          </div>
                       </div>
                    </div>
 
                    <div className="grid grid-cols-3 gap-2 text-center text-xs bg-white p-2 rounded-xl border border-border/80">
                       <div>
-                         <span className="text-[9px] font-black text-slate-400 block uppercase">Módulos</span>
+                         <span className="text-xs font-black text-slate-400 block uppercase">Módulos</span>
                          <span className="font-extrabold text-accent">{comp.modules_count ?? 0} / {comp.total_modules_available ?? 12}</span>
                       </div>
                       <div>
-                         <span className="text-[9px] font-black text-slate-400 block uppercase">Usuarios</span>
+                         <span className="text-xs font-black text-slate-400 block uppercase">Usuarios</span>
                          {/* AVISO, no candado (2026-09-05): el tope del plan no lo aplica ningún
                              código —`max_users` se guarda y nadie lo revisa—, así que el panel al
                              menos tiene que poder VER quién lo rebasó. El servidor manda
                              `sobre_cupo` ya calculado contra el tope del tarifario. */}
                          <span className={`font-extrabold ${comp.sobre_cupo ? 'text-warning-text' : 'text-text-2'}`}>
                             {comp.users} / {comp.tope_colaboradores ?? '∞'}
-                            {comp.sobre_cupo && <span className="ml-1 text-[8px] uppercase" title="Rebasa el cupo de su plan. No se bloquea nada.">sobre cupo</span>}
+                            {comp.sobre_cupo && <span className="ml-1 text-xs uppercase" title="Rebasa el cupo de su plan. No se bloquea nada.">sobre cupo</span>}
                          </span>
                       </div>
                       <div>
-                         <span className="text-[9px] font-black text-slate-400 block uppercase">Volumen DB</span>
-                         <span className="font-extrabold text-success-text">{comp.tx_daily_avg ?? 0} <span className="text-[8px] text-slate-400">Tx/día</span></span>
+                         <span className="text-xs font-black text-slate-400 block uppercase">Volumen DB</span>
+                         <span className="font-extrabold text-success-text">{comp.tx_daily_avg ?? 0} <span className="text-xs text-slate-400">Tx/día</span></span>
                       </div>
                    </div>
 
@@ -1559,13 +1560,13 @@ export const SaaSPlatformAdmin = () => {
                       <div className="text-xs">
                          {(() => {
                             if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
-                               return <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>;
+                               return <span className="text-xs text-slate-400 font-semibold block">Gratuito permanente</span>;
                             }
                             const cob = estadoDeCobranza(comp);
                             return (
                                <span
                                  title={cob.detalle || ''}
-                                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cob.clases}`}
+                                 className={`text-xs font-bold px-2 py-0.5 rounded-full border ${cob.clases}`}
                                >
                                   {cob.etiqueta}
                                </span>
@@ -1622,11 +1623,11 @@ export const SaaSPlatformAdmin = () => {
                                 <span>{comp.name}</span>
                                 {getNichoBadge(comp.nicho)}
                              </div>
-                             <span className="text-[10px] text-slate-400 font-semibold block">ID: {comp.subdomain}</span>
+                             <span className="text-xs text-slate-400 font-semibold block">ID: {comp.subdomain}</span>
                           </td>
                           <td className="py-4">
                              <div className="flex items-center gap-2">
-                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
+                                <span className={`px-2 py-0.5 rounded-md text-xs font-extrabold uppercase ${
                                    comp.plan === 'PRO' ? 'bg-warning-bg text-warning-text' :
                                    comp.plan === 'Enterprise' ? 'bg-accent-soft text-accent' :
                                    'bg-page text-text-2'
@@ -1634,7 +1635,7 @@ export const SaaSPlatformAdmin = () => {
                                    {comp.plan}
                                 </span>
                                 <span className="text-xs font-black text-text-1">
-                                   ${comp.monthly_price ?? 0} <span className="text-[9px] text-slate-400 font-medium">/mes</span>
+                                   ${comp.monthly_price ?? 0} <span className="text-xs text-slate-400 font-medium">/mes</span>
                                 </span>
                              </div>
                           </td>
@@ -1649,7 +1650,7 @@ export const SaaSPlatformAdmin = () => {
                           </td>
                           <td className="py-4 font-medium text-text-2">
                              <span className="font-bold text-text-1">{comp.users}</span>
-                             <span className="text-[10px] text-slate-400 font-semibold"> / {comp.max_users ?? 5}</span>
+                             <span className="text-xs text-slate-400 font-semibold"> / {comp.max_users ?? 5}</span>
                           </td>
                           <td className="py-4">
                              <div
@@ -1658,7 +1659,7 @@ export const SaaSPlatformAdmin = () => {
                              >
                                <Activity size={14} aria-hidden="true" />
                                <span>{comp.tx_daily_avg ?? 0}</span>
-                               <span className="text-[9px] font-semibold text-success-text">Tx/día</span>
+                               <span className="text-xs font-semibold text-success-text">Tx/día</span>
                              </div>
                           </td>
                           <td className="py-4">
@@ -1672,7 +1673,7 @@ export const SaaSPlatformAdmin = () => {
                                    const insignia = (
                                       <span
                                         title={cob.detalle || ''}
-                                        className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border mt-0.5 whitespace-nowrap ${cob.clases}`}
+                                        className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full border mt-0.5 whitespace-nowrap ${cob.clases}`}
                                       >
                                          {cob.etiqueta}
                                       </span>
@@ -1690,21 +1691,21 @@ export const SaaSPlatformAdmin = () => {
                                       <div className="mt-0.5">
                                          {comp.trial_ends_at
                                             ? insignia
-                                            : <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>}
+                                            : <span className="text-xs text-slate-400 font-semibold block">Gratuito permanente</span>}
                                          {comp.freemium_compliance_status === 'approved' ? (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-full mt-1">
+                                            <span className="inline-flex items-center gap-1 text-xs font-bold text-success-text bg-success-bg border border-success-text/20 px-2 py-0.5 rounded-full mt-1">
                                                 Evidencia Aprobada
                                             </span>
                                          ) : comp.freemium_compliance_status === 'submitted' ? (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-full mt-1">
+                                            <span className="inline-flex items-center gap-1 text-xs font-bold text-warning-text bg-warning-bg border border-warning-text/20 px-2 py-0.5 rounded-full mt-1">
                                                ⏳ Comprobante por Revisar
                                             </span>
                                          ) : comp.freemium_compliance_status === 'rejected' ? (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-full mt-1">
+                                            <span className="inline-flex items-center gap-1 text-xs font-bold text-danger-text bg-danger-bg border border-danger-text/20 px-2 py-0.5 rounded-full mt-1">
                                                 Evidencia Rechazada
                                             </span>
                                          ) : (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-full mt-1">
+                                            <span className="inline-flex items-center gap-1 text-xs font-bold text-accent bg-navy-50 border border-border px-2 py-0.5 rounded-full mt-1">
                                                 Comprobante Pendiente
                                             </span>
                                          )}
@@ -1753,7 +1754,7 @@ export const SaaSPlatformAdmin = () => {
                                     </button>
                                   </>
                                 ) : (
-                                  <span className="text-[10px] text-slate-400 font-black italic bg-page border border-border px-2 py-1 rounded-lg">Protegido</span>
+                                  <span className="text-xs text-slate-400 font-black italic bg-page border border-border px-2 py-1 rounded-lg">Protegido</span>
                                 )}
                              </div>
                           </td>
@@ -1796,7 +1797,7 @@ export const SaaSPlatformAdmin = () => {
               <span className="flex items-center gap-1.5">
                 <ShieldCheck size={15} aria-hidden="true" /> Auditoría de Calidad por Módulo
               </span>
-              <span className="flex items-center gap-1.5 bg-success-bg text-success-text border border-success-text/50 px-2 py-0.5 rounded-full text-[9px] font-extrabold normal-case">
+              <span className="flex items-center gap-1.5 bg-success-bg text-success-text border border-success-text/50 px-2 py-0.5 rounded-full text-xs font-extrabold normal-case">
                 <span className="w-1.5 h-1.5 rounded-full bg-success-icon animate-pulse"></span>
                 En Tiempo Real
               </span>
@@ -1807,14 +1808,14 @@ export const SaaSPlatformAdmin = () => {
                   <div className="flex justify-between items-center mb-1 text-xs font-bold text-text-2">
                     <span className="text-text-1 font-extrabold">{mod.name}</span>
                     <div className="flex items-center gap-2">
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-extrabold ${
                         mod.score >= 8 ? 'bg-success-bg text-success-text border border-success-text/20' :
                         mod.score >= 6 ? 'bg-warning-bg text-warning-text border border-warning-text/20' :
                         'bg-danger-bg text-danger-text border border-danger-text/20'
                       }`}>{mod.score}/10</span>
                       <button
                         onClick={() => setSelectedAuditModule(mod)}
-                        className="text-[10px] font-black text-accent hover:text-navy-800 transition-colors"
+                        className="text-xs font-black text-accent hover:text-navy-800 transition-colors"
                       >
                         Ver detalles
                       </button>
@@ -1883,45 +1884,45 @@ export const SaaSPlatformAdmin = () => {
            <div className="border border-border rounded-xl p-5 hover:border-navy-300 transition-colors group">
               <div className="flex justify-between items-start mb-3">
                  <span className="p-2 bg-navy-50 text-accent rounded-lg group-hover:scale-110 transition-transform"><Building2 size={20} /></span>
-                 <span className="text-[9px] font-black uppercase tracking-widest bg-warning-bg text-warning-text px-2 py-0.5 rounded">Premium</span>
+                 <span className="text-xs font-black uppercase tracking-widest bg-warning-bg text-warning-text px-2 py-0.5 rounded">Premium</span>
               </div>
               <h3 className="font-bold text-text-1 text-sm">Portal de Vacantes</h3>
               <p className="text-xs text-text-3 mt-1 mb-3">Atracción de talento externo y publicación de empleos.</p>
               <div className="w-full bg-page rounded-full h-1.5 mb-1"><div className="bg-accent h-1.5 rounded-full" style={{ width: '35%' }}></div></div>
-              <p className="text-[10px] font-bold text-slate-400">35% de Inquilinos activos</p>
+              <p className="text-xs font-bold text-slate-400">35% de Inquilinos activos</p>
            </div>
 
            <div className="border border-border rounded-xl p-5 hover:border-navy-300 transition-colors group">
               <div className="flex justify-between items-start mb-3">
                  <span className="p-2 bg-navy-50 text-accent rounded-lg group-hover:scale-110 transition-transform"><Users size={20} /></span>
-                 <span className="text-[9px] font-black uppercase tracking-widest bg-success-bg text-success-text px-2 py-0.5 rounded">Freemium</span>
+                 <span className="text-xs font-black uppercase tracking-widest bg-success-bg text-success-text px-2 py-0.5 rounded">Freemium</span>
               </div>
               <h3 className="font-bold text-text-1 text-sm">Rutinas y Tareas</h3>
               <p className="text-xs text-text-3 mt-1 mb-3">Asignación de tickets, matriz de QA y check-lists.</p>
               <div className="w-full bg-page rounded-full h-1.5 mb-1"><div className="bg-success-icon h-1.5 rounded-full" style={{ width: '85%' }}></div></div>
-              <p className="text-[10px] font-bold text-slate-400">85% de Inquilinos activos</p>
+              <p className="text-xs font-bold text-slate-400">85% de Inquilinos activos</p>
            </div>
 
            <div className="border border-border rounded-xl p-5 hover:border-navy-300 transition-colors group">
               <div className="flex justify-between items-start mb-3">
                  <span className="p-2 bg-navy-50 text-accent rounded-lg group-hover:scale-110 transition-transform"><TrendingUp size={20} /></span>
-                 <span className="text-[9px] font-black uppercase tracking-widest bg-success-bg text-success-text px-2 py-0.5 rounded">Freemium</span>
+                 <span className="text-xs font-black uppercase tracking-widest bg-success-bg text-success-text px-2 py-0.5 rounded">Freemium</span>
               </div>
               <h3 className="font-bold text-text-1 text-sm">Reportes y Analítica</h3>
               <p className="text-xs text-text-3 mt-1 mb-3">Tableros de Business Intelligence y exportación.</p>
               <div className="w-full bg-page rounded-full h-1.5 mb-1"><div className="bg-accent h-1.5 rounded-full" style={{ width: '60%' }}></div></div>
-              <p className="text-[10px] font-bold text-slate-400">60% de Inquilinos activos</p>
+              <p className="text-xs font-bold text-slate-400">60% de Inquilinos activos</p>
            </div>
 
            <div className="border border-border rounded-xl p-5 hover:border-navy-300 transition-colors group">
               <div className="flex justify-between items-start mb-3">
                  <span className="p-2 bg-navy-50 text-accent rounded-lg group-hover:scale-110 transition-transform"><AlertOctagon size={20} /></span>
-                 <span className="text-[9px] font-black uppercase tracking-widest bg-warning-bg text-warning-text px-2 py-0.5 rounded">Premium</span>
+                 <span className="text-xs font-black uppercase tracking-widest bg-warning-bg text-warning-text px-2 py-0.5 rounded">Premium</span>
               </div>
               <h3 className="font-bold text-text-1 text-sm">Academia Interna</h3>
               <p className="text-xs text-text-3 mt-1 mb-3">Cursos interactivos, plan de carrera y evaluaciones.</p>
               <div className="w-full bg-page rounded-full h-1.5 mb-1"><div className="bg-warning-icon h-1.5 rounded-full" style={{ width: '20%' }}></div></div>
-              <p className="text-[10px] font-bold text-slate-400">20% de Inquilinos activos</p>
+              <p className="text-xs font-bold text-slate-400">20% de Inquilinos activos</p>
            </div>
 
         </div>
@@ -1936,7 +1937,7 @@ export const SaaSPlatformAdmin = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-border pb-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="bg-warning-bg text-warning-text text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-warning-text/50">
+                <span className="bg-warning-bg text-warning-text text-xs font-black uppercase px-2.5 py-1 rounded-full border border-warning-text/50">
                   Pre-registros Huérfanos
                 </span>
                 <h2 className="text-lg sm:text-xl font-black text-text-1">Registros Inconclusos de Plataforma</h2>
@@ -1980,10 +1981,10 @@ export const SaaSPlatformAdmin = () => {
                         </div>
                         <div>
                           <p className="font-extrabold text-text-1 text-xs">{u.name || 'Sin Nombre'}</p>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase">ID #{u.id}</span>
+                          <span className="text-xs text-slate-400 font-bold uppercase">ID #{u.id}</span>
                         </div>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-black uppercase ${
                         u.provider === 'Google' ? 'bg-danger-bg text-danger-text border border-danger-text/20' : 'bg-slate-200 text-text-2'
                       }`}>
                         {u.provider}
@@ -1992,14 +1993,14 @@ export const SaaSPlatformAdmin = () => {
 
                     <div className="text-xs font-bold text-accent truncate border-t border-b border-border/70 py-2">
                       {u.email}
-                      <span className="block text-[10px] text-slate-400 font-normal mt-0.5">{u.created_at_human}</span>
+                      <span className="block text-xs text-slate-400 font-normal mt-0.5">{u.created_at_human}</span>
                     </div>
 
                     <div className="flex gap-2 justify-end pt-1">
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(u.email);
-                          alert(`Correo ${u.email} copiado al portapapeles.`);
+                          notify(`Correo ${u.email} copiado al portapapeles.`);
                         }}
                         className="p-2 text-text-2 hover:text-accent hover:bg-navy-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-border cursor-pointer"
                         title="Copiar Correo"
@@ -2039,14 +2040,14 @@ export const SaaSPlatformAdmin = () => {
                           </div>
                           <div>
                             <p className="font-extrabold text-text-1">{u.name || 'Sin Nombre'}</p>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase">ID #{u.id}</span>
+                            <span className="text-xs text-slate-400 font-bold uppercase">ID #{u.id}</span>
                           </div>
                         </td>
                         <td className="p-4 font-bold text-accent">
                           {u.email}
                         </td>
                         <td className="p-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
                             u.provider === 'Google' ? 'bg-danger-bg text-danger-text border border-danger-text/20' : 'bg-page text-text-2 border border-border'
                           }`}>
                             {u.provider}
@@ -2060,7 +2061,7 @@ export const SaaSPlatformAdmin = () => {
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(u.email);
-                                alert(`Correo ${u.email} copiado al portapapeles.`);
+                                notify(`Correo ${u.email} copiado al portapapeles.`);
                               }}
                               className="p-2 text-text-2 hover:text-accent hover:bg-navy-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-border cursor-pointer"
                               title="Copiar Correo"
@@ -2093,7 +2094,7 @@ export const SaaSPlatformAdmin = () => {
           <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="bg-accent-soft text-navy-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-border">
+                <span className="bg-accent-soft text-navy-800 text-xs font-black uppercase px-2.5 py-1 rounded-full border border-border">
                   Difusión Social & Promociones
                 </span>
               </div>
@@ -2117,9 +2118,9 @@ export const SaaSPlatformAdmin = () => {
                 onClick={async () => {
                   try {
                     await axiosInstance.post('/platform/social-grace-config', { social_grace_days: socialGraceDaysConfig });
-                    alert("Configuración de días de gracia guardada.");
+                    notify("Configuración de días de gracia guardada.");
                   } catch (err) {
-                    alert("Error al guardar.");
+                    notify("Error al guardar.");
                   }
                 }}
                 className="px-3 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-sm transition-all"
@@ -2152,7 +2153,7 @@ export const SaaSPlatformAdmin = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-page text-text-3 font-bold uppercase text-[10px] border-b border-border">
+                    <tr className="bg-page text-text-3 font-bold uppercase text-xs border-b border-border">
                       <th className="p-3.5">Empresa / Tenant</th>
                       <th className="p-3.5">Módulo Solicitado</th>
                       <th className="p-3.5">Evidencia / URL</th>
@@ -2183,7 +2184,7 @@ export const SaaSPlatformAdmin = () => {
                           {claim.grace_days_granted || 30} días
                         </td>
                         <td className="p-3.5">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-black uppercase ${
                             claim.status === 'active' ? 'bg-success-bg text-success-text' :
                             claim.status === 'pending_approval' ? 'bg-warning-bg text-warning-text' :
                             'bg-danger-bg text-danger-text'
@@ -2200,7 +2201,7 @@ export const SaaSPlatformAdmin = () => {
                                     await axiosInstance.post(`/platform/social-claims/${claim.id}/approve`);
                                     fetchSocialPromotionsData();
                                   } catch (err) {
-                                    alert("Error al aprobar.");
+                                    notify("Error al aprobar.");
                                   }
                                 }}
                                 className="px-3 py-1.5 bg-success-text hover:bg-success-text text-white font-bold text-xs rounded-xl shadow-sm"
@@ -2213,7 +2214,7 @@ export const SaaSPlatformAdmin = () => {
                                     await axiosInstance.post(`/platform/social-claims/${claim.id}/reject`);
                                     fetchSocialPromotionsData();
                                   } catch (err) {
-                                    alert("Error al rechazar.");
+                                    notify("Error al rechazar.");
                                   }
                                 }}
                                 className="px-3 py-1.5 bg-danger-text hover:bg-danger-text text-white font-bold text-xs rounded-xl shadow-sm"
@@ -2252,9 +2253,9 @@ export const SaaSPlatformAdmin = () => {
                   setNewPromoTitle('');
                   setNewPromoSubtitle('');
                   fetchSocialPromotionsData();
-                  alert("Promoción creada correctamente.");
+                  notify("Promoción creada correctamente.");
                 } catch (err) {
-                  alert("Error al crear la promoción.");
+                  notify("Error al crear la promoción.");
                 }
               }}
               className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-page p-4 rounded-2xl border border-border"
@@ -2312,7 +2313,7 @@ export const SaaSPlatformAdmin = () => {
                   {promotionsList.map((promo) => (
                     <div key={promo.id} className="p-4 rounded-2xl bg-slate-900 text-white flex justify-between items-center shadow-sm">
                       <div>
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-warning-icon text-text-1">
+                        <span className="text-xs font-black uppercase px-2 py-0.5 rounded bg-warning-icon text-text-1">
                           {promo.badge_text || 'PROMO'}
                         </span>
                         <h4 className="font-extrabold text-sm mt-1">{promo.title}</h4>
@@ -2320,7 +2321,7 @@ export const SaaSPlatformAdmin = () => {
                       </div>
                       <button
                         onClick={async () => {
-                          if (window.confirm("¿Eliminar esta promoción?")) {
+                          if (await confirmAction("¿Eliminar esta promoción?", { title: 'Eliminar promoción', confirmLabel: 'Eliminar', tone: 'error' })) {
                             await axiosInstance.delete(`/platform/promotions/${promo.id}`);
                             fetchSocialPromotionsData();
                           }
@@ -2439,7 +2440,7 @@ export const SaaSPlatformAdmin = () => {
                  <div key={ticket.id} className="bg-white border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
                     <div>
                        <div className="flex justify-between items-start mb-3 gap-2">
-                          <span className={`px-2.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                          <span className={`px-2.5 py-0.5 rounded text-xs font-black uppercase tracking-wider ${
                              ticket.status === 'open' ? 'bg-danger-bg text-danger-text border border-danger-text/20' :
                              ticket.status === 'in_progress' ? 'bg-warning-bg text-warning-text border border-warning-text/20' :
                              ticket.status === 'resolved' ? 'bg-success-bg text-success-text border border-success-text/20' :
@@ -2449,7 +2450,7 @@ export const SaaSPlatformAdmin = () => {
                               ticket.status === 'in_progress' ? 'En Proceso' :
                               ticket.status === 'resolved' ? 'Resuelto' : 'Cerrado'}
                           </span>
-                          <span className={`px-2.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                          <span className={`px-2.5 py-0.5 rounded text-xs font-black uppercase tracking-wider ${
                              ticket.priority === 'high' ? 'bg-danger-bg text-danger-text' :
                              ticket.priority === 'medium' ? 'bg-warning-bg text-warning-text' :
                              'bg-page text-text-2'
@@ -2468,13 +2469,13 @@ export const SaaSPlatformAdmin = () => {
                           </div>
                        )}
                        {ticket.contact_name && (
-                          <div className="mt-2 text-[10px] text-text-3 font-bold px-1 truncate">
+                          <div className="mt-2 text-xs text-text-3 font-bold px-1 truncate">
                              Contacto: <span className="text-text-2">{ticket.contact_name}</span> {ticket.contact_email && <span className="text-slate-400 font-semibold">({ticket.contact_email})</span>}
                           </div>
                        )}
                     </div>
                     <div className="mt-5 pt-3.5 border-t border-border flex items-center justify-between">
-                       <div className="text-[10px] text-slate-400 font-bold">
+                       <div className="text-xs text-slate-400 font-bold">
                           Creado {new Date(ticket.created_at).toLocaleDateString()}
                        </div>
                        <div className="flex gap-2">
@@ -2609,7 +2610,7 @@ export const SaaSPlatformAdmin = () => {
             <div className="flex items-center justify-between bg-page border border-border/60 p-4 rounded-2xl mt-4">
               <div>
                 <span className="text-xs font-bold text-text-1 block">Habilitar en Checkout</span>
-                <span className="text-[10px] text-text-3 block">Mostrar este método de transferencia como alternativa en la pasarela.</span>
+                <span className="text-xs text-text-3 block">Mostrar este método de transferencia como alternativa en la pasarela.</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -2695,7 +2696,7 @@ export const SaaSPlatformAdmin = () => {
                   { id: 'portal', label: 'Portal Web', desc: 'Bolsa de trabajo pública' },
                   { id: 'academia', label: 'Academia 360', desc: 'Capacitación y cursos LMS' },
                   { id: 'documentos', label: 'Documentos', desc: 'Expediente digital y políticas de empresa' },
-                  { id: 'facturacion', label: 'Nómina CFDI 4.0', desc: 'Timbrado masivo del SAT' },
+                  { id: 'facturacion', label: 'Pre-nómina para contador', desc: 'Referencias fiscales y exportación' },
                   { id: 'lft', label: 'Ley Federal del Trabajo', desc: 'Reglamento y tolerancias' },
                   { id: 'organizacion', label: 'Organigrama y SOP', desc: 'Procesos, Puestos y Wiki' }
                 ].map(mod => (
@@ -2715,7 +2716,7 @@ export const SaaSPlatformAdmin = () => {
                     />
                     <div>
                       <span className="text-xs font-bold text-text-1 block">{mod.label}</span>
-                      <span className="text-[10px] text-text-3 font-medium">{mod.desc}</span>
+                      <span className="text-xs text-text-3 font-medium">{mod.desc}</span>
                     </div>
                   </label>
                 ))}
@@ -2754,13 +2755,13 @@ export const SaaSPlatformAdmin = () => {
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-text-1 block">{tag.name}</span>
                           {tag.isMandatory ? (
-                            <span className="text-[9px] font-black px-1.5 py-0.5 bg-success-bg text-success-text rounded">Core</span>
+                            <span className="text-xs font-black px-1.5 py-0.5 bg-success-bg text-success-text rounded">Core</span>
                           ) : (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-page text-text-2 rounded uppercase">{tag.defaultTier}</span>
+                            <span className="text-xs font-bold px-1.5 py-0.5 bg-page text-text-2 rounded uppercase">{tag.defaultTier}</span>
                           )}
                         </div>
-                        <span className="text-[10px] text-text-3 font-medium block mt-0.5">{tag.description}</span>
-                        <code className="text-[9px] text-slate-400 font-mono mt-1 inline-block">Key: {tag.key}</code>
+                        <span className="text-xs text-text-3 font-medium block mt-0.5">{tag.description}</span>
+                        <code className="text-xs text-slate-400 font-mono mt-1 inline-block">Key: {tag.key}</code>
                       </div>
                     </label>
                   );
@@ -2801,7 +2802,7 @@ export const SaaSPlatformAdmin = () => {
                     />
                     <div>
                       <span className="text-xs font-bold text-text-1 block">{feat.label}</span>
-                      <span className="text-[10px] text-text-3 font-medium">{feat.desc}</span>
+                      <span className="text-xs text-text-3 font-medium">{feat.desc}</span>
                     </div>
                   </label>
                 ))}
@@ -2869,7 +2870,7 @@ export const SaaSPlatformAdmin = () => {
                 />
                 <span className="text-xs font-black text-text-2 w-10 text-right">{simulatorConfig.scale}%</span>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1 font-medium">Permite reducir o agrandar el smartphone del simulador en la landing page para que encaje mejor.</p>
+              <p className="text-xs text-slate-400 mt-1 font-medium">Permite reducir o agrandar el smartphone del simulador en la landing page para que encaje mejor.</p>
             </div>
 
             <div>
@@ -2881,7 +2882,7 @@ export const SaaSPlatformAdmin = () => {
                 placeholder="Francisco Vega"
                 className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-medium text-xs text-text-2 focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white transition-all"
               />
-              <p className="text-[10px] text-slate-400 mt-1 font-medium">El nombre ficticio del empleado que se mostrará en el simulador.</p>
+              <p className="text-xs text-slate-400 mt-1 font-medium">El nombre ficticio del empleado que se mostrará en el simulador.</p>
             </div>
 
             <div>
@@ -2893,7 +2894,7 @@ export const SaaSPlatformAdmin = () => {
                 placeholder="Decorarte 365"
                 className="w-full bg-page border border-border rounded-xl px-4 py-2.5 font-medium text-xs text-text-2 focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white transition-all"
               />
-              <p className="text-[10px] text-slate-400 mt-1 font-medium">El nombre de la sucursal ficticia que se mostrará en el simulador.</p>
+              <p className="text-xs text-slate-400 mt-1 font-medium">El nombre de la sucursal ficticia que se mostrará en el simulador.</p>
             </div>
           </div>
 
@@ -3055,7 +3056,7 @@ export const SaaSPlatformAdmin = () => {
                         <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Datos de la Empresa</h3>
 
                         <div>
-                          <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Nombre de la Empresa</label>
+                          <label className="block text-xs font-black text-text-3 uppercase mb-1">Nombre de la Empresa</label>
                           <input
                             type="text"
                             value={editTenantName}
@@ -3066,7 +3067,7 @@ export const SaaSPlatformAdmin = () => {
 
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Plan</label>
+                            <label className="block text-xs font-black text-text-3 uppercase mb-1">Plan</label>
                             <select
                               value={editTenantPlan}
                               onChange={(e) => setEditTenantPlan(e.target.value)}
@@ -3078,7 +3079,7 @@ export const SaaSPlatformAdmin = () => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Límite Usuarios</label>
+                            <label className="block text-xs font-black text-text-3 uppercase mb-1">Límite Usuarios</label>
                             <input
                               type="number"
                               value={editMaxUsers}
@@ -3093,7 +3094,7 @@ export const SaaSPlatformAdmin = () => {
                         <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Datos del Administrador</h3>
 
                         <div>
-                          <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Nombre Completo</label>
+                          <label className="block text-xs font-black text-text-3 uppercase mb-1">Nombre Completo</label>
                           <input
                             type="text"
                             value={editAdminName}
@@ -3103,7 +3104,7 @@ export const SaaSPlatformAdmin = () => {
                         </div>
 
                         <div>
-                           <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Correo de Acceso</label>
+                           <label className="block text-xs font-black text-text-3 uppercase mb-1">Correo de Acceso</label>
                            <input
                              type="email"
                              value={editAdminEmail}
@@ -3113,7 +3114,7 @@ export const SaaSPlatformAdmin = () => {
                          </div>
 
                          <div>
-                           <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Teléfono WhatsApp</label>
+                           <label className="block text-xs font-black text-text-3 uppercase mb-1">Teléfono WhatsApp</label>
                            <div className="flex border border-border rounded-xl overflow-hidden focus-within:ring-1 focus-within:ring-focus-ring focus-within:border-accent bg-white">
                              <div className="bg-page px-3 py-2 text-xs text-text-3 font-bold border-r border-border flex items-center gap-1.5 select-none">
                                <span>+52</span>
@@ -3129,7 +3130,7 @@ export const SaaSPlatformAdmin = () => {
                          </div>
 
                         <div className="border-t border-border pt-4 mt-2">
-                          <label className="block text-[10px] font-black text-text-3 uppercase mb-1">Contraseña Temporal (Opcional)</label>
+                          <label className="block text-xs font-black text-text-3 uppercase mb-1">Contraseña Temporal (Opcional)</label>
                           <div className="flex gap-2">
                             <input
                               type="text"
@@ -3177,7 +3178,7 @@ export const SaaSPlatformAdmin = () => {
                               Motivo: <span className="underline">{tenantDetail?.tenant?.suspension_reason || 'No especificado'}</span>
                             </p>
                             {tenantDetail?.tenant?.suspended_at && (
-                              <p className="text-[10px] text-danger-text mt-2 font-medium">
+                              <p className="text-xs text-danger-text mt-2 font-medium">
                                 Suspendida el {new Date(tenantDetail.tenant.suspended_at).toLocaleString()}
                               </p>
                             )}
@@ -3201,7 +3202,7 @@ export const SaaSPlatformAdmin = () => {
                         <div className="flex justify-between items-center text-sm">
                           <span className="font-semibold text-text-3">Costo Mensual Actual:</span>
                           <span className="font-black text-accent bg-navy-50 border border-border px-2.5 py-1 rounded-lg text-sm">
-                            ${tenantDetail?.tenant?.monthly_price ?? 0} <span className="text-[10px] text-text-3 font-semibold">/mes</span>
+                            ${tenantDetail?.tenant?.monthly_price ?? 0} <span className="text-xs text-text-3 font-semibold">/mes</span>
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
@@ -3245,7 +3246,7 @@ export const SaaSPlatformAdmin = () => {
                           <h3 className="text-xs font-black uppercase tracking-wider text-brand-dark flex items-center gap-1.5">
                             <TrendingUp size={15} aria-hidden="true" /> Historial y Evolución de Plan
                           </h3>
-                          <span className="text-[10px] font-black text-accent bg-accent-soft px-2 py-0.5 rounded">
+                          <span className="text-xs font-black text-accent bg-accent-soft px-2 py-0.5 rounded">
                             {tenantDetail?.subscription_history?.length || 0} registros
                           </span>
                         </div>
@@ -3263,11 +3264,11 @@ export const SaaSPlatformAdmin = () => {
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-1.5">
                                     <span className="font-black text-text-1">{hist.plan_name}</span>
-                                    <span className="font-extrabold text-accent bg-navy-50 px-2 py-0.5 rounded text-[10px]">
+                                    <span className="font-extrabold text-accent bg-navy-50 px-2 py-0.5 rounded text-xs">
                                       ${hist.monthly_price} /mes
                                     </span>
                                   </div>
-                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                  <span className={`text-xs font-black uppercase px-2 py-0.5 rounded-full ${
                                     hist.status === 'active' ? 'bg-success-bg text-success-text' : 'bg-page text-text-3'
                                   }`}>
                                     {hist.status === 'active' ? 'Vigente Actual' : 'Histórico'}
@@ -3278,10 +3279,10 @@ export const SaaSPlatformAdmin = () => {
                                   <span>•</span>
                                   <span> <strong>{hist.max_users}</strong> Usuarios Max</span>
                                   <span>•</span>
-                                  <span className="text-slate-400 font-mono text-[10px]">{hist.date_formatted}</span>
+                                  <span className="text-slate-400 font-mono text-xs">{hist.date_formatted}</span>
                                 </div>
                                 {hist.change_reason && (
-                                  <div className="text-[10px] text-text-3 italic bg-page p-1.5 rounded border border-border">
+                                  <div className="text-xs text-text-3 italic bg-page p-1.5 rounded border border-border">
                                     Motivo: {hist.change_reason}
                                   </div>
                                 )}
@@ -3344,7 +3345,7 @@ export const SaaSPlatformAdmin = () => {
                           <h3 className="text-xs font-black uppercase tracking-wider text-brand-dark flex items-center gap-1.5">
                             <LayoutGrid size={15} aria-hidden="true" /> Módulos y Funciones Habilitadas
                           </h3>
-                          <span className="text-[9px] font-black text-accent bg-accent-soft px-2 py-0.5 rounded uppercase">
+                          <span className="text-xs font-black text-accent bg-accent-soft px-2 py-0.5 rounded uppercase">
                             Empresa #{tenantDetail?.tenant?.id}
                           </span>
                         </div>
@@ -3365,7 +3366,7 @@ export const SaaSPlatformAdmin = () => {
                               { id: 'portal', label: 'Portal Web' },
                               { id: 'academia', label: 'Academia 360' },
                               { id: 'documentos', label: 'Gestor Documental' },
-                              { id: 'facturacion', label: 'Nómina CFDI 4.0' },
+                              { id: 'facturacion', label: 'Pre-nómina para contador' },
                               { id: 'lft', label: 'Ley Federal del Trabajo' },
                               { id: 'organizacion', label: 'Organigrama y SOP' }
                             ].map(mod => (
@@ -3400,9 +3401,9 @@ export const SaaSPlatformAdmin = () => {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
                                       <span className="font-bold text-text-1 truncate">{tag.name}</span>
-                                      <span className="text-[8px] font-black px-1.5 py-0.2 bg-page text-text-2 rounded uppercase">{tag.defaultTier}</span>
+                                      <span className="text-xs font-black px-1.5 py-0.2 bg-page text-text-2 rounded uppercase">{tag.defaultTier}</span>
                                     </div>
-                                    <p className="text-[10px] text-slate-400 font-normal leading-tight line-clamp-1">{tag.description}</p>
+                                    <p className="text-xs text-slate-400 font-normal leading-tight line-clamp-1">{tag.description}</p>
                                   </div>
                                 </label>
                               );
@@ -3457,20 +3458,20 @@ export const SaaSPlatformAdmin = () => {
                       <div className="border border-border rounded-2xl p-5 space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Acceso Administrador</h3>
-                          <span className="text-[10px] font-black text-accent bg-navy-50 px-2 py-0.5 rounded">Owner</span>
+                          <span className="text-xs font-black text-accent bg-navy-50 px-2 py-0.5 rounded">Owner</span>
                         </div>
                         {tenantDetail?.admin ? (
                           <div className="space-y-3">
                             <div className="text-sm">
-                              <span className="block text-[10px] font-bold text-slate-400 uppercase">Nombre Completo</span>
+                              <span className="block text-xs font-bold text-slate-400 uppercase">Nombre Completo</span>
                               <span className="font-extrabold text-text-1">{tenantDetail.admin.name}</span>
                             </div>
                             <div className="text-sm">
-                              <span className="block text-[10px] font-bold text-slate-400 uppercase">Correo Electrónico</span>
+                              <span className="block text-xs font-bold text-slate-400 uppercase">Correo Electrónico</span>
                               <span className="font-mono font-bold text-accent bg-navy-50 px-2 py-1 rounded select-all break-all">{tenantDetail.admin.email}</span>
                             </div>
                             <div className="text-sm">
-                              <span className="block text-[10px] font-bold text-slate-400 uppercase">Teléfono WhatsApp</span>
+                              <span className="block text-xs font-bold text-slate-400 uppercase">Teléfono WhatsApp</span>
                               <span className="font-mono font-bold text-accent bg-navy-50 px-2 py-1 rounded select-all break-all">{tenantDetail.admin.phone || 'No registrado'}</span>
                             </div>
 
@@ -3486,7 +3487,7 @@ export const SaaSPlatformAdmin = () => {
                                 </button>
                               ) : (
                                 <div className="space-y-3 p-3 bg-page border border-border rounded-xl animate-in fade-in duration-200">
-                                  <label className="block text-[10px] font-black text-text-3 uppercase">Nueva Contraseña</label>
+                                  <label className="block text-xs font-black text-text-3 uppercase">Nueva Contraseña</label>
                                   <div className="flex gap-2">
                                     <input
                                       type="text"
@@ -3635,7 +3636,7 @@ export const SaaSPlatformAdmin = () => {
             </div>
             <div>
               <h3 className="text-lg font-black text-text-1 leading-tight">{selectedAuditModule.name}</h3>
-              <span className={`inline-block text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded mt-0.5 ${
+              <span className={`inline-block text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded mt-0.5 ${
                 selectedAuditModule.details.status === 'Excelente' ? 'bg-success-bg text-success-text' :
                 selectedAuditModule.details.status === 'Estable' ? 'bg-accent-soft text-navy-800' :
                 'bg-warning-bg text-warning-text'
@@ -3719,20 +3720,20 @@ export const SaaSPlatformAdmin = () => {
                    {/* Detalles Generales */}
                    <div className="bg-page border border-border rounded-2xl p-5 space-y-4">
                       <div>
-                         <span className="block text-[10px] font-black text-slate-400 uppercase">Descripción del Reporte</span>
+                         <span className="block text-xs font-black text-slate-400 uppercase">Descripción del Reporte</span>
                          <span className="text-xs text-text-2 font-bold block mt-1 leading-relaxed bg-white border border-border rounded-xl p-3 select-all whitespace-pre-wrap">{ticketDetailData?.description}</span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
                          <div>
-                            <span className="block text-[10px] font-black text-slate-400 uppercase">Contacto</span>
+                            <span className="block text-xs font-black text-slate-400 uppercase">Contacto</span>
                             <span className="text-xs text-text-1 font-extrabold block mt-0.5">{ticketDetailData?.contact_name || 'N/A'}</span>
                             {ticketDetailData?.contact_email && <span className="text-[11px] text-accent font-bold block leading-tight truncate select-all">{ticketDetailData?.contact_email}</span>}
                          </div>
                          <div>
-                            <span className="block text-[10px] font-black text-slate-400 uppercase">Empresa Cliente</span>
+                            <span className="block text-xs font-black text-slate-400 uppercase">Empresa Cliente</span>
                             <span className="text-xs text-text-1 font-extrabold block mt-0.5">{ticketDetailData?.tenant?.name || 'N/A'}</span>
-                            {ticketDetailData?.tenant?.subdomain && <span className="text-[10px] text-text-3 font-medium block truncate">ID: {ticketDetailData?.tenant?.subdomain}</span>}
+                            {ticketDetailData?.tenant?.subdomain && <span className="text-xs text-text-3 font-medium block truncate">ID: {ticketDetailData?.tenant?.subdomain}</span>}
                          </div>
                       </div>
                    </div>
@@ -3743,7 +3744,7 @@ export const SaaSPlatformAdmin = () => {
 
                       <div className="grid grid-cols-2 gap-3">
                          <div>
-                            <label className="block text-[10px] font-black text-text-3 uppercase mb-1.5">Estado</label>
+                            <label className="block text-xs font-black text-text-3 uppercase mb-1.5">Estado</label>
                             <select
                                value={ticketDetailData?.status || 'open'}
                                onChange={(e) => handleUpdateTicketStatus(e.target.value)}
@@ -3756,7 +3757,7 @@ export const SaaSPlatformAdmin = () => {
                             </select>
                          </div>
                          <div>
-                            <label className="block text-[10px] font-black text-text-3 uppercase mb-1.5">Prioridad</label>
+                            <label className="block text-xs font-black text-text-3 uppercase mb-1.5">Prioridad</label>
                             <select
                                value={ticketDetailData?.priority || 'medium'}
                                onChange={(e) => handleUpdateTicketPriority(e.target.value)}
@@ -3770,7 +3771,7 @@ export const SaaSPlatformAdmin = () => {
                       </div>
 
                       <div>
-                         <label className="block text-[10px] font-black text-text-3 uppercase mb-1.5">Agente Asignado</label>
+                         <label className="block text-xs font-black text-text-3 uppercase mb-1.5">Agente Asignado</label>
                          <select
                             value={ticketDetailData?.assigned_to || ''}
                             onChange={(e) => handleUpdateTicketAssignment(e.target.value)}
@@ -3797,7 +3798,7 @@ export const SaaSPlatformAdmin = () => {
                          ) : (
                             ticketDetailData.notes.map((note: any) => (
                                <div key={note.id} className="bg-page border border-border/80 rounded-xl p-3 text-xs leading-relaxed">
-                                  <div className="flex justify-between items-center mb-1 text-[10px] font-bold text-slate-400">
+                                  <div className="flex justify-between items-center mb-1 text-xs font-bold text-slate-400">
                                      <span className="text-accent font-extrabold">{note.user_name}</span>
                                      <span>{new Date(note.created_at).toLocaleString()}</span>
                                   </div>
@@ -3918,10 +3919,10 @@ export const SaaSPlatformAdmin = () => {
              </div>
 
              <div className="border-t border-border pt-3 mt-1">
-                <span className="block text-[10px] font-black text-slate-400 uppercase mb-2">Datos de Contacto del Reporte</span>
+                <span className="block text-xs font-black text-slate-400 uppercase mb-2">Datos de Contacto del Reporte</span>
                 <div className="grid grid-cols-2 gap-3.5">
                    <div>
-                      <label className="text-[10px] font-bold text-text-3 block mb-1">Nombre</label>
+                      <label className="text-xs font-bold text-text-3 block mb-1">Nombre</label>
                       <input
                          type="text"
                          value={newTicketContactName}
@@ -3931,7 +3932,7 @@ export const SaaSPlatformAdmin = () => {
                       />
                    </div>
                    <div>
-                      <label className="text-[10px] font-bold text-text-3 block mb-1">Correo</label>
+                      <label className="text-xs font-bold text-text-3 block mb-1">Correo</label>
                       <input
                          type="email"
                          value={newTicketContactEmail}
@@ -3966,7 +3967,7 @@ export const SaaSPlatformAdmin = () => {
                <ShieldCheck size={200} />
             </div>
             <div className="text-left relative z-10">
-              <span className="text-[10px] font-black uppercase text-navy-300 tracking-widest bg-accent/10 px-3 py-1 rounded-full">Ciberseguridad SaaS</span>
+              <span className="text-xs font-black uppercase text-navy-300 tracking-widest bg-accent/10 px-3 py-1 rounded-full">Ciberseguridad SaaS</span>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-2">Bitácora de <span className="text-transparent bg-clip-text bg-gradient-to-r from-navy-400 to-navy-400">Seguridad y Auditoría</span></h1>
               <p className="text-slate-400 text-xs font-semibold mt-1">Historial de accesos, intentos de autenticación, timbrados SAT CFDI 4.0 y eventos del sistema.</p>
             </div>
@@ -3984,7 +3985,7 @@ export const SaaSPlatformAdmin = () => {
           {/* Filtros */}
           <div className="bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl p-5 shadow-md flex flex-wrap gap-4 items-center">
             <div className="flex-1 min-w-[200px]">
-              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase block mb-1">Filtrar por Empresa</label>
+              <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase block mb-1">Filtrar por Empresa</label>
               <select
                 value={logsTenantFilter}
                 onChange={(e) => {
@@ -4000,7 +4001,7 @@ export const SaaSPlatformAdmin = () => {
             </div>
 
             <div className="flex-1 min-w-[200px]">
-              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase block mb-1">Tipo de Evento</label>
+              <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase block mb-1">Tipo de Evento</label>
               <select
                 value={logsEventFilter}
                 onChange={(e) => {
@@ -4034,7 +4035,7 @@ export const SaaSPlatformAdmin = () => {
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left text-xs font-sans">
                   <thead>
-                    <tr className="bg-page dark:bg-slate-950/40 text-slate-450 border-b border-border dark:border-slate-800/60 uppercase font-black tracking-widest text-[9.5px]">
+                    <tr className="bg-page dark:bg-slate-950/40 text-slate-450 border-b border-border dark:border-slate-800/60 uppercase font-black tracking-widest text-xs">
                       <th className="px-6 py-4">Evento / ID</th>
                       <th className="px-6 py-4">Empresa</th>
                       <th className="px-6 py-4">Usuario</th>
@@ -4054,17 +4055,17 @@ export const SaaSPlatformAdmin = () => {
                       return (
                         <tr key={log.id} className="hover:bg-page/60 dark:hover:bg-slate-950/20 font-medium text-text-2 dark:text-slate-300">
                           <td className="px-6 py-4.5">
-                            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wide border ${badgeColor}`}>
+                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-black uppercase tracking-wide border ${badgeColor}`}>
                               {log.event_type}
                             </span>
-                            <span className="block text-[9px] text-slate-400 mt-1 font-mono">ID: #{log.id}</span>
+                            <span className="block text-xs text-slate-400 mt-1 font-mono">ID: #{log.id}</span>
                           </td>
                           <td className="px-6 py-4.5 font-bold text-text-1 dark:text-slate-205">{log.tenant_name}</td>
                           <td className="px-6 py-4.5 font-bold text-accent dark:text-navy-300">{log.user_name}</td>
                           <td className="px-6 py-4.5 max-w-xs truncate leading-relaxed" title={log.description}>{log.description}</td>
                           <td className="px-6 py-4.5">
                             <span className="font-mono text-text-2 dark:text-slate-400 font-bold block">{log.ip_address}</span>
-                            <span className="block text-[9.5px] text-slate-400 truncate max-w-[150px] mt-0.5" title={log.user_agent}>{log.user_agent}</span>
+                            <span className="block text-xs text-slate-400 truncate max-w-[150px] mt-0.5" title={log.user_agent}>{log.user_agent}</span>
                           </td>
                           <td className="px-6 py-4.5 text-text-3 dark:text-slate-400">
                             {new Date(log.created_at).toLocaleString()}

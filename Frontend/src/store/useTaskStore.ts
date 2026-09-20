@@ -1,3 +1,4 @@
+import { notify } from '../lib/appDialogs';
 import { create } from 'zustand';
 import { useAppStore } from './useAppStore'; // Para interactuar con Matrix events
 import axiosInstance from '../lib/axios';
@@ -209,7 +210,7 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             await axiosInstance.post('/sync/tasks', payload);
         } catch (e) {
             console.error("Failed to sync tasks to backend:", e);
-            alert("Error al guardar tareas. Verifique que el servidor backend esté encendido.");
+            notify("Error al guardar tareas. Verifique que el servidor backend esté encendido.");
         }
     },
 
@@ -245,7 +246,7 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             });
         } catch (e) {
             console.error("Failed to sync assignment row to backend:", e);
-            alert("Error al guardar la tarea. Verifique que el servidor backend esté encendido.");
+            notify("Error al guardar la tarea. Verifique que el servidor backend esté encendido.");
         }
     },
 

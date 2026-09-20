@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Eye, FileText, UserSquare, CheckCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
+import { confirmAction, notify } from '../lib/appDialogs';
 
 // Tipos base para Reclutamiento
 interface Candidate {
@@ -63,7 +64,7 @@ export const RecruitmentBoard: React.FC = () => {
       setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, status: newStatus } : c));
     } catch (e) {
       console.error(e);
-      alert("Hubo un error al mover el candidato.");
+      notify("Hubo un error al mover el candidato.");
     }
   };
 
@@ -93,7 +94,7 @@ export const RecruitmentBoard: React.FC = () => {
         // servidor cuenta los cursos de inducción de Academia que le aplican por su puesto,
         // y el aviso de "inducción pendiente" le corre desde su hire_date (fijado al contratar).
         const cursosInduccion: number = res.data?.induction_courses ?? 0;
-        alert(
+        notify(
           `Contratado: ${candidateToHire.name}\n\n` +
           `Ya tiene expediente y acceso.${pin ? `\nPIN de invitación (para activar su cuenta): ${pin}` : ''}\n` +
           (cursosInduccion > 0 ? `\nQuedó inscrito en su inducción de la Academia (${cursosInduccion} curso${cursosInduccion === 1 ? '' : 's'}).\n` : '') +
@@ -102,7 +103,7 @@ export const RecruitmentBoard: React.FC = () => {
       } catch (err: any) {
         console.error(err);
         const detalle = err?.response?.data?.errors?.email?.[0] || err?.response?.data?.message;
-        alert(detalle || "Hubo un error al dar de alta al empleado.");
+        notify(detalle || "Hubo un error al dar de alta al empleado.");
       }
     }
     setShowHireModal(false);
@@ -124,7 +125,7 @@ export const RecruitmentBoard: React.FC = () => {
               <div key={c.id} className="bg-white p-3 rounded-lg shadow-sm border border-border hover:shadow-md transition-shadow cursor-grab">
                 <div className="flex justify-between items-start mb-1">
                   <h4 className="font-bold text-text-1 text-sm">{c.name}</h4>
-                  {c.is_ex_employee_fast_track && <span className="bg-warning-bg text-warning-text text-[10px] px-1.5 py-0.5 rounded font-bold">Fast-Track</span>}
+                  {c.is_ex_employee_fast_track && <span className="bg-warning-bg text-warning-text text-xs px-1.5 py-0.5 rounded font-bold">Fast-Track</span>}
                 </div>
                 <p className="text-xs text-text-3 mb-2">{v?.title}</p>
                 <div className="flex gap-1 mt-2 flex-wrap">
@@ -132,39 +133,39 @@ export const RecruitmentBoard: React.FC = () => {
                       pre-contratación); "inducción" es el onboarding de Academia, que ocurre
                       ya contratado. El status 'induction' se queda (contrato de datos). */}
                   {status === 'prospect' && (
-                    <button onClick={() => moveCandidate(c.id, 'induction')} className="text-[10px] bg-navy-50 text-accent px-2 py-1 rounded hover:bg-accent-soft">A Evaluación</button>
+                    <button onClick={() => moveCandidate(c.id, 'induction')} className="text-xs bg-navy-50 text-accent px-2 py-1 rounded hover:bg-accent-soft">A Evaluación</button>
                   )}
                   {status === 'induction' && (
-                    <button onClick={() => moveCandidate(c.id, 'interview')} className="text-[10px] bg-navy-50 text-accent px-2 py-1 rounded hover:bg-accent-soft">A Entrevista</button>
+                    <button onClick={() => moveCandidate(c.id, 'interview')} className="text-xs bg-navy-50 text-accent px-2 py-1 rounded hover:bg-accent-soft">A Entrevista</button>
                   )}
                   {status === 'interview' && (
-                    <button onClick={() => moveCandidate(c.id, 'training')} className="text-[10px] bg-warning-bg text-warning-text px-2 py-1 rounded hover:bg-warning-bg">A Prueba</button>
+                    <button onClick={() => moveCandidate(c.id, 'training')} className="text-xs bg-warning-bg text-warning-text px-2 py-1 rounded hover:bg-warning-bg">A Prueba</button>
                   )}
                   {status === 'training' && (
                     <button
                       onClick={() => handleHireClick(c)}
-                      className="text-[10px] bg-success-text hover:bg-success-text text-white font-bold px-2 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1"
+                      className="text-xs bg-success-text hover:bg-success-text text-white font-bold px-2 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1"
                     >
                       Contratar en 1-Click
                     </button>
                   )}
-                  <button onClick={() => setSelectedCandidate(c)} className="text-[10px] bg-page text-text-2 px-2 py-1 rounded hover:bg-slate-200 flex items-center gap-1"><Eye size={12}/> Expediente</button>
+                  <button onClick={() => setSelectedCandidate(c)} className="text-xs bg-page text-text-2 px-2 py-1 rounded hover:bg-slate-200 flex items-center gap-1"><Eye size={12}/> Expediente</button>
                   {['prospect', 'induction', 'interview', 'training'].includes(status) && (
                     // Rechazar sacaba al candidato de TODAS las pantallas sin preguntar y sin
                     // vuelta atrás: el tablero no tenía columna de rechazados.
                     <button
-                      onClick={() => {
-                        if (window.confirm(`¿Rechazar a ${c.name}? Saldrá del tablero, pero puedes recuperarlo desde "Ver rechazados".`)) {
+                      onClick={async () => {
+                        if (await confirmAction(`¿Rechazar a ${c.name}? Saldrá del tablero, pero puedes recuperarlo desde "Ver rechazados".`, { title: 'Rechazar candidato', confirmLabel: 'Rechazar', tone: 'warning' })) {
                           moveCandidate(c.id, 'rejected');
                         }
                       }}
-                      className="text-[10px] bg-danger-bg text-danger-text px-2 py-1 rounded hover:bg-danger-bg"
+                      className="text-xs bg-danger-bg text-danger-text px-2 py-1 rounded hover:bg-danger-bg"
                     >
                       Rechazar
                     </button>
                   )}
                   {status === 'rejected' && (
-                    <button onClick={() => moveCandidate(c.id, 'prospect')} className="text-[10px] bg-page text-text-2 px-2 py-1 rounded hover:bg-slate-200">Devolver a Prospectos</button>
+                    <button onClick={() => moveCandidate(c.id, 'prospect')} className="text-xs bg-page text-text-2 px-2 py-1 rounded hover:bg-slate-200">Devolver a Prospectos</button>
                   )}
                 </div>
               </div>
@@ -215,7 +216,7 @@ export const RecruitmentBoard: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-left text-slate-400 uppercase text-[10px]">
+                <tr className="text-left text-slate-400 uppercase text-xs">
                   <th className="py-2 pr-4 font-bold">Correo</th>
                   <th className="py-2 pr-4 font-bold">Puesto</th>
                   <th className="py-2 font-bold">Cuándo</th>

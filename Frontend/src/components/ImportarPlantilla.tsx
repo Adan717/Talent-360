@@ -176,7 +176,7 @@ export const ImportarPlantilla = ({ onCerrar, onImportado }: { onCerrar: () => v
                 ['Ya en la empresa', veredicto.resumen.plantilla_actual, 'text-text-3'],
               ].map(([etiqueta, valor, color]) => (
                 <div key={String(etiqueta)} className="p-3 rounded-xl bg-page border border-border">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-text-3">{etiqueta}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-text-3">{etiqueta}</p>
                   <p className={`text-xl font-black ${color}`}>{valor}</p>
                 </div>
               ))}

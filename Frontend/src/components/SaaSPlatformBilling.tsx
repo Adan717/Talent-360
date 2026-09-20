@@ -4,6 +4,7 @@ import {
   RefreshCw, Trash2, Send, X, Users, AlertCircle, CheckCircle2, FileCode
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { confirmAction } from '../lib/appDialogs';
 
 export const SaaSPlatformBilling = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -82,7 +83,7 @@ export const SaaSPlatformBilling = () => {
   };
 
   const handleDeleteInvoice = async (id: string, legalName: string) => {
-    if (!window.confirm(`¿Estás seguro de que deseas eliminar o cancelar el registro de factura de "${legalName}"?`)) return;
+    if (!await confirmAction(`¿Estás seguro de que deseas eliminar o cancelar el registro de factura de "${legalName}"?`, { title: 'Eliminar registro de factura', confirmLabel: 'Eliminar', tone: 'error' })) return;
 
     try {
       const res = await axiosInstance.delete(`/platform/billing/invoices/${id}`);
@@ -134,7 +135,7 @@ export const SaaSPlatformBilling = () => {
             <DollarSign size={24} />
           </div>
           <div>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Ingresos Facturados (Mes)</span>
+            <span className="text-xs font-black text-slate-400 uppercase tracking-wider block">Ingresos Facturados (Mes)</span>
             <span className="text-2xl font-black text-text-1 block">
               ${totalEarnings.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
@@ -146,7 +147,7 @@ export const SaaSPlatformBilling = () => {
             <ShieldCheck size={24} />
           </div>
           <div>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">CFDI 4.0 Timbrados</span>
+            <span className="text-xs font-black text-slate-400 uppercase tracking-wider block">CFDI 4.0 Timbrados</span>
             <span className="text-2xl font-black text-text-1 block">
               {invoices.filter(i => i.status === 'valid').length} / {invoices.length}
             </span>
@@ -158,7 +159,7 @@ export const SaaSPlatformBilling = () => {
             <Users size={24} />
           </div>
           <div>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Clientes Activos</span>
+            <span className="text-xs font-black text-slate-400 uppercase tracking-wider block">Clientes Activos</span>
             <span className="text-2xl font-black text-text-1 block">
               {tenants.length} Empresas
             </span>
@@ -206,11 +207,11 @@ export const SaaSPlatformBilling = () => {
                       <span className="text-xs font-mono font-bold text-text-2 block max-w-[200px] truncate" title={inv.uuid}>
                         {inv.uuid}
                       </span>
-                      <span className="text-[10px] text-slate-450 font-semibold block">ID: {inv.id}</span>
+                      <span className="text-xs text-slate-450 font-semibold block">ID: {inv.id}</span>
                     </td>
                     <td className="py-4 px-6">
                       <span className="text-sm font-black text-text-1">{inv.legal_name}</span>
-                      <span className="text-[10px] text-slate-400 font-semibold block">Suscripción SaaS</span>
+                      <span className="text-xs text-slate-400 font-semibold block">Suscripción SaaS</span>
                     </td>
                     <td className="py-4 px-6">
                       <span className="text-xs font-mono font-bold text-text-2">{inv.rfc}</span>
@@ -227,11 +228,11 @@ export const SaaSPlatformBilling = () => {
                     </td>
                     <td className="py-4 px-6">
                       {inv.status === 'valid' ? (
-                        <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-extrabold uppercase rounded-full border border-success-text/50">
+                        <span className="px-2.5 py-1 bg-success-bg text-success-text text-xs font-extrabold uppercase rounded-full border border-success-text/50">
                           Cobrado / Vigente
                         </span>
                       ) : (
-                        <span className="px-2.5 py-1 bg-page text-text-3 text-[10px] font-extrabold uppercase rounded-full border border-border">
+                        <span className="px-2.5 py-1 bg-page text-text-3 text-xs font-extrabold uppercase rounded-full border border-border">
                           Cancelado SAT
                         </span>
                       )}

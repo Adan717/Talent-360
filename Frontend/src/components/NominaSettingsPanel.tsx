@@ -134,7 +134,7 @@ export default function NominaSettingsPanel() {
               <span className={`text-sm font-black ${periodicity === op.id ? 'text-accent' : 'text-text-1'}`}>
                 {op.titulo}
               </span>
-              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-page text-text-3">
+              <span className="text-xs font-black uppercase px-1.5 py-0.5 rounded-md bg-page text-text-3">
                 {op.codigo}
               </span>
             </div>
@@ -154,7 +154,7 @@ export default function NominaSettingsPanel() {
           >
             {dias.map((d, i) => <option key={i} value={i}>{d}</option>)}
           </select>
-          <p className="text-[10px] text-slate-400 font-medium">
+          <p className="text-xs text-slate-400 font-medium">
             Define el corte semanal y las semanas del séptimo día en quincenal/mensual.
           </p>
         </div>

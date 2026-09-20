@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Clock, Coffee, ListTodo, Users, Save, CheckCircle2, Building2, Key, ArrowUp, ArrowDown, Trash2, Plus, Briefcase, GraduationCap, FileText, FileSpreadsheet, Receipt, Zap } from 'lucide-react';
+import { Settings, Clock, Coffee, ListTodo, Users, Save, CheckCircle2, Building2, Key, ArrowUp, ArrowDown, Trash2, Plus, Briefcase, GraduationCap, FileText, FileSpreadsheet, Zap } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { ClockControlCenterPanel } from './reloj/ui/ClockControlCenterPanel';
@@ -52,17 +52,6 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
   const [assignmentError, setAssignmentError] = useState('');
   const isSandbox = useAppStore(state => state.isSandboxMode);
 
-  // Ambiente fiscal REAL de la instancia. Se pregunta al servidor porque lo decide su llave del
-  // PAC, no un ajuste de la empresa; nunca viaja la llave, sólo lo que se deduce de ella.
-  const [estadoTimbrado, setEstadoTimbrado] = useState<{ configurado: boolean; ambiente: string | null } | null>(null);
-
-  useEffect(() => {
-    if (activeTab !== 'facturacion' || estadoTimbrado || isSandbox) return;
-    axiosInstance.get('/billing/estado-timbrado')
-      .then(res => setEstadoTimbrado({ configurado: res.data?.configurado === true, ambiente: res.data?.ambiente ?? null }))
-      // Sin permiso o sin red, se asume lo prudente: que no hay timbrado configurado.
-      .catch(() => setEstadoTimbrado({ configurado: false, ambiente: null }));
-  }, [activeTab, estadoTimbrado, isSandbox]);
   const globalUsers = useAppStore(state => state.globalUsers);
 
   // NUEVO: cursos de Academia disponibles para el selector de "Curso de Puntualidad" (pestaña Reloj).
@@ -413,14 +402,6 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
             <Users size={18} />
             Onboarding
           </button>
-          <button
-            onClick={() => setActiveTab('facturacion')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'facturacion' ? 'bg-accent text-white' : 'text-text-2 hover:bg-page'}`}
-          >
-            <Receipt size={18} />
-            Facturación SAT
-          </button>
-
           {useAppStore.getState().isFeatureUnlocked('store_opening') && (
             <button
               onClick={() => setActiveTab('apertura')}
@@ -636,7 +617,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   ))}
                 </select>
                 {academyCourses.length === 0 && (
-                  <p className="text-[10px] text-warning-text mt-2">
+                  <p className="text-xs text-warning-text mt-2">
                     No hay cursos creados todavía en la Academia. Crea uno primero en la pestaña "Academia".
                   </p>
                 )}
@@ -861,7 +842,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       value={openingSettings.pre_opening_window_minutes}
                       onChange={(e) => setOpeningSettings({ ...openingSettings, pre_opening_window_minutes: parseInt(e.target.value) })}
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Tiempo antes de la apertura en que se activa el botón de abrir para el primer encargado.</p>
+                    <p className="text-xs text-slate-400 mt-1">Tiempo antes de la apertura en que se activa el botón de abrir para el primer encargado.</p>
                   </div>
 
                   <div>
@@ -872,7 +853,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       value={openingSettings.absence_late_report_window_minutes}
                       onChange={(e) => setOpeningSettings({ ...openingSettings, absence_late_report_window_minutes: parseInt(e.target.value) })}
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Límite para que el encargado reporte inasistencia o retardo antes de transferir la responsabilidad.</p>
+                    <p className="text-xs text-slate-400 mt-1">Límite para que el encargado reporte inasistencia o retardo antes de transferir la responsabilidad.</p>
                   </div>
 
                   <div>
@@ -883,7 +864,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       value={openingSettings.early_clock_in_allowed_minutes}
                       onChange={(e) => setOpeningSettings({ ...openingSettings, early_clock_in_allowed_minutes: parseInt(e.target.value) })}
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Minutos permitidos antes de la apertura oficial para registrar entrada laboral normal.</p>
+                    <p className="text-xs text-slate-400 mt-1">Minutos permitidos antes de la apertura oficial para registrar entrada laboral normal.</p>
                   </div>
 
                   <div className="h-[1px] bg-slate-200 my-1"></div>
@@ -891,7 +872,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   <div className="flex justify-between items-center">
                     <div>
                       <h5 className="font-semibold text-xs text-text-2">Cesión Jerárquica Automática</h5>
-                      <p className="text-[10px] text-slate-400">Transferir automáticamente al suplente si el responsable actual no responde en la ventana.</p>
+                      <p className="text-xs text-slate-400">Transferir automáticamente al suplente si el responsable actual no responde en la ventana.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
                       <input
@@ -907,7 +888,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   <div className="flex justify-between items-center">
                     <div>
                       <h5 className="font-semibold text-xs text-text-2">Permitir Reportes de Tienda Cerrada</h5>
-                      <p className="text-[10px] text-slate-400">Permite a los colaboradores notificar que la sucursal sigue cerrada para aplicar amnistía.</p>
+                      <p className="text-xs text-slate-400">Permite a los colaboradores notificar que la sucursal sigue cerrada para aplicar amnistía.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
                       <input
@@ -923,7 +904,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   <div className="flex justify-between items-center">
                     <div>
                       <h5 className="font-semibold text-xs text-text-2">Checklist de Apertura Obligatorio</h5>
-                      <p className="text-[10px] text-slate-400">Asigna y requiere completar rutinas críticas al abrir la sucursal.</p>
+                      <p className="text-xs text-slate-400">Asigna y requiere completar rutinas críticas al abrir la sucursal.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
                       <input
@@ -939,7 +920,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   <div className="flex justify-between items-center">
                     <div>
                       <h5 className="font-semibold text-xs text-text-2">Pase de Lista de Apertura Obligatorio</h5>
-                      <p className="text-[10px] text-slate-400">Habilita y exige pase de lista rápido para los colaboradores del primer turno.</p>
+                      <p className="text-xs text-slate-400">Habilita y exige pase de lista rápido para los colaboradores del primer turno.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
                       <input
@@ -955,7 +936,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   <div className="flex justify-between items-center">
                     <div>
                       <h5 className="font-semibold text-xs text-text-2"> Notificaciones Flotantes del Reloj</h5>
-                      <p className="text-[10px] text-slate-400">Muestra avisos emergentes (toasts) de pase de lista, aperturas GPS y recordatorios de turno.</p>
+                      <p className="text-xs text-slate-400">Muestra avisos emergentes (toasts) de pase de lista, aperturas GPS y recordatorios de turno.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
                       <input
@@ -971,7 +952,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   <div className="flex justify-between items-center">
                     <div>
                       <h5 className="font-semibold text-xs text-text-2">Delegación de Llaves Obligatoria</h5>
-                      <p className="text-[10px] text-slate-400">Exigir al encargado ceder las llaves a un relevo si el día siguiente es su descanso.</p>
+                      <p className="text-xs text-slate-400">Exigir al encargado ceder las llaves a un relevo si el día siguiente es su descanso.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
                       <input
@@ -1028,14 +1009,14 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                               `job_role_id`). El backend pedía esa columna en el eager-load y
                               devolvía 500 al asignar un portador de llaves; ahora manda el puesto
                               resuelto. */}
-                          <p className="text-[10px] text-slate-455 font-extrabold uppercase mt-0.5 tracking-wider">{ass.employee?.job_role?.name || 'Colaborador'}</p>
+                          <p className="text-xs text-slate-455 font-extrabold uppercase mt-0.5 tracking-wider">{ass.employee?.job_role?.name || 'Colaborador'}</p>
                         </div>
                       </div>
 
                       {/* Toggles Rápidos & Borrar */}
                       <div className="flex items-center gap-5">
                         <div className="flex flex-col items-center">
-                          <span className="text-[9px] text-slate-400 font-extrabold uppercase mb-1">Llaves</span>
+                          <span className="text-xs text-slate-400 font-extrabold uppercase mb-1">Llaves</span>
                           <input
                             type="checkbox"
                             checked={ass.has_keys}
@@ -1045,7 +1026,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                         </div>
 
                         <div className="flex flex-col items-center">
-                          <span className="text-[9px] text-slate-400 font-extrabold uppercase mb-1">Activo</span>
+                          <span className="text-xs text-slate-400 font-extrabold uppercase mb-1">Activo</span>
                           <input
                             type="checkbox"
                             checked={ass.is_active}
@@ -1119,86 +1100,6 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
             y el ciclo de nómina (que se configura en "Nómina & Periodicidad"). Retiradas el
             2026-08-16 — detalle en docs/modules/configuracion/RONDA_2026-08-16.md */}
 
-        {/* FACTURACIÓN — pestaña de LECTURA, no de ajustes (2026-08-16).
-            Traía tres controles imposibles: un "Timbrado de Nómina Automático" que no existe
-            (nada timbra solo: `timbrarNomina` sólo se invoca a mano desde Nómina CFDI 4.0), un
-            selector "Pruebas SAT / Producción Fiscal" que se guardaba por empresa y no gobernaba
-            nada (el ambiente lo decide FACTURAPI_KEY del .env del servidor) y un correo de avisos
-            CFDI sin proveedor de correo. Y su botón "Guardar" llamaba handleSave('facturacionConfig'),
-            rama que no existe: confirmaba en verde y descartaba todo.
-            Una pantalla que dice "Producción Fiscal" mientras el servidor timbra contra el sandbox
-            es la peor forma de equivocarse en algo fiscal, así que ahora MUESTRA el ambiente real
-            en vez de ofrecer elegirlo. */}
-        {activeTab === 'facturacion' && (
-          <div className="max-w-2xl animate-in slide-in-from-right-4">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-2xl font-black text-text-1">Facturación SAT</h3>
-                <p className="text-text-3 text-sm">Estado del timbrado de esta instancia.</p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="bg-page p-6 rounded-2xl border border-border">
-                <h4 className="font-bold text-text-1 mb-3">Ambiente de Operación SAT</h4>
-                {estadoTimbrado === null ? (
-                  <p className="text-sm text-text-3">Consultando al servidor…</p>
-                ) : !estadoTimbrado.configurado ? (
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 shrink-0 w-3 h-3 rounded-full bg-slate-400"></span>
-                    <div>
-                      <p className="font-black text-text-1">Sin llave del PAC</p>
-                      <p className="text-sm text-text-3 mt-1">
-                        No se puede timbrar todavía. El resto de la nómina (calcular, firmar y
-                        autorizar) funciona igual; lo único que falta es el sello fiscal.
-                      </p>
-                    </div>
-                  </div>
-                ) : estadoTimbrado.ambiente === 'produccion' ? (
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 shrink-0 w-3 h-3 rounded-full bg-success-icon"></span>
-                    <div>
-                      <p className="font-black text-success-text">Producción fiscal — los timbres son REALES</p>
-                      <p className="text-sm text-text-3 mt-1">
-                        Lo que se timbre desde "Nómina CFDI 4.0" queda ante el SAT y sólo se
-                        deshace cancelando.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 shrink-0 w-3 h-3 rounded-full bg-warning-icon"></span>
-                    <div>
-                      <p className="font-black text-warning-text">Pruebas (sandbox)</p>
-                      <p className="text-sm text-text-3 mt-1">
-                        Los timbres NO tienen validez fiscal: sirven para ensayar el flujo completo.
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <p className="text-xs text-slate-400 mt-4 leading-relaxed border-t border-border pt-3">
-                  El ambiente no se elige por empresa: lo decide la llave del PAC que tenga el
-                  servidor ({'{'}<code className="font-mono">FACTURAPI_KEY</code>{'}'} en su <code className="font-mono">.env</code>).
-                  Cambiarla es tarea de quien administra el servidor.
-                </p>
-              </div>
-
-              <div className="bg-page p-6 rounded-2xl border border-border">
-                <h4 className="font-bold text-text-1 mb-2">Cómo se timbra</h4>
-                <p className="text-sm text-text-2 leading-relaxed">
-                  El timbrado es <strong>manual y por recibo</strong>, desde el módulo
-                  "Nómina CFDI 4.0", y sólo sobre nóminas ya <strong>autorizadas</strong>. No hay
-                  timbrado automático al cerrar el periodo.
-                </p>
-                <p className="text-sm text-text-2 leading-relaxed mt-3">
-                  Los datos fiscales de la empresa (RFC, razón social, régimen) y los sellos
-                  digitales <strong>CSD</strong> también se capturan en ese módulo, no aquí.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* --- PESTAÑA: OPERACIÓN DEL RELOJ --- */}
         {activeTab === 'reloj_operacion' && (
           <div className="max-w-2xl animate-in slide-in-from-right-4">
@@ -1249,7 +1150,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 <div className="flex justify-between items-center">
                   <div>
                     <h5 className="font-bold text-text-2 text-xs">Bloqueo por IP (IP Lock)</h5>
-                    <p className="text-[10px] text-text-3 mt-0.5">Exigir que los colaboradores estén conectados al Wi-Fi de la tienda (IP coincidente) para fichar.</p>
+                    <p className="text-xs text-text-3 mt-0.5">Exigir que los colaboradores estén conectados al Wi-Fi de la tienda (IP coincidente) para fichar.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -1264,7 +1165,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                 {formData.clockOpConfig?.ip_lock_enabled && (
                   <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
-                    <label className="text-[10px] font-black text-text-3 uppercase tracking-wider block text-left">Dirección IP de la Red Wi-Fi Autorizada</label>
+                    <label className="text-xs font-black text-text-3 uppercase tracking-wider block text-left">Dirección IP de la Red Wi-Fi Autorizada</label>
                     <input
                       type="text"
                       className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-bold bg-white text-text-1 focus:outline-none focus:border-accent text-xs"
@@ -1279,7 +1180,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                 <h4 className="font-extrabold text-text-1 text-sm border-b pb-2 flex items-center justify-between">
                   <span> Controles y Componentes del Reloj (Modular Pro)</span>
-                  <span className="text-[10px] bg-accent-soft text-accent px-2 py-0.5 rounded-full font-black uppercase">Plan Pro</span>
+                  <span className="text-xs bg-accent-soft text-accent px-2 py-0.5 rounded-full font-black uppercase">Plan Pro</span>
                 </h4>
 
                 <div className="space-y-4">
@@ -1288,7 +1189,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center">
                       <div>
                         <h5 className="font-bold text-text-2 text-xs">Tiempo de Traslado del Suplente</h5>
-                        <p className="text-[10px] text-text-3 mt-0.5">Margen de anticipación límite en minutos para alertar/delegar al suplente.</p>
+                        <p className="text-xs text-text-3 mt-0.5">Margen de anticipación límite en minutos para alertar/delegar al suplente.</p>
                       </div>
                       <span className="text-xs font-black text-accent bg-navy-50 px-2 py-1 rounded-lg">
                         {formData.clockOpConfig?.suplente_travel_time_mins || 60} minutos
@@ -1312,7 +1213,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Incidencias Colaborador</h5>
-                        <p className="text-[9px] text-slate-400">Reporte de retardo a las 7:00 AM</p>
+                        <p className="text-xs text-slate-400">Reporte de retardo a las 7:00 AM</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1332,7 +1233,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Incidencias Encargado</h5>
-                        <p className="text-[9px] text-slate-400">Límite dinámico suplente</p>
+                        <p className="text-xs text-slate-400">Límite dinámico suplente</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1352,7 +1253,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Ya estoy aquí (Cercanía)</h5>
-                        <p className="text-[9px] text-slate-400">Marcaje de cercanía 8:15-8:30</p>
+                        <p className="text-xs text-slate-400">Marcaje de cercanía 8:15-8:30</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1372,7 +1273,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Reportar Tienda Cerrada</h5>
-                        <p className="text-[9px] text-slate-400">Reporte preventivo en apertura tardía</p>
+                        <p className="text-xs text-slate-400">Reporte preventivo en apertura tardía</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1392,7 +1293,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Calificar Pase de Lista</h5>
-                        <p className="text-[9px] text-slate-400">Estrellas: Presentación / Imagen / Energía</p>
+                        <p className="text-xs text-slate-400">Estrellas: Presentación / Imagen / Energía</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1409,7 +1310,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Foto de Comedor (Comida)</h5>
-                        <p className="text-[9px] text-slate-400">Evidencia al iniciar y terminar la comida</p>
+                        <p className="text-xs text-slate-400">Evidencia al iniciar y terminar la comida</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1426,7 +1327,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Silla con Aprobación</h5>
-                        <p className="text-[9px] text-slate-400">Requiere que el supervisor autorice el descanso</p>
+                        <p className="text-xs text-slate-400">Requiere que el supervisor autorice el descanso</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1442,7 +1343,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     {/* §25: aforo máximo de sillas simultáneas */}
                     <div className="bg-white p-3 rounded-xl border border-border">
                       <h5 className="font-bold text-text-2 text-[11px] mb-1">Aforo de Sillas</h5>
-                      <p className="text-[9px] text-slate-400 mb-2">Máximo de colaboradores sentados a la vez (Ley Silla)</p>
+                      <p className="text-xs text-slate-400 mb-2">Máximo de colaboradores sentados a la vez (Ley Silla)</p>
                       <input
                         type="number"
                         min={1}
@@ -1456,7 +1357,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     {/* §24: Modo de reserva de comida (libre vs cola secuencial) */}
                     <div className="bg-white p-3 rounded-xl border border-border">
                       <h5 className="font-bold text-text-2 text-[11px] mb-1">Reserva de Comida</h5>
-                      <p className="text-[9px] text-slate-400 mb-2">Libre = cualquiera aparta cualquier horario. Cola = por turnos, uno a uno.</p>
+                      <p className="text-xs text-slate-400 mb-2">Libre = cualquiera aparta cualquier horario. Cola = por turnos, uno a uno.</p>
                       <div className="flex gap-2">
                         <select
                           value={formData.clockOpConfig?.meal_reservation_mode || 'free'}
@@ -1483,7 +1384,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Re-validar GPS al Marcar</h5>
-                        <p className="text-[9px] text-slate-400">Exigir geocerca en entrada/salida final</p>
+                        <p className="text-xs text-slate-400">Exigir geocerca en entrada/salida final</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1503,7 +1404,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Slots de Almuerzo</h5>
-                        <p className="text-[9px] text-slate-400">Reservación y control de horarios</p>
+                        <p className="text-xs text-slate-400">Reservación y control de horarios</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1523,7 +1424,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Descanso Ley Silla</h5>
-                        <p className="text-[9px] text-slate-400">Desencadenar descanso tras comida</p>
+                        <p className="text-xs text-slate-400">Desencadenar descanso tras comida</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1543,7 +1444,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Salida Anticipada</h5>
-                        <p className="text-[9px] text-slate-400">Botón secundario de salida bajo dial</p>
+                        <p className="text-xs text-slate-400">Botón secundario de salida bajo dial</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1563,7 +1464,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Botón de Pánico</h5>
-                        <p className="text-[9px] text-slate-400">Llamada y alerta de emergencia</p>
+                        <p className="text-xs text-slate-400">Llamada y alerta de emergencia</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1583,7 +1484,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-border">
                       <div>
                         <h5 className="font-bold text-text-2 text-[11px]">Salidas Temporales</h5>
-                        <p className="text-[9px] text-slate-400">Registrar reingresos intermedios</p>
+                        <p className="text-xs text-slate-400">Registrar reingresos intermedios</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer scale-90">
                         <input
@@ -1648,7 +1549,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                          Modo Fichaje Rápido (Sin GPS)
                       </span>
                       {formData.clockOpConfig?.gpsValidationEnabled === false && (
-                        <span className="bg-success-icon text-text-1 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
+                        <span className="bg-success-icon text-text-1 text-xs font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
                       )}
                     </div>
                     <p className="text-[10.5px] text-slate-300 leading-snug">
@@ -1687,7 +1588,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                          Modo GPS Perimetral (Sucursal)
                       </span>
                       {formData.clockOpConfig?.gpsValidationEnabled !== false && (
-                        <span className="bg-accent text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
+                        <span className="bg-accent text-white text-xs font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
                       )}
                     </div>
                     <p className="text-[10.5px] text-slate-300 leading-snug">

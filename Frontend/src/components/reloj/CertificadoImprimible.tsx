@@ -132,7 +132,7 @@ export const CertificadoImprimible: React.FC<CertificadoProps> = ({
             </div>
             <div className="w-full border-t border-slate-400 pt-1">
               <p className="font-bold text-xs uppercase text-slate-800">{instructorName}</p>
-              <p className="text-[10px] text-slate-500 uppercase">Instructor / Aval</p>
+              <p className="text-xs text-slate-500 uppercase">Instructor / Aval</p>
             </div>
           </div>
 
@@ -140,7 +140,7 @@ export const CertificadoImprimible: React.FC<CertificadoProps> = ({
           <div className="relative flex flex-col items-center justify-center -mb-6">
             <div className="w-20 h-20 rounded-full border-2 border-dashed border-[#fffdf8] flex items-center justify-center shadow-lg relative z-10" style={{ backgroundImage: `linear-gradient(to bottom right, ${secondaryColor}, #aa7f1d, ${secondaryColor})` }}>
               <div className="w-14 h-14 rounded-full flex items-center justify-center border" style={{ backgroundColor: '#aa7f1d', borderColor: secondaryColor }}>
-                <span className="text-[#fffdf8] text-[9px] font-black text-center leading-tight">SELLO<br/>OFICIAL</span>
+                <span className="text-[#fffdf8] text-xs font-black text-center leading-tight">SELLO<br/>OFICIAL</span>
               </div>
             </div>
             {/* Listones del sello */}
@@ -161,7 +161,7 @@ export const CertificadoImprimible: React.FC<CertificadoProps> = ({
             </div>
             <div className="w-full border-t border-slate-400 pt-1">
               <p className="font-bold text-xs uppercase text-slate-800">{directorName}</p>
-              <p className="text-[10px] text-slate-500 uppercase">Director General</p>
+              <p className="text-xs text-slate-500 uppercase">Director General</p>
             </div>
           </div>
         </div>
@@ -170,13 +170,13 @@ export const CertificadoImprimible: React.FC<CertificadoProps> = ({
             podía imprimir un certificado y la empresa no tenía cómo distinguirlo de uno real. */}
         {folio && (
           <div className="mt-3 shrink-0 text-center">
-            <p className="text-[10px] text-slate-500 tracking-widest">
+            <p className="text-xs text-slate-500 tracking-widest">
               FOLIO DE VERIFICACIÓN: <strong className="text-slate-700">{folio}</strong>
             </p>
             {/* Sin la dirección, el folio no sirve de nada: quien recibe el papel no sabría
                 dónde comprobarlo. Se imprime el origen real para que funcione igual en el
                 servidor de la empresa que en el de pruebas. */}
-            <p className="text-[9px] text-slate-400 tracking-wide mt-0.5">
+            <p className="text-xs text-slate-400 tracking-wide mt-0.5">
               Verifícalo en {typeof window !== 'undefined' ? window.location.origin : ''}/certificado
             </p>
           </div>

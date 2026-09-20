@@ -35,11 +35,11 @@ export function VoiceAssistantOverlay({
 
         {/* Step counter */}
         {activeFieldIndex >= 0 ? (
-          <span className="text-[10px] bg-success-bg text-success-text font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mb-2">
+          <span className="text-xs bg-success-bg text-success-text font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mb-2">
             Paso {activeFieldIndex + 1} de {totalFields}
           </span>
         ) : (
-          <span className="text-[10px] bg-navy-50 text-accent font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mb-2">
+          <span className="text-xs bg-navy-50 text-accent font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mb-2">
             Completado
           </span>
         )}
@@ -57,7 +57,7 @@ export function VoiceAssistantOverlay({
 
         {/* Live speech transcript */}
         <div className="w-full min-h-[50px] bg-slate-950 text-success-text font-mono text-xs p-3.5 rounded-xl text-left border border-slate-800 flex flex-col gap-1 select-none mb-6">
-          <span className="text-[9px] text-text-2 font-sans uppercase font-bold tracking-wider">Escuchando...</span>
+          <span className="text-xs text-text-2 font-sans uppercase font-bold tracking-wider">Escuchando...</span>
           <span className="italic text-slate-300">
             {transcript ? `"${transcript}"` : 'Habla ahora...'}
           </span>

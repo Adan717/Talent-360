@@ -10,6 +10,7 @@ import {
 import { GlobalSystemSettingsPanel } from './GlobalSystemSettingsPanel';
 import { OnboardingWizard } from './OnboardingWizard';
 import { StatusBadge } from './ui/StatusBadge';
+import { promptForText, notify } from '../lib/appDialogs';
 // Resync 3: HeaderStats se va (su refactor Monitor 360 borró el componente); los paneles de
 // resolución del Reloj SE QUEDAN — son funcionales, no estética: sin ellos, lo que los
 // empleados declaran desde el dial (entrada tardía R56/R57, pánico R80, justificante R82,
@@ -824,7 +825,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               <h3 className="text-xl font-black text-text-1 leading-none">{stat.value}</h3>
               <p className="text-xs font-semibold text-text-3 truncate mt-1">{stat.label}</p>
               <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                <StatusBadge tone={stat.tone} className="text-[10px]">{stat.trend}</StatusBadge>
+                <StatusBadge tone={stat.tone} className="text-xs">{stat.trend}</StatusBadge>
               </div>
             </div>
             <ArrowUpRight size={14} className="text-slate-300 group-hover:text-text-3 transition-colors shrink-0 self-start mt-0.5" />
@@ -888,7 +889,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                           <div className="flex justify-between items-start gap-2">
                             <span className="text-xs font-bold text-text-3 block">Colaborador: <span className="text-text-1 font-extrabold">{employee?.name || 'Empleado'}</span></span>
                             {task?.priority === 'bloqueante' ? (
-                              <span className="bg-danger-bg text-danger-text text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded-md">Crítica</span>
+                              <span className="bg-danger-bg text-danger-text text-xs font-black tracking-wider uppercase px-2 py-0.5 rounded-md">Crítica</span>
                             ) : null}
                           </div>
                           <h4 className="font-bold text-text-1 text-sm mt-1">{task?.title || 'Tarea'}</h4>
@@ -896,14 +897,14 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
                           {/* Evidencia */}
                           <div className="mt-3 bg-page p-2.5 rounded-lg border border-border text-xs">
-                            <span className="font-bold text-text-3 block uppercase text-[9px] tracking-wider mb-1">Evidencia entregada</span>
+                            <span className="font-bold text-text-3 block uppercase text-xs tracking-wider mb-1">Evidencia entregada</span>
                             {task?.assistantType === 'evidencia_foto' ? (
                               <div className="space-y-1.5">
                                 <span className="text-text-2 block italic">Foto adjuntada:</span>
                                 {assignment.assistantData?.photoUrl ? (
                                   <img src={assignment.assistantData.photoUrl} alt="Evidencia" className="h-16 w-auto rounded border border-border" />
                                 ) : (
-                                  <div className="w-24 h-16 bg-slate-200 border border-slate-300 rounded flex items-center justify-center text-[10px] text-text-3 font-medium"> Evidencia Foto</div>
+                                  <div className="w-24 h-16 bg-slate-200 border border-slate-300 rounded flex items-center justify-center text-xs text-text-3 font-medium"> Evidencia Foto</div>
                                 )}
                               </div>
                             ) : task?.assistantType === 'captura_numero' ? (
@@ -924,8 +925,8 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                             Aprobar
                           </button>
                           <button
-                            onClick={() => {
-                              const feedback = prompt("Introduce el motivo de rechazo (comentarios para el empleado):");
+                            onClick={async () => {
+                              const feedback = await promptForText("Introduce el motivo de rechazo (comentarios para el empleado):", '', { title: 'Solicitar corrección', placeholder: 'Explica qué debe corregir' });
                               if (feedback !== null) {
                                 validateTaskAssignment(assignment.id, 'in_progress', feedback || 'Revisión requerida.');
                               }
@@ -971,9 +972,9 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       <h3 className="text-xs font-black text-text-2 uppercase tracking-wider flex items-center gap-1.5">
                         <ListTodo size={14} className="text-accent" /> Bolsa de Tareas
                       </h3>
-                      <p className="text-[10px] text-text-3 font-semibold mt-0.5">Arrastra o selecciona para asignar</p>
+                      <p className="text-xs text-text-3 font-semibold mt-0.5">Arrastra o selecciona para asignar</p>
                     </div>
-                    <span className="bg-slate-200 text-text-2 text-[9px] font-black px-1.5 py-0.5 rounded">
+                    <span className="bg-slate-200 text-text-2 text-xs font-black px-1.5 py-0.5 rounded">
                       {monitorData.available_tasks.length}
                     </span>
                   </div>
@@ -1011,11 +1012,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                             <span className="font-extrabold text-xs text-text-1 line-clamp-2 leading-tight pr-4">
                               {task.title}
                             </span>
-                            <StatusBadge tone={task.priority === 'high' || task.priority === 'bloqueante' ? 'danger' : task.priority === 'medium' ? 'warning' : 'neutral'} className="text-[10px]">
+                            <StatusBadge tone={task.priority === 'high' || task.priority === 'bloqueante' ? 'danger' : task.priority === 'medium' ? 'warning' : 'neutral'} className="text-xs">
                               {task.priority === 'bloqueante' ? 'Crítica' : task.priority}
                             </StatusBadge>
                           </div>
-                          <div className="mt-2.5 flex items-center justify-between text-[9px] text-text-3 font-bold">
+                          <div className="mt-2.5 flex items-center justify-between text-xs text-text-3 font-bold">
                             <span className="flex items-center gap-0.5"> {task.estimated_mins} min</span>
                             <span className="opacity-0 group-hover:opacity-100 transition-opacity text-accent font-black flex items-center gap-0.5">
                               {isSelected ? 'Toca colaborador' : 'Arrastra '}
@@ -1026,7 +1027,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     })}
 
                     {monitorData.available_tasks.length === 0 && (
-                      <div className="text-center py-10 border border-dashed border-border rounded-xl bg-white text-text-3 text-[10px] font-bold">
+                      <div className="text-center py-10 border border-dashed border-border rounded-xl bg-white text-text-3 text-xs font-bold">
                         Bolsa vacía. Genera tareas abajo con IA.
                       </div>
                     )}
@@ -1035,7 +1036,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
                 {/* Generador de Tareas IA */}
                 <div className="mt-4 pt-3 border-t border-border/60">
-                  <label className="text-[9px] font-black uppercase tracking-wider text-text-3 flex items-center gap-1 mb-1.5">
+                  <label className="text-xs font-black uppercase tracking-wider text-text-3 flex items-center gap-1 mb-1.5">
                     <Bot size={12} className="text-accent" /> Asistente de Tareas IA
                   </label>
                   <form
@@ -1080,11 +1081,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       type="text"
                       name="ai_task_input"
                       placeholder="Ej. Barrer bodega 20 min urgente..."
-                      className="flex-1 bg-white border border-border rounded-xl px-3 py-2 text-[10px] font-bold text-text-1 placeholder-text-3 focus:outline-none focus:ring-1 focus-visible:ring-focus-ring"
+                      className="flex-1 bg-white border border-border rounded-xl px-3 py-2 text-xs font-bold text-text-1 placeholder-text-3 focus:outline-none focus:ring-1 focus-visible:ring-focus-ring"
                     />
                     <button
                       type="submit"
-                      className="bg-accent hover:bg-accent-hover text-white rounded-xl px-3 flex items-center justify-center border-none cursor-pointer text-[10px] font-black"
+                      className="bg-accent hover:bg-accent-hover text-white rounded-xl px-3 flex items-center justify-center border-none cursor-pointer text-xs font-black"
                     >
                       Crear
                     </button>
@@ -1098,7 +1099,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   <h3 className="text-xs font-black text-text-3 uppercase tracking-wider flex items-center gap-1">
                     <Users size={14} className="text-text-3" /> Colaboradores Activos
                   </h3>
-                  <span className="bg-navy-50 text-accent text-[10px] font-black px-2.5 py-0.5 rounded-md">
+                  <span className="bg-navy-50 text-accent text-xs font-black px-2.5 py-0.5 rounded-md">
                     {monitorData.users.length} En Turno
                   </span>
                 </div>
@@ -1112,12 +1113,12 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   if (ranked.length === 0) return null;
                   return (
                     <div className="bg-navy-50/60 border border-border rounded-2xl p-3">
-                      <h4 className="text-[9px] font-black text-accent uppercase tracking-wider flex items-center gap-1 mb-2">
+                      <h4 className="text-xs font-black text-accent uppercase tracking-wider flex items-center gap-1 mb-2">
                         <BarChart3 size={11} /> Rendimiento del Día (solo admin)
                       </h4>
                       <div className="space-y-1">
                         {ranked.slice(0, 5).map(({ user: u, stats }, i) => (
-                          <div key={u.id} className="flex items-center justify-between text-[10px]">
+                          <div key={u.id} className="flex items-center justify-between text-xs">
                             <span className="flex items-center gap-1.5 text-text-2 font-bold truncate">
                               <span className="text-slate-300 font-black w-3 shrink-0">{i + 1}</span>
                               {u.name}
@@ -1281,12 +1282,12 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                               <div className="min-w-0">
                                 <h4 className="text-sm font-extrabold text-text-1 truncate">{user.name}</h4>
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <p className="text-[10px] text-text-3 font-semibold truncate uppercase tracking-wider">{user.role_name}</p>
-                                  <StatusBadge tone={user.status === 'active' ? 'success' : user.status === 'break' ? 'warning' : user.status === 'idle' ? 'danger' : 'neutral'} className="text-[10px]">
+                                  <p className="text-xs text-text-3 font-semibold truncate uppercase tracking-wider">{user.role_name}</p>
+                                  <StatusBadge tone={user.status === 'active' ? 'success' : user.status === 'break' ? 'warning' : user.status === 'idle' ? 'danger' : 'neutral'} className="text-xs">
                                     {user.status_text || (user.status === 'active' ? 'Activo' : user.status === 'break' ? 'En descanso' : user.status === 'idle' ? 'Sin actividad' : 'Sin conexión')}
                                   </StatusBadge>
                                   {getTenureLabel((user as any).hire_date) && (
-                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full shrink-0 ${
+                                    <span className={`text-xs font-black px-1.5 py-0.5 rounded-full shrink-0 ${
                                       getTenureLabel((user as any).hire_date)?.startsWith('nuevo')
                                         ? 'bg-warning-bg text-warning-text'
                                         : 'bg-page text-text-3'
@@ -1297,58 +1298,58 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                                 </div>
                               </div>
                             </div>
-                            <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-page text-text-2 border border-border">
+                            <span className="text-xs font-extrabold px-2 py-0.5 rounded-full bg-page text-text-2 border border-border">
                               {user.efficiency}% Efic.
                             </span>
                           </div>
 
                           {/* Sección de Bonos Nómina MX */}
                           <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
-                            <div className={`p-1.5 rounded-lg border text-[9px] font-bold flex flex-col justify-center items-center ${
+                            <div className={`p-1.5 rounded-lg border text-xs font-bold flex flex-col justify-center items-center ${
                               isBonoPuntualidadActive ? 'bg-success-bg text-success-text border-success-text/20' : 'bg-danger-bg text-danger-text border-danger-text/20'
                             }`}>
                               <Award size={10} className="mb-0.5" />
                               <span>Puntualidad</span>
-                              <span className="text-[8px] font-black uppercase mt-0.5">{isBonoPuntualidadActive ? 'Activo' : 'Perdido'}</span>
+                              <span className="text-xs font-black uppercase mt-0.5">{isBonoPuntualidadActive ? 'Activo' : 'Perdido'}</span>
                             </div>
-                            <div className={`p-1.5 rounded-lg border text-[9px] font-bold flex flex-col justify-center items-center ${
+                            <div className={`p-1.5 rounded-lg border text-xs font-bold flex flex-col justify-center items-center ${
                               isBonoAsistenciaActive ? 'bg-success-bg text-success-text border-success-text/20' : 'bg-danger-bg text-danger-text border-danger-text/20'
                             }`}>
                               <CheckCircle2 size={10} className="mb-0.5" />
                               <span>Asistencia</span>
-                              <span className="text-[8px] font-black uppercase mt-0.5">{isBonoAsistenciaActive ? 'Activo' : 'Inactivo'}</span>
+                              <span className="text-xs font-black uppercase mt-0.5">{isBonoAsistenciaActive ? 'Activo' : 'Inactivo'}</span>
                             </div>
-                            <div className={`p-1.5 rounded-lg border text-[9px] font-bold flex flex-col justify-center items-center ${
+                            <div className={`p-1.5 rounded-lg border text-xs font-bold flex flex-col justify-center items-center ${
                               isBonoProductividadActive ? 'bg-success-bg text-success-text border-success-text/20' : 'bg-page text-text-3 border-border'
                             }`}>
                               <Sparkles size={10} className="mb-0.5" />
                               <span>Productividad</span>
-                              <span className="text-[8px] font-black uppercase mt-0.5">{isBonoProductividadActive ? 'Activo' : 'N/D'}</span>
+                              <span className="text-xs font-black uppercase mt-0.5">{isBonoProductividadActive ? 'Activo' : 'N/D'}</span>
                             </div>
                           </div>
 
                           {/* Alertas LFT / Incidentes de Descanso */}
                           <div className="mt-3 space-y-1.5">
                             {hasEntryLate && (
-                              <div className="flex items-center gap-1.5 text-[9px] font-black text-danger-text bg-danger-bg border border-danger-text/20 p-1.5 rounded-lg">
+                              <div className="flex items-center gap-1.5 text-xs font-black text-danger-text bg-danger-bg border border-danger-text/20 p-1.5 rounded-lg">
                                 <AlertTriangle size={11} className="shrink-0" />
                                 <span>Retardo registrado en Entrada: ({lateMinutes} min tarde)</span>
                               </div>
                             )}
                             {isMealOvertime && (
-                              <div className="flex items-center gap-1.5 text-[9px] font-black text-danger-text bg-danger-bg border border-danger-text/20 p-1.5 rounded-lg">
+                              <div className="flex items-center gap-1.5 text-xs font-black text-danger-text bg-danger-bg border border-danger-text/20 p-1.5 rounded-lg">
                                 <AlertTriangle size={11} className="shrink-0" />
                                 <span>Exceso LFT en tiempo de Comida: (+{mealDurationMins - (user.meal_minutes || 60)} min)</span>
                               </div>
                             )}
                             {isSillaOvertime && (
-                              <div className="flex items-center gap-1.5 text-[9px] font-black text-warning-text bg-warning-bg border border-warning-text/20 p-1.5 rounded-lg animate-pulse">
+                              <div className="flex items-center gap-1.5 text-xs font-black text-warning-text bg-warning-bg border border-warning-text/20 p-1.5 rounded-lg animate-pulse">
                                 <Armchair size={11} className="shrink-0" />
                                 <span>Ley Silla LFT: Alerta de descanso prolongado.</span>
                               </div>
                             )}
                             {hasTaskDelay && (
-                              <div className="flex items-center gap-1.5 text-[9px] font-black text-danger-text bg-danger-bg border border-danger-text/20 p-1.5 rounded-lg animate-pulse">
+                              <div className="flex items-center gap-1.5 text-xs font-black text-danger-text bg-danger-bg border border-danger-text/20 p-1.5 rounded-lg animate-pulse">
                                 <AlertCircle size={11} className="shrink-0" />
                                 <span>Demora en Tarea Activa: ({activeTask.accumulated_mins - activeTask.estimated_mins} min excedidos)</span>
                               </div>
@@ -1356,14 +1357,14 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                           </div>
 
                           {/* Analítica e IA de Diagnóstico */}
-                          <div className="mt-3 p-2 bg-page border border-border rounded-xl text-[10px] font-medium text-text-2 italic flex gap-1.5 items-start">
+                          <div className="mt-3 p-2 bg-page border border-border rounded-xl text-xs font-medium text-text-2 italic flex gap-1.5 items-start">
                             <Cpu size={12} className="text-accent shrink-0 mt-0.5" />
                             <span>{iaDiagnostic}</span>
                           </div>
 
                           {/* Línea de Progreso Temporal de Jornada */}
                           <div className="mt-4 space-y-2">
-                            <div className="flex items-center justify-between text-[9px] text-text-3 font-bold">
+                            <div className="flex items-center justify-between text-xs text-text-3 font-bold">
                               <span className="flex items-center gap-0.5"><Clock size={10} /> Resta de Turno: {timeRemainingStr}</span>
                               <span>Jornada: {progressPercent}%</span>
                             </div>
@@ -1388,7 +1389,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                             const workedPercent = Math.min(100, Math.round((stats.workedMins / shiftMins) * 100));
                             return (
                               <div className="mt-2">
-                                <div className="flex items-center justify-between text-[9px] text-navy-300 font-bold">
+                                <div className="flex items-center justify-between text-xs text-navy-300 font-bold">
                                   <span>Trabajado: {(stats.workedMins / 60).toFixed(1)}h de {(shiftMins / 60).toFixed(1)}h turno</span>
                                   {stats.efficiencyPct !== null && <span>{stats.efficiencyPct}% efic.</span>}
                                 </div>
@@ -1405,7 +1406,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
                         {/* Tareas del Día del Colaborador */}
                         <div className="mt-4 space-y-2">
-                          <span className="text-[9px] font-black text-text-3 uppercase tracking-wider block">Avance de Rutinas</span>
+                          <span className="text-xs font-black text-text-3 uppercase tracking-wider block">Avance de Rutinas</span>
                           {userActiveTasks.length > 0 ? (
                             userActiveTasks.map((t: any) => {
                               const elapsed = t.accumulated_mins || 0;
@@ -1415,7 +1416,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                                 <div key={t.id} className={`p-2.5 rounded-xl border flex flex-col justify-between transition-all ${
                                   isOver && t.status === 'in_progress' ? 'bg-danger-bg border-danger-text/20' : 'bg-navy-50/30 border-border'
                                 }`}>
-                                  <div className="flex justify-between items-center text-[9px] font-bold text-text-3 mb-1">
+                                  <div className="flex justify-between items-center text-xs font-bold text-text-3 mb-1">
                                     <span className="font-extrabold text-accent truncate max-w-[120px]">{t.title}</span>
                                     <span>{elapsed}/{t.estimated_mins}m</span>
                                   </div>
@@ -1429,7 +1430,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                               );
                             })
                           ) : (
-                            <div className="bg-page border border-border rounded-xl p-2.5 text-center text-[10px] text-text-3 font-bold">
+                            <div className="bg-page border border-border rounded-xl p-2.5 text-center text-xs text-text-3 font-bold">
                               No tiene tareas activas. Arrastra una aquí.
                             </div>
                           )}
@@ -1439,7 +1440,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                         <div className="mt-4 pt-3 border-t border-border flex justify-between gap-1.5 items-center">
                           <button
                             onClick={() => setSelectedUserForTask(user)}
-                            className="bg-accent hover:bg-accent-hover text-white font-extrabold px-3 py-1.5 rounded-xl text-[10px] transition-colors flex items-center justify-center gap-1 cursor-pointer border-none"
+                            className="bg-accent hover:bg-accent-hover text-white font-extrabold px-3 py-1.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1 cursor-pointer border-none"
                           >
                             <Play size={10} className="fill-current" /> Asignar Tarea
                           </button>
@@ -1530,11 +1531,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                         return (
                           <div key={msg.id} className={`p-3 rounded-xl text-xs space-y-1 hover:shadow-xs transition-shadow ${msgBg}`}>
                             <div className="flex justify-between items-center">
-                              <span className="font-extrabold text-[10px] text-text-1 flex items-center gap-1">
+                              <span className="font-extrabold text-xs text-text-1 flex items-center gap-1">
                                 {typeIcon}
                                 {msg.sender_name}
                               </span>
-                              <span className="text-[9px] text-text-3 font-semibold">{msg.time}</span>
+                              <span className="text-xs text-text-3 font-semibold">{msg.time}</span>
                             </div>
                             <p className="font-semibold">{msg.content}</p>
                           </div>
@@ -1554,7 +1555,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                         <select
                           value={chatType}
                           onChange={(e: any) => setChatType(e.target.value)}
-                          className="text-[10px] font-bold border border-border rounded-lg px-2 py-1 bg-page focus:outline-none focus:ring-1 focus-visible:ring-focus-ring"
+                          className="text-xs font-bold border border-border rounded-lg px-2 py-1 bg-page focus:outline-none focus:ring-1 focus-visible:ring-focus-ring"
                         >
                           <option value="general">General</option>
                           <option value="permission">Permiso</option>
@@ -1602,7 +1603,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                             <p className="text-xs text-text-2 font-semibold leading-normal">
                               <span className="font-bold text-text-1">{event.user}</span> {event.details}
                             </p>
-                            <span className="text-[10px] text-text-3 block mt-0.5">{event.time}</span>
+                            <span className="text-xs text-text-3 block mt-0.5">{event.time}</span>
                           </div>
                         </div>
                       );
@@ -1688,7 +1689,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       </button>
                     </div>
                     <h3 className="font-bold text-text-1 text-xs">Reclutamiento ATS</h3>
-                    <p className="text-text-3 text-[10px] mt-1 mb-2 leading-relaxed">Vacantes, bolsa de trabajo y entrevistas 1-click.</p>
+                    <p className="text-text-3 text-xs mt-1 mb-2 leading-relaxed">Vacantes, bolsa de trabajo y entrevistas 1-click.</p>
                     <span className="text-xs font-black text-accent">+$29 MXN / mes</span>
                   </div>
                 );
@@ -1736,7 +1737,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       </button>
                     </div>
                     <h3 className="font-bold text-text-1 text-xs">Academia 360</h3>
-                    <p className="text-text-3 text-[10px] mt-1 mb-2 leading-relaxed">Cursos interactivos, inducción y gamificación.</p>
+                    <p className="text-text-3 text-xs mt-1 mb-2 leading-relaxed">Cursos interactivos, inducción y gamificación.</p>
                     <span className="text-xs font-black text-accent">+$49 MXN / mes</span>
                   </div>
                 );
@@ -1784,7 +1785,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       </button>
                     </div>
                     <h3 className="font-bold text-text-1 text-xs">Reportes IA</h3>
-                    <p className="text-text-3 text-[10px] mt-1 mb-2 leading-relaxed">Faltas, retardos, Ley Silla y exportes Excel/PDF.</p>
+                    <p className="text-text-3 text-xs mt-1 mb-2 leading-relaxed">Faltas, retardos, Ley Silla y exportes Excel/PDF.</p>
                     <span className="text-xs font-black text-danger-text">+$19 MXN / mes</span>
                   </div>
                 );
@@ -1832,56 +1833,8 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       </button>
                     </div>
                     <h3 className="font-bold text-text-1 text-xs">Archivo Digital</h3>
-                    <p className="text-text-3 text-[10px] mt-1 mb-2 leading-relaxed">Expedientes avanzados, manuales y contratos.</p>
+                    <p className="text-text-3 text-xs mt-1 mb-2 leading-relaxed">Expedientes avanzados, manuales y contratos.</p>
                     <span className="text-xs font-black text-warning-text">+$19 MXN / mes</span>
-                  </div>
-                );
-              })()}
-
-              {/* Facturacion CFDI Toggle Card */}
-              {(() => {
-                const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
-                const isCfdiActive = activeModules.includes('facturacion');
-
-                const handleToggle = async () => {
-                  setIsAdoptionSaving(true);
-                  const updatedModules = isCfdiActive
-                    ? activeModules.filter((m: string) => m !== 'facturacion')
-                    : [...activeModules, 'facturacion'];
-
-                  try {
-                    await axiosInstance.post('/sync/settings', { active_modules: updatedModules });
-                    await fetchState();
-                    setToastMessage(isCfdiActive ? 'Módulo Nómina CFDI desactivado.' : 'Módulo Nómina CFDI adoptado con éxito.');
-                    setTimeout(() => setToastMessage(null), 3000);
-                  } catch (err) {
-                    console.error(err);
-                  } finally {
-                    setIsAdoptionSaving(false);
-                  }
-                };
-
-                return (
-                  <div className={`p-4 rounded-2xl border transition-all ${isCfdiActive ? 'border-success-text/20 bg-success-bg/30' : 'border-border bg-page/50'}`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-success-bg text-success-text rounded-xl">
-                        <Receipt size={18} />
-                      </div>
-                      <button
-                        disabled={isAdoptionSaving}
-                        onClick={handleToggle}
-                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
-                          isCfdiActive
-                            ? 'bg-success-text hover:bg-success-text text-white shadow-sm'
-                            : 'bg-white hover:bg-page text-text-2 border border-border'
-                        }`}
-                      >
-                        {isCfdiActive ? 'Adoptado' : 'Adoptar'}
-                      </button>
-                    </div>
-                    <h3 className="font-bold text-text-1 text-xs">Nómina CFDI 4.0</h3>
-                    <p className="text-text-3 text-[10px] mt-1 mb-2 leading-relaxed">Timbrado masivo de recibos del SAT.</p>
-                    <span className="text-xs font-black text-success-text">+$39 MXN / mes</span>
                   </div>
                 );
               })()}
@@ -1895,8 +1848,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               const hasLms = activeModules.includes('academia');
               const hasReports = activeModules.includes('reportes');
               const hasDocs = activeModules.includes('documentos');
-              const hasCfdi = activeModules.includes('facturacion');
-              const totalCost = (hasAts ? 29 : 0) + (hasLms ? 49 : 0) + (hasReports ? 19 : 0) + (hasDocs ? 19 : 0) + (hasCfdi ? 39 : 0);
+              const totalCost = (hasAts ? 29 : 0) + (hasLms ? 49 : 0) + (hasReports ? 19 : 0) + (hasDocs ? 19 : 0);
 
               return (
                 <div className="pt-5 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1918,7 +1870,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
             <div>
               <h3 className="font-bold text-text-1 text-sm">Paquete Todo Incluido Activado</h3>
               <p className="text-text-3 text-[11px] mt-1 max-w-lg leading-relaxed">
-                Tu empresa cuenta con el plan {currentTier === 'pro' ? 'Profesional' : 'Empresas'}. Tienes acceso completo e ilimitado a todos los módulos actuales y futuros (ATS, Academia, Nóminas y Reportes) sin costos adicionales por módulo.
+                Tu empresa cuenta con el plan {currentTier === 'pro' ? 'Profesional' : 'Empresas'}. Tienes acceso completo a los módulos incluidos en tu plan, como ATS, Academia, pre-nómina y reportes, sin cargos ocultos por activación.
               </p>
             </div>
             {/* (2026-09-05) Aquí decía "$99 MXN" para PRO y "$499 MXN" para Enterprise: un
@@ -1926,11 +1878,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 POR COLABORADOR AL MES), ni con la landing, ni con el panel de plataforma. Ahora
                 sale del tabulador del servidor, y si no llegó no se inventa una cifra. */}
             <div className="text-right shrink-0">
-              <span className="text-text-3 text-[10px] font-bold block uppercase tracking-widest">Inversión mensual</span>
+              <span className="text-text-3 text-xs font-bold block uppercase tracking-widest">Inversión mensual</span>
               <span className="text-3xl font-black text-accent font-sans tracking-tight">
                 {cotizacionDelPlan ? `$${pesos(cotizacionDelPlan.totalMensual)} MXN` : '—'}
               </span>
-              <span className="text-[10px] text-text-3 font-bold block">
+              <span className="text-xs text-text-3 font-bold block">
                 {planDelPlan
                   ? `${colaboradoresActivos} colaborador(es) × $${pesos(planDelPlan.tarifa_mensual_por_colaborador)}/mes`
                   : 'Precio no disponible en este momento'}
@@ -1977,7 +1929,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   type="button"
                   onClick={() => {
                     if (!isFeatureUnlocked('voice_assistant')) {
-                      alert("El Asistente de Voz AI para crear tareas está disponible únicamente en el Plan PRO. Por favor, actualiza tu plan en Configuración.");
+                      notify("El Asistente de Voz AI para crear tareas está disponible únicamente en el Plan PRO. Por favor, actualiza tu plan en Configuración.");
                       return;
                     }
                     setTaskCreationMode('voice');
@@ -1991,7 +1943,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       : 'border-accent bg-navy-50/20 hover:bg-navy-50/40'
                   }`}
                 >
-                  <div className={`absolute top-0 right-0 text-white text-[9px] font-black uppercase px-3 py-1 rounded-bl-xl tracking-wider ${
+                  <div className={`absolute top-0 right-0 text-white text-xs font-black uppercase px-3 py-1 rounded-bl-xl tracking-wider ${
                     !isFeatureUnlocked('voice_assistant') ? 'bg-slate-500' : 'bg-accent'
                   }`}>
                     {!isFeatureUnlocked('voice_assistant') ? ' Plan PRO' : 'Recomendado'}
@@ -2059,7 +2011,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   </div>
                   <div>
                     <h3 className="text-xs font-black uppercase tracking-widest text-navy-300">Asistente por Voz</h3>
-                    <p className="text-[10px] text-navy-200 font-medium uppercase tracking-wider mt-0.5">Registrar vía comandos de voz</p>
+                    <p className="text-xs text-navy-200 font-medium uppercase tracking-wider mt-0.5">Registrar vía comandos de voz</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -2072,7 +2024,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       setVoiceWizardStep('idle');
                       setTaskCreationMode('manual');
                     }}
-                    className="text-[10px] font-black text-navy-100 bg-accent/10 hover:bg-accent/20 px-2.5 py-1.5 rounded-lg border border-accent/20 transition-all uppercase tracking-wider"
+                    className="text-xs font-black text-navy-100 bg-accent/10 hover:bg-accent/20 px-2.5 py-1.5 rounded-lg border border-accent/20 transition-all uppercase tracking-wider"
                   >
                     Escribir a mano
                   </button>
@@ -2114,7 +2066,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       {voiceWizardStep === 'asking_assistant_prompt' && 'Instrucción'}
                       {voiceWizardStep === 'confirm_save' && 'Guardar'}
                     </div>
-                    <span className="text-[10px] text-navy-200 font-bold uppercase tracking-wider">
+                    <span className="text-xs text-navy-200 font-bold uppercase tracking-wider">
                       {voiceWizardStep === 'asking_initial' && 'Paso 1 de 6'}
                       {voiceWizardStep === 'asking_time' && 'Paso 2 de 6'}
                       {voiceWizardStep === 'asking_assignee' && 'Paso 3 de 6'}
@@ -2126,20 +2078,20 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
                   {/* Question spoken by assistant */}
                   <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 mb-3.5">
-                    <p className="text-[9px] font-bold text-navy-300 uppercase tracking-widest">Asistente</p>
+                    <p className="text-xs font-bold text-navy-300 uppercase tracking-widest">Asistente</p>
                     <p className="text-sm font-extrabold text-white mt-1 leading-relaxed">{voiceWizardPrompt}</p>
                   </div>
 
                   {/* Transcript of user speech */}
                   <div className="bg-black/40 rounded-xl p-3.5 text-xs min-h-[60px] flex flex-col justify-between border border-white/5">
                     <div>
-                      <span className="text-[9px] font-bold text-navy-200 block uppercase tracking-wider">Tú dijiste</span>
+                      <span className="text-xs font-bold text-navy-200 block uppercase tracking-wider">Tú dijiste</span>
                       <p className="text-white/80 italic mt-1 font-semibold leading-normal">
                         {voiceWizardTranscript ? `"${voiceWizardTranscript}"` : (isListening ? 'Escuchando tu voz...' : 'Esperando respuesta...')}
                       </p>
                     </div>
                     {isListening && (
-                      <div className="flex items-center gap-1.5 mt-2.5 text-[9px] text-danger-text font-extrabold animate-pulse">
+                      <div className="flex items-center gap-1.5 mt-2.5 text-xs text-danger-text font-extrabold animate-pulse">
                         <span className="w-1.5 h-1.5 rounded-full bg-danger-icon"></span>
                         <span>MICRÓFONO ACTIVO - HABLA AHORA</span>
                       </div>
@@ -2147,7 +2099,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   </div>
 
                   {/* Summary of parsed/filled values */}
-                  <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-[10px] text-text-3 font-semibold bg-black/10 p-3 rounded-xl">
+                  <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs text-text-3 font-semibold bg-black/10 p-3 rounded-xl">
                     <div className="truncate"> Título: <span className="text-white font-black">{newTaskTitle || 'Pendiente'}</span></div>
                     <div> Tiempo: <span className="text-white font-black">{newTaskMins ? `${newTaskMins} mins` : 'Pendiente'}</span></div>
                     <div className="truncate"> Asignado: <span className="text-white font-black">
@@ -2159,7 +2111,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                         : 'Cualquiera / Todos'
                       }
                     </span></div>
-                    <div> Prioridad: <span className="text-white font-black uppercase text-[9px]">{newTaskPriority}</span></div>
+                    <div> Prioridad: <span className="text-white font-black uppercase text-xs">{newTaskPriority}</span></div>
                     <div> Asistente: <span className="text-white font-black">
                       {newTaskAssistantType === 'evidencia_foto' ? ' Foto' :
                        newTaskAssistantType === 'captura_numero' ? ' Número' :
@@ -2218,7 +2170,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                           startVoiceWizard();
                         }, 150);
                       }}
-                      className="px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-navy-50 hover:bg-accent-soft text-accent border border-border transition-all shadow-sm"
+                      className="px-2.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 bg-navy-50 hover:bg-accent-soft text-accent border border-border transition-all shadow-sm"
                     >
                       <Mic size={12} />
                       Cambiar a Voz
@@ -2239,7 +2191,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               <form onSubmit={handleCreateTask} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1.5 custom-scrollbar">
                 {/* Título de la Tarea */}
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Título de la Tarea</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-text-3 block mb-1">Título de la Tarea</label>
                   <input
                     type="text"
                     required
@@ -2253,7 +2205,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 {/* Grid de Tiempo Estimado y Puntos */}
                 <div className="grid grid-cols-2 gap-3.5">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Tiempo Estimado (Mins)</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-text-3 block mb-1">Tiempo Estimado (Mins)</label>
                     <input
                       type="number"
                       required
@@ -2264,7 +2216,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Puntos de Proactividad</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-text-3 block mb-1">Puntos de Proactividad</label>
                     <input
                       type="number"
                       required
@@ -2279,7 +2231,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 {/* Grid de Prioridad y Categoría */}
                 <div className="grid grid-cols-2 gap-3.5">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Nivel de Prioridad</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-text-3 block mb-1">Nivel de Prioridad</label>
                     <select
                       value={newTaskPriority}
                       onChange={(e) => setNewTaskPriority(e.target.value)}
@@ -2292,7 +2244,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Categoría</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-text-3 block mb-1">Categoría</label>
                     <select
                       value={newTaskCategory}
                       onChange={(e) => setNewTaskCategory(e.target.value)}
@@ -2309,7 +2261,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 {/* Grid de Destinatario */}
                 <div className="grid grid-cols-2 gap-3.5">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Tipo de Destinatario</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-text-3 block mb-1">Tipo de Destinatario</label>
                     <select
                       value={newTaskTargetType}
                       onChange={(e) => {
@@ -2325,7 +2277,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                   <div>
                     {newTaskTargetType === 'role' ? (
                       <>
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Puesto de Trabajo</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-text-3 block mb-1">Puesto de Trabajo</label>
                         <select
                           value={newTaskTargetId}
                           onChange={(e) => setNewTaskTargetId(e.target.value)}
@@ -2339,7 +2291,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                       </>
                     ) : (
                       <>
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">Colaborador</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-text-3 block mb-1">Colaborador</label>
                         <select
                           required
                           value={newTaskTargetId}
@@ -2369,7 +2321,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     <Cpu size={14} className="text-accent" />
                     <div>
                       <span className="text-xs font-bold text-text-2 block">Modo Autocaptura (IA)</span>
-                      <span className="text-[9.5px] text-text-3">Aprenderá automáticamente de la telemetría real del personal.</span>
+                      <span className="text-xs text-text-3">Aprenderá automáticamente de la telemetría real del personal.</span>
                     </div>
                   </div>
                   <input
@@ -2399,7 +2351,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
                   {newTaskAssistantType !== 'ninguno' && (
                     <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-text-3 block mb-1">
+                      <label className="text-xs font-bold uppercase tracking-wider text-text-3 block mb-1">
                         ¿Qué le preguntará el asistente al empleado?
                       </label>
                       <input
@@ -2470,10 +2422,10 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     />
                     <div>
                       <span className="font-bold text-text-1 block">{task.title}</span>
-                      <span className="text-[10px] text-text-3">{task.estimated_mins} mins estimados</span>
+                      <span className="text-xs text-text-3">{task.estimated_mins} mins estimados</span>
                     </div>
                   </div>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded capitalize ${
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded capitalize ${
                     task.priority === 'high' ? 'bg-danger-bg text-danger-text' :
                     task.priority === 'medium' ? 'bg-warning-bg text-warning-text' :
                     'bg-page text-text-2'

@@ -138,7 +138,7 @@ export function SupervisorPinValidation({
               iniciar sesión aquí.
             </p>
 
-            <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-text-3">
+            <label className="block text-xs font-black uppercase tracking-wider mb-1.5 text-text-3">
               ¿Quién valida?
             </label>
             <select
@@ -152,7 +152,7 @@ export function SupervisorPinValidation({
               ))}
             </select>
 
-            <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-text-3">
+            <label className="block text-xs font-black uppercase tracking-wider mb-1.5 text-text-3">
               PIN del supervisor
             </label>
             <input
@@ -165,7 +165,7 @@ export function SupervisorPinValidation({
               className={`w-full mb-3 px-3 py-2.5 rounded-xl border text-sm font-bold tracking-[0.3em] outline-none focus:border-accent ${field}`}
             />
 
-            <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-text-3">
+            <label className="block text-xs font-black uppercase tracking-wider mb-1.5 text-text-3">
               Comentario (opcional)
             </label>
             <textarea

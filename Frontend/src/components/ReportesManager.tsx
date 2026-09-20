@@ -1,3 +1,4 @@
+import { notify } from '../lib/appDialogs';
 import React, { useState, useEffect } from 'react';
 import {
   FileText, Download, Filter, Calendar, BarChart3,
@@ -157,7 +158,7 @@ export default function ReportesManager() {
       console.error(err);
       // El backend explica el candado (p. ej. "no se puede recalcular una nómina firmada"):
       // taparlo con un "Error al autorizar" genérico deja al dueño sin saber qué hacer.
-      alert(err?.response?.data?.message || 'No se pudo autorizar la nómina.');
+      notify(err?.response?.data?.message || 'No se pudo autorizar la nómina.');
     }
   };
 
@@ -190,7 +191,7 @@ export default function ReportesManager() {
       // periodo pasa de 92 días).
       let motivo = '';
       try { motivo = JSON.parse(await err?.response?.data?.text?.() || '{}')?.message || ''; } catch { /* no era JSON */ }
-      alert(motivo || 'No se pudo descargar el reporte. Intenta de nuevo.');
+      notify(motivo || 'No se pudo descargar el reporte. Intenta de nuevo.');
     } finally {
       setDescargando(null);
     }
@@ -221,7 +222,7 @@ export default function ReportesManager() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert('Error al descargar el reporte.');
+      notify('Error al descargar el reporte.');
     }
   };
 
@@ -345,11 +346,11 @@ export default function ReportesManager() {
                     </p>
                     <div className="flex flex-col sm:flex-row sm:items-end gap-3">
                       <div>
-                        <label className="text-[10px] font-bold text-text-3 uppercase block mb-1">Del</label>
+                        <label className="text-xs font-bold text-text-3 uppercase block mb-1">Del</label>
                         <input type="date" value={propuesta.desde} onChange={e => setPropuesta({ ...propuesta, desde: e.target.value, etiqueta: '' })} className="px-3 py-2 border border-border rounded-lg text-sm bg-white" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-text-3 uppercase block mb-1">Al</label>
+                        <label className="text-xs font-bold text-text-3 uppercase block mb-1">Al</label>
                         <input type="date" value={propuesta.hasta} onChange={e => setPropuesta({ ...propuesta, hasta: e.target.value, etiqueta: '' })} className="px-3 py-2 border border-border rounded-lg text-sm bg-white" />
                       </div>
                       <button
@@ -435,12 +436,9 @@ export default function ReportesManager() {
                 </div>
 
                 <h3 className="text-2xl font-black text-text-1 mb-2">Reportes analíticos y pre-nómina</h3>
-                {/* La promesa decía "genera la prenómina con IA y timbra (CFDI) a un clic".
-                    El cálculo de nómina es determinista (reglamento + asistencia), no IA, y
-                    el timbrado exige dar de alta al PAC antes. Se describe lo que hace. */}
                 <p className="text-text-3 mb-8 leading-relaxed">
-                  Prenómina calculada con la asistencia y el reglamento de tu empresa, exportable
-                  a Excel y PDF, con recibos y timbrado CFDI una vez conectado tu PAC.
+                  Pre-nómina calculada con la asistencia y el reglamento de tu empresa, exportable
+                  a Excel y PDF para revisión con tu contador. No sustituye ni timbra la nómina oficial.
                 </p>
 
                 <div className="space-y-3 mb-8 text-left max-w-sm mx-auto">
@@ -451,7 +449,7 @@ export default function ReportesManager() {
                     <Zap size={18} className="text-success-text shrink-0" /> Descuentos por retardos y faltas según tu reglamento.
                   </div>
                   <div className="flex items-center gap-3 text-sm font-medium text-text-2 bg-page p-2.5 rounded-lg border border-border">
-                    <CheckCircle2 size={18} className="text-success-text shrink-0" /> Timbrado CFDI (requiere conectar tu PAC).
+                    <CheckCircle2 size={18} className="text-success-text shrink-0" /> Referencia de ISR e IMSS con supuestos y vigencia visibles.
                   </div>
                 </div>
 
@@ -553,7 +551,7 @@ export default function ReportesManager() {
                               className="hover:bg-page transition-colors cursor-pointer"
                             >
                               <td className="px-6 py-4 font-bold text-text-1 flex items-center gap-2">
-                                <span className="text-[10px] text-slate-400">{expandedEmpId === emp.id ? '▼' : '▶'}</span>
+                                <span className="text-xs text-slate-400">{expandedEmpId === emp.id ? '▼' : '▶'}</span>
                                 {emp.name}
                               </td>
                               <td className="px-6 py-4 text-text-3">{emp.role}</td>
@@ -596,7 +594,7 @@ export default function ReportesManager() {
                                           <div key={day.date} className="bg-white p-4 rounded-2xl border border-border shadow-sm text-xs space-y-3">
                                             <div className="flex justify-between items-center border-b border-border pb-2">
                                               <span className="font-extrabold text-text-2 capitalize">{day.day_name}</span>
-                                              <span className="text-[10px] text-slate-400 font-bold">{day.date}</span>
+                                              <span className="text-xs text-slate-400 font-bold">{day.date}</span>
                                             </div>
 
                                             {day.is_rest_day ? (
@@ -616,7 +614,7 @@ export default function ReportesManager() {
                                                     que YA calcula la nómina, con los minutos de
                                                     comida del empleado y la tolerancia de la LFT. */}
                                                 {day.meal_makeup_minutes > 0 && (
-                                                  <div className="text-[9.5px] text-danger-text font-bold bg-danger-bg/50 p-1.5 rounded-lg border border-danger-text/20 flex items-center gap-1.5">
+                                                  <div className="text-xs text-danger-text font-bold bg-danger-bg/50 p-1.5 rounded-lg border border-danger-text/20 flex items-center gap-1.5">
                                                     <AlertCircle size={11} className="shrink-0" /> <span>Exceso de comida: {day.meal_makeup_minutes} min
                                                     {day.required_exit_time && <> · salida requerida {day.required_exit_time}</>}
                                                     </span>
@@ -630,7 +628,7 @@ export default function ReportesManager() {
                                               <div className="text-[10.5px] text-slate-400 font-bold bg-page px-2 py-0.5 rounded inline-block">Sin registro aún</div>
                                             )}
 
-                                            <div className="flex justify-between items-center text-[10px] pt-2 border-t border-border">
+                                            <div className="flex justify-between items-center text-xs pt-2 border-t border-border">
                                               <span className="text-slate-400">Firma Diaria:</span>
                                               <span className={`font-extrabold px-2 py-0.5 rounded-full ${
                                                 day.approval_status === 'approved' ? 'bg-success-bg text-success-text' : 'bg-warning-bg text-warning-text'

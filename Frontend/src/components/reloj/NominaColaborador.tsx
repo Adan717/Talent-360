@@ -184,12 +184,12 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
 
         <div className="flex items-center justify-between mb-3.5">
           <div>
-            <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">Periodo en Curso (estimado)</h3>
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Periodo en Curso (estimado)</h3>
             <div className="flex items-baseline gap-0.5">
               <span className="text-2xl font-black">${payroll.salary.net.toFixed(2)}</span>
-              <span className="text-[9px] text-slate-400 font-bold">MXN</span>
+              <span className="text-xs text-slate-400 font-bold">MXN</span>
             </div>
-            <p className="text-[9px] text-slate-400 font-semibold mt-0.5">
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">
               {payroll.period.start} al {payroll.period.end} · el neto final se firma al cerrar el periodo
             </p>
           </div>
@@ -210,13 +210,13 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
             </span>
             <span className="font-bold text-success-text">
               +${((payroll.incidents.rest_days_in_period ?? 1) * payroll.salary.daily * payroll.incidents.rest_day_proportion).toFixed(2)}
-              <span className="text-[9px] text-slate-400 ml-1">({(payroll.incidents.rest_day_proportion * 100).toFixed(0)}%)</span>
+              <span className="text-xs text-slate-400 ml-1">({(payroll.incidents.rest_day_proportion * 100).toFixed(0)}%)</span>
             </span>
           </div>
 
           {payroll.deductions_breakdown.total > 0 && (
             <div className="border-t border-border dark:border-slate-800/55 pt-2 space-y-1">
-              <div className="text-[9px] font-black uppercase text-danger-text tracking-wider">Deducciones LFT</div>
+              <div className="text-xs font-black uppercase text-danger-text tracking-wider">Deducciones LFT</div>
 
               {payroll.deductions_breakdown.absences > 0 && (
                 <div className="flex justify-between text-[10.5px]">
@@ -278,19 +278,19 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
         {/* Métricas del Historial */}
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className="bg-page dark:bg-slate-950/20 p-2 rounded-xl border border-border dark:border-slate-800/60">
-            <span className="text-[9px] text-slate-400 font-bold block">Faltas / Retardos</span>
+            <span className="text-xs text-slate-400 font-bold block">Faltas / Retardos</span>
             <span className="text-[10.5px] font-black text-text-2 dark:text-slate-200">
               {payroll.incidents.total_absences} F / {payroll.incidents.lates} R
             </span>
           </div>
           <div className="bg-page dark:bg-slate-950/20 p-2 rounded-xl border border-border dark:border-slate-800/60">
-            <span className="text-[9px] text-slate-400 font-bold block">Desvíos Comida</span>
+            <span className="text-xs text-slate-400 font-bold block">Desvíos Comida</span>
             <span className="text-[10.5px] font-black text-text-2 dark:text-slate-200">
               {payroll.performance.meal_overtime_mins} min
             </span>
           </div>
           <div className="bg-page dark:bg-slate-950/20 p-2 rounded-xl border border-border dark:border-slate-800/60">
-            <span className="text-[9px] text-slate-400 font-bold block">Tareas a Tiempo</span>
+            <span className="text-xs text-slate-400 font-bold block">Tareas a Tiempo</span>
             <span className="text-[10.5px] font-black text-text-2 dark:text-slate-200">
               {payroll.performance.task_performance_pct}%
             </span>
@@ -326,33 +326,33 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className={`text-[12px] font-extrabold capitalize ${isDark ? 'text-slate-200' : 'text-text-1'}`}>{day.day_name}</span>
-                      <span className="text-[10px] text-slate-400 font-medium">{day.date}</span>
+                      <span className="text-xs text-slate-400 font-medium">{day.date}</span>
                       {diaCorregido && <EtiquetaCorregido compacta />}
                     </div>
 
                     {day.is_rest_day ? (
-                      <span className="text-[10px] text-success-text font-bold bg-success-bg dark:bg-success-text/20 px-1.5 py-0.5 rounded-md mt-1 inline-block">Día de Descanso</span>
+                      <span className="text-xs text-success-text font-bold bg-success-bg dark:bg-success-text/20 px-1.5 py-0.5 rounded-md mt-1 inline-block">Día de Descanso</span>
                     ) : hasCheckIn ? (
-                      <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
+                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
                         <span className="flex items-center gap-0.5"><Clock size={10} /> Ent: {day.entries.find((e: any) => e.type === 'check_in')?.time || '-'}</span>
                         <span className="flex items-center gap-0.5"><Clock size={10} /> Sal: {day.entries.find((e: any) => e.type === 'check_out')?.time || 'Faltante'}</span>
                       </div>
                     ) : day.day_over ? (
-                      <span className="text-[10px] text-danger-text font-bold bg-danger-bg dark:bg-danger-text/20 px-1.5 py-0.5 rounded-md mt-1 inline-block">Falta Registrada</span>
+                      <span className="text-xs text-danger-text font-bold bg-danger-bg dark:bg-danger-text/20 px-1.5 py-0.5 rounded-md mt-1 inline-block">Falta Registrada</span>
                     ) : (
                       /* N3: un día que no ha terminado no es falta — todavía no ocurre. */
-                      <span className="text-[10px] text-slate-400 font-bold bg-page dark:bg-slate-800/40 px-1.5 py-0.5 rounded-md mt-1 inline-block">Sin registro aún</span>
+                      <span className="text-xs text-slate-400 font-bold bg-page dark:bg-slate-800/40 px-1.5 py-0.5 rounded-md mt-1 inline-block">Sin registro aún</span>
                     )}
                   </div>
 
                   {/* Acciones de Firma o Disputa */}
                   <div className="flex items-center gap-1 shrink-0">
                     {day.is_rest_day ? null : day.approval_status === 'approved' ? (
-                      <span className="text-[10px] font-black text-success-text bg-success-bg dark:bg-success-text/30 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                      <span className="text-xs font-black text-success-text bg-success-bg dark:bg-success-text/30 px-2 py-0.5 rounded-full flex items-center gap-0.5">
                         <Check size={10} /> Firmado
                       </span>
                     ) : day.approval_status === 'disputed' ? (
-                      <span className="text-[10px] font-black text-danger-text bg-danger-bg dark:bg-danger-text/30 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                      <span className="text-xs font-black text-danger-text bg-danger-bg dark:bg-danger-text/30 px-2 py-0.5 rounded-full flex items-center gap-0.5">
                         <AlertTriangle size={10} /> En Aclaración
                       </span>
                     ) : hasCheckIn ? (
@@ -389,7 +389,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
 
                 {/* Comentarios de aclaración */}
                 {day.approval_status === 'disputed' && day.comments && (
-                  <div className="text-[9.5px] bg-danger-bg/50 dark:bg-danger-text/10 text-danger-text p-2 rounded-xl border border-danger-text/50 font-medium">
+                  <div className="text-xs bg-danger-bg/50 dark:bg-danger-text/10 text-danger-text p-2 rounded-xl border border-danger-text/50 font-medium">
                     <span className="font-extrabold block mb-0.5">Motivo reportado:</span>
                     "{day.comments}"
                   </div>
@@ -398,7 +398,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
                 {/* Formulario inline de disputa */}
                 {disputingDate === day.date && (
                   <div className="bg-page dark:bg-slate-950/40 p-2.5 rounded-xl border border-border/60 flex flex-col gap-2 animate-fade-in text-left">
-                    <span className="text-[9.5px] font-black text-text-3">¿Por qué no estás de acuerdo con este registro diario?</span>
+                    <span className="text-xs font-black text-text-3">¿Por qué no estás de acuerdo con este registro diario?</span>
                     <textarea
                       rows={2}
                       value={disputeComment}
@@ -409,14 +409,14 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
                     <div className="flex justify-end gap-1.5">
                       <button
                         onClick={() => setDisputingDate(null)}
-                        className="px-2 py-1 bg-white hover:bg-page text-text-3 rounded-lg text-[9.5px] font-bold border border-border transition-all cursor-pointer"
+                        className="px-2 py-1 bg-white hover:bg-page text-text-3 rounded-lg text-xs font-bold border border-border transition-all cursor-pointer"
                       >
                         Cancelar
                       </button>
                       <button
                         disabled={isSubmittingDispute || !disputeComment.trim()}
                         onClick={() => handleDisputeDaily(day.date)}
-                        className="px-2.5 py-1 bg-danger-text hover:bg-danger-text text-white rounded-lg text-[9.5px] font-black shadow-xs transition-all border-none cursor-pointer disabled:opacity-40"
+                        className="px-2.5 py-1 bg-danger-text hover:bg-danger-text text-white rounded-lg text-xs font-black shadow-xs transition-all border-none cursor-pointer disabled:opacity-40"
                       >
                         {isSubmittingDispute ? 'Enviando...' : 'Enviar Aclaración'}
                       </button>
@@ -459,14 +459,14 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
 
           {/* Neto de la semana cerrada: ESTE es el importe que se firma */}
           <div className="flex items-baseline justify-between px-3 py-2 bg-navy-50/60 dark:bg-brand-dark/20 rounded-xl border border-border/60 dark:border-navy-800/40">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Neto a Firmar</span>
-            <span className="text-lg font-black text-accent">${closedPayroll.salary.net.toFixed(2)} <span className="text-[9px] text-slate-400">MXN</span></span>
+            <span className="text-xs font-black uppercase tracking-wider text-slate-400">Neto a Firmar</span>
+            <span className="text-lg font-black text-accent">${closedPayroll.salary.net.toFixed(2)} <span className="text-xs text-slate-400">MXN</span></span>
           </div>
 
           {/* Días de la semana cerrada: qué se está firmando */}
           <div className="divide-y divide-border dark:divide-slate-800 border border-border dark:border-slate-800 rounded-xl overflow-hidden">
             {closedDays.map((d: any) => (
-              <div key={d.date} className="flex items-center justify-between px-3 py-1.5 text-[10px]">
+              <div key={d.date} className="flex items-center justify-between px-3 py-1.5 text-xs">
                 <span className="font-bold text-text-3 capitalize">{d.day_name} <span className="text-slate-400 font-medium">{d.date}</span></span>
                 {d.is_rest_day ? (
                   <span className="font-black text-success-text">Descanso</span>
@@ -511,7 +511,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
           </button>
 
           {!closedDaysReady && (
-            <p className="text-[9.5px] text-danger-text font-bold text-center">
+            <p className="text-xs text-danger-text font-bold text-center">
               *Firma tus días asistidos (y resuelve los días en aclaración) antes de firmar el periodo.
             </p>
           )}

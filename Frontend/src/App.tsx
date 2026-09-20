@@ -337,7 +337,7 @@ function MainLayout() {
     {
       id: 'reportes',
       title: 'Reportes IA',
-      desc: 'Analítica Nómina e incidencias',
+      desc: 'Analítica de incidencias y pre-nómina',
       icon: <FileText size={20} />,
       color: 'bg-success-bg text-success-text border-success-text/20',
       minTier: 'pro',
@@ -372,8 +372,8 @@ function MainLayout() {
     },
     {
       id: 'facturacion',
-      title: 'Nómina CFDI 4.0',
-      desc: 'Timbrado masivo del SAT',
+      title: 'Pre-nómina para tu contador',
+      desc: 'Referencias fiscales y exportación',
       icon: <Receipt size={20} />,
       color: 'bg-success-bg text-success-text border-success-text/20',
       minTier: 'pro',
@@ -532,7 +532,7 @@ function MainLayout() {
         {/* Scrollable Navigation */}
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 px-2.5 space-y-1 scrollbar-none">
           {isSidebarOpen && (
-            <p className="text-[10px] font-bold text-text-3 uppercase tracking-widest mb-2 px-2.5">
+            <p className="text-xs font-bold text-text-3 uppercase tracking-widest mb-2 px-2.5">
               Módulos
             </p>
           )}
@@ -627,7 +627,7 @@ function MainLayout() {
                       window.location.href = '/superadmin';
                     }
                   }}
-                  className="bg-warning-icon hover:bg-warning-text text-white font-black text-[9px] sm:text-xs px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl shadow-md transition-colors flex items-center gap-1.5 shrink-0 animate-pulse"
+                  className="bg-warning-icon hover:bg-warning-text text-white font-black text-xs sm:text-xs px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl shadow-md transition-colors flex items-center gap-1.5 shrink-0 animate-pulse"
                 >
                   <ShieldCheck size={12} />
                   <span className="hidden sm:inline">Regresar a SuperAdmin</span>
@@ -662,7 +662,7 @@ function MainLayout() {
               {/* Trial Countdown Indicator (Dynamic pill badge next to profile) */}
               {trialActive && (
                 <div className="flex flex-col items-end shrink-0 select-none">
-                  <span className="bg-gradient-to-r from-success-icon to-accent text-white text-[8px] sm:text-xs font-black px-2 sm:px-3 py-1.5 rounded-full shadow-md shadow-success-text/20 flex items-center gap-1 sm:gap-1.5 animate-pulse leading-none border border-success-text/20 select-none">
+                  <span className="bg-gradient-to-r from-success-icon to-accent text-white text-xs sm:text-xs font-black px-2 sm:px-3 py-1.5 rounded-full shadow-md shadow-success-text/20 flex items-center gap-1 sm:gap-1.5 animate-pulse leading-none border border-success-text/20 select-none">
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0"></span>
                     <span className="hidden xs:inline">Prueba:</span> {daysRemaining} {daysRemaining === 1 ? 'día' : 'días'}
                   </span>
@@ -676,7 +676,7 @@ function MainLayout() {
                 >
                   <div className="hidden md:flex flex-col items-end mr-1 text-right">
                     <span className="text-sm font-bold text-text-1 leading-none">{currentUser?.name || 'Admin CEO'}</span>
-                    <span className="text-[10px] text-accent font-semibold bg-navy-50 px-1.5 py-0.5 rounded-md mt-1">
+                    <span className="text-xs text-accent font-semibold bg-navy-50 px-1.5 py-0.5 rounded-md mt-1">
                       {currentUser?.role === 'admin' ? 'Admin / Gerencia' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
                     </span>
                   </div>
@@ -688,7 +688,7 @@ function MainLayout() {
                       <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success-icon rounded-full border-2 border-white"></div>
                     </div>
                     {/* License Tier Badge */}
-                    <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full leading-none mt-1 border select-none ${
+                    <span className={`text-[7px] sm:text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded-full leading-none mt-1 border select-none ${
                       activeTier === 'enterprise' ? 'bg-accent-soft text-accent border-border' :
                       activeTier === 'pro' ? 'bg-accent-soft text-navy-700 border-border' :
                       'bg-page text-text-2 border-border'
@@ -702,7 +702,7 @@ function MainLayout() {
                   <div className="absolute right-0 mt-2 w-52 sm:w-56 bg-white border border-border rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="px-4 py-2 border-b border-border">
                       <p className="text-xs sm:text-sm font-bold text-text-1">Sesión Activa</p>
-                      <p className="text-[10px] sm:text-xs text-text-3 font-medium truncate">{currentUser?.email || 'Usuario'}</p>
+                      <p className="text-xs sm:text-xs text-text-3 font-medium truncate">{currentUser?.email || 'Usuario'}</p>
                     </div>
                     <div className="p-1.5 space-y-0.5">
                       <button
@@ -884,7 +884,7 @@ function App() {
           </p>
 
           <div className="bg-slate-950/50 border border-slate-800/80 rounded-xl p-4 mb-6 text-left">
-            <h2 className="text-[10px] font-black uppercase text-text-3 tracking-widest mb-1">Políticas de Abuso</h2>
+            <h2 className="text-xs font-black uppercase text-text-3 tracking-widest mb-1">Políticas de Abuso</h2>
             <p className="text-slate-400 text-[11px] leading-relaxed">
               Para prevenir la manipulación de registros y el uso no autorizado de múltiples cuentas gratuitas desde la misma ubicación física, este equipo y red han sido restringidos.
             </p>

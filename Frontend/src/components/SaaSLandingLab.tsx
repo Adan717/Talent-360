@@ -1,12 +1,12 @@
 import { SocialSignIn } from './SocialSignIn';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { AlertCircle, ArrowRight, ArrowUpRight, Building2, Check, CheckCheck, CheckCircle2, Fingerprint, GraduationCap, Info, LayoutDashboard, ListChecks, Lock, LogIn, MapPin, Menu, MousePointer2, Play, Sparkles, Sprout, Users, X, Zap } from 'lucide-react';
+import { AlertCircle, ArrowRight, ArrowUpRight, Building2, Check, CheckCheck, CheckCircle2, Fingerprint, Globe2, GraduationCap, Info, LayoutDashboard, ListChecks, Lock, LogIn, MapPin, Menu, MousePointer2, Play, Sparkles, Sprout, Users, X, Zap } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { PhoneExperience } from './landing-lab/PhoneExperience';
 import { ModuleVideoShowcase } from './landing-lab/ModuleVideoShowcase';
-import type { VideoModuleId } from './landing-lab/moduleVideos';
+import { moduleVideos, youtubeEmbedUrl, type VideoModuleId } from './landing-lab/moduleVideos';
 import { PlatformOverview } from './landing-lab/PlatformOverview';
 import { LandingFaqModal } from './landing-lab/LandingFaqModal';
 import { TalentLogo } from './ui/TalentLogo';
@@ -47,6 +47,8 @@ export const SaaSLandingLab = () => {
   const [isEmailDuplicated, setIsEmailDuplicated] = useState(false);
 
   const [videoModule, setVideoModule] = useState<VideoModuleId>('onboarding');
+  const availableModuleVideos = moduleVideos.filter(video => Boolean(youtubeEmbedUrl(video.youtubeUrl)));
+  const productAnchor = availableModuleVideos.length > 0 ? '#lab-producto' : '#lab-reloj';
   const [heroCtaVisible, setHeroCtaVisible] = useState(true);
   const heroCtaRef = useRef<HTMLButtonElement>(null);
   const checkoutRef = useRef<HTMLDivElement>(null);
@@ -267,7 +269,7 @@ export const SaaSLandingLab = () => {
         <div className="lab-container lab-header-inner">
           <a className="lab-brand" href="#lab-top" aria-label="Talent 360, inicio"><TalentLogo /><span>Talent<span className="lab-brand-number">360</span><i /></span></a>
           <nav className="lab-desktop-nav" aria-label="Navegación principal">
-            <a href="#lab-producto">Plataforma</a><a href="#lab-soluciones">Soluciones</a><a href="#pricing">Precios</a>
+            <a href={productAnchor}>Plataforma</a><a href="#lab-soluciones">Soluciones</a><a href="#pricing">Precios</a>
           </nav>
           <div className="lab-header-actions">
             <button className="lab-login" onClick={() => navigate('/login')}>Iniciar sesión</button>
@@ -276,7 +278,7 @@ export const SaaSLandingLab = () => {
           </div>
         </div>
         {isMobileMenuOpen && <nav id="lab-mobile-menu" className="lab-mobile-nav" aria-label="Navegación móvil">
-          {[['Plataforma', '#lab-producto'], ['Soluciones', '#lab-soluciones'], ['Precios', '#pricing']].map(([label, link]) => <a key={link} href={link} onClick={() => setIsMobileMenuOpen(false)}>{label}<ArrowUpRight size={18} /></a>)}
+          {[['Plataforma', productAnchor], ['Soluciones', '#lab-soluciones'], ['Precios', '#pricing']].map(([label, link]) => <a key={label} href={link} onClick={() => setIsMobileMenuOpen(false)}>{label}<ArrowUpRight size={18} /></a>)}
           <a href="/login">Iniciar sesión <LogIn size={18} /></a>
           <button className="lab-button lab-button--primary" onClick={() => { setIsMobileMenuOpen(false); handleBuy('Freemium'); }}>Crear cuenta gratis <ArrowRight size={18} /></button>
         </nav>}
@@ -291,7 +293,7 @@ export const SaaSLandingLab = () => {
               <p className="lab-hero-description">Asistencia, expedientes y operación, conectados. Dale a tu equipo las herramientas para trabajar mejor y a ti, la claridad para hacerlo crecer.</p>
               <div className="lab-hero-actions">
                 <button ref={heroCtaRef} className="lab-button lab-button--warm lab-button--large" onClick={() => handleBuy('Freemium')}>Crear cuenta gratis <ArrowUpRight size={18} /></button>
-                <a className="lab-text-link" href="#lab-producto"><span className="lab-play-icon"><Play size={12} fill="currentColor" /></span> Explorar la plataforma</a>
+                <a className="lab-text-link" href={productAnchor}><span className="lab-play-icon"><Play size={12} fill="currentColor" /></span> Explorar la plataforma</a>
               </div>
               <p className="lab-hero-note"><Check size={14} /> Plan gratuito disponible <span /> Correo, Google o Apple</p>
             </div>
@@ -313,13 +315,15 @@ export const SaaSLandingLab = () => {
             <div className="lab-section-heading"><div><span className="lab-eyebrow">EL TRABAJO FLUYE MEJOR</span><h2 id="lab-solutions-title">Menos piezas sueltas.<br /><span>Más equipo.</span></h2></div><p>Haz espacio para lo importante. Talent 360 reúne el día a día de tu organización en herramientas que trabajan juntas.</p></div>
             <div className="lab-benefit-grid">
               <article className="lab-benefit-card"><div className="lab-benefit-top"><span className="lab-feature-icon"><Fingerprint /></span><span>01</span></div><h3>Cada jornada cuenta.</h3><p>Registra entradas y salidas con biometría y GPS. Consulta lo que sucede en tus sucursales desde un mismo lugar.</p><div className="lab-benefit-illustration lab-location-illustration" aria-hidden="true"><div className="lab-location-path" /><span className="lab-map-pin"><MapPin size={24} /></span><div className="lab-location-label"><Check size={13} /> Registro en sucursal <b>09:00</b></div></div><a href="#lab-reloj">Explorar asistencia <ArrowUpRight size={16} /></a></article>
-              <article className="lab-benefit-card"><div className="lab-benefit-top"><span className="lab-feature-icon"><Users /></span><span>02</span></div><h3>Personas, no archivos.</h3><p>Expedientes, puestos y organigramas siempre a mano. Encuentra a cada persona y entiende cómo se conecta tu equipo.</p><div className="lab-benefit-illustration lab-people-illustration" aria-hidden="true"><div className="lab-person-pill"><span className="lab-avatar">CO</span><span>Colaborador<small>Equipo</small></span><Check size={14} /></div><div className="lab-person-pill"><span className="lab-avatar">EQ</span><span>Equipo<small>Área de trabajo</small></span><Check size={14} /></div></div><a href="#lab-producto" onClick={() => setVideoModule('onboarding')}>Conocer el directorio <ArrowUpRight size={16} /></a></article>
-              <article className="lab-benefit-card"><div className="lab-benefit-top"><span className="lab-feature-icon"><ListChecks /></span><span>03</span></div><h3>Del pendiente al listo.</h3><p>Coordina tareas, da seguimiento a rutinas y acompaña la capacitación. Cada persona sabe cuál es su siguiente paso.</p><div className="lab-benefit-illustration lab-task-illustration" aria-hidden="true"><span><Check size={14} /><s>Apertura de sucursal</s><small>Listo</small></span><span><Check size={14} /><s>Checklist de seguridad</s><small>Listo</small></span><span><i /> Capacitación del equipo<small>En curso</small></span></div><a href="#lab-producto" onClick={() => setVideoModule('asistencia')}>Ver la operación <ArrowUpRight size={16} /></a></article>
+              <article className="lab-benefit-card"><div className="lab-benefit-top"><span className="lab-feature-icon"><Users /></span><span>02</span></div><h3>Personas, no archivos.</h3><p>Expedientes, puestos y organigramas siempre a mano. Encuentra a cada persona y entiende cómo se conecta tu equipo.</p><div className="lab-benefit-illustration lab-people-illustration" aria-hidden="true"><div className="lab-person-pill"><span className="lab-avatar">CO</span><span>Colaborador<small>Equipo</small></span><Check size={14} /></div><div className="lab-person-pill"><span className="lab-avatar">EQ</span><span>Equipo<small>Área de trabajo</small></span><Check size={14} /></div></div><a href={productAnchor} onClick={() => setVideoModule('onboarding')}>Conocer el directorio <ArrowUpRight size={16} /></a></article>
+              <article className="lab-benefit-card"><div className="lab-benefit-top"><span className="lab-feature-icon"><ListChecks /></span><span>03</span></div><h3>Del pendiente al listo.</h3><p>Coordina tareas, da seguimiento a rutinas y acompaña la capacitación. Cada persona sabe cuál es su siguiente paso.</p><div className="lab-benefit-illustration lab-task-illustration" aria-hidden="true"><span><Check size={14} /><s>Apertura de sucursal</s><small>Listo</small></span><span><Check size={14} /><s>Checklist de seguridad</s><small>Listo</small></span><span><i /> Capacitación del equipo<small>En curso</small></span></div><a href={productAnchor} onClick={() => setVideoModule('asistencia')}>Ver la operación <ArrowUpRight size={16} /></a></article>
             </div>
           </div>
         </section>
 
-        <ModuleVideoShowcase selected={videoModule} onSelect={setVideoModule} />
+        {availableModuleVideos.length > 0 && (
+          <ModuleVideoShowcase selected={videoModule} onSelect={setVideoModule} videos={availableModuleVideos} />
+        )}
 
         <PhoneExperience onChoosePlan={() => handleBuy('PRO')} />
 
@@ -333,23 +337,23 @@ export const SaaSLandingLab = () => {
             <div className="mb-16 flex select-none items-center justify-center gap-3">
               <span className={`text-sm font-extrabold transition-colors ${billingCycle === 'monthly' ? 'text-accent' : 'text-text-3'}`}>Facturación mensual</span>
               <button type="button" onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')} className="relative h-8 w-14 rounded-full bg-navy-100 p-1 transition-colors hover:bg-navy-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2" aria-label="Alternar ciclo de facturación"><span className={`block h-6 w-6 rounded-full bg-accent shadow-sm transition-transform ${billingCycle === 'yearly' ? 'translate-x-6' : 'translate-x-0'}`} /></button>
-              <span className={`flex items-center gap-1.5 text-sm font-extrabold transition-colors ${billingCycle === 'yearly' ? 'text-accent' : 'text-text-3'}`}>Facturación anual {tarifario && tarifario.descuento_anual_maximo_pct > 0 && <b className="rounded-full bg-accent px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">Ahorra hasta {tarifario.descuento_anual_maximo_pct}%</b>}</span>
+              <span className={`flex items-center gap-1.5 text-sm font-extrabold transition-colors ${billingCycle === 'yearly' ? 'text-accent' : 'text-text-3'}`}>Facturación anual {tarifario && tarifario.descuento_anual_maximo_pct > 0 && <b className="rounded-full bg-accent px-2 py-0.5 text-xs font-black uppercase tracking-wider text-white">Ahorra hasta {tarifario.descuento_anual_maximo_pct}%</b>}</span>
             </div>
             <div className="mx-auto grid max-w-6xl items-stretch gap-8 md:grid-cols-3">
               <article className="flex flex-col rounded-3xl border border-border/80 bg-white p-8 text-left transition hover:border-navy-600 hover:shadow-[0_1px_3px_rgba(16,24,40,0.08)]">
                 <h3 className="mb-2 text-2xl font-semibold tracking-tight text-text-1">Plan Gratuito</h3>
                 <p className="mb-6 min-h-[40px] text-sm text-text-3">Para empezar a organizar la información esencial de tu equipo.</p>
-                <div className="mb-8 flex min-h-[106px] flex-col justify-center rounded-2xl border border-border/50 bg-page p-5"><div className="flex items-baseline gap-1"><span className="text-5xl font-semibold tracking-tight text-text-1">$0</span><span className="text-xs font-bold uppercase text-text-3">MXN</span><span className="font-bold text-text-3">/mes</span></div><span className="mt-1.5 text-[10px] font-bold text-text-3">Sin plazos forzosos</span></div>
+                <div className="mb-8 flex min-h-[106px] flex-col justify-center rounded-2xl border border-border/50 bg-page p-5"><div className="flex items-baseline gap-1"><span className="text-5xl font-semibold tracking-tight text-text-1">$0</span><span className="text-xs font-bold uppercase text-text-3">MXN</span><span className="font-bold text-text-3">/mes</span></div><span className="mt-1.5 text-xs font-bold text-text-3">Sin plazos forzosos</span></div>
                 <ul className="mb-8 flex flex-1 flex-col gap-3.5">{[
                   planFreemium?.tope_colaboradores ? `Hasta ${planFreemium.tope_colaboradores} colaboradores activos` : 'Colaboradores activos', 'Reloj Checador', 'Directorio Digital', 'Control de entradas y salidas',
                 ].map(feature => <li key={feature} className="flex items-start gap-3 text-xs font-semibold text-text-2"><CheckCircle2 className="shrink-0 text-accent" size={18} />{feature}</li>)}</ul>
                 <button onClick={() => handleBuy('Freemium')} className="w-full rounded-xl bg-brand-dark py-3.5 text-center font-bold text-white transition hover:bg-navy-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2">Comenzar gratis</button>
               </article>
               <article className="relative flex flex-col rounded-3xl border-2 border-accent bg-white p-8 text-left shadow-[0_1px_3px_rgba(16,24,40,0.08)] md:-translate-y-4">
-                <span className="absolute right-8 top-0 flex -translate-y-1/2 items-center gap-1 rounded-full bg-accent px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white"><Sparkles size={12} /> Plan recomendado</span>
+                <span className="absolute right-8 top-0 flex -translate-y-1/2 items-center gap-1 rounded-full bg-accent px-4 py-1.5 text-xs font-black uppercase tracking-widest text-white"><Sparkles size={12} /> Plan recomendado</span>
                 <h3 className="mb-1 text-2xl font-semibold tracking-tight text-text-1">Plan Profesional</h3><p className="mb-6 min-h-[40px] text-sm text-text-3">Más visibilidad para acompañar la operación diaria de tu equipo.</p>
                 <div className="mb-6 rounded-2xl border border-border/50 bg-page p-5"><div className="mb-2 flex items-baseline justify-between"><span className="text-xs font-bold uppercase tracking-wider text-text-3">{billingCycle === 'yearly' ? 'Costo equivalente' : 'Costo mensual'}</span><div className="flex items-baseline gap-1"><span className="text-4xl font-semibold tracking-tight text-accent">{cotizacionPro ? `$${pesos(billingCycle === 'yearly' ? cotizacionPro.equivalenteMensualAnual : cotizacionPro.totalMensual)}` : '—'}</span><span className="text-xs font-bold uppercase text-text-3">MXN</span><span className="text-xs font-bold text-text-3">/mes</span></div></div><div className="mt-2 flex items-baseline justify-between border-t border-border/60 pt-2 text-xs"><span className="font-bold text-accent">{cotizacionPro ? (billingCycle === 'yearly' ? 'Facturado anualmente:' : `Ahorra ${planPro?.descuento_anual_pct ?? 0}% en plan anual:`) : 'Tarifa vigente:'}</span><span className="whitespace-nowrap font-bold text-text-2">{cotizacionPro ? `$${pesos(cotizacionPro.totalAnual)} MXN/año` : 'Pendiente de cargar'}</span></div></div>
-                <div className="mb-6"><div className="mb-2 flex justify-between text-xs font-bold text-text-2"><span>Colaboradores:</span><span className="rounded-md bg-navy-50 px-2 py-0.5 font-black text-accent">{proEmployeesCount} activos</span></div><input type="range" min="6" max="50" step="1" value={proEmployeesCount} onChange={e => setProEmployeesCount(parseInt(e.target.value))} aria-label="Número de colaboradores para cotizar" className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-navy-100 accent-focus-ring focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2" /><div className="mt-1 flex justify-between text-[10px] font-bold text-text-3"><span>6 colab.</span><span>25 colab.</span><span>50 colab.</span></div></div>
+                <div className="mb-6"><div className="mb-2 flex justify-between text-xs font-bold text-text-2"><span>Colaboradores:</span><span className="rounded-md bg-navy-50 px-2 py-0.5 font-black text-accent">{proEmployeesCount} activos</span></div><input type="range" min="6" max="50" step="1" value={proEmployeesCount} onChange={e => setProEmployeesCount(parseInt(e.target.value))} aria-label="Número de colaboradores para cotizar" className="lab-range-input w-full cursor-pointer appearance-none focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2" /><div className="mt-1 flex justify-between text-xs font-bold text-text-3"><span>6 colab.</span><span>25 colab.</span><span>50 colab.</span></div></div>
                 <ul className="mb-8 flex flex-1 flex-col gap-3.5">{['Todo lo del plan gratuito', 'Monitor 360', 'Tareas IA', 'Reportes IA', 'Áreas, puestos y sucursales'].map(feature => <li key={feature} className="flex items-start gap-3 text-xs font-semibold text-text-2"><CheckCircle2 className="shrink-0 text-accent" size={18} />{feature}</li>)}</ul>
                 <button onClick={() => handleBuy('PRO')} className="w-full rounded-xl bg-accent py-4 text-center font-black text-white transition hover:bg-navy-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2">{cotizacionPro ? 'Elegir Profesional' : 'Solicitar propuesta'}</button>
               </article>
@@ -380,7 +384,7 @@ export const SaaSLandingLab = () => {
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
               {error && (
                 <div className="mb-4 bg-navy-50 border border-navy-100 text-navy-800 text-xs font-bold p-3 rounded-xl flex gap-1.5 items-start">
-                  <span>⚠️</span> <span>{error}</span>
+                  <AlertCircle size={16} className="shrink-0" aria-hidden="true" /> <span>{error}</span>
                 </div>
               )}
 
@@ -421,14 +425,14 @@ export const SaaSLandingLab = () => {
                       {/* Divisor */}
                       <div className="relative flex py-2 items-center w-full max-w-xs mx-auto">
                         <div className="flex-grow border-t border-border"></div>
-                        <span className="flex-shrink mx-3 text-[10px] text-text-3 font-black uppercase tracking-wider">o regístrate con tu correo</span>
+                        <span className="flex-shrink mx-3 text-xs text-text-3 font-black uppercase tracking-wider">o regístrate con tu correo</span>
                         <div className="flex-grow border-t border-border"></div>
                       </div>
 
                       {/* Formulario tradicional */}
                       <form onSubmit={handleTraditionalRegister} className="space-y-4 text-left w-full max-w-xs mx-auto">
                         <div>
-                          <label htmlFor="lab-name" className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Tu Nombre Completo</label>
+                          <label htmlFor="lab-name" className="text-xs font-black text-text-3 uppercase tracking-wider mb-1 block">Tu Nombre Completo</label>
                           <input
                             type="text"
                             id="lab-name"
@@ -441,7 +445,7 @@ export const SaaSLandingLab = () => {
                         </div>
 
                         <div>
-                          <label htmlFor="lab-email" className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Tu Correo de Registro</label>
+                          <label htmlFor="lab-email" className="text-xs font-black text-text-3 uppercase tracking-wider mb-1 block">Tu Correo de Registro</label>
                           <input
                             type="email"
                             id="lab-email"
@@ -454,7 +458,7 @@ export const SaaSLandingLab = () => {
                         </div>
 
                         <div>
-                          <label htmlFor="lab-password" className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Contraseña</label>
+                          <label htmlFor="lab-password" className="text-xs font-black text-text-3 uppercase tracking-wider mb-1 block">Contraseña</label>
                           <input
                             type="password"
                             id="lab-password"
@@ -472,13 +476,13 @@ export const SaaSLandingLab = () => {
                               <AlertCircle size={14} className="text-navy-600 shrink-0" />
                               Esta cuenta ya existe
                             </p>
-                            <p className="text-[10px] text-text-3 font-medium leading-relaxed">
+                            <p className="text-xs text-text-3 font-medium leading-relaxed">
                               La dirección de correo electrónico ya está registrada. Puedes iniciar sesión directamente.
                             </p>
                             <button
                               type="button"
                               onClick={() => navigate(`/login?email=${encodeURIComponent(googleEmail)}`)}
-                              className="w-full bg-navy-800 hover:bg-navy-600 text-white font-black py-2 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1 shadow-sm"
+                              className="w-full bg-navy-800 hover:bg-navy-600 text-white font-black py-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1 shadow-sm"
                             >
                               <LogIn size={11} /> Iniciar Sesión Ahora
                             </button>
@@ -508,13 +512,13 @@ export const SaaSLandingLab = () => {
                     </div>
                     <div className="text-left">
                       <p className="text-xs font-black text-text-1">{googleUser.name}</p>
-                      <p className="text-[10px] text-text-3 font-semibold">{googleUser.email}</p>
+                      <p className="text-xs text-text-3 font-semibold">{googleUser.email}</p>
                     </div>
                     {/* 2026-07-26 (auditoría en vivo): esta insignia decía siempre "Cuenta social",
                         incluso cuando el alta se hizo con correo y contraseña — afirmaba una
                         validación con Google que no había ocurrido. Ahora refleja el método real:
                         el registro por correo deja `google_id` vacío, el de Google lo llena. */}
-                    <div className={`ml-auto text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
+                    <div className={`ml-auto text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
                       googleUser.google_id
                         ? 'bg-navy-50 text-accent border-border'
                         : 'bg-page text-text-3 border-border'
@@ -541,7 +545,7 @@ export const SaaSLandingLab = () => {
                             ? (cotizacionEnterprise ? pesos(cotizacionEnterprise.totalACobrar) : '—')
                             : '0'}
                       </span>
-                      <span className="block text-[9px] text-accent font-bold uppercase">
+                      <span className="block text-xs text-accent font-bold uppercase">
                         {billingCycle === 'yearly' ? 'MXN / año (Pago Anual)' : 'MXN / mes'}
                       </span>
                     </div>
@@ -550,7 +554,7 @@ export const SaaSLandingLab = () => {
                   {/* Fields */}
                   <div className="space-y-4 text-left">
                     <div>
-                      <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Nombre de la Empresa</label>
+                      <label className="text-xs font-black text-text-3 uppercase tracking-wider mb-1 block">Nombre de la Empresa</label>
                       <input
                         type="text"
                         value={formData.company_name}
@@ -569,7 +573,7 @@ export const SaaSLandingLab = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-text-3 uppercase tracking-wider mb-1 block">Identificador único de tu empresa</label>
+                      <label className="text-xs font-black text-text-3 uppercase tracking-wider mb-1 block">Identificador único de tu empresa</label>
                       <div className="flex border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-focus-ring bg-white">
                         <input
                           type="text"
@@ -583,8 +587,8 @@ export const SaaSLandingLab = () => {
                           className="w-full bg-white px-4 py-3 font-medium outline-none text-sm text-text-1"
                         />
                       </div>
-                      <p className="text-[9.5px] text-accent bg-navy-50/70 border border-border rounded-xl p-2.5 mt-2 font-bold flex items-start gap-1.5 leading-normal">
-                        <span className="text-xs">🌐</span>
+                      <p className="text-xs text-accent bg-navy-50/70 border border-border rounded-xl p-2.5 mt-2 font-bold flex items-start gap-1.5 leading-normal">
+                        <Globe2 size={14} className="shrink-0" aria-hidden="true" />
                         <span>Este identificador separa los datos de tu empresa. El acceso real para administradores y empleados es <strong className="font-black text-navy-800">https://talent360.com.mx/login</strong>.</span>
                       </p>
                     </div>

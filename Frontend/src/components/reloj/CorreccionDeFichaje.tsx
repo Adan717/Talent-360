@@ -55,7 +55,7 @@ export const EtiquetaCorregido: React.FC<{ onVerHistoria?: () => void; compacta?
 
   const clases =
     'inline-flex items-center gap-1 rounded-full border border-warning-text/20 bg-warning-bg font-bold text-warning-text ' +
-    (compacta ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]');
+    (compacta ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-0.5 text-xs');
 
   if (!onVerHistoria) {
     return (
@@ -163,7 +163,7 @@ export const HistoriaDeFichaje: React.FC<HistoriaProps> = ({ fichajeId, onCerrar
                       <span className="font-medium text-text-3 text-xs">{f.type}</span>
                     </span>
                     <span
-                      className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      className={`text-xs font-black px-2 py-0.5 rounded-full ${
                         f.vigente ? 'bg-success-text text-white' : 'bg-slate-400 text-white'
                       }`}
                     >
@@ -246,7 +246,7 @@ export const BotonCorregirFichaje: React.FC<BotonProps> = ({ fichaje, onCorregid
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className="text-[10px] font-bold text-accent hover:text-navy-800 underline border-none bg-transparent cursor-pointer px-1"
+        className="text-xs font-bold text-accent hover:text-navy-800 underline border-none bg-transparent cursor-pointer px-1"
       >
         Corregir
       </button>
@@ -297,7 +297,7 @@ export const BotonCorregirFichaje: React.FC<BotonProps> = ({ fichaje, onCorregid
             }`}
           />
         </label>
-        <p className="text-[10px] text-text-3 mb-3">
+        <p className="text-xs text-text-3 mb-3">
           Esto lo va a leer quien audite esta nómina. “ok” o “error” no explican nada.
         </p>
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Database, Download, Upload, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { confirmAction } from '../lib/appDialogs';
 import { useAppStore } from '../store/useAppStore';
 
 export function BackupPanel() {
@@ -70,11 +71,11 @@ export function BackupPanel() {
         const cuando = meta?.exported_at ? new Date(meta.exported_at).toLocaleString('es-MX') : 'fecha desconocida';
         const deQuien = meta?.company_name || 'empresa desconocida';
 
-        if (!window.confirm(
+        if (!await confirmAction(
           `Vas a reponer los datos del respaldo de "${deQuien}" del ${cuando}.\n\n` +
           `Los registros que estén en el respaldo se sobrescriben con la versión del archivo. ` +
           `Lo que se haya creado después NO se borra.\n\n¿Continuar?`
-        )) {
+        , { title: 'Restaurar respaldo', confirmLabel: 'Restaurar datos', tone: 'warning' })) {
           setLoading(false);
           return;
         }

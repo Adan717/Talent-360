@@ -1,3 +1,4 @@
+import { notify } from '../../lib/appDialogs';
 import { useState, useEffect, useRef } from 'react';
 
 export interface VoiceAssistantField {
@@ -49,7 +50,7 @@ export function useVoiceFormAssistant({
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Tu navegador no soporta el reconocimiento de voz. Te recomendamos Google Chrome.');
+      notify('Tu navegador no soporta el reconocimiento de voz. Te recomendamos Google Chrome.');
       return;
     }
 

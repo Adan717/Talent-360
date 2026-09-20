@@ -119,7 +119,7 @@ export const SupportChatCopilot = () => {
                             </div>
                             <div>
                                 <h3 className="text-sm font-black tracking-wide uppercase leading-none">Copiloto AI</h3>
-                                <p className="text-[10px] text-navy-100 mt-1 flex items-center gap-1">
+                                <p className="text-xs text-navy-100 mt-1 flex items-center gap-1">
                                     <Sparkles size={10} className="animate-bounce" />
                                     Soporte Técnico Activo
                                 </p>
@@ -149,7 +149,7 @@ export const SupportChatCopilot = () => {
                                 >
                                     {msg.text}
                                     <span
-                                        className={`block text-[9px] mt-1.5 text-right font-medium ${
+                                        className={`block text-xs mt-1.5 text-right font-medium ${
                                             msg.sender === 'user' ? 'text-white/60' : 'text-slate-400'
                                         }`}
                                     >
@@ -176,7 +176,7 @@ export const SupportChatCopilot = () => {
                         <div className="px-4 py-2 border-t border-border dark:border-slate-800/80 bg-white/40 dark:bg-slate-900/40 flex items-center justify-center shrink-0">
                             <button
                                 onClick={createSupportTicketDirectly}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-danger-bg hover:bg-danger-bg dark:bg-danger-text/20 text-danger-text dark:text-rose-400 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all border border-danger-text/50 cursor-pointer outline-none active:scale-95"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-danger-bg hover:bg-danger-bg dark:bg-danger-text/20 text-danger-text dark:text-rose-400 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all border border-danger-text/50 cursor-pointer outline-none active:scale-95"
                             >
                                 <MessageSquare size={12} />
                                 ¿Aún tienes dudas? Crear Ticket

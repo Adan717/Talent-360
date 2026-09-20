@@ -112,7 +112,7 @@ const MODULE_ICON_LIST = [
   { id: 'academia', name: 'Academia 360', icon: GraduationCap, color: 'text-navy-300 bg-accent/20 border-navy-300/40' },
   { id: 'reportes', name: 'Reportes IA', icon: BarChart3, color: 'text-danger-text bg-danger-icon/20 border-danger-text/40' },
   { id: 'documentos', name: 'Archivo Digital', icon: FileText, color: 'text-warning-text bg-warning-icon/20 border-warning-text/40' },
-  { id: 'facturacion', name: 'Nómina CFDI 4.0', icon: Receipt, color: 'text-success-text bg-success-icon/20 border-success-text/40' },
+  { id: 'facturacion', name: 'Pre-nómina para contador', icon: Receipt, color: 'text-success-text bg-success-icon/20 border-success-text/40' },
 ];
 
 export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveModule?: (mod: string) => void }) {
@@ -417,7 +417,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
           <div className="hidden">
             <div className="relative w-6 h-6 flex items-center justify-center">
               <div className="absolute inset-0 bg-accent rounded-full blur-xs opacity-75 animate-pulse"></div>
-              <div className="relative w-6 h-6 rounded-full bg-gradient-to-tr from-accent to-navy-400 flex items-center justify-center text-white font-black text-[10px] shadow-xs">
+              <div className="relative w-6 h-6 rounded-full bg-gradient-to-tr from-accent to-navy-400 flex items-center justify-center text-white font-black text-xs shadow-xs">
                 360
               </div>
             </div>
@@ -427,7 +427,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
           </div>
 
           <div className="relative z-10 min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent mb-1">Resumen operativo</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent mb-1">Resumen operativo</p>
             <h1 className="text-lg sm:text-xl font-semibold text-text-1 tracking-tight leading-tight truncate">
               {/* H12: el default era 'DecorArte 360' — una empresa recién registrada saludaba
                   con el nombre de OTRA en su primera pantalla. Se prefiere el nombre real
@@ -545,7 +545,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-base sm:text-lg font-semibold text-text-1">Control Operativo en Tiempo Real</h2>
-                    <span className="px-2 py-0.5 bg-success-bg text-success-text border border-success-text/20 rounded-full font-semibold text-[10px] flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 bg-success-bg text-success-text border border-success-text/20 rounded-full font-semibold text-xs flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-success-icon"></span>
                       {/* El refresco real es cada 5 s (setInterval de fetchData); el "(3s)"
                           era el del carrusel de módulos, otra cosa. */}
@@ -616,7 +616,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                   </div>
                   <div className="min-w-0">
                     <div className="text-sm sm:text-lg font-black text-text-1 leading-tight truncate">{activeCount} / {staffCount}</div>
-                    <div className="text-[10px] sm:text-xs text-text-3 font-bold tracking-tight truncate">
+                    <div className="text-xs sm:text-xs text-text-3 font-bold tracking-tight truncate">
                       {staffCount > activeCount + breakCount
                         ? `Personal · ${staffCount - activeCount - breakCount} sin checar`
                         : 'Personal'}
@@ -633,7 +633,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                   </div>
                   <div className="min-w-0">
                     <div className="text-sm sm:text-lg font-black text-text-1 leading-tight truncate">{breakCount}</div>
-                    <div className="text-[10px] sm:text-xs text-text-3 font-bold tracking-tight truncate">Almuerzo</div>
+                    <div className="text-xs sm:text-xs text-text-3 font-bold tracking-tight truncate">Almuerzo</div>
                   </div>
                 </div>
               </div>
@@ -646,7 +646,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                   </div>
                   <div className="min-w-0">
                     <div className="text-sm sm:text-lg font-black text-text-1 leading-tight truncate">{avgEfficiency === null ? '—' : `${avgEfficiency}%`}</div>
-                    <div className="text-[10px] sm:text-xs text-text-3 font-bold tracking-tight truncate">{avgEfficiency === null ? 'Sin datos' : 'Eficiencia'}</div>
+                    <div className="text-xs sm:text-xs text-text-3 font-bold tracking-tight truncate">{avgEfficiency === null ? 'Sin datos' : 'Eficiencia'}</div>
                   </div>
                 </div>
               </div>
@@ -664,7 +664,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     </div>
                     <div className="min-w-0">
                       <div className="text-sm sm:text-lg font-black text-text-1 leading-tight truncate">{prospectsCount}</div>
-                      <div className="text-[10px] sm:text-xs text-text-3 font-bold tracking-tight truncate">Prospectos</div>
+                      <div className="text-xs sm:text-xs text-text-3 font-bold tracking-tight truncate">Prospectos</div>
                     </div>
                   </div>
                 </div>
@@ -702,7 +702,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                   );
                 })}
               </div>
-              <p className="text-[10px] text-warning-text mt-2 pt-2 border-t border-warning-text/20">
+              <p className="text-xs text-warning-text mt-2 pt-2 border-t border-warning-text/20">
                 Semana del {alertasHorasExtra[0].desde} al {alertasHorasExtra[0].hasta}. El sistema
                 sólo avisa: nadie queda bloqueado y la nómina no cambia (se paga por día, no por horas).
               </p>
@@ -919,7 +919,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-text-1">{item.user}</span>
-                            <span className="text-[10px] text-slate-400 font-medium">{item.time}</span>
+                            <span className="text-xs text-slate-400 font-medium">{item.time}</span>
                           </div>
                           <p className="text-text-2 mt-0.5 font-medium">{item.details}</p>
 
@@ -938,7 +938,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                               <button
                                 type="button"
                                 onClick={() => setFichajeEnHistoria(item.time_entry_id ?? null)}
-                                className="text-[10px] font-bold text-text-3 hover:text-text-2 underline border-none bg-transparent cursor-pointer px-0"
+                                className="text-xs font-bold text-text-3 hover:text-text-2 underline border-none bg-transparent cursor-pointer px-0"
                               >
                                 Ver historia
                               </button>
@@ -1167,7 +1167,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 </div>
               )}
 
-              <p className="text-[10px] text-slate-400 font-medium">La tarea exigirá la firma del supervisor al validarse — paga monedas con las mismas reglas que una rutina.</p>
+              <p className="text-xs text-slate-400 font-medium">La tarea exigirá la firma del supervisor al validarse — paga monedas con las mismas reglas que una rutina.</p>
 
               {assignError && (
                 <p className="text-[11px] text-danger-text font-bold bg-danger-bg rounded-xl p-2.5">{assignError}</p>
@@ -1206,7 +1206,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
           </div>
 
           {/* D3: la retención se DICE aquí — una purga que nadie anuncia es una emboscada. */}
-          <p className="text-[10px] text-slate-400 font-medium -mt-1">
+          <p className="text-xs text-slate-400 font-medium -mt-1">
             Los mensajes del equipo se conservan {chatRetentionDays} días. Los conservados, privados y avisos no se borran.
           </p>
 
@@ -1223,7 +1223,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                       : 'bg-page border-border/80'
                   }`}
                 >
-                  <div className="flex justify-between text-[10px] text-text-3 mb-0.5 font-medium">
+                  <div className="flex justify-between text-xs text-text-3 mb-0.5 font-medium">
                     <span className="font-bold text-accent">{msg.sender_name}</span>
                     <span className="flex items-center gap-1.5">
                       {msg.time}
@@ -1247,7 +1247,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                   {/* Un privado se distingue a simple vista y dice para quién es: si no, nadie
                       sabría si lo que escribió lo leyó el turno entero. */}
                   {msg.receiver_id && (
-                    <p className="text-[10px] font-black text-accent uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                    <p className="text-xs font-black text-accent uppercase tracking-wider mb-0.5 flex items-center gap-1">
                       <Lock size={11} /> Privado para {msg.receiver_name || 'un colaborador'}
                     </p>
                   )}
@@ -1260,7 +1260,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
           <div className="pt-2 border-t border-border space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0">Para</span>
+              <span className="text-xs font-black text-slate-400 uppercase tracking-wider shrink-0">Para</span>
               <select
                 value={chatDestinatario}
                 onChange={e => setChatDestinatario(e.target.value ? Number(e.target.value) : '')}

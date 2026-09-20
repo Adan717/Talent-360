@@ -107,7 +107,7 @@ export default function PropuestaDeReglamento({ propuesta, valoresActuales, onAp
         <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="bg-page border-b border-border text-[10px] uppercase tracking-wider text-text-3 font-black">
+              <tr className="bg-page border-b border-border text-xs uppercase tracking-wider text-text-3 font-black">
                 <th className="py-2 px-3">Cargar</th>
                 <th className="py-2 px-3">Regla</th>
                 <th className="py-2 px-3">Propone</th>
@@ -132,7 +132,7 @@ export default function PropuestaDeReglamento({ propuesta, valoresActuales, onAp
                   <td className="py-2 px-3 font-black text-warning-text">{formatearValor(clave, regla.valor)}</td>
                   <td className="py-2 px-3 text-text-3">{formatearValor(clave, valoresActuales[clave])}</td>
                   <td className="py-2 px-3">
-                    <span className={'px-1.5 py-0.5 rounded-md font-black uppercase text-[9px] ' + colorConfianza(regla.confianza)}>
+                    <span className={'px-1.5 py-0.5 rounded-md font-black uppercase text-xs ' + colorConfianza(regla.confianza)}>
                       {regla.confianza}
                     </span>
                   </td>

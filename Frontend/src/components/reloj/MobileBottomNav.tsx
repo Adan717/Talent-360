@@ -1,3 +1,4 @@
+import { notify } from '../../lib/appDialogs';
 import React from 'react';
 import { Clock, ListTodo, GraduationCap, DollarSign } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
@@ -67,7 +68,7 @@ export function MobileBottomNav({
       if (showCustomAlert) {
         showCustomAlert(blockMsg);
       } else {
-        alert(blockMsg);
+        notify(blockMsg);
       }
       return;
     }
@@ -111,7 +112,7 @@ export function MobileBottomNav({
             }`}>
               <Clock size={19} className={phoneTab === 'checador' ? 'animate-pulse text-accent' : 'text-slate-400'} />
             </div>
-            <span className={`text-[8px] xs:text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            <span className={`text-xs xs:text-xs uppercase tracking-wider font-extrabold mt-0.5 ${
               phoneTab === 'checador' ? 'font-black text-accent dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'
             }`}>Reloj</span>
           </button>
@@ -139,7 +140,7 @@ export function MobileBottomNav({
             }`}>
               <ListTodo size={19} className={phoneTab === 'tareas' ? 'text-accent' : 'text-slate-400'} />
             </div>
-            <span className={`text-[8px] xs:text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            <span className={`text-xs xs:text-xs uppercase tracking-wider font-extrabold mt-0.5 ${
               phoneTab === 'tareas' ? 'font-black text-accent dark:text-navy-300' : 'text-slate-400 dark:text-slate-500'
             } ${isTareasBlocked || !isModuleUnlocked('operativo') ? 'opacity-40' : ''}`}>Tareas</span>
           </button>
@@ -165,7 +166,7 @@ export function MobileBottomNav({
             }`}>
               <GraduationCap size={19} className={phoneTab === 'academia' ? 'text-accent' : 'text-slate-400'} />
             </div>
-            <span className={`text-[8px] xs:text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            <span className={`text-xs xs:text-xs uppercase tracking-wider font-extrabold mt-0.5 ${
               phoneTab === 'academia' ? 'font-black text-accent dark:text-navy-300' : 'text-slate-400 dark:text-slate-500'
             } ${isAcademiaBlocked || !isModuleUnlocked('academia') ? 'opacity-40' : ''}`}>Academia</span>
           </button>
@@ -191,7 +192,7 @@ export function MobileBottomNav({
             }`}>
               <DollarSign size={19} className={phoneTab === 'nomina' ? 'text-accent' : 'text-slate-400'} />
             </div>
-            <span className={`text-[8px] xs:text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            <span className={`text-xs xs:text-xs uppercase tracking-wider font-extrabold mt-0.5 ${
               phoneTab === 'nomina' ? 'font-black text-accent dark:text-rose-400' : 'text-slate-400 dark:text-slate-500'
             } ${isNominaBlocked || (!isModuleUnlocked('reportes') && !isModuleUnlocked('facturacion')) ? 'opacity-40' : ''}`}>Pre-nómina</span>
           </button>

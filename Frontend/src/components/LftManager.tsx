@@ -5,6 +5,7 @@ import {
   Calendar, Plus, Trash2, Lock, Unlock
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { confirmAction } from '../lib/appDialogs';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 import PropuestaDeReglamento, { type Propuesta } from './PropuestaDeReglamento';
 
@@ -256,7 +257,7 @@ export default function LftManager() {
   };
 
   const handleDeleteHoliday = async (id: number) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este día festivo?')) return;
+    if (!await confirmAction('¿Estás seguro de que deseas eliminar este día festivo?', { title: 'Eliminar día festivo', confirmLabel: 'Eliminar', tone: 'error' })) return;
     setErrorMsg('');
     setSuccessMsg('');
     try {
@@ -382,7 +383,7 @@ export default function LftManager() {
 
               <div className="space-y-1.5 text-center md:text-left flex-1 min-w-0">
                 <div className="flex items-center gap-2 justify-center md:justify-start">
-                  <span className="bg-warning-text text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full leading-none">Asistente IA</span>
+                  <span className="bg-warning-text text-white text-xs font-black uppercase px-2 py-0.5 rounded-full leading-none">Asistente IA</span>
                   <h3 className="text-sm font-black text-text-1 uppercase tracking-wider">Cargar Reglamento LFT</h3>
                 </div>
                 <p className="text-xs text-text-3 leading-relaxed max-w-2xl">
@@ -415,7 +416,7 @@ export default function LftManager() {
                 <label className="flex flex-col items-center justify-center px-6 py-4 bg-white hover:bg-page border-2 border-dashed border-warning-text/20 hover:border-warning-text rounded-2xl cursor-pointer transition-all text-center gap-1.5 shadow-sm active:scale-95">
                   <Upload size={20} className="text-warning-text" />
                   <span className="text-xs font-extrabold text-text-2">Subir Archivo LFT</span>
-                  <span className="text-[10px] text-slate-400">PDF, TXT (Max 5MB)</span>
+                  <span className="text-xs text-slate-400">PDF, TXT (Max 5MB)</span>
                   <input
                     type="file"
                     accept=".pdf,.txt"
@@ -528,7 +529,7 @@ export default function LftManager() {
                       }`}
                     >
                       <div className="font-extrabold mb-1">Descuento del Salario</div>
-                      <div className="text-[10px] opacity-80">El retardo se calcula como penalización directa o se acumula para falta.</div>
+                      <div className="text-xs opacity-80">El retardo se calcula como penalización directa o se acumula para falta.</div>
                     </button>
                     <button
                       type="button"
@@ -540,7 +541,7 @@ export default function LftManager() {
                       }`}
                     >
                       <div className="font-extrabold mb-1">Extensión de Turno (Ley Silla / Flex)</div>
-                      <div className="text-[10px] opacity-80">El colaborador puede compensar saliendo tarde el mismo número de minutos.</div>
+                      <div className="text-xs opacity-80">El colaborador puede compensar saliendo tarde el mismo número de minutos.</div>
                     </button>
                   </div>
                 </div>
@@ -569,7 +570,7 @@ export default function LftManager() {
                       onChange={(e) => setOvertimeWeeklyCapMinutes(parseInt(e.target.value) || 0)}
                       className="w-full px-4 py-2.5 bg-page border border-border rounded-xl text-text-1 font-semibold outline-none focus:border-warning-text"
                     />
-                    <div className="text-[10px] text-text-3">
+                    <div className="text-xs text-text-3">
                       Equivale a {Math.floor(overtimeWeeklyCapMinutes / 60)} h
                       {overtimeWeeklyCapMinutes % 60 > 0 ? ` ${overtimeWeeklyCapMinutes % 60} min` : ''} por semana.
                       Máximo de ley: {TECHO_LFT_MINUTOS_SEMANA} min (9 h).
@@ -580,16 +581,16 @@ export default function LftManager() {
                     <div className="text-[11px] font-extrabold text-warning-text flex items-center gap-1.5">
                       <Scale size={13} /> Artículo 66 de la LFT
                     </div>
-                    <p className="text-[10px] text-warning-text leading-relaxed">
+                    <p className="text-xs text-warning-text leading-relaxed">
                       La jornada se puede prolongar hasta <b>3 horas diarias y no más de 3 veces por
                       semana</b> (9 h). Puedes ponerte un tope <b>menor</b>; uno mayor lo rechaza el
                       sistema.
                     </p>
-                    <p className="text-[10px] text-warning-text leading-relaxed">
+                    <p className="text-xs text-warning-text leading-relaxed">
                       Rebasarlo <b>avisa, no bloquea</b>: el colaborador lo ve en su reloj y tú en el
                       Monitor, con las horas que lleva esta semana. Nadie deja de poder fichar.
                     </p>
-                    <p className="text-[10px] text-warning-text leading-relaxed border-t border-warning-text/20 pt-2">
+                    <p className="text-xs text-warning-text leading-relaxed border-t border-warning-text/20 pt-2">
                       Este tope <b>no toca la nómina</b>: el sistema paga por día, no por horas. Es
                       un control operativo y de cumplimiento.
                     </p>
@@ -665,7 +666,7 @@ export default function LftManager() {
                     </span>
                   </div>
                 ) : (
-                  <p className="text-[10px] text-slate-400 font-semibold px-1">
+                  <p className="text-xs text-slate-400 font-semibold px-1">
                     El descuento por minuto viene desactivado ($0): el art. 107 de la LFT prohíbe multar
                     el salario. Los retardos se sancionan por acumulación (N retardos = 1 falta).
                   </p>
@@ -681,7 +682,7 @@ export default function LftManager() {
                     />
                     <div>
                       <span className="text-xs font-extrabold text-text-1 block">Descontar día completo por falta</span>
-                      <span className="text-[10px] text-slate-400">Si se activa, el día no trabajado se resta completamente del sueldo base devengado.</span>
+                      <span className="text-xs text-slate-400">Si se activa, el día no trabajado se resta completamente del sueldo base devengado.</span>
                     </div>
                   </label>
 
@@ -694,7 +695,7 @@ export default function LftManager() {
                     />
                     <div>
                       <span className="text-xs font-extrabold text-text-1 block">Pago de Día de Descanso Proporcional (Séptimo Día)</span>
-                      <span className="text-[10px] text-slate-400">Si hay faltas en la semana, el pago del descanso dominical/séptimo día se pagará proporcionalmente.</span>
+                      <span className="text-xs text-slate-400">Si hay faltas en la semana, el pago del descanso dominical/séptimo día se pagará proporcionalmente.</span>
                     </div>
                   </label>
 
@@ -707,7 +708,7 @@ export default function LftManager() {
                     />
                     <div>
                       <span className="text-xs font-extrabold text-text-1 block">Día de descanso pagado (por defecto)</span>
-                      <span className="text-[10px] text-slate-400">Indica si el día de descanso obligatorio se paga bajo condiciones ideales.</span>
+                      <span className="text-xs text-slate-400">Indica si el día de descanso obligatorio se paga bajo condiciones ideales.</span>
                     </div>
                   </label>
                 </div>
@@ -779,7 +780,7 @@ export default function LftManager() {
                     />
                     <div>
                       <span className="text-xs font-extrabold text-text-1 block">Bloquear la aplicación en esta fecha</span>
-                      <span className="text-[10px] text-slate-400">Si se activa, ningún empleado podrá iniciar jornada o realizar fichajes en esta fecha feriada.</span>
+                      <span className="text-xs text-slate-400">Si se activa, ningún empleado podrá iniciar jornada o realizar fichajes en esta fecha feriada.</span>
                     </div>
                   </label>
                 </div>
@@ -809,13 +810,13 @@ export default function LftManager() {
                           </div>
                           <div className="space-y-1">
                             <h4 className="text-xs font-extrabold text-text-1">{h.name}</h4>
-                            <p className="text-[10px] text-slate-400 font-bold">{h.date}</p>
+                            <p className="text-xs text-slate-400 font-bold">{h.date}</p>
                             {h.block_app ? (
-                              <span className="inline-flex items-center gap-1 bg-danger-bg text-danger-text text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full border border-danger-text/20">
+                              <span className="inline-flex items-center gap-1 bg-danger-bg text-danger-text text-xs font-extrabold uppercase px-1.5 py-0.5 rounded-full border border-danger-text/20">
                                 <Lock size={8} /> Bloquea Fichaje
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 bg-success-bg text-success-text text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full border border-success-text/20">
+                              <span className="inline-flex items-center gap-1 bg-success-bg text-success-text text-xs font-extrabold uppercase px-1.5 py-0.5 rounded-full border border-success-text/20">
                                 <Unlock size={8} /> Libre (Nómina Doble)
                               </span>
                             )}
@@ -910,7 +911,7 @@ export default function LftManager() {
                       />
                       <div>
                         <span className="text-[11px] font-extrabold text-text-1 block">¿Laboró en día festivo oficial?</span>
-                        <span className="text-[9.5px] text-slate-400">Si se activa, sumará el pago doble adicional por festivo trabajado (LFT).</span>
+                        <span className="text-xs text-slate-400">Si se activa, sumará el pago doble adicional por festivo trabajado (LFT).</span>
                       </div>
                     </label>
                   </div>
@@ -957,7 +958,7 @@ export default function LftManager() {
                   <div className="mt-4 p-3 bg-warning-bg border border-warning-text/20 rounded-xl flex items-start gap-2">
                     <ShieldAlert size={16} className="text-warning-text shrink-0 mt-0.5" />
                     <div>
-                      <span className="text-[10px] font-black uppercase text-warning-text block">Sanción Reglamento Interno</span>
+                      <span className="text-xs font-black uppercase text-warning-text block">Sanción Reglamento Interno</span>
                       <span className="text-[10.5px] text-warning-text font-semibold">{simResult.alerta}</span>
                     </div>
                   </div>

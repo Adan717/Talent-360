@@ -1,3 +1,4 @@
+import { notify } from '../lib/appDialogs';
 import React, { useState, useEffect } from 'react';
 import {
   Building2, CreditCard, LayoutGrid, Save, Check,
@@ -103,12 +104,12 @@ const ModuleCard = ({
                 {mod.name}
               </h4>
               {mod.version && (
-                <span className={`text-[8.5px] font-black px-1.5 py-0.2 rounded whitespace-nowrap ${versionBadgeColor}`}>
+                <span className={`text-xs font-black px-1.5 py-0.2 rounded whitespace-nowrap ${versionBadgeColor}`}>
                   {mod.version}
                 </span>
               )}
               {trialActive && mod.tier !== 'freemium' && (
-                <span className="text-[8px] font-black px-1.5 py-0.2 rounded bg-warning-icon text-white uppercase tracking-wider whitespace-nowrap animate-pulse">
+                <span className="text-xs font-black px-1.5 py-0.2 rounded bg-warning-icon text-white uppercase tracking-wider whitespace-nowrap animate-pulse">
                   Prueba
                 </span>
               )}
@@ -186,12 +187,12 @@ const ModuleCard = ({
           })()}
 
           {mod.active && (
-            <span className="bg-success-bg text-success-text text-[8px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border border-success-text/50 flex items-center gap-0.5 whitespace-nowrap">
+            <span className="bg-success-bg text-success-text text-xs font-extrabold uppercase px-2.5 py-0.5 rounded-full border border-success-text/50 flex items-center gap-0.5 whitespace-nowrap">
               <CheckCircle2 size={8} /> Activo
             </span>
           )}
 
-          <span className={`text-[8px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border whitespace-nowrap ${
+          <span className={`text-xs font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border whitespace-nowrap ${
             mod.tier === 'freemium' ? 'bg-page text-text-2 border-border' :
             mod.tier === 'pro' ? 'bg-accent-soft text-accent border-border' :
             'bg-accent-soft text-accent border-border'
@@ -350,10 +351,10 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
         updateSetting('company_logo', companyLogo),
         updateSetting('timezone', timezone)
       ]);
-      alert("Configuración guardada exitosamente.");
+      notify("Configuración guardada exitosamente.");
     } catch (e) {
       console.error(e);
-      alert("Error al guardar la configuración.");
+      notify("Error al guardar la configuración.");
     } finally {
       setIsSaving(false);
     }
@@ -373,11 +374,11 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
       if (response.data.init_point) {
         window.location.href = response.data.init_point;
       } else {
-        alert('Error al generar la preferencia de pago.');
+        notify('Error al generar la preferencia de pago.');
       }
     } catch (e: any) {
       console.error(e);
-      alert(e.response?.data?.error || 'Error al conectar con la pasarela de pagos.');
+      notify(e.response?.data?.error || 'Error al conectar con la pasarela de pagos.');
     }
   };
 
@@ -534,7 +535,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                 <div
                   onClick={() => {
                     if (!isFeatureUnlocked('custom_logo')) {
-                      alert("La personalización de logotipo está disponible únicamente en el Plan PRO/Enterprise o si fue activada para tu plan. Por favor, actualiza tu plan en Facturación.");
+                      notify("La personalización de logotipo está disponible únicamente en el Plan PRO/Enterprise o si fue activada para tu plan. Por favor, actualiza tu plan en Facturación.");
                       return;
                     }
                     document.getElementById('logo-upload-input')?.click();
@@ -877,7 +878,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                   },
                   {
                     name: 'Reportes IA',
-                    desc: 'Analítica Nómina e incidencias',
+                    desc: 'Analítica de incidencias y pre-nómina',
                     tier: 'pro',
                     active: isModuleUnlocked('reportes'),
                     version: 'v2.0',
@@ -939,21 +940,6 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Vinculación directa de manuales a cursos de Academia 360.'
                     ]
                   },
-                  {
-                    name: 'Nómina CFDI 4.0',
-                    desc: 'Timbrado masivo del SAT',
-                    tier: 'pro',
-                    active: isModuleUnlocked('facturacion'),
-                    version: 'v1.0',
-                    icon: <Receipt size={20} />,
-                    iconColor: 'bg-success-bg text-success-text',
-                    moduleId: 'facturacion',
-                    features: [
-                      'Configuración de Sellos CSD y certificados fiscales encriptados.',
-                      'Timbrado masivo y generación de archivos PDF/XML en el SAT.',
-                      'Integración directa con el cálculo de la pre-nómina.'
-                    ]
-                  },
                 ];
 
                 const customizedModulesWithDetails = modulesWithDetails.map(mod => {
@@ -998,7 +984,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           <div className="space-y-4">
                             <div className="flex items-center justify-between border-b border-border pb-3">
                               <div className="flex items-center gap-2">
-                                <span className="bg-success-bg text-success-text text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-success-text/50">
+                                <span className="bg-success-bg text-success-text text-xs font-black uppercase px-2.5 py-1 rounded-full border border-success-text/50">
                                   Plan Free
                                 </span>
                                 <h3 className="text-base font-black text-text-1">Módulos del Plan Gratuito</h3>
@@ -1014,7 +1000,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           <div className="space-y-4">
                             <div className="flex items-center justify-between border-b border-border pb-3">
                               <div className="flex items-center gap-2">
-                                <span className="bg-accent-soft text-navy-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-border/50 flex items-center gap-1">
+                                <span className="bg-accent-soft text-navy-800 text-xs font-black uppercase px-2.5 py-1 rounded-full border border-border/50 flex items-center gap-1">
                                    Plan Pro
                                 </span>
                                 <h3 className="text-base font-black text-text-1">Módulos Profesionales</h3>
@@ -1030,7 +1016,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           <div className="space-y-4">
                             <div className="flex items-center justify-between border-b border-border pb-3">
                               <div className="flex items-center gap-2">
-                                <span className="bg-accent-soft text-navy-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-border/50 flex items-center gap-1">
+                                <span className="bg-accent-soft text-navy-800 text-xs font-black uppercase px-2.5 py-1 rounded-full border border-border/50 flex items-center gap-1">
                                    Plan Enterprise
                                 </span>
                                 <h3 className="text-base font-black text-text-1">Módulos Corporativos Premium</h3>
@@ -1063,11 +1049,11 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                             <div>
                               <div className="flex items-center gap-2">
                                 <h3 className="text-2xl font-black text-text-1">{selectedModuleForDetail.name}</h3>
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-page text-text-2">
+                                <span className="text-xs font-black px-2 py-0.5 rounded-md bg-page text-text-2">
                                   {selectedModuleForDetail.version}
                                 </span>
                               </div>
-                              <span className={`inline-block text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border mt-1.5 ${
+                              <span className={`inline-block text-xs font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border mt-1.5 ${
                                 selectedModuleForDetail.tier === 'freemium' ? 'bg-page text-text-2 border-border' :
                                 selectedModuleForDetail.tier === 'pro' ? 'bg-accent-soft text-accent border-border' :
                                 'bg-accent-soft text-accent border-border'
@@ -1084,23 +1070,23 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           {/* Degradación Elegante / Upsell Contextual (Módulo Comedor) */}
                           {selectedModuleForDetail.name.includes('Comedor') && (
                             <div className="mb-6 p-4 rounded-2xl border border-warning-text/20 bg-warning-bg/50 text-left">
-                              <h5 className="text-[10px] font-black text-warning-text uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                              <h5 className="text-xs font-black text-warning-text uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
                                  Estado del Servicio (Degradación Activa)
                               </h5>
                               <div className="space-y-2 text-xs">
                                 <div className="flex justify-between items-center font-bold text-text-2">
                                   <span>Registros Básicos de Comida:</span>
-                                  <span className="text-success-text bg-success-bg px-2.5 py-0.5 rounded-md border border-success-text/50 font-black text-[9px] uppercase">Activo (Gratis)</span>
+                                  <span className="text-success-text bg-success-bg px-2.5 py-0.5 rounded-md border border-success-text/50 font-black text-xs uppercase">Activo (Gratis)</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-slate-450 font-semibold">Límite de Sillas en Tiempo Real:</span>
-                                  <span className="text-text-3 bg-page px-2 py-0.5 rounded border border-border flex items-center gap-1 font-bold text-[9px] uppercase">
+                                  <span className="text-text-3 bg-page px-2 py-0.5 rounded border border-border flex items-center gap-1 font-bold text-xs uppercase">
                                     <Lock size={10} /> Bloqueado (PRO)
                                   </span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-slate-450 font-semibold">Prevención de Solape de Roles:</span>
-                                  <span className="text-text-3 bg-page px-2 py-0.5 rounded border border-border flex items-center gap-1 font-bold text-[9px] uppercase">
+                                  <span className="text-text-3 bg-page px-2 py-0.5 rounded border border-border flex items-center gap-1 font-bold text-xs uppercase">
                                     <Lock size={10} /> Bloqueado (PRO)
                                   </span>
                                 </div>
@@ -1160,7 +1146,6 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           case 'reportes': return 'reportes';
                           case 'academia': return 'academia';
                           case 'documentos': return 'documentos';
-                          case 'facturacion': return 'facturacion';
                           default: return 'general';
                         }
                       };
@@ -1340,7 +1325,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                                         title={ic.label}
                                       >
                                         {renderIcon(ic.name)}
-                                        <span className={`text-[9px] mt-1 font-bold truncate max-w-[80px] ${isSelected ? 'text-navy-100' : 'text-slate-400'}`}>
+                                        <span className={`text-xs mt-1 font-bold truncate max-w-[80px] ${isSelected ? 'text-navy-100' : 'text-slate-400'}`}>
                                           {ic.label}
                                         </span>
                                       </button>
@@ -1606,7 +1591,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
               >
                 Anual
                 {tarifario && tarifario.descuento_anual_maximo_pct > 0 && (
-                  <span className="bg-success-icon text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  <span className="bg-success-icon text-white text-xs font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
                     Hasta {tarifario.descuento_anual_maximo_pct}% OFF
                   </span>
                 )}
@@ -1634,7 +1619,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                   <ul className="space-y-1.5 text-xs font-semibold text-text-2">
                     <li className="flex items-center gap-1.5"><Check size={12} className="text-success-text"/> Reloj Checador & LFT</li>
                     <li className="flex items-center gap-1.5"><Check size={12} className="text-success-text"/> Reportes Avanzados IA</li>
-                    <li className="flex items-center gap-1.5"><Check size={12} className="text-success-text"/> Timbrado Nómina CFDI 4.0</li>
+                    <li className="flex items-center gap-1.5"><Check size={12} className="text-success-text"/> Pre-nómina y referencia fiscal para tu contador</li>
                   </ul>
                 </div>
               )}

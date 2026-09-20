@@ -121,28 +121,28 @@ export default function VerificarCertificado() {
 
             <dl className="space-y-3.5">
               <div>
-                <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Otorgado a</dt>
+                <dt className="text-xs font-black text-slate-400 uppercase tracking-widest">Otorgado a</dt>
                 <dd className="text-text-1 font-black text-lg leading-tight">{resultado.participant_name}</dd>
               </div>
               <div>
-                <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Curso</dt>
+                <dt className="text-xs font-black text-slate-400 uppercase tracking-widest">Curso</dt>
                 <dd className="text-text-1 font-bold text-sm">{resultado.course_title}</dd>
               </div>
               {resultado.company_name && (
                 <div>
-                  <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Empresa</dt>
+                  <dt className="text-xs font-black text-slate-400 uppercase tracking-widest">Empresa</dt>
                   <dd className="text-text-1 font-bold text-sm">{resultado.company_name}</dd>
                 </div>
               )}
               <div className="flex gap-8">
                 {fecha && (
                   <div>
-                    <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Expedido</dt>
+                    <dt className="text-xs font-black text-slate-400 uppercase tracking-widest">Expedido</dt>
                     <dd className="text-text-1 font-bold text-sm">{fecha}</dd>
                   </div>
                 )}
                 <div>
-                  <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calificación</dt>
+                  <dt className="text-xs font-black text-slate-400 uppercase tracking-widest">Calificación</dt>
                   <dd className="text-text-1 font-bold text-sm">{resultado.score}%</dd>
                 </div>
               </div>

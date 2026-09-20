@@ -1,3 +1,4 @@
+import { notify } from '../lib/appDialogs';
 import React, { useState, useEffect } from 'react';
 import { Globe, Link as LinkIcon, Copy, ExternalLink, QrCode, Check, RefreshCw, Save, Image, Palette, Eye, Type, FileText, Phone, Mail } from 'lucide-react';
 import axiosInstance from '../lib/axios';
@@ -112,11 +113,11 @@ export default function AtsPortalSettings() {
       }
       setSettings(updated);
       setInitialSettings(JSON.parse(JSON.stringify(updated)));
-      alert('Configuración guardada exitosamente.');
+      notify('Configuración guardada exitosamente.');
     } catch (err: any) {
       console.error('Error al guardar configuración:', err);
       const errMsg = err.response?.data?.message || 'Error al guardar la configuración del portal.';
-      alert(errMsg);
+      notify(errMsg);
     } finally {
       setSaving(false);
     }
@@ -221,7 +222,7 @@ export default function AtsPortalSettings() {
                       required
                     />
                   </div>
-                  <span className="text-[10px] text-slate-400 block pl-1">Solo minúsculas, números y guiones. Define la URL del portal.</span>
+                  <span className="text-xs text-slate-400 block pl-1">Solo minúsculas, números y guiones. Define la URL del portal.</span>
                 </div>
 
                 {/* Logotipo URL */}
@@ -236,7 +237,7 @@ export default function AtsPortalSettings() {
                     className="w-full px-4 py-2.5 rounded-xl border border-border shadow-sm text-text-1 text-sm focus:outline-none focus:ring-1 focus-visible:ring-focus-ring focus:border-accent"
                     placeholder="https://ejemplo.com/logo.png"
                   />
-                  <span className="text-[10px] text-slate-400 block pl-1">URL de una imagen PNG/JPG (preferentemente horizontal o cuadrada).</span>
+                  <span className="text-xs text-slate-400 block pl-1">URL de una imagen PNG/JPG (preferentemente horizontal o cuadrada).</span>
                 </div>
 
                 {/* Color de Marca */}
@@ -321,7 +322,7 @@ export default function AtsPortalSettings() {
                       className="w-full px-4 py-2.5 rounded-xl border border-border shadow-sm text-text-1 text-sm focus:outline-none focus:ring-1 focus-visible:ring-focus-ring focus:border-accent"
                       placeholder="https://ejemplo.com/background.jpg"
                     />
-                    <span className="text-[9px] text-slate-400 block pl-1">Se aplicará un sombreado oscuro para asegurar la legibilidad del texto en blanco.</span>
+                    <span className="text-xs text-slate-400 block pl-1">Se aplicará un sombreado oscuro para asegurar la legibilidad del texto en blanco.</span>
                   </div>
 
                   {/* Antes el portal abría SIEMPRE un modal a pantalla completa con un vídeo de
@@ -337,7 +338,7 @@ export default function AtsPortalSettings() {
                       className="w-full px-4 py-2.5 rounded-xl border border-border shadow-sm text-text-1 text-sm focus:outline-none focus:ring-1 focus-visible:ring-focus-ring focus:border-accent"
                       placeholder="https://www.youtube.com/watch?v=..."
                     />
-                    <span className="text-[9px] text-slate-400 block pl-1">Si lo dejas vacío, el portal no muestra ninguna ventana de bienvenida.</span>
+                    <span className="text-xs text-slate-400 block pl-1">Si lo dejas vacío, el portal no muestra ninguna ventana de bienvenida.</span>
                   </div>
                 </div>
 
@@ -446,7 +447,7 @@ export default function AtsPortalSettings() {
 
           <div className="space-y-4">
             <div className="p-3 bg-page border border-border/60 rounded-2xl flex flex-col gap-2">
-              <span className="text-[10px] font-bold text-slate-455 uppercase pl-1">Enlace del Portal</span>
+              <span className="text-xs font-bold text-slate-455 uppercase pl-1">Enlace del Portal</span>
               <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-border gap-2 overflow-hidden">
                 <span className="text-xs text-text-2 font-mono truncate">{getPublicLink()}</span>
                 <div className="flex gap-1.5 shrink-0">
@@ -474,7 +475,7 @@ export default function AtsPortalSettings() {
             <div className="flex flex-col items-center p-4 bg-page border border-border/60 rounded-2xl text-center">
               <QrCode className="text-accent mb-2" size={24} />
               <span className="text-xs font-bold text-text-1 mb-1">Código QR del Portal</span>
-              <p className="text-[10px] text-slate-400 max-w-[200px] mb-3">Imprime este código para colocarlo en tu tienda física o sucursal.</p>
+              <p className="text-xs text-slate-400 max-w-[200px] mb-3">Imprime este código para colocarlo en tu tienda física o sucursal.</p>
 
               <div className="bg-white p-3 rounded-2xl border border-border shadow-sm mix-blend-multiply mb-3">
                 <img
@@ -488,7 +489,7 @@ export default function AtsPortalSettings() {
                 href={`https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(getPublicLink())}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] font-bold text-accent hover:text-navy-800 transition-colors flex items-center gap-1"
+                className="text-xs font-bold text-accent hover:text-navy-800 transition-colors flex items-center gap-1"
               >
                 Descargar QR Alta Resolución <ExternalLink size={10} />
               </a>
@@ -504,7 +505,7 @@ export default function AtsPortalSettings() {
             <Eye size={18} className="text-accent" />
             <span>Vista Previa del Portal en Vivo</span>
           </div>
-          <span className="text-[10px] bg-success-bg text-success-text border border-success-text/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse flex items-center gap-1">
+          <span className="text-xs bg-success-bg text-success-text border border-success-text/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-success-icon rounded-full"></span> Interactiva
           </span>
         </div>
@@ -518,7 +519,7 @@ export default function AtsPortalSettings() {
               <span className="w-2.5 h-2.5 bg-slate-300 rounded-full"></span>
               <span className="w-2.5 h-2.5 bg-slate-300 rounded-full"></span>
             </div>
-            <div className="bg-white rounded-lg border border-border/80 px-3 py-1 flex items-center gap-1.5 text-[10px] text-slate-450 font-mono w-full max-w-sm mx-auto justify-center select-all">
+            <div className="bg-white rounded-lg border border-border/80 px-3 py-1 flex items-center gap-1.5 text-xs text-slate-450 font-mono w-full max-w-sm mx-auto justify-center select-all">
               <Globe size={10} className="text-slate-400" />
               <span>talent360.com.mx/vacantes/{settings.public_slug}</span>
             </div>

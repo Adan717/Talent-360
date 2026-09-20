@@ -1,3 +1,4 @@
+import { notify } from '../lib/appDialogs';
 import React, { useState, useEffect } from 'react';
 import {
   Building2, FileText, CheckCircle2, AlertCircle,
@@ -93,7 +94,7 @@ export const FacturacionManager = () => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert('Error al descargar el ticket de 80 mm.');
+      notify('Error al descargar el ticket de 80 mm.');
     }
   };
 
@@ -121,8 +122,8 @@ export const FacturacionManager = () => {
         setKeyFileBase64(currentUser.tenant.csd_private_key);
       }
     }
-    fetchInvoices();
-  }, [currentUser]);
+    if (!timbradoDesactivado) fetchInvoices();
+  }, [currentUser, timbradoDesactivado]);
 
   const fetchInvoices = async () => {
     setLoadingInvoices(true);
@@ -301,6 +302,58 @@ export const FacturacionManager = () => {
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
   };
+
+  // D10/D12: mientras el timbrado nativo esté apagado, no se muestran controles de CSD, PAC,
+  // selección de recibos ni historial fiscal. Además de ser una promesa de producto incorrecta,
+  // pedir el sello digital de un cliente sin utilizarlo sería custodiar su firma fiscal sin
+  // beneficio. La pre-nómina y la referencia fiscal viven en Reportes.
+  if (timbradoDesactivado) {
+    return (
+      <div className="flex-1 overflow-y-auto bg-page p-4 sm:p-6 lg:p-8">
+        <section className="mx-auto max-w-5xl overflow-hidden rounded-3xl border border-border bg-white shadow-sm">
+          <header className="border-b border-border bg-gradient-to-br from-navy-50 to-white p-6 sm:p-8">
+            <div className="flex items-start gap-4">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-success-bg text-success-text">
+                <Receipt size={24} aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-success-text">Herramienta de apoyo</p>
+                <h1 className="mt-1 text-2xl font-black text-text-1 sm:text-3xl">Pre-nómina para tu contador</h1>
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-text-2">
+                  Talent360 consolida incidencias, percepciones y estimaciones fiscales para preparar el trabajo de tu contador. No calcula la nómina oficial ni emite CFDI.
+                </p>
+              </div>
+            </div>
+          </header>
+
+          <div className="grid gap-4 p-6 sm:grid-cols-3 sm:p-8">
+            <article className="rounded-2xl border border-border bg-page p-5">
+              <BarChart3 className="text-accent" size={22} aria-hidden="true" />
+              <h2 className="mt-4 font-bold text-text-1">Datos listos para revisar</h2>
+              <p className="mt-2 text-sm leading-6 text-text-3">Asistencia, retardos, faltas, horas extra y percepciones del periodo en un solo reporte.</p>
+            </article>
+            <article className="rounded-2xl border border-border bg-page p-5">
+              <FileText className="text-accent" size={22} aria-hidden="true" />
+              <h2 className="mt-4 font-bold text-text-1">Exportación clara</h2>
+              <p className="mt-2 text-sm leading-6 text-text-3">Descarga Excel o PDF y distingue datos provisionales de los periodos ya firmados.</p>
+            </article>
+            <article className="rounded-2xl border border-border bg-page p-5">
+              <ShieldCheck className="text-accent" size={22} aria-hidden="true" />
+              <h2 className="mt-4 font-bold text-text-1">Sin custodiar tu sello</h2>
+              <p className="mt-2 text-sm leading-6 text-text-3">No solicitamos certificados CSD ni llaves privadas. Las cifras de ISR e IMSS son referencias, no retenciones oficiales.</p>
+            </article>
+          </div>
+
+          <div className="flex flex-col gap-4 border-t border-border bg-page/70 p-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+            <p className="max-w-2xl text-sm text-text-3">{motivoDesactivado ?? 'El timbrado CFDI nativo está desactivado por seguridad.'}</p>
+            <a href="/app?module=reportes" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-white hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2">
+              Abrir reportes <BarChart3 size={17} aria-hidden="true" />
+            </a>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-page overflow-hidden">
@@ -497,7 +550,7 @@ export const FacturacionManager = () => {
                         {cerName || 'Selecciona archivo .cer'}
                       </span>
                     </div>
-                    <label className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-text-2 rounded-lg text-[10px] font-black cursor-pointer transition-all">
+                    <label className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-text-2 rounded-lg text-xs font-black cursor-pointer transition-all">
                       Buscar
                       <input
                         type="file"
@@ -521,7 +574,7 @@ export const FacturacionManager = () => {
                         {keyName || 'Selecciona archivo .key'}
                       </span>
                     </div>
-                    <label className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-text-2 rounded-lg text-[10px] font-black cursor-pointer transition-all">
+                    <label className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-text-2 rounded-lg text-xs font-black cursor-pointer transition-all">
                       Buscar
                       <input
                         type="file"
@@ -555,7 +608,7 @@ export const FacturacionManager = () => {
                 >
                   Sincronizar y Subir al SAT
                 </button>
-                <p className="text-[10px] text-slate-400 font-medium text-center inline-flex items-center justify-center gap-1.5">
+                <p className="text-xs text-slate-400 font-medium text-center inline-flex items-center justify-center gap-1.5">
                   <ShieldCheck size={12} /> Las llaves privadas se almacenan encriptadas de extremo a extremo.
                 </p>
               </div>
@@ -673,7 +726,7 @@ export const FacturacionManager = () => {
                             </div>
                             <div>
                               <span className="text-sm font-black text-text-1 block">{emp.name}</span>
-                              <span className="text-[10px] text-slate-400 font-semibold block">{emp.role}</span>
+                              <span className="text-xs text-slate-400 font-semibold block">{emp.role}</span>
                             </div>
                           </div>
                         </td>
@@ -681,15 +734,15 @@ export const FacturacionManager = () => {
                           {emp.rfc ? (
                             <span className="text-xs font-mono font-bold text-text-2 block">{emp.rfc}</span>
                           ) : (
-                            <span className="text-[10px] font-bold text-warning-text block">Sin RFC (se usará genérico)</span>
+                            <span className="text-xs font-bold text-warning-text block">Sin RFC (se usará genérico)</span>
                           )}
                           {emp.curp && (
-                            <span className="text-[10px] font-mono text-slate-400 font-semibold block">{emp.curp}</span>
+                            <span className="text-xs font-mono text-slate-400 font-semibold block">{emp.curp}</span>
                           )}
                         </td>
                         <td className="py-4 px-6">
                           {emp.salary_pending ? (
-                            <span className="text-[10px] font-bold text-warning-text">Salario sin capturar</span>
+                            <span className="text-xs font-bold text-warning-text">Salario sin capturar</span>
                           ) : (
                             <span className="text-sm font-black text-text-1">
                               ${Number(netoMostrado ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -703,15 +756,15 @@ export const FacturacionManager = () => {
                         </td>
                         <td className="py-4 px-6">
                           {emp.approval_status === 'approved_by_admin' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-extrabold uppercase rounded-full border border-success-text/50">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-success-bg text-success-text text-xs font-extrabold uppercase rounded-full border border-success-text/50">
                               <CheckCircle2 size={11} /> Autorizada
                             </span>
                           ) : emp.approval_status === 'approved_by_employee' || emp.approval_status === 'finalized' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-extrabold uppercase rounded-full border border-border/50">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-navy-50 text-accent text-xs font-extrabold uppercase rounded-full border border-border/50">
                               <FileText size={11} /> Firmada · falta autorizar
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-warning-bg text-warning-text text-[10px] font-extrabold uppercase rounded-full border border-warning-text/50">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-warning-bg text-warning-text text-xs font-extrabold uppercase rounded-full border border-warning-text/50">
                               <Clock size={11} /> Sin firma del colaborador
                             </span>
                           )}
@@ -719,24 +772,24 @@ export const FacturacionManager = () => {
                         <td className="py-4 px-6">
                           {yaTimbrada ? (
                             <div className="space-y-0.5">
-                              <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-extrabold uppercase rounded-full border border-success-text/50 flex items-center gap-1 w-fit">
+                              <span className="px-2.5 py-1 bg-success-bg text-success-text text-xs font-extrabold uppercase rounded-full border border-success-text/50 flex items-center gap-1 w-fit">
                                 <CheckCircle size={10} /> Timbrado SAT
                               </span>
-                              <span className="text-[9px] font-mono font-bold text-slate-450 block truncate max-w-[120px]" title={emp.cfdi_uuid || status?.uuid || ''}>
+                              <span className="text-xs font-mono font-bold text-slate-450 block truncate max-w-[120px]" title={emp.cfdi_uuid || status?.uuid || ''}>
                                 {emp.cfdi_uuid || status?.uuid || 'Folio en proceso'}
                               </span>
                             </div>
                           ) : status?.status === 'failed' ? (
                             <div className="space-y-0.5">
-                              <span className="px-2.5 py-1 bg-danger-bg text-danger-text text-[10px] font-extrabold uppercase rounded-full border border-danger-text/50 flex items-center gap-1 w-fit">
+                              <span className="px-2.5 py-1 bg-danger-bg text-danger-text text-xs font-extrabold uppercase rounded-full border border-danger-text/50 flex items-center gap-1 w-fit">
                                 <AlertCircle size={10} /> Falló Timbrado
                               </span>
                               {status.error && (
-                                <span className="text-[9px] font-bold text-danger-text block max-w-[180px]">{status.error}</span>
+                                <span className="text-xs font-bold text-danger-text block max-w-[180px]">{status.error}</span>
                               )}
                             </div>
                           ) : (
-                            <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-[10px] font-extrabold uppercase rounded-full border border-warning-text/50">
+                            <span className="px-2.5 py-1 bg-warning-bg text-warning-text text-xs font-extrabold uppercase rounded-full border border-warning-text/50">
                               Pendiente Timbrar
                             </span>
                           )}
@@ -814,11 +867,11 @@ export const FacturacionManager = () => {
                           <span className="text-xs font-mono font-bold text-text-2 block max-w-[200px] truncate" title={inv.uuid}>
                             {inv.uuid}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-semibold block">ID: {inv.id}</span>
+                          <span className="text-xs text-slate-400 font-semibold block">ID: {inv.id}</span>
                         </td>
                         <td className="py-4 px-6">
                           <span className="text-sm font-black text-text-1">{inv.legal_name}</span>
-                          <span className="text-[10px] text-slate-400 font-semibold block capitalize">CFDI Tipo {inv.type === 'payroll' ? 'Nómina' : 'Ingreso'}</span>
+                          <span className="text-xs text-slate-400 font-semibold block capitalize">CFDI Tipo {inv.type === 'payroll' ? 'Nómina' : 'Ingreso'}</span>
                         </td>
                         <td className="py-4 px-6">
                           <span className="text-xs font-mono font-bold text-text-2">{inv.rfc}</span>
@@ -835,11 +888,11 @@ export const FacturacionManager = () => {
                         </td>
                         <td className="py-4 px-6">
                           {inv.status === 'valid' ? (
-                            <span className="px-2.5 py-1 bg-success-bg text-success-text text-[10px] font-extrabold uppercase rounded-full border border-success-text/50">
+                            <span className="px-2.5 py-1 bg-success-bg text-success-text text-xs font-extrabold uppercase rounded-full border border-success-text/50">
                               Vigente / Activo
                             </span>
                           ) : (
-                            <span className="px-2.5 py-1 bg-page text-text-3 text-[10px] font-extrabold uppercase rounded-full border border-border">
+                            <span className="px-2.5 py-1 bg-page text-text-3 text-xs font-extrabold uppercase rounded-full border border-border">
                               Cancelado SAT
                             </span>
                           )}

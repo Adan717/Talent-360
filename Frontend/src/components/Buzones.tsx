@@ -168,7 +168,7 @@ export default function Buzones() {
             {p.bloqueada ? <Lock size={14} /> : p.icon}
             {p.label}
             {!p.bloqueada && (
-              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-slate-200 text-text-2">{p.total}</span>
+              <span className="px-1.5 py-0.5 rounded-full text-xs font-black bg-slate-200 text-text-2">{p.total}</span>
             )}
           </button>
         ))}
@@ -198,7 +198,7 @@ export default function Buzones() {
           {denuncias.map(d => (
             <article key={d.id} className="p-4 rounded-2xl border border-border bg-white space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="px-2.5 py-1 bg-danger-bg text-danger-text text-[10px] font-extrabold uppercase rounded-full border border-danger-text/60">
+                <span className="px-2.5 py-1 bg-danger-bg text-danger-text text-xs font-extrabold uppercase rounded-full border border-danger-text/60">
                   {etiquetaDe(ETIQUETA_DENUNCIA, d.type)}
                 </span>
                 <time className="text-[11px] text-slate-400 font-semibold">{fecha(d.created_at)}</time>
@@ -229,7 +229,7 @@ export default function Buzones() {
           {!anonimoBloqueado && anonimos.map(a => (
             <article key={a.id} className="p-4 rounded-2xl border border-border bg-white space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="px-2.5 py-1 bg-navy-50 text-accent text-[10px] font-extrabold uppercase rounded-full border border-border/60">
+                <span className="px-2.5 py-1 bg-navy-50 text-accent text-xs font-extrabold uppercase rounded-full border border-border/60">
                   {etiquetaDe(ETIQUETA_ANONIMO, a.type)}
                 </span>
                 <time className="text-[11px] text-slate-400 font-semibold">{fecha(a.created_at)}</time>
@@ -278,7 +278,7 @@ export default function Buzones() {
                     <tr key={p.user_id} className="hover:bg-page/60">
                       <td className="py-3 px-4">
                         <div className="font-bold text-text-1">{p.name}</div>
-                        <div className="text-[10px] text-slate-400 font-semibold">{p.job_role || 'Sin puesto'}</div>
+                        <div className="text-xs text-slate-400 font-semibold">{p.job_role || 'Sin puesto'}</div>
                       </td>
                       <td className="py-3 px-3 text-center font-bold text-text-2">{p.evaluations_received}</td>
                       <td className="py-3 px-3 text-center">{p.avg_teamwork}</td>

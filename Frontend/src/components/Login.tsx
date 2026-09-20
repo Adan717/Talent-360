@@ -356,7 +356,7 @@ export const Login = () => {
               {paymentParam === 'success' && emailParam && (
                 <div className="bg-info-bg border border-info-text/20 text-info-text text-xs font-bold p-3.5 rounded-xl mt-3 text-left">
                   <p className="flex items-center gap-1.5"><Info size={16} className="text-info-icon shrink-0" aria-hidden="true" /> <span className="font-extrabold text-navy-800">Inicio de Sesión Social</span></p>
-                  <p className="font-semibold text-[10px] text-accent mt-1 leading-normal">
+                  <p className="font-semibold text-xs text-accent mt-1 leading-normal">
                     Usa el mismo método con el que registraste tu cuenta para continuar con tu empresa.
                   </p>
                 </div>

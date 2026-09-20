@@ -78,7 +78,7 @@ export const IncompleteTasksPanel = () => {
         <ClipboardList size={20} className="shrink-0" aria-hidden="true" />
         <div>
           <p className="font-black text-xs sm:text-sm">Tareas Inconclusas de Días Anteriores</p>
-          <p className="text-[9px] sm:text-[10px] text-navy-100 opacity-90 leading-tight">
+          <p className="text-xs sm:text-xs text-navy-100 opacity-90 leading-tight">
             Quedaron abiertas al cierre — decide si el trabajo cuenta: aprobar paga la recompensa,
             reprogramar la trae a hoy, rechazar la omite sin pago
           </p>
@@ -93,17 +93,17 @@ export const IncompleteTasksPanel = () => {
             <div className="flex flex-col text-left">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-black text-white">{r.employee_name || 'Colaborador'}</span>
-                <span className="text-[9px] text-navy-100 shrink-0">
+                <span className="text-xs text-navy-100 shrink-0">
                   {r.date}
                   {r.accumulated_mins != null && r.accumulated_mins > 0 && <> · {r.accumulated_mins} min invertidos</>}
                 </span>
               </div>
-              <span className="text-[10px] text-navy-100 leading-snug mt-0.5">
+              <span className="text-xs text-navy-100 leading-snug mt-0.5">
                 {r.task_title || 'Tarea'}
               </span>
             </div>
             {r.user_id != null && Number(r.user_id) === Number(currentUser?.id) ? (
-              <span className="text-[9.5px] font-bold text-navy-100 bg-brand-dark/40 border border-navy-300/30 rounded-lg px-2.5 py-1.5">
+              <span className="text-xs font-bold text-navy-100 bg-brand-dark/40 border border-navy-300/30 rounded-lg px-2.5 py-1.5">
                 Tu tarea · debe resolverla otro admin o supervisor
               </span>
             ) : (
@@ -111,21 +111,21 @@ export const IncompleteTasksPanel = () => {
                 <button
                   onClick={() => resolve(r.id, 'approve')}
                   disabled={resolvingId === r.id}
-                  className="bg-success-icon hover:bg-success-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-success-icon hover:bg-success-text text-white font-extrabold text-xs px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                    Aprobar y pagar
                 </button>
                 <button
                   onClick={() => resolve(r.id, 'reschedule')}
                   disabled={resolvingId === r.id}
-                  className="bg-warning-icon hover:bg-warning-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-warning-icon hover:bg-warning-text text-white font-extrabold text-xs px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                    Reprogramar a hoy
                 </button>
                 <button
                   onClick={() => resolve(r.id, 'reject')}
                   disabled={resolvingId === r.id}
-                  className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-xs px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                    Rechazar
                 </button>

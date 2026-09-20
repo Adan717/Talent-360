@@ -34,7 +34,7 @@ export const SolicitarAutorizacionButton = () => {
     return (
       <div className="mt-2 rounded-2xl bg-success-bg border border-success-text/20 p-3 text-center">
         <p className="inline-flex items-center gap-1.5 text-[11px] font-black text-success-text"><CheckCircle2 size={14} aria-hidden="true" /> Solicitud enviada</p>
-        <p className="text-[10px] text-success-text mt-1 leading-snug">
+        <p className="text-xs text-success-text mt-1 leading-snug">
           Les llegó a los administradores y supervisores de tu empresa (la aprueban en Monitor 360 → Autorizaciones de entrada). Cuando la aprueben, cierra esta ventana y vuelve a registrar tu entrada.
         </p>
       </div>
@@ -51,7 +51,7 @@ export const SolicitarAutorizacionButton = () => {
         {estado === 'sending' ? 'Enviando…' : 'Solicitar autorización del administrador'}
       </button>
       {estado === 'error' && (
-        <p className="text-[10px] text-danger-text font-bold text-center mt-1.5">{mensaje}</p>
+        <p className="text-xs text-danger-text font-bold text-center mt-1.5">{mensaje}</p>
       )}
     </div>
   );

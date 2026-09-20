@@ -1,3 +1,4 @@
+import { notify } from '../../lib/appDialogs';
 // Local copy of the original phone demo. No app stores, persistence or API writes.
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -255,10 +256,10 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
     // 1. Secuencia de validación activa (GPS, Selfie y Éxito)
     if (isVerifying) {
       if (verifyingStep === 'gps') {
-        return { disabled: true, text: '📍 Buscando GPS...', subtext: 'Verificando perímetro...', iconKey: 'verifying_gps' };
+        return { disabled: true, text: 'Buscando GPS...', subtext: 'Verificando perímetro...', iconKey: 'verifying_gps' };
       }
       if (verifyingStep === 'selfie') {
-        return { disabled: true, text: '📸 Validando Selfie...', subtext: 'Identificación biométrica...', iconKey: 'verifying_selfie' };
+        return { disabled: true, text: 'Validando identidad...', subtext: 'Identificación biométrica...', iconKey: 'verifying_selfie' };
       }
       if (verifyingStep === 'success') {
         return { disabled: true, text: '✓ Fichaje Registrado', subtext: '¡Operación exitosa!', iconKey: 'success_check' };
@@ -267,10 +268,10 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
 
     // 2. Transiciones de estados temporales (Tomando descanso/comida)
     if (dialTransition === 'taking_break') {
-      return { disabled: true, text: '☕ Tomando Descanso...', subtext: 'Registrando salida...', iconKey: 'break_start' };
+      return { disabled: true, text: 'Tomando descanso...', subtext: 'Registrando salida...', iconKey: 'break_start' };
     }
     if (dialTransition === 'taking_meal') {
-      return { disabled: true, text: '🍱 Iniciando Comida...', subtext: 'Salida a comedor...', iconKey: 'meal_prompt' };
+      return { disabled: true, text: 'Iniciando comida...', subtext: 'Salida a comedor...', iconKey: 'meal_prompt' };
     }
 
     // 3. Estados operativos normales
@@ -398,12 +399,12 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
 
         <div className="flex items-center gap-2 shrink-0 min-w-0">
           <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
-            <span className={`text-[8.5px] font-black uppercase tracking-wider ${
+            <span className={`text-xs font-black uppercase tracking-wider ${
               isDark ? 'text-navy-300' : 'text-accent'
             }`}>
               {storeName}
             </span>
-            <span className="text-[8px] font-bold truncate max-w-[90px]">
+            <span className="text-xs font-bold truncate max-w-[90px]">
               {currentUser.name}
             </span>
           </div>
@@ -423,11 +424,11 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
     if (tier === 'free') {
       return (
         <div className="py-2 px-1 text-left w-full select-none shrink-0 border-b border-border dark:border-slate-800 pb-3 mb-2">
-          <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-[9px] px-1">
+          <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-xs px-1">
             <div className="flex items-center select-none">
               <span className="text-success-text dark:text-emerald-400 font-black flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-success-icon animate-ping"></span>
-                <span>🏪 Sucursal Abierta</span>
+                <span>Sucursal abierta</span>
               </span>
             </div>
 
@@ -495,11 +496,11 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
 
     return (
       <div className="py-1 px-1 text-left w-full select-none shrink-0">
-        <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-[9px] mb-1.5 px-1">
+        <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-xs mb-1.5 px-1">
           <div className="flex items-center select-none">
             <span className="text-success-text dark:text-emerald-400 font-black flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-success-icon animate-ping"></span>
-              <span>🏪 Sucursal Abierta</span>
+              <span>Sucursal abierta</span>
             </span>
           </div>
 
@@ -529,14 +530,14 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
             onClick={() => setActiveModal('entry')}
             className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
           >
-            <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-accent dark:text-navy-300">Entrada</span>
+            <span className="text-xs font-black uppercase tracking-wider mb-0.5 text-accent dark:text-navy-300">Entrada</span>
             <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
               hasCheckedIn
                 ? 'border-accent bg-accent text-white font-extrabold shadow-accent/20'
                 : 'border-border bg-white text-slate-400'
             }`}>
               <LogIn size={18} className={!hasCheckedIn ? "animate-pulse" : ""} />
-              {hasCheckedIn && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+              {hasCheckedIn && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-xs font-black shadow-sm">✓</div>}
             </div>
           </div>
 
@@ -549,14 +550,14 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                 onClick={() => setActiveModal('break')}
                 className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
               >
-                <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-accent dark:text-navy-300">Descanso</span>
+                <span className="text-xs font-black uppercase tracking-wider mb-0.5 text-accent dark:text-navy-300">Descanso</span>
                 <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
                   isDone || isActive
                     ? 'border-accent bg-accent text-white font-extrabold shadow-accent/20'
                     : 'border-border bg-white text-slate-400'
                 }`}>
                   <Armchair size={18} className={isActive ? "animate-bounce" : ""} />
-                  {isDone && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+                  {isDone && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-xs font-black shadow-sm">✓</div>}
                 </div>
               </div>
             );
@@ -571,14 +572,14 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                 onClick={() => setActiveModal('meal')}
                 className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
               >
-                <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-warning-text dark:text-amber-400">Comida</span>
+                <span className="text-xs font-black uppercase tracking-wider mb-0.5 text-warning-text dark:text-amber-400">Comida</span>
                 <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
                   isDone || isActive
                     ? 'border-warning-text bg-warning-icon text-white font-extrabold shadow-warning-text/20'
                     : 'border-border bg-white text-slate-400'
                 }`}>
                   <Utensils size={18} className={isActive ? "animate-bounce" : ""} />
-                  {isDone && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+                  {isDone && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-xs font-black shadow-sm">✓</div>}
                 </div>
               </div>
             );
@@ -589,14 +590,14 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
             onClick={() => setActiveModal('exit')}
             className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
           >
-            <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-success-text dark:text-emerald-400">Salida</span>
+            <span className="text-xs font-black uppercase tracking-wider mb-0.5 text-success-text dark:text-emerald-400">Salida</span>
             <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
               hasCheckedOut
                 ? 'border-success-text bg-success-icon text-white font-extrabold shadow-success-text/20'
                 : 'border-border bg-white text-slate-400'
             }`}>
               <LogOut size={18} />
-              {hasCheckedOut && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+              {hasCheckedOut && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-success-icon text-white flex items-center justify-center text-xs font-black shadow-sm">✓</div>}
             </div>
           </div>
         </div>
@@ -624,7 +625,7 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
               </div>
             )}
 
-            <div className="absolute inset-0 flex justify-between items-center px-3 pointer-events-none z-10 text-[9px] font-mono font-bold text-text-3 dark:text-slate-400">
+            <div className="absolute inset-0 flex justify-between items-center px-3 pointer-events-none z-10 text-xs font-mono font-bold text-text-3 dark:text-slate-400">
               <span>
                 {hasCheckedIn ? formatMinsToTimeClean(545) : '09:00 am'}
               </span>
@@ -718,11 +719,11 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                       isDark ? 'bg-success-text/20 border-success-text/40 text-success-text' : 'bg-success-bg/60 border-success-text/20 text-success-text'
                     }`}>
                       <div className="w-8 h-8 rounded-xl bg-success-icon/15 flex items-center justify-center text-success-text dark:text-emerald-400 shrink-0 text-sm animate-pulse">
-                        ✅
+                        <CheckCircle2 size={18} aria-hidden="true" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-success-text dark:text-emerald-400 leading-none">Fichaje Registrado</p>
-                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
+                        <p className="text-xs font-black uppercase tracking-wider text-success-text dark:text-emerald-400 leading-none">Fichaje Registrado</p>
+                        <p className="text-xs font-extrabold mt-0.5 dark:text-slate-200">
                           Entrada: {formatMinsToTimeClean(checkInTimes[99] || 545)} (Retardo de 5 min)
                         </p>
                       </div>
@@ -735,11 +736,11 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                       isDark ? 'bg-brand-dark/20 border-navy-800/40 text-navy-100' : 'bg-navy-50/60 border-border text-brand-dark'
                     }`}>
                       <div className="w-8 h-8 rounded-xl bg-accent/15 flex items-center justify-center text-accent dark:text-navy-300 shrink-0 text-sm animate-pulse">
-                        ☕
+                        <Armchair size={18} aria-hidden="true" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-accent dark:text-navy-300 leading-none">Descanso Tomado</p>
-                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
+                        <p className="text-xs font-black uppercase tracking-wider text-accent dark:text-navy-300 leading-none">Descanso Tomado</p>
+                        <p className="text-xs font-extrabold mt-0.5 dark:text-slate-200">
                           Salida: {formatMinsToTimeClean(breakStartTimes[99] || 720)} | Regreso: {formatMinsToTimeClean(breakEndTimes[99] || 735)}
                         </p>
                       </div>
@@ -752,11 +753,11 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                       isDark ? 'bg-warning-text/20 border-warning-text/40 text-warning-text' : 'bg-warning-bg/60 border-warning-text/20 text-warning-text'
                     }`}>
                       <div className="w-8 h-8 rounded-xl bg-warning-icon/15 flex items-center justify-center text-warning-text dark:text-amber-400 shrink-0 text-sm animate-pulse">
-                        🍱
+                        <Utensils size={16} aria-hidden="true" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-warning-text dark:text-amber-400 leading-none">Comida Completada</p>
-                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
+                        <p className="text-xs font-black uppercase tracking-wider text-warning-text dark:text-amber-400 leading-none">Comida Completada</p>
+                        <p className="text-xs font-extrabold mt-0.5 dark:text-slate-200">
                           Salida: {formatMinsToTimeClean(mealStartTimes[99] || 840)} | Regreso: {formatMinsToTimeClean(mealEndTimes[99] || 885)}
                         </p>
                       </div>
@@ -769,11 +770,11 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                       isDark ? 'bg-danger-text/20 border-danger-text/40 text-danger-text' : 'bg-danger-bg/60 border-danger-text/20 text-danger-text'
                     }`}>
                       <div className="w-8 h-8 rounded-xl bg-danger-icon/15 flex items-center justify-center text-danger-text dark:text-danger-text shrink-0 text-sm animate-pulse">
-                        🚪
+                        <LogOut size={16} aria-hidden="true" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-danger-text dark:text-danger-text leading-none">Jornada Finalizada</p>
-                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
+                        <p className="text-xs font-black uppercase tracking-wider text-danger-text dark:text-danger-text leading-none">Jornada Finalizada</p>
+                        <p className="text-xs font-extrabold mt-0.5 dark:text-slate-200">
                           Salida registrada a las {formatMinsToTimeClean(checkOutTimes[99] || 1080)}
                         </p>
                       </div>
@@ -784,11 +785,11 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                     isDark ? 'bg-brand-dark/20 border-navy-800/40 text-navy-100' : 'bg-navy-50/60 border-border text-brand-dark'
                   }`}>
                     <div className="w-8 h-8 rounded-xl bg-accent/15 flex items-center justify-center text-accent dark:text-navy-300 shrink-0 text-sm">
-                      📋
+                      <ClipboardList size={16} aria-hidden="true" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[8px] font-black uppercase tracking-wider text-accent dark:text-navy-300 leading-none">Tablero Operativo</p>
-                      <p className="text-[10px] font-bold mt-0.5 dark:text-slate-300 truncate">{simTask1Done && simTask2Done ? 'Todas tus tareas de ejemplo completadas.' : `${2 - Number(simTask1Done) - Number(simTask2Done)} tareas pendientes por completar hoy.`}</p>
+                      <p className="text-xs font-black uppercase tracking-wider text-accent dark:text-navy-300 leading-none">Tablero Operativo</p>
+                      <p className="text-xs font-bold mt-0.5 dark:text-slate-300 truncate">{simTask1Done && simTask2Done ? 'Todas tus tareas de ejemplo completadas.' : `${2 - Number(simTask1Done) - Number(simTask2Done)} tareas pendientes por completar hoy.`}</p>
                     </div>
                   </div>
 
@@ -796,10 +797,10 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                     isDark ? 'bg-brand-dark/20 border-navy-800/40 text-navy-100' : 'bg-navy-50/60 border-border text-brand-dark'
                   }`}>
                     <div className="w-8 h-8 rounded-xl bg-accent/15 flex items-center justify-center text-accent dark:text-navy-300 shrink-0 text-sm animate-pulse">
-                      🎓
+                      <GraduationCap size={16} aria-hidden="true" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[8px] font-black uppercase tracking-wider text-accent dark:text-navy-300 leading-none">Capacitación Activa</p>
+                      <p className="text-xs font-black uppercase tracking-wider text-accent dark:text-navy-300 leading-none">Capacitación Activa</p>
                       <p className="text-[10.5px] font-black mt-0.5 dark:text-slate-200 leading-tight">
                         ¡Capacítate en la academia para subir de puesto y ganar más!
                       </p>
@@ -819,9 +820,9 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                   <Lock size={22} className="text-danger-text" />
                 </div>
                 <div className="space-y-1">
-                  <h5 className="text-[9px] font-black text-danger-text dark:text-danger-text uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h5 className="text-xs font-black text-danger-text dark:text-danger-text uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
                   <h4 className="text-[11px] font-black text-text-1 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
-                  <p className="text-[8.5px] text-text-3 font-semibold leading-relaxed max-w-[170px] mx-auto">
+                  <p className="text-xs text-text-3 font-semibold leading-relaxed max-w-[170px] mx-auto">
                     La gestión de Tareas requiere la Versión Pro del Reloj Checador.
                   </p>
                 </div>
@@ -830,7 +831,7 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                   onClick={() => {
                     if (setTier) setTier('pro');
                   }}
-                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-[8.5px] uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer mt-1"
+                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer mt-1"
                 >
                   Probar Versión Pro
                 </button>
@@ -851,9 +852,9 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                   <Lock size={22} className="text-danger-text" />
                 </div>
                 <div className="space-y-1">
-                  <h5 className="text-[9px] font-black text-danger-text dark:text-danger-text uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h5 className="text-xs font-black text-danger-text dark:text-danger-text uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
                   <h4 className="text-[11px] font-black text-text-1 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
-                  <p className="text-[8.5px] text-text-3 font-semibold leading-relaxed max-w-[170px] mx-auto">
+                  <p className="text-xs text-text-3 font-semibold leading-relaxed max-w-[170px] mx-auto">
                     La gestión de Academia requiere la Versión Pro del Reloj Checador.
                   </p>
                 </div>
@@ -862,7 +863,7 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                   onClick={() => {
                     if (setTier) setTier('pro');
                   }}
-                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-[8.5px] uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer mt-1"
+                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer mt-1"
                 >
                   Probar Versión Pro
                 </button>
@@ -870,23 +871,23 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
             ) : (
               <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-grow overflow-y-auto scrollbar-none">
                 <div className="bg-gradient-to-r from-accent to-accent text-white p-3 rounded-2xl shadow-sm space-y-1">
-                  <p className="text-[8px] font-bold text-navy-100 uppercase tracking-widest">Capacitación Operativa</p>
+                  <p className="text-xs font-bold text-navy-100 uppercase tracking-widest">Capacitación Operativa</p>
                   <h4 className="text-[11px] font-black">Cursos Asignados para Tu Puesto</h4>
-                  <p className="text-[8px] text-navy-100 font-medium">¡Completa lecciones para ganar insignias y aumentos!</p>
+                  <p className="text-xs text-navy-100 font-medium">¡Completa lecciones para ganar insignias y aumentos!</p>
                 </div>
 
-                <h5 className="text-[9.5px] font-black uppercase text-text-1 dark:text-slate-200 tracking-wider">Plan de Aprendizaje</h5>
+                <h5 className="text-xs font-black uppercase text-text-1 dark:text-slate-200 tracking-wider">Plan de Aprendizaje</h5>
 
                 {/* Curso 1 */}
                 <div className="bg-page dark:bg-slate-900/40 border border-border dark:border-slate-800 p-2.5 rounded-xl space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-black text-text-1 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Inducción Básica 360</span>
-                    <span className="text-[8px] font-bold text-success-text bg-success-bg dark:bg-success-text/40 px-1.5 py-0.5 rounded-md border border-success-text/40">75%</span>
+                    <span className="text-xs font-black text-text-1 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Inducción Básica 360</span>
+                    <span className="text-xs font-bold text-success-text bg-success-bg dark:bg-success-text/40 px-1.5 py-0.5 rounded-md border border-success-text/40">75%</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div className="h-full bg-success-icon rounded-full" style={{ width: '75%' }}></div>
                   </div>
-                  <div className="flex justify-between items-center text-[8px] text-text-3 pt-0.5">
+                  <div className="flex justify-between items-center text-xs text-text-3 pt-0.5">
                     <span>3 de 4 lecciones completadas</span>
                     <button className="text-accent dark:text-navy-300 font-bold hover:underline bg-transparent border-none p-0 cursor-pointer">Continuar →</button>
                   </div>
@@ -895,13 +896,13 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                 {/* Curso 2 */}
                 <div className="bg-page dark:bg-slate-900/40 border border-border dark:border-slate-800 p-2.5 rounded-xl space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-black text-text-1 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Atención & Caja Registradora</span>
-                    <span className="text-[8px] font-bold text-accent bg-navy-50 dark:bg-brand-dark/40 px-1.5 py-0.5 rounded-md border border-border/40">20%</span>
+                    <span className="text-xs font-black text-text-1 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Atención & Caja Registradora</span>
+                    <span className="text-xs font-bold text-accent bg-navy-50 dark:bg-brand-dark/40 px-1.5 py-0.5 rounded-md border border-border/40">20%</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div className="h-full bg-accent rounded-full" style={{ width: '20%' }}></div>
                   </div>
-                  <div className="flex justify-between items-center text-[8px] text-text-3 pt-0.5">
+                  <div className="flex justify-between items-center text-xs text-text-3 pt-0.5">
                     <span>1 de 5 lecciones completadas</span>
                     <button className="text-accent dark:text-navy-300 font-bold hover:underline bg-transparent border-none p-0 cursor-pointer">Iniciar →</button>
                   </div>
@@ -919,9 +920,9 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                   <Lock size={22} className="text-danger-text" />
                 </div>
                 <div className="space-y-1">
-                  <h5 className="text-[9px] font-black text-danger-text dark:text-danger-text uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h5 className="text-xs font-black text-danger-text dark:text-danger-text uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
                   <h4 className="text-[11px] font-black text-text-1 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
-                  <p className="text-[8.5px] text-text-3 font-semibold leading-relaxed max-w-[170px] mx-auto">
+                  <p className="text-xs text-text-3 font-semibold leading-relaxed max-w-[170px] mx-auto">
                     La gestión de Nómina requiere la Versión Pro del Reloj Checador.
                   </p>
                 </div>
@@ -930,7 +931,7 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                   onClick={() => {
                     if (setTier) setTier('pro');
                   }}
-                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-[8.5px] uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer mt-1"
+                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer mt-1"
                 >
                   Probar Versión Pro
                 </button>
@@ -940,22 +941,22 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                 <div className="bg-gradient-to-r from-success-text to-accent-hover text-white p-3 rounded-2xl shadow-sm space-y-2">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-[8px] font-bold text-success-text uppercase tracking-widest">Nómina Quincenal Calculada</p>
+                      <p className="text-xs font-bold text-success-text uppercase tracking-widest">Nómina Quincenal Calculada</p>
                       <h4 className="text-sm font-black mt-0.5">$4,800.00 MXN</h4>
                     </div>
-                    <span className="px-2 py-0.5 bg-success-icon/30 text-white text-[8px] font-bold rounded-full border border-success-text/30">
+                    <span className="px-2 py-0.5 bg-success-icon/30 text-white text-xs font-bold rounded-full border border-success-text/30">
                       ✓ Pago Estimado
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[8.5px] pt-1 border-t border-success-text/40 text-success-text font-medium">
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-success-text/40 text-success-text font-medium">
                     <span>Horas laboradas: <strong>44 hrs</strong></span>
                     <span>Puntualidad: <strong>98%</strong></span>
                   </div>
                 </div>
 
-                <h5 className="text-[9.5px] font-black uppercase text-text-1 dark:text-slate-200 tracking-wider pt-1">Desglose de Pago</h5>
+                <h5 className="text-xs font-black uppercase text-text-1 dark:text-slate-200 tracking-wider pt-1">Desglose de Pago</h5>
 
-                <div className="bg-page dark:bg-slate-900/40 border border-border dark:border-slate-800 p-2.5 rounded-xl space-y-1.5 text-[9px]">
+                <div className="bg-page dark:bg-slate-900/40 border border-border dark:border-slate-800 p-2.5 rounded-xl space-y-1.5 text-xs">
                   <div className="flex justify-between items-center text-text-2 dark:text-slate-300">
                     <span>Sueldo Base (15 días)</span>
                     <span className="font-bold text-text-1 dark:text-white">$4,500.00</span>
@@ -968,15 +969,15 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                     <span>Retardo (1 incidencia 5m)</span>
                     <span className="font-bold">-$50.00</span>
                   </div>
-                  <div className="border-t border-border dark:border-slate-800 pt-1.5 flex justify-between items-center font-black text-text-1 dark:text-white text-[9.5px]">
+                  <div className="border-t border-border dark:border-slate-800 pt-1.5 flex justify-between items-center font-black text-text-1 dark:text-white text-xs">
                     <span>Total Neto</span>
                     <span className="text-success-text dark:text-emerald-400">$4,800.00</span>
                   </div>
                 </div>
 
                 <button
-                  onClick={() => alert(`Simulación: Descargando Recibo Digital PDF de ${empName}`)}
-                  className="w-full py-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer border-none"
+                  onClick={() => notify(`Simulación: Descargando Recibo Digital PDF de ${empName}`)}
+                  className="w-full py-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer border-none"
                 >
                   <FileText size={12} />
                   Descargar Recibo Digital (PDF)
@@ -1039,7 +1040,7 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
             <div className="px-4 pb-2 border-b dark:border-slate-800 text-left flex justify-between items-center">
               <div>
                 <h3 className="text-xs font-black">Operaciones & Soporte AI</h3>
-                <p className="text-[9px] text-slate-400">Accesos y herramientas rápidas (Simulado)</p>
+                <p className="text-xs text-slate-400">Accesos y herramientas rápidas (Simulado)</p>
               </div>
               <button
                 onClick={() => setIsFabSheetOpen(false)}
@@ -1063,7 +1064,7 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-accent to-accent text-white flex items-center justify-center">
                     <Bot size={16} />
                   </div>
-                  <span className="font-bold text-[10px]">Copiloto AI</span>
+                  <span className="font-bold text-xs">Copiloto AI</span>
                 </button>
 
                 <button
@@ -1078,7 +1079,7 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-warning-icon to-warning-icon text-white flex items-center justify-center">
                     <Play size={16} />
                   </div>
-                  <span className="font-bold text-[10px]">Ver Tareas</span>
+                  <span className="font-bold text-xs">Ver Tareas</span>
                 </button>
 
                 <button
@@ -1093,7 +1094,7 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-success-icon to-accent text-white flex items-center justify-center">
                     <DollarSign size={16} />
                   </div>
-                  <span className="font-bold text-[10px]">Recibo Nómina</span>
+                  <span className="font-bold text-xs">Recibo Nómina</span>
                 </button>
 
                 <button
@@ -1108,7 +1109,7 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-accent to-accent text-white flex items-center justify-center">
                     <GraduationCap size={16} />
                   </div>
-                  <span className="font-bold text-[10px]">Capacitación</span>
+                  <span className="font-bold text-xs">Capacitación</span>
                 </button>
               </div>
             </div>
@@ -1201,10 +1202,10 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                       Registro de Entrada
                     </h3>
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-black uppercase border ${
                     hasCheckedIn ? 'bg-danger-bg border-danger-text/20 text-danger-text dark:bg-danger-text/20 dark:border-danger-text/30 dark:text-rose-400' : 'bg-page border-border text-text-3'
                   }`}>
-                    {hasCheckedIn ? '⚠️ Retardo' : '📅 Pendiente'}
+                    {hasCheckedIn ? 'Retardo' : 'Pendiente'}
                   </span>
                 </div>
 
@@ -1232,12 +1233,12 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                         Registro de Descanso
                       </h3>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-black uppercase border ${
                       isActive ? 'bg-navy-50 border-border text-accent' :
                       isDone ? 'bg-success-bg border-success-text/20 text-success-text dark:bg-success-text/20 dark:border-success-text/30' :
                       'bg-page border-border text-text-3'
                     }`}>
-                      {isActive ? '⏳ En curso' : isDone ? '✓ Cumplido' : '📅 Pendiente'}
+                      {isActive ? 'En curso' : isDone ? 'Cumplido' : 'Pendiente'}
                     </span>
                   </div>
 
@@ -1270,12 +1271,12 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                         Horario de Almuerzo
                       </h3>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-black uppercase border ${
                       isActive ? 'bg-warning-bg border-warning-text/20 text-warning-text' :
                       isDone ? 'bg-success-bg border-success-text/20 text-success-text dark:bg-success-text/20 dark:border-success-text/30' :
                       'bg-page border-border text-text-3'
                     }`}>
-                      {isActive ? '⏳ En curso' : isDone ? '✓ Cumplido' : '📅 Pendiente'}
+                      {isActive ? 'En curso' : isDone ? 'Cumplido' : 'Pendiente'}
                     </span>
                   </div>
 
@@ -1305,10 +1306,10 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                       Resumen de Turno
                     </h3>
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-black uppercase border ${
                     hasCheckedOut ? 'bg-success-bg border-success-text/20 text-success-text dark:bg-success-text/20 dark:border-success-text/30' : 'bg-page border-border text-text-3'
                   }`}>
-                    {hasCheckedOut ? '✓ Cumplido' : '📅 Pendiente'}
+                    {hasCheckedOut ? 'Cumplido' : 'Pendiente'}
                   </span>
                 </div>
 
@@ -1326,7 +1327,7 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
 
             <button
               onClick={() => setActiveModal(null)}
-              className="mt-4 w-full py-1.5 bg-accent hover:bg-accent-hover text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
+              className="mt-4 w-full py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
             >
               Entendido
             </button>
@@ -1361,27 +1362,27 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                 <h3 className="text-xs font-black uppercase tracking-wider text-navy-100">
                   ¡Fichaje Seguro Activo!
                 </h3>
-                <p className="text-[9.5px] font-bold text-slate-400 mt-1 leading-normal">
+                <p className="text-xs font-bold text-slate-400 mt-1 leading-normal">
                   Has probado la validación del Reloj Checador PRO de Talent 360.
                 </p>
               </div>
 
               <div className="w-full text-left space-y-2 border-y border-slate-800/80 py-3 my-1">
                 <div className="flex items-start gap-2">
-                  <span className="text-[10px] text-success-text shrink-0">✓</span>
-                  <span className="text-[8.5px] font-semibold text-slate-300 leading-normal">
+                  <span className="text-xs text-success-text shrink-0">✓</span>
+                  <span className="text-xs font-semibold text-slate-300 leading-normal">
                     <strong>Reconocimiento Facial (Selfie):</strong> Previene que un compañero cheque por otro.
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-[10px] text-success-text shrink-0">✓</span>
-                  <span className="text-[8.5px] font-semibold text-slate-300 leading-normal">
+                  <span className="text-xs text-success-text shrink-0">✓</span>
+                  <span className="text-xs font-semibold text-slate-300 leading-normal">
                     <strong>Geolocalización GPS:</strong> Bloquea registros fuera del perímetro permitido.
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-[10px] text-success-text shrink-0">✓</span>
-                  <span className="text-[8.5px] font-semibold text-slate-300 leading-normal">
+                  <span className="text-xs text-success-text shrink-0">✓</span>
+                  <span className="text-xs font-semibold text-slate-300 leading-normal">
                     <strong>Reportes Automatizados:</strong> Calcula retardos y horas extras al instante.
                   </span>
                 </div>
@@ -1393,14 +1394,14 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                     setShowPromoGancho(false);
                     if (onActionClick) onActionClick();
                   }}
-                  className="w-full py-2 bg-gradient-to-tr from-accent to-accent hover:from-accent-hover hover:to-accent-hover text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-accent/10 cursor-pointer border-none"
+                  className="w-full py-2 bg-gradient-to-tr from-accent to-accent hover:from-accent-hover hover:to-accent-hover text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-accent/10 cursor-pointer border-none"
                 >
                   Probar 14 días Gratis
                 </button>
 
                 <button
                   onClick={handleResetSim}
-                  className="w-full py-1.5 bg-slate-800/60 hover:bg-slate-800 text-slate-400 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none"
+                  className="w-full py-1.5 bg-slate-800/60 hover:bg-slate-800 text-slate-400 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none"
                 >
                   Reiniciar Simulación
                 </button>
@@ -1435,7 +1436,7 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                 <h3 className="text-xs font-black uppercase tracking-wider text-navy-100">
                   Módulo Exclusivo PRO
                 </h3>
-                <p className="text-[9.5px] font-bold text-slate-400 mt-1 leading-normal">
+                <p className="text-xs font-bold text-slate-400 mt-1 leading-normal">
                   El módulo de {showBlockProModal === 'tareas' ? 'Tareas & Rutinas Operativas' : 'Academia de Capacitación'} solo está disponible en la versión **PRO**.
                 </p>
               </div>
@@ -1446,14 +1447,14 @@ export const LabClockSimulator: React.FC<RelojSimuladoLandingProps> = ({
                     setShowBlockProModal(null);
                     if (onActionClick) onActionClick();
                   }}
-                  className="w-full py-2 bg-gradient-to-tr from-accent to-accent hover:from-accent-hover hover:to-accent-hover text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
+                  className="w-full py-2 bg-gradient-to-tr from-accent to-accent hover:from-accent-hover hover:to-accent-hover text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
                 >
                   Mejorar a PRO (14 días gratis)
                 </button>
 
                 <button
                   onClick={() => setShowBlockProModal(null)}
-                  className="w-full py-1.5 bg-slate-800/60 hover:bg-slate-800 text-slate-400 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none"
+                  className="w-full py-1.5 bg-slate-800/60 hover:bg-slate-800 text-slate-400 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none"
                 >
                   Seguir en versión Básica
                 </button>

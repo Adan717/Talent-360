@@ -1,3 +1,4 @@
+import { notify } from '../lib/appDialogs';
 import React, { useState, useEffect } from 'react';
 import {
   X, User, Lock, Clock, Check, AlertTriangle,
@@ -80,7 +81,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
       }
     } catch (err: any) {
       console.error("Error al subir avatar:", err);
-      alert(err.response?.data?.error || "Error al subir la imagen. Intenta con un archivo más ligero (máx 5MB).");
+      notify(err.response?.data?.error || "Error al subir la imagen. Intenta con un archivo más ligero (máx 5MB).");
     } finally {
       setIsUploading(false);
     }
@@ -155,7 +156,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
       setProfileSuccess(true);
       showToast('Perfil actualizado correctamente.');
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Error al actualizar el perfil.');
+      notify(err.response?.data?.error || 'Error al actualizar el perfil.');
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -311,7 +312,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
                 <div>
                   <h4 className="font-bold text-text-1 text-sm">{currentUser?.name}</h4>
                   <p className="text-xs text-text-3 font-medium mt-0.5">{currentUser?.email}</p>
-                  <span className="inline-block bg-navy-50 text-accent font-extrabold text-[10px] px-2 py-0.5 rounded-md mt-1.5 uppercase">
+                  <span className="inline-block bg-navy-50 text-accent font-extrabold text-xs px-2 py-0.5 rounded-md mt-1.5 uppercase">
                     {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
                   </span>
                 </div>
@@ -482,7 +483,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
                     <Clock size={18} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Horario Laboral</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Horario Laboral</p>
                     <p className="text-sm font-extrabold text-text-2 mt-0.5">
                       {currentUser?.shiftStart?.slice(0, 5) || '08:00'} a {currentUser?.shiftEnd?.slice(0, 5) || '18:00'}
                     </p>
@@ -494,7 +495,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
                     <Calendar size={18} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Día de Descanso Oficial</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Día de Descanso Oficial</p>
                     <p className="text-sm font-extrabold text-text-2 mt-0.5">
                       {currentUser?.restDay || 'Domingo'}
                     </p>
@@ -525,7 +526,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-bold text-text-3 uppercase tracking-wider mb-1.5">Día Solicitado</label>
+                    <label className="block text-xs font-bold text-text-3 uppercase tracking-wider mb-1.5">Día Solicitado</label>
                     <select
                       value={requestedDay}
                       onChange={e => setRequestedDay(e.target.value)}
@@ -539,7 +540,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-text-3 uppercase tracking-wider mb-1.5">Justificación o Razón</label>
+                  <label className="block text-xs font-bold text-text-3 uppercase tracking-wider mb-1.5">Justificación o Razón</label>
                   <textarea
                     required
                     value={justification}
@@ -554,7 +555,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
                   <button
                     type="submit"
                     disabled={isSubmittingRestDay}
-                    className="bg-accent hover:bg-accent-hover text-white font-extrabold text-[10px] px-4 py-2 rounded-xl transition-all shadow-md shadow-accent/10 disabled:opacity-75"
+                    className="bg-accent hover:bg-accent-hover text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all shadow-md shadow-accent/10 disabled:opacity-75"
                   >
                     {isSubmittingRestDay ? 'Enviando...' : 'Enviar Solicitud'}
                   </button>
@@ -572,7 +573,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
                   <div className="border border-border rounded-2xl overflow-hidden bg-white max-h-48 overflow-y-auto custom-scrollbar">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="bg-page border-b border-border font-extrabold text-text-3 text-[10px]">
+                        <tr className="bg-page border-b border-border font-extrabold text-text-3 text-xs">
                           <th className="p-3">Fecha</th>
                           <th className="p-3">Detalle / Justificación</th>
                           <th className="p-3 text-right">Estatus</th>
@@ -588,7 +589,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
                               {req.justification_text}
                             </td>
                             <td className="p-3 text-right whitespace-nowrap">
-                              <span className={`inline-block font-extrabold text-[9px] px-2 py-0.5 rounded-full ${
+                              <span className={`inline-block font-extrabold text-xs px-2 py-0.5 rounded-full ${
                                 req.status === 'approved'
                                   ? 'bg-success-bg text-success-text'
                                   : req.status === 'rejected'

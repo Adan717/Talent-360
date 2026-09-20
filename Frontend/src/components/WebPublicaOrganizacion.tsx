@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { sanitizeHtml } from '../lib/sanitizeHtml';
+import { confirmAction, notify } from '../lib/appDialogs';
 
 const QuillInkwellIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
   <svg 
@@ -206,7 +207,7 @@ export function WebPublicaOrganizacion() {
         setExamResultAttempt(null);
       }
     } catch (e: any) {
-      alert(e.response?.data?.error || "Error al generar el examen.");
+      notify(e.response?.data?.error || "Error al generar el examen.");
     } finally {
       setGeneratingExam(false);
     }
@@ -218,11 +219,11 @@ export function WebPublicaOrganizacion() {
     // Check that all questions are answered
     const unanswered = examQuestions.filter(q => !selectedAnswers[q.id]);
     if (unanswered.length > 0) {
-      alert("Por favor responde todas las preguntas del examen antes de enviarlo.");
+      notify("Por favor responde todas las preguntas del examen antes de enviarlo.");
       return;
     }
 
-    if (!window.confirm("¿Estás seguro de enviar tu evaluación? Esta acción registrará tu intento.")) {
+    if (!await confirmAction("¿Estás seguro de enviar tu evaluación? Esta acción registrará tu intento.", { title: 'Enviar evaluación', confirmLabel: 'Enviar intento', tone: 'warning' })) {
       return;
     }
 
@@ -242,13 +243,13 @@ export function WebPublicaOrganizacion() {
       });
 
       setExamResultAttempt(res.data.attempt);
-      alert(res.data.message);
+      notify(res.data.message);
       setIsTakingExam(false);
       
       // Refresh exam status
       await fetchExamStatus();
     } catch (e: any) {
-      alert(e.response?.data?.error || "Error al enviar el examen.");
+      notify(e.response?.data?.error || "Error al enviar el examen.");
     } finally {
       setSubmittingExam(false);
     }
@@ -743,7 +744,7 @@ export function WebPublicaOrganizacion() {
   const handleSubmitSuggestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!suggestionName.trim() || !proposedContent.trim() || !suggestionComment.trim()) {
-      alert('Por favor rellena todos los campos.');
+      notify('Por favor rellena todos los campos.');
       return;
     }
     setSubmittingSuggestion(true);
@@ -757,13 +758,13 @@ export function WebPublicaOrganizacion() {
       }, {
         headers: { Authorization: `Bearer ${vaultToken}` }
       });
-      alert('Propuesta de mejora enviada con éxito.');
+      notify('Propuesta de mejora enviada con éxito.');
       setIsSuggesting(false);
       setProposedContent('');
       setSuggestionComment('');
     } catch (err) {
       console.error(err);
-      alert('Error al enviar la sugerencia.');
+      notify('Error al enviar la sugerencia.');
     } finally {
       setSubmittingSuggestion(false);
     }
@@ -771,7 +772,7 @@ export function WebPublicaOrganizacion() {
 
   // Approve suggestion
   const handleApproveSuggestion = async (id: number) => {
-    if (!window.confirm('¿Seguro que deseas APROBAR e incorporar este cambio al manual de inmediato?')) return;
+    if (!await confirmAction('¿Seguro que deseas APROBAR e incorporar este cambio al manual de inmediato?', { title: 'Aprobar cambio', confirmLabel: 'Aprobar e incorporar', tone: 'warning' })) return;
     setProcessingSuggestion(true);
     try {
       const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/suggestions/${id}/approve`, {
@@ -780,7 +781,7 @@ export function WebPublicaOrganizacion() {
       }, {
         headers: { Authorization: `Bearer ${vaultToken}` }
       });
-      alert(res.data.message || 'Propuesta aprobada.');
+      notify(res.data.message || 'Propuesta aprobada.');
       setReviewComment('');
       setActiveSuggestion(null);
       fetchSuggestions();
@@ -790,7 +791,7 @@ export function WebPublicaOrganizacion() {
       }
     } catch (err) {
       console.error(err);
-      alert('Error al aprobar.');
+      notify('Error al aprobar.');
     } finally {
       setProcessingSuggestion(false);
     }
@@ -798,7 +799,7 @@ export function WebPublicaOrganizacion() {
 
   // Reject suggestion
   const handleRejectSuggestion = async (id: number) => {
-    if (!window.confirm('¿Seguro que deseas RECHAZAR esta sugerencia?')) return;
+    if (!await confirmAction('¿Seguro que deseas RECHAZAR esta sugerencia?', { title: 'Rechazar sugerencia', confirmLabel: 'Rechazar', tone: 'error' })) return;
     setProcessingSuggestion(true);
     try {
       const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/suggestions/${id}/reject`, {
@@ -807,13 +808,13 @@ export function WebPublicaOrganizacion() {
       }, {
         headers: { Authorization: `Bearer ${vaultToken}` }
       });
-      alert(res.data.message || 'Propuesta rechazada.');
+      notify(res.data.message || 'Propuesta rechazada.');
       setReviewComment('');
       setActiveSuggestion(null);
       fetchSuggestions();
     } catch (err) {
       console.error(err);
-      alert('Error al rechazar.');
+      notify('Error al rechazar.');
     } finally {
       setProcessingSuggestion(false);
     }
@@ -846,7 +847,7 @@ export function WebPublicaOrganizacion() {
       setIsSpeaking(true);
       window.speechSynthesis.speak(utterance);
     } else {
-      alert("La narración de voz no es soportada en este navegador.");
+      notify("La narración de voz no es soportada en este navegador.");
     }
   };
 
@@ -854,7 +855,7 @@ export function WebPublicaOrganizacion() {
   const startListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("El reconocimiento de voz (Speech Recognition) no está soportado en este navegador. Te recomendamos usar Google Chrome.");
+      notify("El reconocimiento de voz (Speech Recognition) no está soportado en este navegador. Te recomendamos usar Google Chrome.");
       return;
     }
 
@@ -953,7 +954,7 @@ export function WebPublicaOrganizacion() {
       setScribeResultHtml(res.data.html || '<p>Error al generar documentos.</p>');
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.error || 'Error al generar la documentación.');
+      notify(err.response?.data?.error || 'Error al generar la documentación.');
     } finally {
       setGeneratingScribe(false);
     }
@@ -1207,7 +1208,7 @@ export function WebPublicaOrganizacion() {
               <h3 className="font-serif text-lg font-black text-[#4a0717] tracking-wide">
                 {isRegisterMode ? 'Registrar Lector' : 'Acceso Resguardado'}
               </h3>
-              <p className="text-[9px] font-sans text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5">
+              <p className="text-xs font-sans text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5">
                 {isRegisterMode ? 'Crea tu cuenta de capacitación' : 'Ingresa tus credenciales de manual'}
               </p>
             </div>
@@ -1216,7 +1217,7 @@ export function WebPublicaOrganizacion() {
               {isRegisterMode ? (
                 <>
                   <div>
-                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Nombre Completo</label>
+                    <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Nombre Completo</label>
                     <input 
                       type="text"
                       required
@@ -1228,7 +1229,7 @@ export function WebPublicaOrganizacion() {
                   </div>
 
                   <div>
-                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Correo o Usuario</label>
+                    <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Correo o Usuario</label>
                     <input 
                       type="text"
                       required
@@ -1240,7 +1241,7 @@ export function WebPublicaOrganizacion() {
                   </div>
 
                   <div>
-                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
+                    <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
                     <div className="relative">
                       <input 
                         type={showPasswordText ? 'text' : 'password'}
@@ -1261,7 +1262,7 @@ export function WebPublicaOrganizacion() {
                   </div>
 
                   <div>
-                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Puesto en la Empresa</label>
+                    <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Puesto en la Empresa</label>
                     <select
                       required
                       value={registerJobRoleId}
@@ -1278,7 +1279,7 @@ export function WebPublicaOrganizacion() {
               ) : (
                 <>
                   <div>
-                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Usuario / Correo</label>
+                    <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Usuario / Correo</label>
                     <input 
                       type="text"
                       required
@@ -1290,7 +1291,7 @@ export function WebPublicaOrganizacion() {
                   </div>
 
                   <div>
-                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
+                    <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
                     <div className="relative">
                       <input 
                         type={showPasswordText ? 'text' : 'password'}
@@ -1313,7 +1314,7 @@ export function WebPublicaOrganizacion() {
               )}
 
               {passcodeError && (
-                <div className="p-2.5 bg-rose-50 border border-rose-150 text-rose-700 text-[10px] font-bold rounded-lg flex items-center gap-1.5 font-sans">
+                <div className="p-2.5 bg-rose-50 border border-rose-150 text-rose-700 text-xs font-bold rounded-lg flex items-center gap-1.5 font-sans">
                   <AlertCircle size={12} />
                   <span>{passcodeError}</span>
                 </div>
@@ -1334,7 +1335,7 @@ export function WebPublicaOrganizacion() {
                     setIsRegisterMode(!isRegisterMode);
                     setPasscodeError('');
                   }}
-                  className="text-[10px] text-[#8b102e] hover:underline font-bold font-sans cursor-pointer"
+                  className="text-xs text-[#8b102e] hover:underline font-bold font-sans cursor-pointer"
                 >
                   {isRegisterMode ? '¿Ya tienes una cuenta? Inicia Sesión' : '¿No tienes cuenta? Regístrate aquí'}
                 </button>
@@ -1371,7 +1372,7 @@ export function WebPublicaOrganizacion() {
 
                 <GoldenCorners />
                 <div className="space-y-6 w-full relative z-10">
-                  <div className="absolute -top-10 -right-5 bg-[#8b102e] text-[#faf6eb] text-[9px] font-sans font-black px-2 py-0.5 rounded shadow-md rotate-[12deg] border border-[#d4af37]/60 uppercase tracking-[0.2em] z-30">
+                  <div className="absolute -top-10 -right-5 bg-[#8b102e] text-[#faf6eb] text-xs font-sans font-black px-2 py-0.5 rounded shadow-md rotate-[12deg] border border-[#d4af37]/60 uppercase tracking-[0.2em] z-30">
                     Sello Gurú
                   </div>
                   
@@ -1439,13 +1440,13 @@ export function WebPublicaOrganizacion() {
 
           {/* Centered structured loading text */}
           <div className="space-y-2 font-serif text-amber-100/90 drop-shadow-md">
-            <span className="text-[10px] font-black uppercase font-sans tracking-[0.3em] text-[#bf953f] block">
+            <span className="text-xs font-black uppercase font-sans tracking-[0.3em] text-[#bf953f] block">
               Cargando
             </span>
             <h2 className="text-base sm:text-lg font-black leading-tight italic max-w-sm px-4">
               {activeDoc ? `« ${activeDoc.title} »` : 'Abriendo "La Receta Secreta"'}
             </h2>
-            <span className="text-[9px] font-medium font-sans uppercase tracking-widest text-amber-100/50 block">
+            <span className="text-xs font-medium font-sans uppercase tracking-widest text-amber-100/50 block">
               de DecorArte
             </span>
           </div>
@@ -1540,7 +1541,7 @@ export function WebPublicaOrganizacion() {
                             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
                             stopListening();
                           }}
-                          className={`flex-1 py-1 rounded-lg text-[9px] font-black tracking-wider uppercase border text-center transition-all ${
+                          className={`flex-1 py-1 rounded-lg text-xs font-black tracking-wider uppercase border text-center transition-all ${
                             scribeActiveTab === 'chat' 
                               ? 'bg-[#8b102e] border-[#8b102e] text-white shadow-sm' 
                               : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
@@ -1555,7 +1556,7 @@ export function WebPublicaOrganizacion() {
                             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
                             stopListening();
                           }}
-                          className={`flex-1 py-1 rounded-lg text-[9px] font-black tracking-wider uppercase border text-center transition-all ${
+                          className={`flex-1 py-1 rounded-lg text-xs font-black tracking-wider uppercase border text-center transition-all ${
                             scribeActiveTab === 'scribe' 
                               ? 'bg-[#8b102e] border-[#8b102e] text-white shadow-sm' 
                               : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
@@ -1586,7 +1587,7 @@ export function WebPublicaOrganizacion() {
                                 {isListening ? 'Escuchando' : 'Hablar'}
                               </span>
                             </button>
-                            <span className="text-[9px] font-black text-[#8c6739] uppercase tracking-widest mt-2 animate-pulse font-sans">
+                            <span className="text-xs font-black text-[#8c6739] uppercase tracking-widest mt-2 animate-pulse font-sans">
                               {assistantStatus}
                             </span>
                           </div>
@@ -1620,7 +1621,7 @@ export function WebPublicaOrganizacion() {
                           {/* Transcription / Question */}
                           {questionText && (
                             <div className="mb-3 bg-[#faf6eb] border border-[#d2c7ac] rounded-2xl p-2.5">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5 font-sans">Pregunta</span>
+                              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-0.5 font-sans">Pregunta</span>
                               <p className="text-xs text-[#2b251f] font-serif font-bold italic">"{questionText}"</p>
                             </div>
                           )}
@@ -1628,7 +1629,7 @@ export function WebPublicaOrganizacion() {
                           {/* AI Answer */}
                           {(queryingAi || aiAnswer) && (
                             <div className="bg-[#faf6eb] border border-[#d2c7ac] rounded-2xl p-3.5 flex-1 overflow-y-auto max-h-[160px] scrollbar-none relative mb-2">
-                              <span className="text-[8px] font-black text-[#8c6739] uppercase tracking-widest block mb-1 font-sans">Respuesta del Oráculo</span>
+                              <span className="text-xs font-black text-[#8c6739] uppercase tracking-widest block mb-1 font-sans">Respuesta del Oráculo</span>
                               {queryingAi ? (
                                 <div className="text-xs text-[#3d1b13]/55 italic animate-pulse font-serif">Consultando pergaminos...</div>
                               ) : (
@@ -1638,7 +1639,7 @@ export function WebPublicaOrganizacion() {
                           )}
 
                           {/* Tip / Footer */}
-                          <div className="text-[8px] text-[#3d1b13]/40 font-sans font-bold border-t border-[#d2c7ac]/45 pt-1.5 mt-2 text-center">
+                          <div className="text-xs text-[#3d1b13]/40 font-sans font-bold border-t border-[#d2c7ac]/45 pt-1.5 mt-2 text-center">
                             PREGUNTA DE VIVA VOZ SOBRE NÓMINAS, PUESTOS Y SANCIONES.
                           </div>
                         </div>
@@ -1676,7 +1677,7 @@ export function WebPublicaOrganizacion() {
                             <div className="space-y-3.5 relative z-10 flex-1 flex flex-col justify-between min-h-0">
                               <div className="space-y-3">
                                 <div>
-                                  <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Nombre del Nuevo Colaborador</label>
+                                  <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Nombre del Nuevo Colaborador</label>
                                   <input 
                                     type="text"
                                     required
@@ -1688,7 +1689,7 @@ export function WebPublicaOrganizacion() {
                                 </div>
 
                                 <div>
-                                  <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Puesto (Basado en el Manual)</label>
+                                  <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Puesto (Basado en el Manual)</label>
                                   <select
                                     value={jobRoleSlug}
                                     onChange={(e) => setJobRoleSlug(e.target.value)}
@@ -1702,8 +1703,8 @@ export function WebPublicaOrganizacion() {
                                 </div>
 
                                 <div>
-                                  <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1.5 font-sans">Pergaminos a Redactar</label>
-                                  <div className="grid grid-cols-2 gap-2 text-[10px] font-sans text-slate-700">
+                                  <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1.5 font-sans">Pergaminos a Redactar</label>
+                                  <div className="grid grid-cols-2 gap-2 text-xs font-sans text-slate-700">
                                     <label className="flex items-center gap-1.5 cursor-pointer">
                                       <input 
                                         type="checkbox" 
@@ -1786,7 +1787,7 @@ export function WebPublicaOrganizacion() {
                       <div className="flex items-center gap-2">
                         <img src="/decorarte_logo.png" alt="Mini logo" className="w-7 h-7 object-contain" />
                         <div>
-                          <span className="text-[8px] font-black text-[#8b102e] uppercase tracking-widest leading-none block mb-0.5 font-sans">DecorArte</span>
+                          <span className="text-xs font-black text-[#8b102e] uppercase tracking-widest leading-none block mb-0.5 font-sans">DecorArte</span>
                           <h3 className="text-sm sm:text-base font-bold font-serif text-[#4a0717] tracking-wide leading-none">La Receta Secreta</h3>
                         </div>
                       </div>
@@ -1813,7 +1814,7 @@ export function WebPublicaOrganizacion() {
                             setActiveBookTab('read');
                             setIsSuggesting(false);
                           }}
-                          className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold tracking-wider uppercase border text-center transition-all ${
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase border text-center transition-all ${
                             activeBookTab === 'read' 
                               ? 'bg-[#8b102e] border-[#8b102e] text-white shadow-sm' 
                               : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
@@ -1827,7 +1828,7 @@ export function WebPublicaOrganizacion() {
                             setActiveSuggestion(null);
                             setIsSuggesting(false);
                           }}
-                          className={`flex-grow py-1.5 rounded-lg text-[10px] font-bold tracking-wider uppercase border text-center transition-all flex items-center justify-center gap-1 ${
+                          className={`flex-grow py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase border text-center transition-all flex items-center justify-center gap-1 ${
                             activeBookTab === 'audit' 
                               ? 'bg-[#b38728] border-[#b38728] text-[#3d1b13] shadow-sm' 
                               : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
@@ -1845,7 +1846,7 @@ export function WebPublicaOrganizacion() {
                            AUDITOR INBOX LIST
                            ========================================== */
                         <div className="space-y-2">
-                          <h4 className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest px-1 border-b border-[#4a0717]/10 pb-0.5">
+                          <h4 className="text-xs font-black text-[#8b102e] uppercase tracking-widest px-1 border-b border-[#4a0717]/10 pb-0.5">
                             Propuestas de Colaboradores
                           </h4>
                           {loadingSuggestions ? (
@@ -1867,10 +1868,10 @@ export function WebPublicaOrganizacion() {
                                 }`}
                               >
                                 <div className="flex justify-between items-center">
-                                  <span className="text-[9px] font-black uppercase text-[#8b102e] tracking-wider truncate max-w-[130px]">
+                                  <span className="text-xs font-black uppercase text-[#8b102e] tracking-wider truncate max-w-[130px]">
                                     {s.document?.title || 'Doc. Eliminado'}
                                   </span>
-                                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded leading-none ${
+                                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded leading-none ${
                                     s.status === 'pending' ? 'bg-amber-100 text-amber-800' :
                                     s.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
                                     'bg-rose-100 text-rose-800'
@@ -1879,7 +1880,7 @@ export function WebPublicaOrganizacion() {
                                   </span>
                                 </div>
                                 <p className="text-xs font-serif italic truncate">"{s.comment}"</p>
-                                <span className="text-[8px] text-slate-500 tracking-wider text-right block mt-0.5">Por: {s.user_name}</span>
+                                <span className="text-xs text-slate-500 tracking-wider text-right block mt-0.5">Por: {s.user_name}</span>
                               </button>
                             ))
                           )}
@@ -1914,11 +1915,11 @@ export function WebPublicaOrganizacion() {
                                    </div>
                                    <div className="flex items-center gap-1.5">
                                      {percent > 0 && (
-                                       <span className="text-[9px] font-sans font-black text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-150 leading-none">
+                                       <span className="text-xs font-sans font-black text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-150 leading-none">
                                          {percent}%
                                        </span>
                                      )}
-                                     <span className="text-[9px] font-sans font-black text-[#8b102e]/60 px-1.5 py-0.5 bg-[#8b102e]/5 rounded-md leading-none">
+                                     <span className="text-xs font-sans font-black text-[#8b102e]/60 px-1.5 py-0.5 bg-[#8b102e]/5 rounded-md leading-none">
                                        {items?.length || 0}
                                      </span>
                                    </div>
@@ -1930,7 +1931,7 @@ export function WebPublicaOrganizacion() {
                                        <div key={subIdx} className="space-y-1">
                                          {/* Subgroup title */}
                                          {getCategorySubgroups(category, items as DocIndexItem[]).length > 1 && (
-                                           <div className="text-[9px] font-sans font-black text-[#8b102e]/60 uppercase tracking-widest pl-1.5 border-l border-[#8b102e]/20 mt-1 mb-0.5 select-none">
+                                           <div className="text-xs font-sans font-black text-[#8b102e]/60 uppercase tracking-widest pl-1.5 border-l border-[#8b102e]/20 mt-1 mb-0.5 select-none">
                                              {subgroup.title}
                                            </div>
                                          )}
@@ -1983,14 +1984,14 @@ export function WebPublicaOrganizacion() {
                   <div className="border-t border-[#d8ccb6] pt-3 mt-4 flex justify-between items-center gap-3 relative z-10">
                     <button 
                       onClick={handleLogout}
-                      className="flex-1 py-2 px-3 bg-[#8b102e]/10 hover:bg-[#8b102e]/20 text-[#8b102e] font-sans font-black text-[10px] uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2 px-3 bg-[#8b102e]/10 hover:bg-[#8b102e]/20 text-[#8b102e] font-sans font-black text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-1.5"
                     >
                       <Unlock size={12} className="text-rose-700" />
                       Cerrar Libro
                     </button>
                     <button 
                       onClick={handleShare}
-                      className="flex-1 py-2 px-3 bg-[#b38728]/10 hover:bg-[#b38728]/20 text-[#b38728] font-sans font-black text-[10px] uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2 px-3 bg-[#b38728]/10 hover:bg-[#b38728]/20 text-[#b38728] font-sans font-black text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-1.5"
                     >
                       {copiedLink ? <Check size={12} className="text-emerald-600" /> : <Share2 size={12} />}
                       {copiedLink ? 'Copiado' : 'Compartir'}
@@ -2021,7 +2022,7 @@ export function WebPublicaOrganizacion() {
                           <span className="text-xs font-bold text-[#4a0717] font-sans">Panel de Evaluación de Cambios</span>
                           <button 
                             onClick={() => setMobileView('index')} 
-                            className="lg:hidden p-1.5 rounded-lg border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1 text-[10px] font-sans font-bold shadow-sm animate-pulse"
+                            className="lg:hidden p-1.5 rounded-lg border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1 text-xs font-sans font-bold shadow-sm animate-pulse"
                           >
                             <Menu size={14} /> Solicitudes
                           </button>
@@ -2031,7 +2032,7 @@ export function WebPublicaOrganizacion() {
                           <div className="flex-1 flex flex-col items-center justify-center py-16 text-[#4a0717]/40 text-center">
                             <Key size={36} className="text-[#4a0717]/20 mb-3 animate-bounce" />
                             <h4 className="text-sm font-bold font-serif mb-1">Buzón de Auditoría Abierto</h4>
-                            <p className="text-[10px] max-w-[220px] leading-relaxed">
+                            <p className="text-xs max-w-[220px] leading-relaxed">
                               Selecciona una propuesta del listado izquierdo para evaluarla, ver los cambios propuestos y actualizar el manual.
                             </p>
                           </div>
@@ -2039,7 +2040,7 @@ export function WebPublicaOrganizacion() {
                           <div className="flex-1 flex flex-col min-w-0 justify-between">
                             <div className="space-y-4">
                               <div className="bg-[#faf6eb] border border-[#d2c7ac] rounded-xl p-3">
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5 font-sans">Origen del Cambio</span>
+                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-0.5 font-sans">Origen del Cambio</span>
                                 <div className="text-xs font-serif font-bold text-[#4a0717]">
                                   Propuesto por: {activeSuggestion.user_name} • Documento: {activeSuggestion.document?.title || 'Desconocido'}
                                 </div>
@@ -2047,17 +2048,17 @@ export function WebPublicaOrganizacion() {
                               </div>
 
                               <div className="flex flex-col text-left">
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1 font-sans">Texto Propuesto</span>
+                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1 font-sans">Texto Propuesto</span>
                                 <textarea
                                   readOnly
                                   value={activeSuggestion.proposed_content}
-                                  className="w-full h-32 px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-slate-700 font-mono text-[10px] focus:outline-none scrollbar-none shadow-inner"
+                                  className="w-full h-32 px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-slate-700 font-mono text-xs focus:outline-none scrollbar-none shadow-inner"
                                 />
                               </div>
 
                               {activeSuggestion.status === 'pending' && (
                                 <div className="space-y-2">
-                                  <label className="text-[8px] font-black text-[#8b102e] uppercase tracking-widest block font-sans">Nota de Revisión (Opcional)</label>
+                                  <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block font-sans">Nota de Revisión (Opcional)</label>
                                   <input
                                     type="text"
                                     placeholder="Ej: Aprobado tras revisión de recetas"
@@ -2103,7 +2104,7 @@ export function WebPublicaOrganizacion() {
                                 {getIcon(activeDoc.icon, 20)}
                               </div>
                               <div className="flex flex-col text-left">
-                                <span className="text-[10px] font-black uppercase text-[#8b102e] tracking-widest leading-none mb-1.5 font-sans">
+                                <span className="text-xs font-black uppercase text-[#8b102e] tracking-widest leading-none mb-1.5 font-sans">
                                   {getCategoryTitle(activeDoc.type)}
                                 </span>
                                 <span className="text-xs sm:text-base font-bold text-[#1e3b8b] font-sans leading-tight">{activeDoc.title}</span>
@@ -2128,7 +2129,7 @@ export function WebPublicaOrganizacion() {
                           {isTakingExam ? (
                             <div className="flex-1 flex flex-col overflow-y-auto pr-1 text-left p-6 font-sans space-y-6">
                               <div className="border-b border-[#d2c7ac]/40 pb-4">
-                                <span className="text-[10px] font-black text-[#bf953f] uppercase tracking-[0.2em] block mb-1">
+                                <span className="text-xs font-black text-[#bf953f] uppercase tracking-[0.2em] block mb-1">
                                   Evaluación de Acreditación
                                 </span>
                                 <h3 className="text-xl font-serif font-black text-[#4a0717]">
@@ -2160,7 +2161,7 @@ export function WebPublicaOrganizacion() {
                                                 : 'bg-white/80 border-[#d2c7ac]/40 text-[#2b251f] hover:bg-white hover:border-[#bf953f]'
                                             }`}
                                           >
-                                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border shrink-0 ${
+                                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${
                                               isSelected ? 'bg-white text-[#8b102e] border-white' : 'bg-slate-50 text-slate-500 border-[#d2c7ac]/60'
                                             }`}>
                                               {opt.key}
@@ -2177,8 +2178,8 @@ export function WebPublicaOrganizacion() {
                               <div className="flex gap-3 justify-end pt-4 border-t border-[#d2c7ac]/30">
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    if (window.confirm("¿Seguro que deseas salir del examen? Tu progreso no se guardará.")) {
+                                  onClick={async () => {
+                                    if (await confirmAction("¿Seguro que deseas salir del examen? Tu progreso no se guardará.", { title: 'Salir del examen', confirmLabel: 'Salir sin guardar', tone: 'warning' })) {
                                       setIsTakingExam(false);
                                     }
                                   }}
@@ -2206,7 +2207,7 @@ export function WebPublicaOrganizacion() {
                                       <Building2 size={24} />
                                     </div>
                                     <h3 className="font-serif font-black text-[#4a0717] text-lg font-bold">¡Hola, {currentUser.name}!</h3>
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block font-sans">
+                                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest block font-sans">
                                       Puesto: {currentUser.job_role_name || "Colaborador"}
                                     </span>
                                   </div>
@@ -2223,7 +2224,7 @@ export function WebPublicaOrganizacion() {
                                         style={{ width: `${examStatus.progress_percentage}%` }}
                                       />
                                     </div>
-                                    <p className="text-[10px] text-slate-500 font-semibold font-sans leading-relaxed text-center pt-1">
+                                    <p className="text-xs text-slate-500 font-semibold font-sans leading-relaxed text-center pt-1">
                                       Has leído {examStatus.read_topics} de {examStatus.total_visible_topics} temas de tu puesto.
                                     </p>
                                   </div>
@@ -2234,7 +2235,7 @@ export function WebPublicaOrganizacion() {
                                       <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs justify-center font-sans">
                                         <Trophy size={16} /> ¡Felicidades! Estás Certificado
                                       </div>
-                                      <p className="text-[10px] text-slate-600 font-semibold leading-relaxed">
+                                      <p className="text-xs text-slate-600 font-semibold leading-relaxed">
                                         Has acreditado exitosamente la evaluación operativa de tu puesto en el manual corporativo.
                                       </p>
                                       <button
@@ -2247,11 +2248,11 @@ export function WebPublicaOrganizacion() {
                                     </div>
                                   ) : examStatus.eligible ? (
                                     <div className="bg-[#fdf6ec] border border-[#faebcc] p-5 rounded-2xl space-y-3">
-                                      <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest block font-sans">
+                                      <span className="text-xs font-black text-amber-600 uppercase tracking-widest block font-sans">
                                         ¡Lectura Completada!
                                       </span>
                                       <h4 className="font-serif font-black text-sm text-[#4a0717] font-bold">Evaluación de Acreditación Disponible</h4>
-                                      <p className="text-[10px] text-slate-600 font-semibold leading-relaxed">
+                                      <p className="text-xs text-slate-600 font-semibold leading-relaxed">
                                         Has completado el 100% de la lectura operativa obligatoria. Es momento de certificar tus conocimientos del puesto.
                                       </p>
                                       <button
@@ -2264,7 +2265,7 @@ export function WebPublicaOrganizacion() {
                                       </button>
                                     </div>
                                   ) : (
-                                    <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-slate-500 text-[10px] leading-relaxed font-semibold">
+                                    <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-slate-500 text-xs leading-relaxed font-semibold">
                                       Sigue leyendo los capítulos obligatorios de tu puesto en el índice para desbloquear tu examen final y diploma.
                                     </div>
                                   )}
@@ -2272,19 +2273,19 @@ export function WebPublicaOrganizacion() {
                                   {/* Last Attempts History */}
                                   {examStatus.attempts?.length > 0 && (
                                     <div className="space-y-2 text-left">
-                                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block font-sans">Historial de Intentos</span>
+                                      <span className="text-xs font-black text-slate-500 uppercase tracking-widest block font-sans">Historial de Intentos</span>
                                       <div className="divide-y divide-[#d2c7ac]/20 max-h-[140px] overflow-y-auto scrollbar-none border border-[#d2c7ac]/20 rounded-xl bg-white/50 p-3">
                                         {examStatus.attempts.map((att: any) => (
-                                          <div key={att.id} className="py-2 flex justify-between items-center text-[10px] font-sans font-semibold">
+                                          <div key={att.id} className="py-2 flex justify-between items-center text-xs font-sans font-semibold">
                                             <div>
                                               <span className="text-slate-700 block">{att.job_role_title_at_time}</span>
-                                              <span className="text-slate-400 text-[9px]">{new Date(att.created_at).toLocaleDateString()}</span>
+                                              <span className="text-slate-400 text-xs">{new Date(att.created_at).toLocaleDateString()}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                               <span className={att.passed ? "text-emerald-600 font-bold" : "text-rose-600"}>
                                                 {att.score}/10
                                               </span>
-                                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                                              <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
                                                 att.passed ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
                                               }`}>
                                                 {att.passed ? "Aprobado" : "Reprobado"}
@@ -2300,7 +2301,7 @@ export function WebPublicaOrganizacion() {
                                 <>
                                   <BookIcon size={36} className="text-[#4a0717]/20 mb-3 animate-bounce" />
                                   <h4 className="text-sm font-bold font-serif mb-1">El Libro está Abierto</h4>
-                                  <p className="text-[10px] max-w-[220px] leading-relaxed">
+                                  <p className="text-xs max-w-[220px] leading-relaxed">
                                     Selecciona cualquier capítulo del índice a la izquierda para comenzar a leer la receta secreta.
                                   </p>
                                 </>
@@ -2318,8 +2319,8 @@ export function WebPublicaOrganizacion() {
                                 {/* Muted Related Chapters Footnote (inside scrollable area) */}
                                 {(links.length > 0 || backlinks.length > 0) && (
                                   <div className="mt-8 pt-4 border-t border-dashed border-[#4a0717]/20 text-left space-y-2">
-                                    <span className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block font-sans">Temas Relacionados</span>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-sans font-semibold">
+                                    <span className="text-xs font-black text-[#8b102e] uppercase tracking-widest block font-sans">Temas Relacionados</span>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-sans font-semibold">
                                       {links.map(l => (
                                         <button
                                           key={l.id}
@@ -2372,7 +2373,7 @@ export function WebPublicaOrganizacion() {
                                       >
                                         <ChevronLeft size={14} className="text-[#8b102e]" />
                                         <div className="flex flex-col text-left">
-                                          <span className="text-[8px] font-sans font-black uppercase text-slate-400 leading-none mb-0.5">Anterior</span>
+                                          <span className="text-xs font-sans font-black uppercase text-slate-400 leading-none mb-0.5">Anterior</span>
                                           <span className="truncate max-w-[90px] sm:max-w-[150px] font-sans text-[11px] font-bold text-slate-700">{prevDoc.title}</span>
                                         </div>
                                       </button>
@@ -2389,7 +2390,7 @@ export function WebPublicaOrganizacion() {
                                         className="px-3.5 py-2 bg-[#faf6eb] hover:bg-white border border-[#d2c7ac] text-[#4a0717] rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all hover:translate-x-0.5 active:translate-x-0 ml-auto"
                                       >
                                         <div className="flex flex-col text-right">
-                                          <span className="text-[8px] font-sans font-black uppercase text-slate-400 leading-none mb-0.5">Siguiente</span>
+                                          <span className="text-xs font-sans font-black uppercase text-slate-400 leading-none mb-0.5">Siguiente</span>
                                           <span className="truncate max-w-[90px] sm:max-w-[150px] font-sans text-[11px] font-bold text-slate-700">{nextDoc.title}</span>
                                         </div>
                                         <ChevronRight size={14} className="text-[#8b102e]" />
@@ -2409,7 +2410,7 @@ export function WebPublicaOrganizacion() {
                   </div>
 
                   {/* Ribbon bookmark / page footer */}
-                  <div className="border-t border-[#d8ccb6] pt-3 mt-4 text-[9px] text-[#4a0717]/40 font-sans font-bold flex justify-between">
+                  <div className="border-t border-[#d8ccb6] pt-3 mt-4 text-xs text-[#4a0717]/40 font-sans font-bold flex justify-between">
                     <span>Todo para la repostería</span>
                     <span>PÁG. R</span>
                   </div>
@@ -2421,7 +2422,7 @@ export function WebPublicaOrganizacion() {
           )}
 
           {/* Public Footer */}
-          <div className="mt-6 text-amber-100/40 text-[9px] font-black uppercase tracking-[0.2em] font-sans">
+          <div className="mt-6 text-amber-100/40 text-xs font-black uppercase tracking-[0.2em] font-sans">
             La Receta Secreta • Desarrollado por Talent 360
           </div>
         </div>
@@ -2432,7 +2433,7 @@ export function WebPublicaOrganizacion() {
         <div className="fixed bottom-24 right-6 flex flex-col items-end gap-3.5 z-40 select-none animate-in fade-in slide-in-from-bottom-5 duration-200">
           {/* Option 1: AI Oracle Assistant */}
           <div className="flex items-center gap-3 group">
-            <span className="bg-[#faf6eb] border border-[#d2c7ac] text-[#4a0717] px-2.5 py-1 rounded-xl text-[10px] font-black font-sans shadow-md opacity-90 group-hover:opacity-100 transition-opacity">
+            <span className="bg-[#faf6eb] border border-[#d2c7ac] text-[#4a0717] px-2.5 py-1 rounded-xl text-xs font-black font-sans shadow-md opacity-90 group-hover:opacity-100 transition-opacity">
               Preguntar al Oráculo (IA)
             </span>
             <button
@@ -2450,7 +2451,7 @@ export function WebPublicaOrganizacion() {
           {/* Option 2: Scribe / Speech Narrator (Only when viewing a document) */}
           {activeDoc && (
             <div className="flex items-center gap-3 group">
-              <span className="bg-[#faf6eb] border border-[#d2c7ac] text-[#4a0717] px-2.5 py-1 rounded-xl text-[10px] font-black font-sans shadow-md opacity-90 group-hover:opacity-100 transition-opacity">
+              <span className="bg-[#faf6eb] border border-[#d2c7ac] text-[#4a0717] px-2.5 py-1 rounded-xl text-xs font-black font-sans shadow-md opacity-90 group-hover:opacity-100 transition-opacity">
                 {isSpeaking ? 'Detener Narración' : 'Escuchar este Tema'}
               </span>
               <button
@@ -2473,7 +2474,7 @@ export function WebPublicaOrganizacion() {
           {/* Option 3: Suggest Correction / Addition (Only when viewing a document) */}
           {activeDoc && (
             <div className="flex items-center gap-3 group">
-              <span className="bg-[#faf6eb] border border-[#d2c7ac] text-[#4a0717] px-2.5 py-1 rounded-xl text-[10px] font-black font-sans shadow-md opacity-90 group-hover:opacity-100 transition-opacity">
+              <span className="bg-[#faf6eb] border border-[#d2c7ac] text-[#4a0717] px-2.5 py-1 rounded-xl text-xs font-black font-sans shadow-md opacity-90 group-hover:opacity-100 transition-opacity">
                 Sugerir Corrección
               </span>
               <button
@@ -2506,7 +2507,7 @@ export function WebPublicaOrganizacion() {
           ) : (
             <>
               <Sparkles size={22} className="text-[#3d1b13]" />
-              <span className="text-[8px] font-black tracking-wider uppercase font-sans mt-0.5 leading-none">Oráculo</span>
+              <span className="text-xs font-black tracking-wider uppercase font-sans mt-0.5 leading-none">Oráculo</span>
             </>
           )}
         </button>
@@ -2581,7 +2582,7 @@ export function WebPublicaOrganizacion() {
                 <h2 className="text-[#8b102e] font-black text-2xl tracking-widest uppercase">
                   Diploma de Excelencia
                 </h2>
-                <span className="text-[10px] font-sans font-bold text-slate-500 tracking-[0.3em] uppercase block font-sans">
+                <span className="text-xs font-sans font-bold text-slate-500 tracking-[0.3em] uppercase block font-sans">
                   Acreditación de Manual Organizativo
                 </span>
               </div>
@@ -2615,7 +2616,7 @@ export function WebPublicaOrganizacion() {
                     <span className="font-serif italic text-xs text-slate-500 font-semibold tracking-wider">DecorArte Dirección</span>
                   </div>
                   <div className="w-full border-t border-slate-300 pt-1">
-                    <span className="text-[9px] font-sans font-black text-slate-600 uppercase tracking-wider block">Firma Autorizada</span>
+                    <span className="text-xs font-sans font-black text-slate-600 uppercase tracking-wider block">Firma Autorizada</span>
                   </div>
                 </div>
 
@@ -2627,7 +2628,7 @@ export function WebPublicaOrganizacion() {
                     </span>
                   </div>
                   <div className="w-full border-t border-slate-300 pt-1">
-                    <span className="text-[9px] font-sans font-black text-slate-600 uppercase tracking-wider block">Fecha de Emisión</span>
+                    <span className="text-xs font-sans font-black text-slate-600 uppercase tracking-wider block">Fecha de Emisión</span>
                   </div>
                 </div>
               </div>
@@ -2665,7 +2666,7 @@ export function WebPublicaOrganizacion() {
             
             <div className="border-b border-[#4a0717]/20 pb-3 flex items-center justify-between shrink-0">
               <div>
-                <span className="text-[10px] font-black text-[#8b102e] uppercase tracking-[0.2em] block mb-0.5 font-sans">Sugerir Mejora / Corrección</span>
+                <span className="text-xs font-black text-[#8b102e] uppercase tracking-[0.2em] block mb-0.5 font-sans">Sugerir Mejora / Corrección</span>
                 <h3 className="text-sm font-serif font-black text-[#4a0717]">Documento: {activeDoc?.title}</h3>
               </div>
               <button 
@@ -2680,7 +2681,7 @@ export function WebPublicaOrganizacion() {
             <div className="flex-1 overflow-y-auto pr-1 space-y-4 py-2 font-sans">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Tu Nombre</label>
+                  <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Tu Nombre</label>
                   <input 
                     type="text"
                     required
@@ -2692,7 +2693,7 @@ export function WebPublicaOrganizacion() {
                 </div>
 
                 <div>
-                  <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">¿Por qué sugieres esta mejora?</label>
+                  <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">¿Por qué sugieres esta mejora?</label>
                   <input 
                     type="text"
                     required
@@ -2705,7 +2706,7 @@ export function WebPublicaOrganizacion() {
               </div>
 
               <div className="flex flex-col flex-1 min-h-[300px]">
-                <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Texto Corregido (Markdown)</label>
+                <label className="text-xs font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Texto Corregido (Markdown)</label>
                 <textarea
                   required
                   value={proposedContent}

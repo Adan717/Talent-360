@@ -159,14 +159,14 @@ export const GlobalSystemSettingsPanel: React.FC<GlobalSystemSettingsPanelProps>
                   <div className="flex items-center justify-between gap-1 mb-0.5">
                     <span className="text-xs sm:text-sm truncate">{item.label}</span>
                     {item.badge && (
-                      <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${
+                      <span className={`text-xs font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${
                         isActive ? 'bg-white/20 text-white' : item.badgeColor
                       }`}>
                         {item.badge}
                       </span>
                     )}
                   </div>
-                  <p className={`text-[10px] line-clamp-1 font-normal ${
+                  <p className={`text-xs line-clamp-1 font-normal ${
                     isActive ? 'text-navy-100' : 'text-slate-400'
                   }`}>
                     {item.description}

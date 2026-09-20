@@ -39,7 +39,7 @@ export const PromotionStoreDock: React.FC<PromotionStoreDockProps> = ({ onOpenSt
         <div className="bg-gradient-to-r from-slate-900 via-brand-dark to-slate-900 text-white rounded-2xl shadow-xl border border-slate-700/60 p-3.5 flex items-center justify-between gap-4 backdrop-blur-md">
 
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="p-2 bg-gradient-to-tr from-warning-icon to-warning-icon text-text-1 rounded-xl font-black text-[10px] shrink-0 uppercase tracking-widest shadow-md flex items-center gap-1">
+            <div className="p-2 bg-gradient-to-tr from-warning-icon to-warning-icon text-text-1 rounded-xl font-black text-xs shrink-0 uppercase tracking-widest shadow-md flex items-center gap-1">
               <Sparkles size={12} />
               Add-ons A la Carta
             </div>
@@ -79,7 +79,7 @@ export const PromotionStoreDock: React.FC<PromotionStoreDockProps> = ({ onOpenSt
       <div className={`bg-gradient-to-r ${promotion.banner_bg_color || 'from-slate-900 via-brand-dark to-slate-900'} ${promotion.banner_text_color || 'text-white'} rounded-2xl shadow-2xl border border-white/10 p-3.5 flex items-center justify-between gap-4 backdrop-blur-md`}>
 
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="p-2 bg-gradient-to-tr from-warning-icon to-warning-icon text-text-1 rounded-xl font-black text-[10px] shrink-0 uppercase tracking-widest shadow-md flex items-center gap-1">
+          <div className="p-2 bg-gradient-to-tr from-warning-icon to-warning-icon text-text-1 rounded-xl font-black text-xs shrink-0 uppercase tracking-widest shadow-md flex items-center gap-1">
             <Tag size={12} />
             {promotion.badge_text || '20% OFF'}
           </div>

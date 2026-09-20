@@ -15,6 +15,7 @@ import {
   type Connection,
   type NodeProps,
 } from '@xyflow/react';
+import { confirmAction, notify } from '../lib/appDialogs';
 import '@xyflow/react/dist/style.css';
 import { renderJobRoleIcon } from '../lib/jobRoleIcons';
 import { avatarDe } from '../lib/avatar';
@@ -219,14 +220,14 @@ function PuestoNode({ data }: NodeProps) {
           propio handle superior hasta aquí. */}
       <Handle type="target" position={Position.Bottom} id="tgt-bottom" style={{ background: '#94a3b8', width: 10, height: 10 }} />
 
-      <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${levelInfo.bg}`}>
+      <span className={`text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${levelInfo.bg}`}>
         {levelInfo.text}
       </span>
       <div className="font-black text-xs text-text-1 uppercase tracking-widest mt-2 mb-1 truncate flex items-center justify-center gap-1.5" title={role.name}>
         <span className="shrink-0 text-accent">{renderJobRoleIcon(role, 14)}</span>
         <span className="truncate">{role.name}</span>
       </div>
-      <div className="text-[9px] font-bold text-slate-400 bg-page px-2 py-0.5 rounded-md inline-block mb-2">
+      <div className="text-xs font-bold text-slate-400 bg-page px-2 py-0.5 rounded-md inline-block mb-2">
         {role.area || 'General'}
       </div>
 
@@ -258,18 +259,18 @@ function PuestoNode({ data }: NodeProps) {
                 draggable={false}
               />
               <div className="overflow-hidden">
-                <div className="text-[10px] font-black text-text-1 truncate leading-tight">{c.name}</div>
-                {c.email && <div className="text-[8px] font-medium text-slate-400 truncate">{c.email}</div>}
+                <div className="text-xs font-black text-text-1 truncate leading-tight">{c.name}</div>
+                {c.email && <div className="text-xs font-medium text-slate-400 truncate">{c.email}</div>}
               </div>
             </div>
           ))
         ) : (
-          <div className="text-[10px] font-bold italic text-slate-400 bg-page border border-dashed border-border py-2 rounded-xl">
+          <div className="text-xs font-bold italic text-slate-400 bg-page border border-dashed border-border py-2 rounded-xl">
              Vacante / Sin asignar
           </div>
         )}
       </div>
-      {!isActive && <div className="text-[9px] font-bold text-danger-text mt-1.5">Inactivo</div>}
+      {!isActive && <div className="text-xs font-bold text-danger-text mt-1.5">Inactivo</div>}
     </div>
   );
 }
@@ -370,19 +371,19 @@ function OrganigramaPuestosInner({
       const sourceId = Number(connection.source);
       const targetId = Number(connection.target);
       if (sourceId === targetId) {
-        alert('Un puesto no puede reportarse a sí mismo.');
+        notify('Un puesto no puede reportarse a sí mismo.');
         return;
       }
 
       if (connectMode === 'jerarquia') {
         if (wouldCreateJerarquiaCycle(sourceId, targetId)) {
-          alert('Esa conexión crearía un ciclo en la jerarquía visual (un puesto terminaría siendo superior de sí mismo).');
+          notify('Esa conexión crearía un ciclo en la jerarquía visual (un puesto terminaría siendo superior de sí mismo).');
           return;
         }
         onUpdateRole(sourceId, { org_parent_role_id: targetId });
       } else {
         if (wouldCreateReportaCycle(sourceId, targetId)) {
-          alert('Esa conexión crearía un ciclo en "Reporta A" (el puesto destino ya reporta, directa o indirectamente, a este puesto).');
+          notify('Esa conexión crearía un ciclo en "Reporta A" (el puesto destino ya reporta, directa o indirectamente, a este puesto).');
           return;
         }
         const role = jobRoles.find((r: any) => r.id === sourceId);
@@ -396,14 +397,14 @@ function OrganigramaPuestosInner({
   );
 
   const handleEdgeClick = useCallback(
-    (event: React.MouseEvent, edge: Edge) => {
+    async (event: React.MouseEvent, edge: Edge) => {
       if (readOnly) return;
       event.stopPropagation();
       const kind = (edge.data as any)?.kind;
       const sourceRole = jobRoles.find((r: any) => r.id === Number(edge.source));
       const targetRole = jobRoles.find((r: any) => r.id === Number(edge.target));
       const label = kind === 'jerarquia' ? 'la jerarquía visual' : '"Reporta A"';
-      if (!window.confirm(`¿Quitar la conexión de ${label}?\n\n"${sourceRole?.name || '?'}" → "${targetRole?.name || '?'}"`)) {
+      if (!await confirmAction(`¿Quitar la conexión de ${label}?\n\n"${sourceRole?.name || '?'}" → "${targetRole?.name || '?'}"`, { title: 'Quitar conexión', confirmLabel: 'Quitar', tone: 'warning' })) {
         return;
       }
 
@@ -465,7 +466,7 @@ function OrganigramaPuestosInner({
         )}
         <Panel
           position="bottom-left"
-          className="bg-white/90 backdrop-blur-sm border border-border rounded-xl px-3 py-2 text-[10px] text-text-3 font-semibold max-w-[280px]"
+          className="bg-white/90 backdrop-blur-sm border border-border rounded-xl px-3 py-2 text-xs text-text-3 font-semibold max-w-[280px]"
         >
           {connectMode === 'jerarquia'
             ? 'Arrastra desde el punto superior de un puesto hasta el punto inferior de su jefe visual (línea sólida). Clic en una línea para quitarla.'

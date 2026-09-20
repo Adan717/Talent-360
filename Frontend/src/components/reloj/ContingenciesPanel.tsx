@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import axiosInstance from '../../lib/axios';
 import { useAppStore } from '../../store/useAppStore';
+import { confirmAction } from '../../lib/appDialogs';
 
 /**
  * Panel del admin/supervisor para resolver CONTINGENCIAS por fuerza mayor (R83, la UI de T1.4).
@@ -51,11 +52,11 @@ export const ContingenciesPanel = () => {
 
   const resolve = async (id: number, status: 'approved' | 'rejected') => {
     // Aprobar paga un día completo NO trabajado al 100%: es el acto de más dinero de estos paneles.
-    // Un confirm() evita el misclick (el review lo señaló); rechazar no mueve dinero y no lo pide.
+    // Un diálogo de confirmación evita el misclick; rechazar no mueve dinero y no lo pide.
     if (status === 'approved') {
       const r = requests.find(x => x.id === id);
       const quien = r?.employee_name || 'este colaborador';
-      if (!window.confirm(`¿Aprobar la contingencia de ${quien} (${r?.date})? Se le pagará ese día al 100% aunque no lo haya trabajado.`)) {
+      if (!await confirmAction(`¿Aprobar la contingencia de ${quien} (${r?.date})? Se le pagará ese día al 100% aunque no lo haya trabajado.`, { title: 'Aprobar contingencia pagada', confirmLabel: 'Aprobar y pagar', tone: 'warning' })) {
         return;
       }
     }
@@ -78,7 +79,7 @@ export const ContingenciesPanel = () => {
         <ShieldAlert size={20} className="shrink-0" aria-hidden="true" />
         <div>
           <p className="font-black text-xs sm:text-sm">Contingencias por Fuerza Mayor</p>
-          <p className="text-[9px] sm:text-[10px] text-slate-300 opacity-90 leading-tight">
+          <p className="text-xs sm:text-xs text-slate-300 opacity-90 leading-tight">
             Aprobar paga la jornada al 100% (LFT) y no la cuenta como falta
           </p>
         </div>
@@ -92,12 +93,12 @@ export const ContingenciesPanel = () => {
             <div className="flex flex-col text-left">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-black text-white">{r.employee_name || 'Colaborador'}</span>
-                <span className="text-[9px] text-slate-300 shrink-0">{r.date}</span>
+                <span className="text-xs text-slate-300 shrink-0">{r.date}</span>
               </div>
-              <span className="text-[10px] text-slate-200 italic leading-snug mt-0.5">"{r.reason}"</span>
+              <span className="text-xs text-slate-200 italic leading-snug mt-0.5">"{r.reason}"</span>
             </div>
             {Number(r.user_id) === Number(currentUser?.id) ? (
-              <span className="text-[9.5px] font-bold text-slate-200 bg-slate-900/50 border border-slate-500/30 rounded-lg px-2.5 py-1.5">
+              <span className="text-xs font-bold text-slate-200 bg-slate-900/50 border border-slate-500/30 rounded-lg px-2.5 py-1.5">
                 Tu contingencia · debe resolverla otro admin o supervisor
               </span>
             ) : (
@@ -105,14 +106,14 @@ export const ContingenciesPanel = () => {
                 <button
                   onClick={() => resolve(r.id, 'approved')}
                   disabled={resolvingId === r.id}
-                  className="bg-success-icon hover:bg-success-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-success-icon hover:bg-success-text text-white font-extrabold text-xs px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                    Aprobar (pago 100%)
                 </button>
                 <button
                   onClick={() => resolve(r.id, 'rejected')}
                   disabled={resolvingId === r.id}
-                  className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="bg-danger-icon hover:bg-danger-text text-white font-extrabold text-xs px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                    Rechazar
                 </button>

@@ -107,7 +107,7 @@ export const ModuleUnlockModal: React.FC<ModuleUnlockModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-accent/30 text-navy-100 border border-navy-300/30">
+                <span className="text-xs font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-accent/30 text-navy-100 border border-navy-300/30">
                   Desbloqueo Inteligente
                 </span>
               </div>

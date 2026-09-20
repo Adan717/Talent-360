@@ -76,7 +76,7 @@ export const ClockControlCenterPanel: React.FC = () => {
                 <p className="text-xs text-slate-400 pl-7">{tag.description}</p>
               </div>
 
-              <div className="mt-3 pl-7 flex items-center gap-2 text-[10px] font-mono text-text-3">
+              <div className="mt-3 pl-7 flex items-center gap-2 text-xs font-mono text-text-3">
                 <span>Flag:</span>
                 <code className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-slate-400">{tag.key}</code>
                 {tag.isMandatory && <span className="text-success-text ml-auto font-sans font-medium">Core Intocable</span>}

@@ -41,7 +41,7 @@
 .talent-landing-lab .lab-brand-number { font-weight: 400; margin-left: 3px; }
 .talent-landing-lab .lab-brand i { width: 4px; height: 4px; background: var(--lab-accent); border-radius: 50%; margin-left: 3px; }
 .talent-landing-lab .lab-desktop-nav { display: flex; align-items: center; gap: 32px; margin-left: 48px; }
-.talent-landing-lab .lab-desktop-nav a, .talent-landing-lab .lab-login { font-size: 12px; font-weight: 500; color: var(--lab-text); transition: color 160ms; }
+.talent-landing-lab .lab-desktop-nav a, .talent-landing-lab .lab-login { display: inline-flex; min-height: 44px; align-items: center; font-size: 12px; font-weight: 500; color: var(--lab-text); transition: color 160ms; }
 .talent-landing-lab .lab-desktop-nav a:hover, .talent-landing-lab .lab-login:hover { color: var(--lab-accent); }
 .talent-landing-lab .lab-header-actions { display: flex; align-items: center; gap: 24px; }
 .talent-landing-lab .lab-login { border: 0; background: none; padding: 12px 0; }
@@ -66,7 +66,7 @@
 .talent-landing-lab .lab-hero h1 > span { color: var(--lab-warm); }
 .talent-landing-lab .lab-hero-description { font-size: 16px; line-height: 1.75; color: var(--lab-text); max-width: 446px; }
 .talent-landing-lab .lab-hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 24px; margin-top: 32px; }
-.talent-landing-lab .lab-text-link { display: inline-flex; align-items: center; gap: 10px; color: var(--lab-navy); font-size: 12px; font-weight: 600; }
+.talent-landing-lab .lab-text-link { display: inline-flex; min-height: 44px; align-items: center; gap: 10px; color: var(--lab-navy); font-size: 12px; font-weight: 600; }
 .talent-landing-lab .lab-text-link:hover { color: var(--lab-accent); }
 .talent-landing-lab .lab-text-link > svg { transition: transform 180ms; }
 .talent-landing-lab .lab-text-link:hover > svg { transform: translateX(3px); }
@@ -300,13 +300,18 @@
 .talent-landing-lab .lab-footer-top .lab-brand { color: var(--lab-surface); }
 .talent-landing-lab .lab-footer-top .lab-brand > svg { color: var(--lab-line); }
 .talent-landing-lab .lab-footer-top > p { color: var(--lab-line); font-size: 11px; }
-.talent-landing-lab .lab-back-top { display: flex; align-items: center; gap: 8px; margin-left: auto; color: var(--lab-line); font-size: 11px; }
+.talent-landing-lab .lab-back-top { display: flex; min-height: 44px; align-items: center; gap: 8px; margin-left: auto; color: var(--lab-line); font-size: 12px; }
 .talent-landing-lab .lab-back-top:hover { color: var(--lab-surface); }
-.talent-landing-lab .lab-footer-bottom { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding-block: 24px; border-top: 1px solid var(--lab-accent); font-size: 10px; color: var(--lab-line); }
+.talent-landing-lab .lab-footer-bottom { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding-block: 24px; border-top: 1px solid var(--lab-accent); font-size: 12px; color: var(--lab-line); }
 .talent-landing-lab .lab-footer-bottom > div { display: flex; gap: 24px; }
-.talent-landing-lab .lab-footer-bottom button { background: transparent; border: 0; color: var(--lab-line); font: inherit; }
+.talent-landing-lab .lab-footer-bottom button { min-height: 44px; padding: 8px 2px; background: transparent; border: 0; color: var(--lab-line); font: inherit; }
 .talent-landing-lab .lab-footer-bottom button:hover { color: var(--lab-surface); }
 .talent-landing-lab .lab-footer-bottom button:hover { text-decoration: underline; }
+.talent-landing-lab .lab-range-input { height: 44px; border-radius: 8px; background: transparent; }
+.talent-landing-lab .lab-range-input::-webkit-slider-runnable-track { height: 8px; border-radius: 999px; background: var(--lab-line); }
+.talent-landing-lab .lab-range-input::-webkit-slider-thumb { width: 24px; height: 24px; margin-top: -8px; appearance: none; border: 3px solid var(--lab-surface); border-radius: 50%; background: var(--lab-accent); box-shadow: 0 1px 3px rgba(16,24,40,.2); }
+.talent-landing-lab .lab-range-input::-moz-range-track { height: 8px; border-radius: 999px; background: var(--lab-line); }
+.talent-landing-lab .lab-range-input::-moz-range-thumb { width: 20px; height: 20px; border: 3px solid var(--lab-surface); border-radius: 50%; background: var(--lab-accent); box-shadow: 0 1px 3px rgba(16,24,40,.2); }
 .talent-landing-lab .lab-checkout-overlay { z-index: 60; }
 .talent-landing-lab .lab-checkout { border-radius: 16px; }
 .talent-landing-lab .lab-checkout :is(input:not([type=checkbox]),button[type=submit]) { min-height: 44px; font-size: 13px; border-radius: 8px; }

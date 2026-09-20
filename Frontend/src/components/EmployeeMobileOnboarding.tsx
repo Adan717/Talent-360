@@ -1,3 +1,4 @@
+import { notify } from '../lib/appDialogs';
 import React, { useState } from 'react';
 import { Smartphone, CheckCircle2, ChevronRight, Lock, Image as ImageIcon, Video, User, Star } from 'lucide-react';
 import axiosInstance from '../lib/axios';
@@ -51,7 +52,7 @@ export const EmployeeMobileOnboarding = ({ onComplete }: { onComplete: () => voi
       setCurrentStep('welcome');
     } catch (err: any) {
       setIsLoading(false);
-      alert(err.response?.data?.message || "Error al verificar el PIN. Intente de nuevo.");
+      notify(err.response?.data?.message || "Error al verificar el PIN. Intente de nuevo.");
     }
   };
 
@@ -70,7 +71,7 @@ export const EmployeeMobileOnboarding = ({ onComplete }: { onComplete: () => voi
       setCurrentStep('ready');
     } catch (err: any) {
       setIsLoading(false);
-      alert(err.response?.data?.message || "Error al activar la cuenta.");
+      notify(err.response?.data?.message || "Error al activar la cuenta.");
     }
   };
 
@@ -80,7 +81,7 @@ export const EmployeeMobileOnboarding = ({ onComplete }: { onComplete: () => voi
       {/* Contenedor tipo Celular para forzar la vista móvil */}
       <div className="w-full max-w-[400px] h-[800px] max-h-[90vh] bg-white rounded-[2.5rem] relative overflow-hidden shadow-2xl flex flex-col">
         {/* StatusBar falso para simular entorno nativo */}
-        <div className="h-7 bg-white w-full flex items-center px-6 justify-between text-[10px] font-medium text-text-1 z-10">
+        <div className="h-7 bg-white w-full flex items-center px-6 justify-between text-xs font-medium text-text-1 z-10">
            <span>9:41</span>
            <div className="flex items-center gap-1">
               <span className="w-4 h-3 rounded-sm border border-slate-800 flex items-center justify-center">
@@ -173,7 +174,7 @@ export const EmployeeMobileOnboarding = ({ onComplete }: { onComplete: () => voi
              <div className="flex-1 flex flex-col items-center">
                 <div className="w-32 h-32 bg-page rounded-full border-4 border-white shadow-xl flex flex-col items-center justify-center text-slate-400 mb-6 relative group overflow-hidden cursor-pointer">
                    <User size={40} className="mb-1" />
-                   <span className="text-[10px] font-bold">Subir Foto</span>
+                   <span className="text-xs font-bold">Subir Foto</span>
                    <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center">
                       <ImageIcon className="text-white" />
                    </div>

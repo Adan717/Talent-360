@@ -14,6 +14,7 @@ import { JobRoleIconBadge, JOB_ROLE_ICON_OPTIONS, JOB_ROLE_PROFESSIONS_MATRIX, r
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 import { slugParaCorreo } from '../lib/emailSlug';
 import { avatarDe } from '../lib/avatar';
+import { confirmAction, promptForText, notify } from '../lib/appDialogs';
 import { StatusBadge } from './ui/StatusBadge';
 
 interface JobRoleCardItemProps {
@@ -145,10 +146,10 @@ const JobRoleCardItem: React.FC<JobRoleCardItemProps> = ({
           {/* Header con Jerarquía, Estado Automático y Botón Tachita (X) Flotante */}
           <div className="flex items-center justify-between mb-3 relative z-10">
              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className={`text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${cardStyle.pillClass}`}>
+                <span className={`text-xs uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${cardStyle.pillClass}`}>
                    {cardStyle.label}
                 </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
                    isAutoActive ? 'bg-success-bg text-success-text border-success-text/20' : 'bg-page text-text-2 border-border'
                 }`}>
                    {isAutoActive ? '● Activo' : '○ Inactivo'}
@@ -182,7 +183,7 @@ const JobRoleCardItem: React.FC<JobRoleCardItemProps> = ({
                 </h4>
                 <div className="flex gap-1.5 mt-1 flex-wrap">
                    {(rol.area || 'General').split(',').map((s: string) => s.trim()).filter(Boolean).map((a: string) => (
-                       <span key={a} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-page/90 text-text-2 border border-border">{a}</span>
+                       <span key={a} className="text-xs font-bold px-2 py-0.5 rounded-md bg-page/90 text-text-2 border border-border">{a}</span>
                     ))}
                 </div>
              </div>
@@ -352,10 +353,10 @@ const UserCardItem: React.FC<UserCardItemProps> = ({
           {/* Header con Jerarquía, Estado y Acciones Rápidas */}
           <div className="flex items-center justify-between mb-3 relative z-10">
              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className={`text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${cardStyle.pillClass}`}>
+                <span className={`text-xs uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${cardStyle.pillClass}`}>
                    {cardStyle.label}
                 </span>
-                <StatusBadge tone={isInactiveTab ? 'neutral' : 'success'} className="text-[10px]">
+                <StatusBadge tone={isInactiveTab ? 'neutral' : 'success'} className="text-xs">
                   {isInactiveTab ? 'Archivado' : 'Activo'}
                 </StatusBadge>
                 {/* Reserva legal (2026-09-05): esta persona tiene un juicio abierto y queda FUERA
@@ -363,7 +364,7 @@ const UserCardItem: React.FC<UserCardItemProps> = ({
                     baja definitiva ni la purgue sin saberlo. */}
                 {u.legal_hold_at && (
                   <span
-                    className="text-[10px] font-black px-2 py-0.5 rounded-full border bg-danger-bg text-danger-text border-danger-text/20"
+                    className="text-xs font-black px-2 py-0.5 rounded-full border bg-danger-bg text-danger-text border-danger-text/20"
                     title={`Reserva legal desde ${String(u.legal_hold_at).slice(0, 10)}: ${u.legal_hold_reason || 'sin motivo escrito'}. No la alcanza la purga de retención.`}
                   >
                      <span className="inline-flex items-center gap-1"><Scale size={11} /> Reserva legal</span>
@@ -449,7 +450,7 @@ const UserCardItem: React.FC<UserCardItemProps> = ({
                       {userRole ? <>{userRole.name}{getJobRoleKeysIcon(userRole.id)}</> : <><AlertTriangle size={14} className="text-warning-icon" aria-hidden="true" /> Sin puesto asignado</>}
                    </span>
                    {u.area && (
-                      <span className="text-[10px] font-bold text-text-2 bg-page px-2 py-0.5 rounded-md border border-border">
+                      <span className="text-xs font-bold text-text-2 bg-page px-2 py-0.5 rounded-md border border-border">
                          {u.area}
                       </span>
                    )}
@@ -547,7 +548,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       // backend) sobre el employee_id crudo (employees.id) que trae /store-opening/assignments.
       const match = assignments.find((a: any) => Number(a.resolved_user_id ?? a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
       if (match) {
-        return <span className="ml-1 inline-flex items-center gap-0.5 text-warning-text" title={match.priority_order === 1 ? 'Portador principal de llaves' : 'Portador alterno de llaves'}><KeyRound size={12} />{match.priority_order !== 1 && <span className="text-[8px] font-bold">2</span>}</span>;
+        return <span className="ml-1 inline-flex items-center gap-0.5 text-warning-text" title={match.priority_order === 1 ? 'Portador principal de llaves' : 'Portador alterno de llaves'}><KeyRound size={12} />{match.priority_order !== 1 && <span className="text-xs font-bold">2</span>}</span>;
       }
     } catch {}
     return '';
@@ -573,7 +574,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       if (roleUsers.length > 0) {
         const roleAssignments = assignments.filter((a: any) => a.is_active && a.can_open_store && roleUsers.some((u: any) => Number(u.employee_id ? u.employee_id : u.id) === Number(a.resolved_user_id ?? a.employee_id)));
         const minPriority = Math.min(...roleAssignments.map((a: any) => a.priority_order));
-        return <span className="ml-1 inline-flex items-center gap-0.5 text-warning-text" title={minPriority === 1 ? 'Puesto con portador principal de llaves' : 'Puesto con portador alterno de llaves'}><KeyRound size={12} />{minPriority !== 1 && <span className="text-[8px] font-bold">2</span>}</span>;
+        return <span className="ml-1 inline-flex items-center gap-0.5 text-warning-text" title={minPriority === 1 ? 'Puesto con portador principal de llaves' : 'Puesto con portador alterno de llaves'}><KeyRound size={12} />{minPriority !== 1 && <span className="text-xs font-bold">2</span>}</span>;
       }
     } catch {}
     return '';
@@ -725,7 +726,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
     if (draggedId === targetParentId) return;
 
     if (targetParentId !== null && wouldCreateCycleLocal(draggedId, targetParentId)) {
-      alert("Operación inválida: No puedes reportar un puesto a sí mismo o a uno de sus subordinados.");
+      notify("Operación inválida: No puedes reportar un puesto a sí mismo o a uno de sus subordinados.");
       return;
     }
 
@@ -753,7 +754,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       }
     } catch (err: any) {
       console.error("Error updating role hierarchy:", err);
-      alert(err.response?.data?.message || "Error al actualizar la jerarquía del puesto.");
+      notify(err.response?.data?.message || "Error al actualizar la jerarquía del puesto.");
     }
   };
 
@@ -784,7 +785,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       }
     } catch (err: any) {
       console.error('Error updating role hierarchy from chart:', err);
-      alert(err.response?.data?.message || 'Error al actualizar la relación en el organigrama.');
+      notify(err.response?.data?.message || 'Error al actualizar la relación en el organigrama.');
     }
   };
 
@@ -831,7 +832,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       }
     } catch (err: any) {
       console.error("Error updating employee role:", err);
-      alert(err.response?.data?.message || "Error al reasignar el puesto del colaborador.");
+      notify(err.response?.data?.message || "Error al reasignar el puesto del colaborador.");
     }
   };
 
@@ -863,20 +864,20 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
               is_active: true
           };
           setJobRoles([...jobRoles, mockNewRole]);
-          alert("Puesto importado exitosamente (Simulado en modo Sandbox).");
+          notify("Puesto importado exitosamente (Simulado en modo Sandbox).");
           setShowTemplateModal(false);
           setSelectedTemplate(null);
           return;
       }
       await axiosInstance.post(`/job-role-templates/${selectedTemplate.id}/import`);
-      alert("Puesto importado exitosamente.");
+      notify("Puesto importado exitosamente.");
       setShowTemplateModal(false);
       setSelectedTemplate(null);
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
     } catch (e) {
       console.error("Error importing template", e);
-      alert("Ocurrió un error al importar la plantilla de puesto.");
+      notify("Ocurrió un error al importar la plantilla de puesto.");
     } finally {
       setImportingTemplate(false);
     }
@@ -899,11 +900,11 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       if (response.data.init_point) {
         window.location.href = response.data.init_point;
       } else {
-        alert('Error al generar la preferencia de pago.');
+        notify('Error al generar la preferencia de pago.');
       }
     } catch (e) {
       console.error(e);
-      alert('Error al conectar con la pasarela de pagos.');
+      notify('Error al conectar con la pasarela de pagos.');
     }
   };
 
@@ -1063,7 +1064,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       if(!selectedRolePolicy) return;
       try {
           await axiosInstance.put(`/sync/role-policies/${selectedRolePolicy.job_role_id}`, selectedRolePolicy.config);
-          alert('Política actualizada exitosamente en la base de datos.');
+          notify('Política actualizada exitosamente en la base de datos.');
           fetchData();
           window.dispatchEvent(new Event('db_sync_updated'));
       } catch(e) {
@@ -1220,7 +1221,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
     // un default escondido y la persona aparece con un sueldo que nadie tecleó. El servidor
     // también lo exige; esto es para decirlo antes de mandar el formulario.
     if (!newUserSalary || parseFloat(newUserSalary) <= 0) {
-      alert('Captura el sueldo del colaborador: sin él, su nómina no se puede calcular.');
+      notify('Captura el sueldo del colaborador: sin él, su nómina no se puede calcular.');
       return;
     }
     const companyDomain = getCompanyDomain();
@@ -1233,11 +1234,11 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
     let actualizarExistente = false;
     const yaExiste = users.find((u: any) => (u.email || '').toLowerCase() === correoGenerado.toLowerCase());
     if (yaExiste) {
-      actualizarExistente = window.confirm(
+      actualizarExistente = await confirmAction(
         `Ya tienes a "${yaExiste.name}" con el correo ${correoGenerado}.\n\n` +
         `• Aceptar: es LA MISMA persona → se actualiza su ficha.\n` +
         `• Cancelar: es OTRA persona con el mismo nombre → se crea una ficha nueva con su propio correo.`
-      );
+      , { title: 'Posible colaborador duplicado', confirmLabel: 'Actualizar existente', cancelLabel: 'Crear otra persona', tone: 'warning' });
     }
 
     try {
@@ -1284,13 +1285,13 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
               setUpgradeModalMessage(e.response.data.message || 'Has alcanzado el límite de administradores.');
               setShowUpgradeModal(true);
           } else {
-              alert(e.response.data?.message || "Acceso prohibido.");
+              notify(e.response.data?.message || "Acceso prohibido.");
           }
       } else if (e.response && e.response.status === 422) {
           const errors = e.response.data.errors ? Object.values(e.response.data.errors).flat().join("\n") : "Datos inválidos";
-          alert(`Error de validación al crear empleado:\n${errors}`);
+          notify(`Error de validación al crear empleado:\n${errors}`);
       } else {
-          alert("Error al guardar en la base de datos.");
+          notify("Error al guardar en la base de datos.");
       }
     }
   };
@@ -1321,7 +1322,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   };
 
   const handleDeleteJobRole = async (id: number) => {
-    if (!window.confirm("¿Seguro que deseas eliminar este puesto de trabajo? Para proceder, el puesto no debe tener colaboradores ni vacantes activas vinculadas.")) return;
+    if (!await confirmAction("¿Seguro que deseas eliminar este puesto de trabajo? Para proceder, el puesto no debe tener colaboradores ni vacantes activas vinculadas.", { title: 'Eliminar puesto', confirmLabel: 'Eliminar', tone: 'error' })) return;
     try {
       const appState = useAppStore.getState();
       if (appState.isSandboxMode) {
@@ -1331,18 +1332,18 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       const res = await axiosInstance.delete('/job-roles/' + id);
       if (res.status !== 200) throw new Error("Failed to delete job role");
       setJobRoles(prev => prev.filter(r => r.id !== id));
-      alert(res.data.message || "Puesto de trabajo eliminado correctamente.");
+      notify(res.data.message || "Puesto de trabajo eliminado correctamente.");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
     } catch (err: any) {
       console.error(err);
       const msg = err.response?.data?.message || "No se pudo eliminar el puesto de trabajo. Asegúrate de reasignar a todos los colaboradores y vacantes vinculados a este puesto en sus respectivos módulos antes de intentar de nuevo.";
-      alert(`No se pudo eliminar el puesto:\n\n${msg}`);
+      notify(`No se pudo eliminar el puesto:\n\n${msg}`);
     }
   };
 
   const handleRemoveAreaFromRoles = async (areaName: string) => {
-    if (!window.confirm(`¿Deseas desvincular y eliminar el área "${areaName}"? Se quitará de todos los puestos de trabajo que la tengan asignada.`)) return;
+    if (!await confirmAction(`¿Deseas desvincular y eliminar el área "${areaName}"? Se quitará de todos los puestos de trabajo que la tengan asignada.`, { title: 'Eliminar área', confirmLabel: 'Desvincular y eliminar', tone: 'error' })) return;
     try {
       const appState = useAppStore.getState();
 
@@ -1369,7 +1370,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 setEditingJobRole({ ...editingJobRole, area: newList.join(', ') || 'General' });
              }
           }
-          alert(`Área "${areaName}" eliminada correctamente.`);
+          notify(`Área "${areaName}" eliminada correctamente.`);
           return;
       }
 
@@ -1390,12 +1391,12 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
          }
       }
 
-      alert(`Área "${areaName}" desvinculada y eliminada exitosamente de todos los puestos.`);
+      notify(`Área "${areaName}" desvinculada y eliminada exitosamente de todos los puestos.`);
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
     } catch (err) {
       console.error(err);
-      alert("Error al eliminar el área.");
+      notify("Error al eliminar el área.");
     }
   };
 
@@ -1417,11 +1418,11 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       if (editingJobRole.id === 0) {
           const res = await axiosInstance.post('/job-roles', editingJobRole);
           if (res.status !== 201 && res.status !== 200) throw new Error("Failed to create job role");
-          alert("Puesto de trabajo creado exitosamente.");
+          notify("Puesto de trabajo creado exitosamente.");
       } else {
           const res = await axiosInstance.put('/job-roles/' + editingJobRole.id, editingJobRole);
           if (res.status !== 200) throw new Error("Failed to save job role");
-          alert("Puesto de trabajo actualizado exitosamente.");
+          notify("Puesto de trabajo actualizado exitosamente.");
       }
       setEditingJobRole(null);
       await fetchData();
@@ -1429,7 +1430,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
     } catch(err: any) {
         console.error(err);
         const msg = err.response?.data?.message || "Error al guardar el puesto.";
-        alert(msg);
+        notify(msg);
     }
   };
 
@@ -1451,7 +1452,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       }
     } catch (err: any) {
         console.error(err);
-        alert(err.response?.data?.message || "Error al cambiar el estado del puesto.");
+        notify(err.response?.data?.message || "Error al cambiar el estado del puesto.");
     }
   };
 
@@ -1492,23 +1493,23 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 setUpgradeModalMessage(e.response.data.message || 'Has alcanzado el límite de administradores.');
                 setShowUpgradeModal(true);
             } else {
-                alert(e.response.data?.message || "Acceso prohibido.");
+                notify(e.response.data?.message || "Acceso prohibido.");
             }
         } else if (e.response && e.response.status === 422) {
             const errors = e.response.data.errors ? Object.values(e.response.data.errors).flat().join("\n") : "Datos inválidos";
-            alert(`Validación fallida:\n${errors}`);
+            notify(`Validación fallida:\n${errors}`);
         } else {
-            alert(e.message || "Error al guardar la ficha. Verifique que el servidor backend esté encendido.");
+            notify(e.message || "Error al guardar la ficha. Verifique que el servidor backend esté encendido.");
         }
     }
   };
 
   const handleDeleteUser = async (id: number) => {
-    if(!window.confirm('¿Deseas enviar a este empleado como inactivo? Su historial de asistencias se mantendrá intacto, pero ya no aparecerá en las listas activas.')) return;
+    if(!await confirmAction('¿Deseas enviar a este empleado como inactivo? Su historial de asistencias se mantendrá intacto, pero ya no aparecerá en las listas activas.', { title: 'Dar de baja al colaborador', confirmLabel: 'Enviar a inactivos', tone: 'warning' })) return;
     // 2026-08-16: se pregunta el MOTIVO. La baja ya registra su fecha (para poder medir
     // rotación), y sin el motivo esa columna del reporte nacería siempre vacía. Es opcional:
     // cancelar el cuadro no impide dar de baja.
-    const motivo = window.prompt('¿Motivo de la baja? (opcional — sirve para el reporte de rotación)\nEj. Renuncia voluntaria, Fin de contrato, Despido, Abandono') || '';
+    const motivo = await promptForText('¿Motivo de la baja? (opcional — sirve para el reporte de rotación)\nEj. Renuncia voluntaria, Fin de contrato, Despido, Abandono', '', { title: 'Motivo de la baja', placeholder: 'Ej. Renuncia voluntaria' }) || '';
     try {
       const res = await axiosInstance.delete(`/employees/${id}`, { data: { motivo: motivo.trim() } });
       if (res.status !== 200 && res.status !== 204) throw new Error("Failed to delete user");
@@ -1517,12 +1518,12 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
     } catch(e: any) {
       console.error("Error al enviar a inactivo:", e);
       const errMsg = e.response?.data?.error || e.response?.data?.message || "Error al desactivar la ficha.";
-      alert(errMsg);
+      notify(errMsg);
     }
   };
 
   const handleForceDeleteUser = async (id: number) => {
-    if(!window.confirm('¿Seguro que deseas eliminar definitivamente a este colaborador? Esta acción no se puede deshacer y borrará permanentemente sus registros de la base de datos.')) return;
+    if(!await confirmAction('¿Seguro que deseas eliminar definitivamente a este colaborador? Esta acción no se puede deshacer y borrará permanentemente sus registros de la base de datos.', { title: 'Eliminar colaborador permanentemente', confirmLabel: 'Eliminar definitivamente', tone: 'error' })) return;
     try {
       const res = await axiosInstance.delete(`/employees/${id}/force`);
       if (res.status !== 200) throw new Error("Failed to force delete user");
@@ -1530,12 +1531,12 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       window.dispatchEvent(new Event('db_sync_updated'));
     } catch(e: any) {
       console.error(e);
-      alert(e.response?.data?.error || "Error al eliminar definitivamente la ficha.");
+      notify(e.response?.data?.error || "Error al eliminar definitivamente la ficha.");
     }
   };
 
   const handleRestoreUser = async (id: number) => {
-    if(!window.confirm('¿Deseas restaurar a este colaborador? Volverá a aparecer en el directorio activo.')) return;
+    if(!await confirmAction('¿Deseas restaurar a este colaborador? Volverá a aparecer en el directorio activo.', { title: 'Restaurar colaborador', confirmLabel: 'Restaurar', tone: 'info' })) return;
     try {
       const res = await axiosInstance.put(`/employees/${id}`, { is_active_employee: true });
       if (res.status !== 200) throw new Error("Failed to restore user");
@@ -1543,7 +1544,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       window.dispatchEvent(new Event('db_sync_updated'));
     } catch(e) {
       console.error(e);
-      alert("Error al restaurar la ficha.");
+      notify("Error al restaurar la ficha.");
     }
   };
 
@@ -1572,14 +1573,14 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
       if (appState.isSandboxMode) {
         setJobRoles(jobRoles.map(r => r.id === selectedRoleForDrawer.id ? { ...r, ...updatedData } : r));
-        alert("Puesto actualizado con éxito (Modo Simulación).");
+        notify("Puesto actualizado con éxito (Modo Simulación).");
         setIsRoleDrawerOpen(false);
         return;
       }
 
       const res = await axiosInstance.put(`/job-roles/${selectedRoleForDrawer.id}`, updatedData);
       if (res.status === 200 || res.status === 201) {
-        alert("Puesto de trabajo actualizado en Postgres con éxito.");
+        notify("Puesto de trabajo actualizado en Postgres con éxito.");
         // Refetch roles
         const freshRoles = await axiosInstance.get('/job-roles');
         setJobRoles(freshRoles.data);
@@ -1589,7 +1590,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       }
     } catch (e) {
       console.error(e);
-      alert("Error al actualizar los detalles del puesto.");
+      notify("Error al actualizar los detalles del puesto.");
     } finally {
       setIsSavingDrawer(false);
     }
@@ -1775,13 +1776,13 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         >
           {/* Rango Badge */}
           <div className="mb-2">
-            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${levelInfo.bg}`}>
+            <span className={`text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${levelInfo.bg}`}>
               {levelInfo.text}
             </span>
           </div>
 
           <div className="font-black text-xs text-text-1 uppercase tracking-widest mb-1 flex items-center justify-center gap-1">{node.role.name}{getJobRoleKeysIcon(node.role.id)}</div>
-          <div className="text-[9px] font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-3">{node.role.area || 'General'}</div>
+          <div className="text-xs font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-3">{node.role.area || 'General'}</div>
 
           <div className="space-y-2 mt-1">
             {node.collaborators.length > 0 ? (
@@ -1803,12 +1804,12 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                   />
                   <div className="text-left overflow-hidden">
                     <div className="text-[11px] font-black text-text-1 truncate leading-tight">{c.name}{getUserKeysIcon(c.employee_id ? Number(c.employee_id) : Number(c.id))}</div>
-                    <div className="text-[8px] font-medium text-text-3 truncate">{c.email}</div>
+                    <div className="text-xs font-medium text-text-3 truncate">{c.email}</div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-[10px] font-bold italic text-text-3 bg-page border border-dashed border-border py-2.5 rounded-2xl">
+              <div className="text-xs font-bold italic text-text-3 bg-page border border-dashed border-border py-2.5 rounded-2xl">
                 Vacante / Sin asignar
               </div>
             )}
@@ -1844,7 +1845,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
               >
                 <Users size={18} className={activeTab === 'directorio' ? 'text-accent' : 'text-text-3'} />
                 <span className="whitespace-nowrap text-center leading-tight">Colaboradores</span>
-                <span className={`relative px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                <span className={`relative px-1.5 py-0.5 rounded-full text-xs font-black leading-none ${
                   activeTab === 'directorio' ? 'bg-accent-soft text-navy-800 border border-border' : 'bg-slate-200 text-text-2 border border-slate-300'
                 }`}>
                   {users.filter((u: any) => u.is_active_employee !== false && u.is_active_employee !== 0).length}
@@ -1861,7 +1862,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
               >
                 <Briefcase size={18} className={activeTab === 'puestos' ? 'text-accent' : 'text-text-3'} />
                 <span className="whitespace-nowrap text-center leading-tight">Puestos</span>
-                <span className={`relative px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                <span className={`relative px-1.5 py-0.5 rounded-full text-xs font-black leading-none ${
                   activeTab === 'puestos' ? 'bg-accent-soft text-accent border border-border' : 'bg-slate-200 text-text-2 border border-slate-300'
                 }`}>
                   {jobRoles.filter((role: any) => role.is_active !== false).length}
@@ -2139,7 +2140,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                         <button
                           type="button"
                           onClick={() => setEditingUserTab('personal')}
-                          className={`flex-1 flex-shrink-0 py-2.5 px-2 sm:px-4 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-wider flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all ${
+                          className={`flex-1 flex-shrink-0 py-2.5 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-xs uppercase tracking-wider flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all ${
                             editingUserTab === 'personal'
                               ? 'bg-accent text-white shadow-md shadow-accent/20'
                               : 'text-text-3 hover:text-text-2 hover:bg-slate-200/50'
@@ -2152,7 +2153,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                         <button
                           type="button"
                           onClick={() => setEditingUserTab('laboral')}
-                          className={`flex-1 flex-shrink-0 py-2.5 px-2 sm:px-4 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-wider flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all ${
+                          className={`flex-1 flex-shrink-0 py-2.5 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-xs uppercase tracking-wider flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all ${
                             editingUserTab === 'laboral'
                               ? 'bg-success-text text-white shadow-md shadow-success-text/20'
                               : 'text-text-3 hover:text-text-2 hover:bg-slate-200/50'
@@ -2165,7 +2166,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                         <button
                           type="button"
                           onClick={() => setEditingUserTab('accesos')}
-                          className={`flex-1 flex-shrink-0 py-2.5 px-2 sm:px-4 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-wider flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all ${
+                          className={`flex-1 flex-shrink-0 py-2.5 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-xs uppercase tracking-wider flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all ${
                             editingUserTab === 'accesos'
                               ? 'bg-warning-icon text-white shadow-md shadow-warning-text/20'
                               : 'text-text-3 hover:text-text-2 hover:bg-slate-200/50'
@@ -2178,7 +2179,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                         <button
                           type="button"
                           onClick={() => setEditingUserTab('expediente')}
-                          className={`flex-1 flex-shrink-0 py-2.5 px-2 sm:px-4 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-wider flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all ${
+                          className={`flex-1 flex-shrink-0 py-2.5 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-xs uppercase tracking-wider flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all ${
                             editingUserTab === 'expediente'
                               ? 'bg-accent text-white shadow-md shadow-accent/20'
                               : 'text-text-3 hover:text-text-2 hover:bg-slate-200/50'
@@ -2314,7 +2315,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                     </select>
                                  </div>
                                  {!editingUser.periodicidad_captura && (
-                                    <p className="mt-1 text-[10px] text-warning-text font-bold">Sueldo capturado sin periodicidad declarada: al guardar se registrará la seleccionada.</p>
+                                    <p className="mt-1 text-xs text-warning-text font-bold">Sueldo capturado sin periodicidad declarada: al guardar se registrará la seleccionada.</p>
                                  )}
                               </div>
 
@@ -2331,13 +2332,13 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                  <div className="bg-page border border-border rounded-xl p-3 sm:p-4 space-y-3">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                                        <div>
-                                          <span className="block text-[10px] font-black text-text-3 uppercase tracking-wider">Fecha de baja</span>
+                                          <span className="block text-xs font-black text-text-3 uppercase tracking-wider">Fecha de baja</span>
                                           <span className="font-bold text-text-2">
                                              {editingUser.termination_date || '— sigue en plantilla'}
                                           </span>
                                        </div>
                                        <div>
-                                          <span className="block text-[10px] font-black text-text-3 uppercase tracking-wider">Motivo de la baja</span>
+                                          <span className="block text-xs font-black text-text-3 uppercase tracking-wider">Motivo de la baja</span>
                                           <span className="font-bold text-text-2">{editingUser.termination_reason || '—'}</span>
                                        </div>
                                     </div>
@@ -2416,7 +2417,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                           </button>
                                           {/* Levantarla exige motivo IGUAL que ponerla: es el acto que vuelve a
                                               exponer a esa persona al borrado, así que se justifica igual. */}
-                                          <p className="text-[10px] text-text-3">
+                                          <p className="text-xs text-text-3">
                                              Escribe el motivo (mínimo 5 caracteres). Poner y levantar la reserva quedan
                                              registrados en la bitácora de seguridad.
                                           </p>
@@ -2534,7 +2535,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                        {kioskPinEstado.texto}
                                      </p>
                                    )}
-                                   <p className="text-[10px] text-text-3">No se aceptan PINs fáciles (000000, 123456, dígitos repetidos) ni repetidos con otro colaborador.</p>
+                                   <p className="text-xs text-text-3">No se aceptan PINs fáciles (000000, 123456, dígitos repetidos) ni repetidos con otro colaborador.</p>
                                  </div>
                               </div>
 
@@ -2547,21 +2548,21 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                           <span className="text-base sm:text-lg font-black text-accent tracking-widest">{editingUser.pin_code}</span>
                                        </div>
                                        <div className="space-y-1">
-                                          <span className="text-[10px] sm:text-xs text-text-3 block">Enlace de Activación:</span>
+                                          <span className="text-xs sm:text-xs text-text-3 block">Enlace de Activación:</span>
                                           <div className="flex gap-2">
                                              <input
                                                type="text"
                                                readOnly
                                                value={`${getQrOrigin(qrIpOverride)}/invite?pin=${editingUser.pin_code}`}
-                                               className="w-full text-[10px] sm:text-xs bg-white border border-border p-2 rounded-lg text-text-2 select-all"
+                                               className="w-full text-xs sm:text-xs bg-white border border-border p-2 rounded-lg text-text-2 select-all"
                                              />
                                              <button
                                                type="button"
                                                onClick={() => {
                                                   navigator.clipboard.writeText(`${getQrOrigin(qrIpOverride)}/invite?pin=${editingUser.pin_code}`);
-                                                  alert("Enlace copiado al portapapeles");
+                                                  notify("Enlace copiado al portapapeles");
                                                }}
-                                               className="px-3 py-1 bg-navy-50 hover:bg-accent-soft text-accent text-[10px] sm:text-xs font-bold rounded-lg border border-border transition-colors"
+                                               className="px-3 py-1 bg-navy-50 hover:bg-accent-soft text-accent text-xs sm:text-xs font-bold rounded-lg border border-border transition-colors"
                                              >
                                                 Copiar
                                              </button>
@@ -2577,7 +2578,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                           />
                                           <div className="text-left">
                                             <span className="text-[11px] sm:text-xs font-bold text-text-2 block mb-1">Código QR de Activación</span>
-                                            <p className="text-[9px] sm:text-[10px] text-text-3 leading-normal font-sans">
+                                            <p className="text-xs sm:text-xs text-text-3 leading-normal font-sans">
                                                El colaborador puede escanear este código QR para abrir el reloj checador PWA e iniciar su activación en su teléfono móvil.
                                             </p>
                                           </div>
@@ -2585,12 +2586,12 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
                                        {/* Sección WhatsApp */}
                                        <div className="pt-3 border-t border-border/80">
-                                          <label className="text-[10px] font-bold text-text-3 uppercase block mb-1.5">
+                                          <label className="text-xs font-bold text-text-3 uppercase block mb-1.5">
                                              Enviar invitación por WhatsApp
                                           </label>
                                           <div className="flex gap-2">
                                              <div className="flex-1 flex border border-border rounded-lg overflow-hidden focus-within:ring-1 focus-within:ring-focus-ring focus-within:border-accent bg-white text-xs sm:text-sm">
-                                               <div className="bg-page px-2 sm:px-2.5 py-1.5 text-[10px] sm:text-xs text-text-3 font-bold border-r flex items-center gap-1 select-none">
+                                               <div className="bg-page px-2 sm:px-2.5 py-1.5 text-xs sm:text-xs text-text-3 font-bold border-r flex items-center gap-1 select-none">
                                                  <span>+52</span>
                                                </div>
                                                <input
@@ -2605,7 +2606,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                                type="button"
                                                onClick={async () => {
                                                   if (!editingUser.phone?.trim()) {
-                                                     alert("Por favor ingresa un número de celular de WhatsApp.");
+                                                     notify("Por favor ingresa un número de celular de WhatsApp.");
                                                      return;
                                                   }
 
@@ -2635,12 +2636,12 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
                                        {isLocalhost() && (
                                          <div className="p-3 bg-warning-bg border border-warning-text/80 rounded-xl text-left">
-                                           <div className="flex items-center gap-1.5 text-warning-text font-bold text-[10px] sm:text-xs mb-1">
+                                           <div className="flex items-center gap-1.5 text-warning-text font-bold text-xs sm:text-xs mb-1">
                                              <Network size={14} className="text-warning-text" />
                                              <span>Desarrollo local: configuración de QR</span>
                                            </div>
-                                           <p className="text-[9px] sm:text-[10px] text-warning-text leading-relaxed mb-2">
-                                             Al desarrollar localmente, el celular no puede acceder a <code className="bg-warning-bg px-1 rounded font-mono text-[9px]">localhost</code>. Ingresa la dirección IP local de tu PC (ej: <code className="bg-warning-bg px-1 rounded font-mono text-[9px]">192.168.1.75:5173</code>) para que tu cel pueda abrirlo:
+                                           <p className="text-xs sm:text-xs text-warning-text leading-relaxed mb-2">
+                                             Al desarrollar localmente, el celular no puede acceder a <code className="bg-warning-bg px-1 rounded font-mono text-xs">localhost</code>. Ingresa la dirección IP local de tu PC (ej: <code className="bg-warning-bg px-1 rounded font-mono text-xs">192.168.1.75:5173</code>) para que tu cel pueda abrirlo:
                                            </p>
                                            <div className="flex gap-2">
                                              <input
@@ -2648,7 +2649,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                                placeholder="ej: 192.168.1.75:5173"
                                                value={qrIpOverride}
                                                onChange={(e) => handleQrIpChange(e.target.value)}
-                                               className="w-full text-[10px] sm:text-xs bg-white border border-warning-text/20 px-2.5 py-1 rounded-lg text-text-2 focus:outline-none focus:ring-1 focus-visible:ring-warning-text placeholder-text-3 font-mono shadow-sm"
+                                               className="w-full text-xs sm:text-xs bg-white border border-warning-text/20 px-2.5 py-1 rounded-lg text-text-2 focus:outline-none focus:ring-1 focus-visible:ring-warning-text placeholder-text-3 font-mono shadow-sm"
                                              />
                                            </div>
                                          </div>
@@ -2662,10 +2663,10 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                             try {
                                                const res = await axiosInstance.post(`/admin/employees/${editingUser.employee_id || editingUser.id}/generate-pin`);
                                                setEditingUser({ ...editingUser, pin_code: res.data.pin });
-                                               alert("PIN generado exitosamente.");
+                                               notify("PIN generado exitosamente.");
                                             } catch (err) {
                                                console.error(err);
-                                               alert("Error al generar el PIN de invitación.");
+                                               notify("Error al generar el PIN de invitación.");
                                             }
                                          }}
                                          className="w-full py-2 bg-navy-50 hover:bg-accent-soft text-accent border border-border rounded-xl text-xs sm:text-sm font-bold transition-all"
@@ -2798,7 +2799,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                        ))}
                                     </select>
                                     <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-text-3">
-                                       <span className="text-[10px]">▼</span>
+                                       <span className="text-xs">▼</span>
                                     </div>
                                  </div>
                               </div>
@@ -2822,7 +2823,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                        <option value="admin">Administrador (acceso total)</option>
                                     </select>
                                     <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-text-3">
-                                       <span className="text-[10px]">▼</span>
+                                       <span className="text-xs">▼</span>
                                     </div>
                                  </div>
 
@@ -2884,7 +2885,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                        <option value="Destajo">A Destajo (Comisiones)</option>
                                     </select>
                                     <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-text-3">
-                                       <span className="text-[10px]">▼</span>
+                                       <span className="text-xs">▼</span>
                                     </div>
                                  </div>
                               </div>
@@ -2909,7 +2910,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                     className="pl-10 w-full px-4 py-3 bg-page/80 hover:bg-page border border-border rounded-2xl text-sm focus:ring-4 focus-visible:ring-focus-ring/10 focus:border-accent focus:bg-white outline-none transition-all duration-300"
                                  />
                               </div>
-                              <p className="text-[10px] text-text-3 mt-1 pl-1">El día que empieza a trabajar, que no siempre es hoy.</p>
+                              <p className="text-xs text-text-3 mt-1 pl-1">El día que empieza a trabajar, que no siempre es hoy.</p>
                            </div>
 
                            {/* Campo: Salario Base */}
@@ -3189,7 +3190,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                 className={`bg-white border-2 ${borderClass} rounded-2xl p-4 shadow-sm min-w-[220px] max-w-[260px] cursor-grab active:cursor-grabbing transition-all select-none hover:-translate-y-0.5 duration-200`}
                               >
                                 <div className="font-black text-xs text-text-1 uppercase tracking-wider truncate mb-1 flex items-center gap-1">{role.name}{getJobRoleKeysIcon(role.id)}</div>
-                                <div className="text-[9px] font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-3">{role.area || 'General'}</div>
+                                <div className="text-xs font-bold text-text-3 bg-page px-2 py-0.5 rounded-md inline-block mb-3">{role.area || 'General'}</div>
 
                                 <div className="space-y-1">
                                   {collaborators.length > 0 ? (
@@ -3205,14 +3206,14 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                         className="flex items-center gap-1.5 bg-page p-1.5 rounded-xl border border-border cursor-grab active:cursor-grabbing hover:bg-navy-50/50 transition-all duration-200"
                                       >
                                         <img src={avatarDe(c)} className="w-5 h-5 rounded-full border border-white" alt={c.name} />
-                                        <span className="text-[10px] font-bold text-text-2 truncate">{c.name} {getUserKeysIcon(c.employee_id ? Number(c.employee_id) : Number(c.id))}</span>
+                                        <span className="text-xs font-bold text-text-2 truncate">{c.name} {getUserKeysIcon(c.employee_id ? Number(c.employee_id) : Number(c.id))}</span>
                                       </div>
                                     ))
                                   ) : (
-                                    <div className="text-[9px] text-text-3 italic text-center py-1">Vacante</div>
+                                    <div className="text-xs text-text-3 italic text-center py-1">Vacante</div>
                                   )}
                                   {collaborators.length > 2 && (
-                                    <div className="text-[8px] text-accent font-black text-center">+ {collaborators.length - 2} más</div>
+                                    <div className="text-xs text-accent font-black text-center">+ {collaborators.length - 2} más</div>
                                   )}
                                 </div>
                               </div>
@@ -3454,7 +3455,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                         <span>{v.work_type || 'Presencial'}</span> • <span>{v.salary_range || 'Sueldo competitivo'}</span>
                       </p>
                     </div>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${v.is_active ? 'bg-success-bg text-success-text border border-success-text/20' : 'bg-page text-text-3'}`}>
+                    <span className={`text-xs font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${v.is_active ? 'bg-success-bg text-success-text border border-success-text/20' : 'bg-page text-text-3'}`}>
                       {v.is_active ? 'Activa' : 'Inactiva'}
                     </span>
                   </div>
@@ -3487,7 +3488,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                      <div className="col-span-1 sm:col-span-2 bg-page p-4 rounded-2xl border border-border">
                         <div className="flex items-center justify-between mb-2">
                            <label className="block text-sm font-bold text-text-2">Icono Alusivo del Puesto</label>
-                           <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-accent-soft text-accent">
+                           <span className="text-xs font-extrabold uppercase px-2 py-0.5 rounded-md bg-accent-soft text-accent">
                              Monito Alusivo Automático
                            </span>
                         </div>
@@ -3662,8 +3663,8 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
                          <button
                            type="button"
-                           onClick={() => {
-                              const newArea = prompt("Escribe el nombre de la nueva área organizativa:");
+                           onClick={async () => {
+                              const newArea = await promptForText("Escribe el nombre de la nueva área organizativa:", '', { title: 'Nueva área', placeholder: 'Nombre del área' });
                               if (newArea && newArea.trim()) {
                                  const trimmed = newArea.trim();
                                  const selectedList = (editingJobRole.area || '').split(',').map((s: string) => s.trim()).filter(Boolean);
@@ -3832,7 +3833,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                   >
                     <div>
                       <h4 className="font-bold text-text-1 text-base">{tpl.name}</h4>
-                      <p className="text-text-3 text-xs font-semibold mt-0.5">{tpl.area} &bull; <span className="uppercase tracking-wider text-[10px] bg-page text-text-2 px-1.5 py-0.5 rounded-md font-bold">{tpl.industry}</span></p>
+                      <p className="text-text-3 text-xs font-semibold mt-0.5">{tpl.area} &bull; <span className="uppercase tracking-wider text-xs bg-page text-text-2 px-1.5 py-0.5 rounded-md font-bold">{tpl.industry}</span></p>
 
                       <div className="flex gap-4 mt-2 text-xs text-text-2 font-medium bg-page p-2 rounded-lg border border-border">
                         <span>Horario: {tpl.default_schedule_start} - {tpl.default_schedule_end}</span>
@@ -3843,7 +3844,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
                     <div className="flex items-center gap-2">
                       {tpl.is_opener === 1 || tpl.is_opener === true ? (
-                        <span className="text-[10px] bg-success-bg text-success-text border border-success-text/20 px-2 py-0.5 rounded-lg font-bold">
+                        <span className="text-xs bg-success-bg text-success-text border border-success-text/20 px-2 py-0.5 rounded-lg font-bold">
                           Aperturador
                         </span>
                       ) : null}
@@ -3960,7 +3961,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                   <h3 className="font-extrabold text-base text-text-1 dark:text-slate-100 uppercase tracking-wider truncate max-w-[280px]">
                     {selectedRoleForDrawer.name}
                   </h3>
-                  <span className="text-[10px] font-bold text-text-3 bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-md inline-block mt-0.5">
+                  <span className="text-xs font-bold text-text-3 bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-md inline-block mt-0.5">
                     {selectedRoleForDrawer.area || 'Área General'}
                   </span>
                 </div>
@@ -4027,7 +4028,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 /* VISTA ADMINISTRATIVO / EDICIÓN */
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-[10px] font-black text-text-3 uppercase tracking-widest mb-2">Descripción General del Puesto</label>
+                    <label className="block text-xs font-black text-text-3 uppercase tracking-widest mb-2">Descripción General del Puesto</label>
                     <textarea
                       rows={3}
                       className="w-full bg-page border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white text-text-1"
@@ -4038,7 +4039,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-text-3 uppercase tracking-widest mb-2">Responsabilidades detalladas</label>
+                    <label className="block text-xs font-black text-text-3 uppercase tracking-widest mb-2">Responsabilidades detalladas</label>
                     <textarea
                       rows={5}
                       className="w-full bg-page border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white text-text-1 whitespace-pre-line"
@@ -4049,7 +4050,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-text-3 uppercase tracking-widest mb-2">Puesto Jerárquico Superior (Reporta a)</label>
+                    <label className="block text-xs font-black text-text-3 uppercase tracking-widest mb-2">Puesto Jerárquico Superior (Reporta a)</label>
                     <select
                       className="w-full bg-page border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white text-text-1"
                       value={drawerParentId}
@@ -4066,10 +4067,10 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                   </div>
 
                   <div className="border-t border-border pt-5">
-                    <label className="block text-[10px] font-black text-text-3 uppercase tracking-widest mb-2">Asociar Protocolo PDF</label>
+                    <label className="block text-xs font-black text-text-3 uppercase tracking-widest mb-2">Asociar Protocolo PDF</label>
                     <div className="space-y-3">
                       <div>
-                        <span className="text-[10px] text-text-3 block mb-1">Nombre del Archivo PDF</span>
+                        <span className="text-xs text-text-3 block mb-1">Nombre del Archivo PDF</span>
                         <input
                           type="text"
                           className="w-full bg-page border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white text-text-1"
@@ -4079,7 +4080,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                         />
                       </div>
                       <div>
-                        <span className="text-[10px] text-text-3 block mb-1">URL / Ruta de Descarga</span>
+                        <span className="text-xs text-text-3 block mb-1">URL / Ruta de Descarga</span>
                         <input
                           type="text"
                           className="w-full bg-page border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus-visible:ring-focus-ring focus:bg-white text-text-1"

@@ -6,6 +6,7 @@ import { WebPublica } from './WebPublica';
 import AtsPortalSettings from './AtsPortalSettings';
 import { Briefcase, ClipboardList, Calendar, Plus, Trash2, Clock, User, MessageSquare, X, Globe } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { confirmAction, notify } from '../lib/appDialogs';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 export function AtsManager() {
@@ -81,7 +82,7 @@ export function AtsManager() {
   const handleScheduleInterview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!candidateId || !date || !time || !interviewer) {
-      alert("Por favor complete todos los campos obligatorios.");
+      notify("Por favor complete todos los campos obligatorios.");
       return;
     }
     try {
@@ -92,7 +93,7 @@ export function AtsManager() {
         interviewer_name: interviewer,
         notes: notes
       });
-      alert("Entrevista programada exitosamente.");
+      notify("Entrevista programada exitosamente.");
       setShowScheduleForm(false);
       // Reset form
       setCandidateId('');
@@ -104,19 +105,19 @@ export function AtsManager() {
       fetchInterviewsAndCandidates();
     } catch (err) {
       console.error(err);
-      alert("Error al programar la entrevista.");
+      notify("Error al programar la entrevista.");
     }
   };
 
   const handleCancelInterview = async (id: number) => {
-    if (!window.confirm("¿Está seguro de que desea cancelar esta entrevista?")) return;
+    if (!await confirmAction("¿Está seguro de que desea cancelar esta entrevista?", { title: 'Cancelar entrevista', confirmLabel: 'Cancelar entrevista', tone: 'warning' })) return;
     try {
       await axiosInstance.delete(`/admin/interviews/${id}`);
       setInterviews(prev => prev.filter(i => i.id !== id));
-      alert("Entrevista cancelada.");
+      notify("Entrevista cancelada.");
     } catch (err) {
       console.error(err);
-      alert("Error al cancelar la entrevista.");
+      notify("Error al cancelar la entrevista.");
     }
   };
 
@@ -327,7 +328,7 @@ export function AtsManager() {
                     >
                       <div>
                         <div className="flex justify-between items-start gap-2 mb-3">
-                          <span className="bg-navy-50 text-accent text-[10px] uppercase font-black px-2.5 py-1 rounded-lg border border-border">
+                          <span className="bg-navy-50 text-accent text-xs uppercase font-black px-2.5 py-1 rounded-lg border border-border">
                             Entrevista ATS
                           </span>
                           <button

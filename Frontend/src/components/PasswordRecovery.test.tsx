@@ -53,4 +53,10 @@ describe('Recuperación y acceso sin simulaciones', () => {
     expect(axios.post).not.toHaveBeenCalled();
     expect(onSuccess).not.toHaveBeenCalled();
   });
+
+  it('reserva el espacio del acceso social mientras carga para evitar saltos de diseño', () => {
+    vi.mocked(axios.get).mockReturnValue(new Promise(() => {}));
+    render(<SocialSignIn onSuccess={vi.fn()} onError={vi.fn()} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando acceso seguro');
+  });
 });

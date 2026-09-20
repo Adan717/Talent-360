@@ -157,7 +157,7 @@ export default function PendientesDeMiEquipo() {
                       <p className={`text-lg font-black leading-none ${p.urge ? 'text-danger-text' : 'text-text-2'}`}>
                         {p.dias_sin_induccion}
                       </p>
-                      <p className={`text-[10px] font-black uppercase tracking-wider ${p.urge ? 'text-danger-text' : 'text-slate-400'}`}>
+                      <p className={`text-xs font-black uppercase tracking-wider ${p.urge ? 'text-danger-text' : 'text-slate-400'}`}>
                         {p.dias_sin_induccion === 1 ? 'día' : 'días'}
                       </p>
                     </>

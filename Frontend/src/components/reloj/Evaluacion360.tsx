@@ -1,3 +1,4 @@
+import { notify } from '../../lib/appDialogs';
 import React, { useState, useEffect } from 'react';
 import { Star, User, Users } from 'lucide-react';
 import axiosInstance from '../../lib/axios';
@@ -64,11 +65,11 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
         performance_score: performanceScore,
         comments: comments
       });
-      alert('Evaluación guardada confidencialmente.');
+      notify('Evaluación guardada confidencialmente.');
       onBack();
     } catch (err) {
       console.error(err);
-      alert('Error al registrar la evaluación. Por favor intente de nuevo.');
+      notify('Error al registrar la evaluación. Por favor intente de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -125,14 +126,14 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
                     ['General', resultados.averages?.overall],
                   ].map(([etiqueta, valor]) => (
                     <div key={String(etiqueta)} className="bg-white/5 rounded-xl p-3 border border-white/10">
-                      <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{etiqueta}</div>
+                      <div className="text-xs uppercase tracking-wider text-slate-400 font-bold">{etiqueta}</div>
                       <div className="text-2xl font-extrabold text-success-text">{valor ?? '—'}</div>
                     </div>
                   ))}
                 </div>
                 {Array.isArray(resultados.anonymous_comments) && resultados.anonymous_comments.length > 0 && (
                   <div className="space-y-1.5">
-                    <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Comentarios (anónimos)</div>
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-bold">Comentarios (anónimos)</div>
                     {resultados.anonymous_comments.map((c: string, i: number) => (
                       <p key={i} className="text-slate-200 text-xs bg-white/5 rounded-lg p-2 border border-white/10">{c}</p>
                     ))}

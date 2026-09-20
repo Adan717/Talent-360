@@ -5,6 +5,24 @@ import type { User, Tenant, AvisoDeCobranza } from '../types';
 import { fichajesDeHoy, hoyEnZona, fechaDeFichaje } from '../lib/jornadaDelDia';
 import { avatarDe } from '../lib/avatar';
 
+export const FREEMIUM_MODULES = ['reloj', 'rrhh', 'operativo'] as const;
+export const PRO_MODULES = [
+  'reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'portal', 'documentos',
+  'academia', 'facturacion', 'lft', 'organizacion',
+] as const;
+export const PLAN_FEATURES = [
+  'store_opening', 'keys_control', 'roll_call', 'emergency_open', 'door_amnesty',
+  'store_closed_report', 'gps_validation', 'face_validation', 'lates_academy_block',
+  'enable_ley_silla', 'meal_timers', 'meal_reservation', 'routines_management',
+  'checklists_validation', 'voice_commands', 'voice_assistant', 'custom_logo',
+  'system_backups',
+] as const;
+
+const simulatedCapabilities = (tier: 'freemium' | 'pro' | 'enterprise') => ({
+  allowedModules: [...(tier === 'freemium' ? FREEMIUM_MODULES : PRO_MODULES)],
+  allowedFeatures: tier === 'freemium' ? [] : [...PLAN_FEATURES],
+});
+
 interface AppState {
   isLoadingDB: boolean;
   globalUsers: User[];
@@ -148,12 +166,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   reservedMeals: {},
   userReservedMealSlots: {},
   hasReservedMeal: {},
-  allowedModules: (typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override') === 'freemium') 
-    ? ['reloj', 'rrhh', 'operativo'] 
-    : ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'],
-  allowedFeatures: (typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override') === 'freemium') 
-    ? [] 
-    : ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands', 'store_opening', 'meal_reservation', 'enable_ley_silla'],
+  ...simulatedCapabilities(
+    typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override') === 'freemium'
+      ? 'freemium'
+      : 'pro'
+  ),
   // 2026-07-26 (auditoría en vivo, hallazgo grave): esto tenía `|| 'pro'` como valor por defecto.
   // `simulatedTierOverride` es una herramienta de QA (Matrix) y `activeTier` se resuelve como
   // `simulatedTierOverride || currentTier` — es decir, con el default en 'pro' la simulación estaba
@@ -234,15 +251,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     set({ simulatedTierOverride: tier });
     if (tier) {
-      set({ currentTier: tier });
-      if (tier === 'freemium') {
-        set({ allowedModules: ['reloj', 'rrhh', 'operativo'], allowedFeatures: [] });
-      } else if (tier === 'pro' || tier === 'enterprise') {
-        set({ 
-          allowedModules: ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'], 
-          allowedFeatures: ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands', 'store_opening', 'meal_reservation', 'enable_ley_silla'] 
-        });
-      }
+      set({ currentTier: tier, ...simulatedCapabilities(tier) });
     } else {
       get().fetchState();
     }
@@ -541,15 +550,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (!state.isSandboxMode) {
           const tierOverride = get().simulatedTierOverride;
           if (tierOverride) {
-            set({ currentTier: tierOverride });
-            if (tierOverride === 'freemium') {
-              set({ allowedModules: ['reloj', 'rrhh', 'operativo'], allowedFeatures: [] });
-            } else if (tierOverride === 'pro' || tierOverride === 'enterprise') {
-              set({ 
-                allowedModules: ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'], 
-                allowedFeatures: ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands', 'store_opening', 'meal_reservation', 'enable_ley_silla'] 
-              });
-            }
+            set({ currentTier: tierOverride, ...simulatedCapabilities(tierOverride) });
           } else {
             if (get().currentUser?.tenant_id === 1) {
               set({ currentTier: 'enterprise' });

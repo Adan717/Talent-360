@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Briefcase, X, QrCode, Image, ListPlus, Trash2, HelpCircle } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { confirmAction, notify } from '../lib/appDialogs';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
 
 export default function GestorVacantes() {
@@ -102,20 +103,20 @@ export default function GestorVacantes() {
       fetchInitialData();
     } catch (error) {
       console.error("Error toggling status", error);
-      alert("No se pudo cambiar el estado de la vacante. Vuelve a intentarlo.");
+      notify("No se pudo cambiar el estado de la vacante. Vuelve a intentarlo.");
     }
   };
 
   /** Eliminar una vacante. El método existía en el servidor desde el principio pero NUNCA tuvo
    *  ruta: no había forma de quitar del portal una posición ya cubierta. */
   const eliminarVacante = async (v: any) => {
-    if (!window.confirm(`¿Eliminar la vacante "${v.title}"? Dejará de aparecer en la bolsa de trabajo. Las postulaciones que ya recibiste se conservan.`)) return;
+    if (!await confirmAction(`¿Eliminar la vacante "${v.title}"? Dejará de aparecer en la bolsa de trabajo. Las postulaciones que ya recibiste se conservan.`, { title: 'Eliminar vacante', confirmLabel: 'Eliminar', tone: 'error' })) return;
     try {
       await axiosInstance.delete(`/admin/vacancies/${v.id}`);
       fetchInitialData();
     } catch (error) {
       console.error("Error deleting vacancy", error);
-      alert("No se pudo eliminar la vacante.");
+      notify("No se pudo eliminar la vacante.");
     }
   };
 
@@ -166,7 +167,7 @@ export default function GestorVacantes() {
       fetchInitialData();
     } catch (error) {
       console.error("Error saving vacancy", error);
-      alert("Hubo un error al guardar la vacante.");
+      notify("Hubo un error al guardar la vacante.");
     }
   };
 
@@ -258,7 +259,7 @@ export default function GestorVacantes() {
           <div key={v.id} className="bg-white border border-border rounded-2xl p-4 shadow-sm relative">
             <div className="flex justify-between items-start gap-4 mb-3">
               <div>
-                <span className="inline-block bg-page text-text-2 px-2 py-0.5 rounded text-[10px] font-bold border border-border">
+                <span className="inline-block bg-page text-text-2 px-2 py-0.5 rounded text-xs font-bold border border-border">
                   {v.role_name}
                 </span>
                 <h4 className="font-bold text-text-1 text-sm mt-1">{v.title}</h4>
@@ -466,12 +467,12 @@ export default function GestorVacantes() {
                         <div className="h-full w-full flex items-center justify-center text-slate-400 text-xs italic">Sin imagen</div>
                       )}
                       <div className="absolute inset-0 bg-black/40 flex items-end p-2.5">
-                        <span className="text-[10px] font-bold text-white uppercase bg-accent/80 backdrop-blur-sm px-2 py-0.5 rounded">Vista Previa</span>
+                        <span className="text-xs font-bold text-white uppercase bg-accent/80 backdrop-blur-sm px-2 py-0.5 rounded">Vista Previa</span>
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-extrabold text-text-3 uppercase mb-1 ml-1">URL de la Imagen (Opcional)</label>
+                      <label className="block text-xs font-extrabold text-text-3 uppercase mb-1 ml-1">URL de la Imagen (Opcional)</label>
                       <input
                         type="url"
                         className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus-visible:ring-focus-ring/20 focus:border-accent transition-all font-medium"
@@ -483,7 +484,7 @@ export default function GestorVacantes() {
 
                     {/* Galería de presets prediseñados */}
                     <div>
-                      <label className="block text-[10px] font-extrabold text-text-3 uppercase mb-2 ml-1">Galería Prediseñada (Selección Rápida)</label>
+                      <label className="block text-xs font-extrabold text-text-3 uppercase mb-2 ml-1">Galería Prediseñada (Selección Rápida)</label>
                       <div className="grid grid-cols-3 gap-2">
                         {PRESET_IMAGES.map((img, idx) => (
                           <button
@@ -495,7 +496,7 @@ export default function GestorVacantes() {
                           >
                             <img src={img.url} alt={img.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                             <div className="absolute inset-0 bg-black/50 hover:bg-black/30 transition-all flex items-center justify-center p-1">
-                              <span className="text-[8px] font-extrabold text-white text-center leading-tight uppercase truncate">{img.name.split(' ')[0]}</span>
+                              <span className="text-xs font-extrabold text-white text-center leading-tight uppercase truncate">{img.name.split(' ')[0]}</span>
                             </div>
                           </button>
                         ))}
@@ -545,7 +546,7 @@ export default function GestorVacantes() {
                  <div className="bg-page p-4 rounded-2xl border border-border w-full flex justify-center mb-2">
                     <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${getQrOrigin(qrIpOverride)}/vacantes/${portalSlug}`)}`} alt="QR de la bolsa de trabajo" className="w-48 h-48 rounded-xl shadow-sm mix-blend-multiply" />
                  </div>
-                 <p className="text-[10px] text-slate-400 font-mono break-all mb-4">{`${getQrOrigin(qrIpOverride)}/vacantes/${portalSlug}`}</p>
+                 <p className="text-xs text-slate-400 font-mono break-all mb-4">{`${getQrOrigin(qrIpOverride)}/vacantes/${portalSlug}`}</p>
                </>
              ) : (
                <div className="bg-warning-bg border border-warning-text/20 rounded-2xl p-4 w-full text-left mb-4">
@@ -555,8 +556,8 @@ export default function GestorVacantes() {
 
              {isLocalhost() && (
                 <div className="p-3 bg-warning-bg border border-warning-text/80 rounded-xl text-left w-full mb-4">
-                  <span className="text-[10px] font-bold text-warning-text uppercase block mb-1"> Desarrollo Local: Configuración de QR</span>
-                  <p className="text-[9px] text-warning-text leading-relaxed mb-2">
+                  <span className="text-xs font-bold text-warning-text uppercase block mb-1"> Desarrollo Local: Configuración de QR</span>
+                  <p className="text-xs text-warning-text leading-relaxed mb-2">
                     Ingresa la IP local de tu PC (ej: <code className="bg-warning-bg px-1 rounded font-mono">192.168.1.75:5173</code>) para que tu celular pueda acceder:
                   </p>
                   <input

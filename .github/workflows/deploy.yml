@@ -61,7 +61,10 @@ jobs:
           sed -i 's/DB_CONNECTION=pgsql/DB_CONNECTION=pgsql/' .env
           sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
           sed -i 's/DB_DATABASE=.*/DB_DATABASE=talent360_test/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=postgres/' .env
           sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=testing/' .env
+          sed -i 's/DB_MIGRACIONES_USERNAME=.*/DB_MIGRACIONES_USERNAME=postgres/' .env
+          sed -i 's/DB_MIGRACIONES_PASSWORD=.*/DB_MIGRACIONES_PASSWORD=testing/' .env
           php artisan key:generate
 
       - name: 🗄️ Ejecutar migraciones de prueba

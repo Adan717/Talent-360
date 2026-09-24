@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from '../lib/axios';
-import { clearClockLocalCache } from '../lib/clockCache';
+import { limpiarDispositivo } from '../lib/sesion';
 
 export function PasswordRecovery({ reset = false }: { reset?: boolean }) {
   const [params] = useSearchParams();
@@ -32,7 +32,7 @@ export function PasswordRecovery({ reset = false }: { reset?: boolean }) {
         try {
           const { data } = await axios.post(reset ? '/reset-password' : '/forgot-password', reset ? { email: email.trim().toLowerCase(), token, password, password_confirmation: confirmation } : { email: email.trim().toLowerCase() });
           setMessage(data.message); setDone(true);
-          if (reset) { localStorage.removeItem('talent_auth_token'); localStorage.removeItem('platform_admin_token'); clearClockLocalCache(); }
+          if (reset) limpiarDispositivo();
         } catch (e: any) { setError(e.response?.data?.message || 'No pudimos procesar la solicitud. Intenta de nuevo.'); }
         finally { setBusy(false); }
       }}>

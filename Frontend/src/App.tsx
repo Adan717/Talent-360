@@ -10,7 +10,7 @@ import {
 import { useAppStore } from './store/useAppStore';
 import { usePreShiftAlarm } from './hooks/usePreShiftAlarm';
 import axiosInstance from './lib/axios';
-import { clearClockLocalCache } from './lib/clockCache';
+import { cerrarSesion } from './lib/sesion';
 
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { ColorMap, moduleTheme } from './design/theme';
@@ -214,13 +214,7 @@ function MainLayout() {
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('talent_auth_token');
-    // Hallazgo 4 auditoría reloj checador (2026-07-22): limpiar caché personal del reloj
-    // para evitar fuga de datos del usuario saliente en dispositivos compartidos de tienda.
-    clearClockLocalCache();
-    window.location.href = '/login';
-  };
+  const handleLogout = cerrarSesion;
 
   const { currentTier, currentUser, systemSettings, updateSetting, simulatedTierOverride, isLoadingDB, avisoDeCobranza } = useAppStore();
 
@@ -847,6 +841,11 @@ function App() {
     // Matrix QA ya no forma parte del producto. Elimina cualquier sesión residual guardada
     // por una versión anterior antes de que fetchState construya peticiones de sincronización.
     localStorage.removeItem('matrix_active_sim_session_id');
+    // Restos de versiones anteriores que hacían ver a cada dispositivo algo distinto (reporte
+    // del jefe, 2026-09-23): el plan simulado que ya nada escribe, y la copia de la API que el
+    // service worker guardaba sin distinguir cuenta (hoy vive en otra caché, separada por token).
+    localStorage.removeItem('qa_simulated_tier_override');
+    if (typeof caches !== 'undefined') caches.delete('talent360-api-cache').catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -930,11 +929,7 @@ function App() {
           }
           fetchState().catch(() => { /* la pantalla ya se levantó; el estado se rehidrata solo */ });
         }}
-        onSalir={() => {
-          localStorage.removeItem('talent_auth_token');
-          clearClockLocalCache();
-          window.location.href = '/login';
-        }}
+        onSalir={cerrarSesion}
       />
     );
   }

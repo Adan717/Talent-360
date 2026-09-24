@@ -156,7 +156,7 @@ class AuthController extends Controller
      * §43: cookie httpOnly del token de auth. `$minutes = null` → un año (login normal);
      * para el kiosco se pasan 15 minutos, para que la cookie caduque junto con el token.
      */
-    private function makeAuthCookie(string $token, ?int $minutes = null)
+    public static function makeAuthCookie(string $token, ?int $minutes = null)
     {
         $minutes = $minutes ?? 60 * 24 * 365; // "indefinido" para login normal
         $secure = app()->isProduction();

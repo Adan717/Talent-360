@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
+import { cerrarSesion } from '../lib/sesion';
 import { SaaSPlatformBilling } from './SaaSPlatformBilling';
 import { CLOCK_FEATURE_TAGS_MATRIX } from './reloj/logic/clockFeatureTags';
 import { slugParaCorreo } from '../lib/emailSlug';
@@ -669,10 +670,7 @@ export const SaaSPlatformAdmin = () => {
     return clean;
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('talent_auth_token');
-    window.location.href = '/login';
-  };
+  const handleLogout = cerrarSesion;
 
   const fetchGlobalData = async (search = '', plan = 'all', status = 'all') => {
     setIsLoading(true);

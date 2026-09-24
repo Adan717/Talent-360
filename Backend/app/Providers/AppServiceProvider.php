@@ -63,6 +63,16 @@ class AppServiceProvider extends ServiceProvider
                     return false;
                 }
 
+                // Reporte del jefe (2026-09-23): los tokens no caducaban nunca (`sanctum.expiration`
+                // en null), así que un celular donde alguien entró una vez seguía abierto con esa
+                // cuenta meses después. Caducan tras 30 días SIN USO, no desde que se crearon: quien
+                // ficha a diario no vuelve a ver el login. Sanctum renueva `last_used_at` en cada
+                // petición válida.
+                $ultimoUso = $accessToken->last_used_at ?? $accessToken->created_at;
+                if ($ultimoUso && $ultimoUso->lt(now()->subDays(30))) {
+                    return false;
+                }
+
                 return $isValid;
             }
         );

@@ -166,18 +166,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   reservedMeals: {},
   userReservedMealSlots: {},
   hasReservedMeal: {},
-  ...simulatedCapabilities(
-    typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override') === 'freemium'
-      ? 'freemium'
-      : 'pro'
-  ),
+  ...simulatedCapabilities('pro'),
   // 2026-07-26 (auditoría en vivo, hallazgo grave): esto tenía `|| 'pro'` como valor por defecto.
   // `simulatedTierOverride` es una herramienta de QA (Matrix) y `activeTier` se resuelve como
   // `simulatedTierOverride || currentTier` — es decir, con el default en 'pro' la simulación estaba
   // ENCENDIDA para todos, siempre, y el plan real del tenant nunca se usaba: una empresa Enterprise
   // que paga quedaba degradada a las funciones de Pro, y una freemium quedaba ascendida a Pro.
   // El valor correcto en ausencia de simulación es `null` (= "sin override, usa el plan real").
-  simulatedTierOverride: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || null,
+  // 2026-09-23: ya no se lee de localStorage — un valor olvidado ahí hacía que ESE dispositivo
+  // mostrara otro plan que los demás con la misma cuenta (reporte del jefe).
+  simulatedTierOverride: null,
   punctualityStatus: null,
   misMensajesPrivados: [],
 
@@ -205,7 +203,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Arrancar cerrado es importante: antes de que /me y /sync/state hidraten el tenant no se
   // deben encender módulos de pago ni presentar la cuenta como Pro. En unos milisegundos el
   // backend reemplaza este valor por el plan real; mientras tanto Freemium es el fallback seguro.
-  currentTier: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || 'freemium',
+  currentTier: 'freemium',
   systemSettings: {
     leySillaConfig: { enabled: true, consecutiveMinutes: 120, breakMinutes: 15 },
     featureFlags: { 
@@ -247,11 +245,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   setSimulatedTierOverride: (tier) => {
-    if (tier) {
-      localStorage.setItem('qa_simulated_tier_override', tier);
-    } else {
-      localStorage.removeItem('qa_simulated_tier_override');
-    }
     set({ simulatedTierOverride: tier });
     if (tier) {
       set({ currentTier: tier, ...simulatedCapabilities(tier) });

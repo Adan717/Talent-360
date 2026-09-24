@@ -10,7 +10,7 @@ import Evaluacion360 from './Evaluacion360';
 import NominaColaborador from './NominaColaborador';
 import axiosInstance from '../../lib/axios';
 import SolicitarAutorizacionButton from './SolicitarAutorizacionButton';
-import { clearClockLocalCache } from '../../lib/clockCache';
+import { cerrarSesion } from '../../lib/sesion';
 import { confirmAction } from '../../lib/appDialogs';
 import { TaskRunner } from '../tareas_rutinas/TaskRunner';
 import type { TaskRunnerHandle } from '../tareas_rutinas/TaskRunner';
@@ -1930,7 +1930,7 @@ export default function RelojVisual({
       setPwaInstallPrompt(e);
 
       const isInstalled = localStorage.getItem('pwa_installed') === 'true';
-      const isDismissed = sessionStorage.getItem('pwa_dismissed') === 'true';
+      const isDismissed = localStorage.getItem('pwa_dismissed') === 'true';
       if (!isInstalled && !isDismissed) {
         setShowPwaBanner(true);
       }
@@ -1948,7 +1948,7 @@ export default function RelojVisual({
     }
 
     const isInstalled = localStorage.getItem('pwa_installed') === 'true';
-    const isDismissed = sessionStorage.getItem('pwa_dismissed') === 'true';
+    const isDismissed = localStorage.getItem('pwa_dismissed') === 'true';
     if (isInstalled || isDismissed) {
       setShowPwaBanner(false);
       return;
@@ -2513,11 +2513,7 @@ export default function RelojVisual({
             </div>
 
             <button
-              onClick={() => {
-                localStorage.removeItem('talent_auth_token');
-                clearClockLocalCache();
-                window.location.href = '/login';
-              }}
+              onClick={cerrarSesion}
               className="w-full bg-danger-text hover:bg-danger-text text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider text-center mt-2 focus:outline-none transition-colors shadow-lg shadow-danger-text/10"
             >
                Cerrar Sesión del Dispositivo
@@ -3337,7 +3333,9 @@ export default function RelojVisual({
             <button
               onClick={() => {
                 setShowPwaBanner(false);
-                sessionStorage.setItem('pwa_dismissed', 'true');
+                // En localStorage, no sessionStorage: "Cerrar" se respeta en este dispositivo.
+                // Antes el aviso volvía en cada visita y se leía como que obligaba a descargar.
+                localStorage.setItem('pwa_dismissed', 'true');
               }}
               className="px-2 py-1 rounded-md text-xs font-bold text-slate-400 hover:text-text-2 hover:bg-page dark:hover:bg-slate-800"
             >
@@ -3529,13 +3527,7 @@ export default function RelojVisual({
 
                           <div className="border-t border-border my-1 sm:my-1.5"></div>
                           <button
-                            onClick={() => {
-                              localStorage.removeItem('talent_auth_token');
-                              clearClockLocalCache();
-                              useAppStore.getState().setCurrentUser(null as any);
-                              setIsProfileMenuOpen(false);
-                              window.location.href = '/login';
-                            }}
+                            onClick={() => { setIsProfileMenuOpen(false); cerrarSesion(); }}
                             className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold text-danger-text hover:bg-danger-bg transition-colors flex items-center gap-2 focus:outline-none"
                           >
                             <Lock size={14} className="text-danger-text" />
@@ -6881,13 +6873,7 @@ export default function RelojVisual({
                   <div className="border-t border-border my-1 sm:my-1.5"></div>
 
                   <button
-                    onClick={() => {
-                      localStorage.removeItem('talent_auth_token');
-                      clearClockLocalCache();
-                      useAppStore.getState().setCurrentUser(null as any);
-                      setShowProfileMenu(false);
-                      window.location.href = '/login';
-                    }}
+                    onClick={() => { setShowProfileMenu(false); cerrarSesion(); }}
                     className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold text-danger-text hover:bg-danger-bg transition-colors flex items-center gap-2 focus:outline-none bg-transparent border-none cursor-pointer"
                   >
                     <Lock size={14} className="text-danger-text" />
@@ -7163,13 +7149,7 @@ export default function RelojVisual({
                   </button>
 
                   <button
-                    onClick={() => {
-                      localStorage.removeItem('talent_auth_token');
-                      clearClockLocalCache();
-                      useAppStore.getState().setCurrentUser(null as any);
-                      setShowSettingsModal(false);
-                      window.location.href = '/login';
-                    }}
+                    onClick={() => { setShowSettingsModal(false); cerrarSesion(); }}
                     className="w-full bg-danger-text hover:bg-danger-text text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-md transition-all active:scale-95 border-none outline-none mt-1 cursor-pointer"
                   >
                     Cerrar Sesión

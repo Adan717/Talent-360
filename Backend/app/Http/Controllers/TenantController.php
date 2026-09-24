@@ -172,7 +172,7 @@ class TenantController extends Controller
                 'tenant' => $tenant,
                 'user' => $admin,
                 'token' => $token
-            ], 201);
+            ], 201)->cookie(AuthController::makeAuthCookie($token));
 
         } catch (\Exception $e) {
             DB::rollBack();

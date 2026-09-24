@@ -89,4 +89,22 @@ class AuthCookieTest extends TestCase
         // La cookie queda expirada (Laravel la marca con expiración en el pasado).
         $response->assertCookieExpired('talent_auth_token');
     }
+
+    public function test_un_token_sin_uso_por_mas_de_30_dias_ya_no_autentica(): void
+    {
+        // Reporte del jefe (2026-09-23): una sesión olvidada en un celular seguía abierta para
+        // siempre. Caduca por inactividad, no por antigüedad: quien la usa a diario sigue dentro.
+        $user = User::factory()->create(['role' => 'admin']);
+        DB::table('users')->where('id', $user->id)->update(['tenant_id' => 1]);
+
+        $olvidado = $user->createToken('auth_token');
+        $olvidado->accessToken->forceFill(['last_used_at' => now()->subDays(31)])->save();
+        $this->withHeader('Authorization', "Bearer {$olvidado->plainTextToken}")
+            ->getJson('/api/v1/me')->assertStatus(401);
+
+        $enUso = $user->createToken('auth_token');
+        $enUso->accessToken->forceFill(['created_at' => now()->subYear(), 'last_used_at' => now()->subDays(29)])->save();
+        $this->withHeader('Authorization', "Bearer {$enUso->plainTextToken}")
+            ->getJson('/api/v1/me')->assertStatus(200);
+    }
 }

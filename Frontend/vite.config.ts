@@ -15,13 +15,29 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            // API calls — Network First (intenta red, cae en caché si offline)
-            urlPattern: /^https?:\/\/.*\/api\//i,
+            // API — Network First: la copia sirve para abrir el reloj sin señal. Reporte del jefe
+            // (2026-09-23): se guardaba con la URL como única llave —un celular podía mostrarle a
+            // una cuenta lo que guardó otra— y con 10 s de red lenta entregaba datos de hasta un
+            // día antes. Ahora: sólo peticiones con cuenta, llave = URL + huella del token, y la
+            // copia sólo se usa cuando la red FALLA. Al cerrar sesión se borra (src/lib/sesion.ts).
+            urlPattern: ({ url, request }) => url.pathname.startsWith('/api/') && request.headers.has('Authorization'),
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'talent360-api-cache',
+              cacheName: 'talent360-api-por-cuenta', // = API_CACHE de src/lib/sesion.ts
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 }, // 24h
-              networkTimeoutSeconds: 10,
+              plugins: [
+                {
+                  // Se copia tal cual dentro del sw.js: no puede usar nada de fuera de la función.
+                  cacheKeyWillBeUsed: async ({ request }) => {
+                    const token = new TextEncoder().encode(request.headers.get('Authorization') || '');
+                    const huella = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', token)))
+                      .map(b => b.toString(16).padStart(2, '0')).join('');
+                    const url = new URL(request.url);
+                    url.searchParams.set('__cuenta', huella);
+                    return url.href;
+                  },
+                },
+              ],
             },
           },
           {

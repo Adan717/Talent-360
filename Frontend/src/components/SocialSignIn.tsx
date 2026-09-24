@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
 import axios from '../lib/axios';
-import { clearClockLocalCache } from '../lib/clockCache';
+import { limpiarDispositivo } from '../lib/sesion';
 
 type Props = { onSuccess: (data: any) => void; onError: (message: string) => void };
 const scripts = new Map<string, Promise<void>>();
@@ -49,9 +49,7 @@ export function SocialSignIn({ onSuccess, onError }: Props) {
         try {
           if (provider === 'apple' && response.authorization?.state !== challenge.state) throw new Error('El intento de Apple no coincide.');
           // Una sesión anterior no debe mezclarse con la identidad elegida ahora.
-          localStorage.removeItem('talent_auth_token');
-          localStorage.removeItem('platform_admin_token');
-          clearClockLocalCache();
+          limpiarDispositivo();
           const { data } = await axios.post('/login/social', {
             provider, state: challenge.state,
             id_token: provider === 'google' ? response.credential : response.authorization.id_token,

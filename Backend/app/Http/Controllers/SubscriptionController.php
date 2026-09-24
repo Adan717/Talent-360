@@ -248,13 +248,15 @@ class SubscriptionController extends Controller
             try {
                 $tenant = $this->provisionTenant($payload, $regId);
                 $token = $tenant['admin']->createToken('auth_token')->plainTextToken;
+                // La cookie también: si no, en un navegador con otra sesión previa la cookie
+                // seguía siendo de la cuenta anterior mientras la pantalla ya era la nueva.
                 return response()->json([
                     'status' => 'success',
                     'provisioned' => true,
                     'tenant' => $tenant['tenant'],
                     'user' => $tenant['admin'],
                     'token' => $token
-                ]);
+                ])->cookie(AuthController::makeAuthCookie($token));
             } catch (\Illuminate\Validation\ValidationException $e) {
                 throw $e;
             } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {

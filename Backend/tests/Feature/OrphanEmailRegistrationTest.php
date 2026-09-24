@@ -134,6 +134,9 @@ class OrphanEmailRegistrationTest extends TestCase
 
         $registerResponse->assertStatus(200);
         $registerResponse->assertJsonPath('provisioned', true);
+        // La cookie de sesión pasa a la cuenta nueva: si no, un navegador con otra sesión previa
+        // conservaba la cookie de la cuenta anterior (reporte del jefe, 2026-09-23).
+        $this->assertSame($registerResponse->json('token'), $registerResponse->getCookie('talent_auth_token', false)?->getValue());
 
         $this->assertDatabaseHas('tenants', [
             'subdomain' => 'dashcomputer',

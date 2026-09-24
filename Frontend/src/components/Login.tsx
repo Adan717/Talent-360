@@ -5,7 +5,7 @@ import { SocialSignIn } from './SocialSignIn';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
 import { LegalModal, type LegalDocType } from './LegalModal';
-import { clearClockLocalCache } from '../lib/clockCache';
+import { limpiarDispositivo } from '../lib/sesion';
 import { TalentLogo } from './ui/TalentLogo';
 
 export const Login = () => {
@@ -128,9 +128,7 @@ export const Login = () => {
     // Así, si el login falla, la persona queda fuera —no dentro de la cuenta anterior— y
     // si tiene éxito, no queda ningún rastro del usuario que estaba antes (mismo criterio
     // que handleLogout: el caché operativo del reloj también se limpia).
-    localStorage.removeItem('talent_auth_token');
-    localStorage.removeItem('platform_admin_token');
-    clearClockLocalCache();
+    limpiarDispositivo();
 
     try {
       const response = await axiosInstance.post('/login', { email, password });

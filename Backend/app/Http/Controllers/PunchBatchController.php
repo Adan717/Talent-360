@@ -97,6 +97,16 @@ class PunchBatchController extends Controller
                 // El stamp de idempotencia: el propio client_stamp, o el HMAC (único por ponche).
                 $stamp = trim((string) ($p['client_stamp'] ?? $p['offline_stamp'] ?? ''));
 
+                // Reporte del jefe (2026-09-23): un ponche de OTRA cuenta no se procesa con esta
+                // sesión (B1), pero tampoco es un rechazo definitivo. Antes caía en 'rejected' y el
+                // cliente lo BORRABA: si alguien fichaba sin señal y otra persona entraba después en
+                // ese celular, su asistencia se perdía. 'ajeno' no es success/duplicate/rejected, así
+                // que el cliente lo conserva en la cola hasta que su dueño vuelva a entrar.
+                if (isset($p['user_id']) && (int) $p['user_id'] !== (int) $actor->id) {
+                    $results[] = ['index' => $index, 'client_stamp' => $stamp ?: null, 'status' => 'ajeno', 'success' => false, 'reason' => 'not_own'];
+                    continue;
+                }
+
                 // (r2b) Sin credencial no hay idempotencia (todos los stampless colapsarían al
                 // mismo '' y se pisarían) ni firma posible: se RECHAZA este ítem, no el lote. Es
                 // el cierre de la píldora venenosa por el otro extremo.

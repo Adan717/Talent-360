@@ -1,17 +1,8 @@
 import { useState, useEffect } from 'react';
 import axiosInstance from '../../../lib/axios';
-import { offlineDb } from '../../../lib/offlineDb';
+import { offlineDb, subirFichajesPendientes } from '../../../lib/offlineDb';
 import { useAppStore } from '../../../store/useAppStore';
 import { resolveStoreGeofenceConfig } from '../logic/geofence';
-
-// Espejo de Backend/app/Services/ClockService::ALLOWED_TYPES (más temp_exit_start/temp_exit_end,
-// ya agregados por backend). Se usa para filtrar defensivamente antes de mandar el batch: si un
-// solo ítem del array tiene un `type` no reconocido, Laravel rechaza la petición COMPLETA con 422
-// (Rule::in aplica a punches.*.type), lo que bloquearía también los ítems legítimos del mismo lote.
-const PUNCH_BATCH_ALLOWED_TYPES = [
-  'check_in', 'check_out', 'break_start', 'break_end',
-  'meal_start', 'meal_end', 'waiting', 'temp_exit_start', 'temp_exit_end'
-];
 
 // NUEVO: cola offline dedicada para declaraciones de contingencia, separada de la cola de punches
 // de offlineDb (ver comentario en syncOfflineQueue sobre por qué no se pueden mezclar).
@@ -221,61 +212,8 @@ export function useGeoAndOfflineSync({
       return;
     }
 
-    // Filtra ítems con type desconocido ANTES de construir el batch (ver comentario arriba).
-    // Se quedan en la cola sin enviarse — no se pierden, pero tampoco bloquean al resto.
-    const validItems = currentQueue.filter(item => PUNCH_BATCH_ALLOWED_TYPES.includes(item.type));
-    const skippedCount = currentQueue.length - validItems.length;
-    if (skippedCount > 0) {
-      console.warn(`${skippedCount} ítem(s) de la cola offline tienen un type no reconocido por punch-batch y se omitieron de este intento de sincronización.`);
-    }
-    if (validItems.length === 0) return;
-
     try {
-      const res = await axiosInstance.post('/clock/punch-batch', {
-        // (2026-08-28 r2b) `offline_stamp` se envía SÓLO si existe. Antes iba `|| ''`: un string
-        // vacío tumbaba TODO el lote con 422 (píldora venenosa) y congelaba la cola. Un ítem sin
-        // firma (encolado sin secreto en caché) ya no puede validarse — el servidor lo rechaza
-        // como 'missing_stamp' y abajo se descarta con aviso, en vez de reintentarse por siempre.
-        punches: validItems.map(item => {
-          const punch: Record<string, unknown> = {
-            user_id: item.userId,
-            type: item.type,
-            time: item.time,
-            details: { note: item.details, gps: item.gps },
-            gps: item.gps,
-            client_timestamp: item.clientTimestamp || new Date(item.timestamp || Date.now()).toISOString(),
-          };
-          if (item.offlineStamp) punch.offline_stamp = item.offlineStamp;
-          return punch;
-        })
-      });
-
-      // El servidor responde POR ÍTEM. Un ítem con resultado DEFINITIVO sale de la cola:
-      //  · success   → grabado.
-      //  · duplicate → ya estaba en el servidor (una respuesta previa se perdió tras grabar).
-      //  · rejected  → rechazo PERMANENTE (type inválido, vencido >7d, firma/credencial mala);
-      //                reintentarlo es inútil y mantenía la cola llena para siempre con una
-      //                alerta falsa de "firma inválida" en cada evento 'online'.
-      // Sólo los ítems SIN resultado (fallo de red del lote) se quedan para el próximo intento.
-      const results: any[] = res.data?.results || [];
-      const byIndex = new Map<number, any>(results.map(r => [r.index, r]));
-
-      let syncedCount = 0;
-      let rejectedCount = 0;
-      for (let i = 0; i < validItems.length; i++) {
-        const r = byIndex.get(i);
-        if (!r || validItems[i].id === undefined) continue;
-        if (r.success) {
-          await offlineDb.deletePunch(validItems[i].id!);
-          syncedCount++;
-        } else if (r.status === 'duplicate') {
-          await offlineDb.deletePunch(validItems[i].id!); // ya registrado en el servidor
-        } else if (r.status === 'rejected') {
-          await offlineDb.deletePunch(validItems[i].id!);
-          rejectedCount++;
-          console.warn('Ponche offline rechazado permanentemente y descartado de la cola:', r);
-        }
-      }
+      const { subidos: syncedCount, rechazados: rejectedCount } = await subirFichajesPendientes();
 
       const remaining = await offlineDb.getPunches();
       setSyncQueue(remaining);

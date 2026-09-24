@@ -185,7 +185,8 @@ class PunchBatchTest extends TestCase
         ]);
 
         $res->assertStatus(200);
-        $this->assertSame('rejected', $res->json('results.0.status'));
+        // 'ajeno', no 'rejected': el cliente lo conserva para su dueño (reporte del jefe, 2026-09-23).
+        $this->assertSame('ajeno', $res->json('results.0.status'));
         $this->assertSame(0, DB::table('time_entries')->where('user_id', $otroUser->id)->count());
     }
 
@@ -204,8 +205,15 @@ class PunchBatchTest extends TestCase
         ]);
 
         $res->assertStatus(200);
-        $this->assertSame('rejected', $res->json('results.0.status'));
+        $this->assertSame('ajeno', $res->json('results.0.status'));
         $this->assertSame(0, DB::table('time_entries')->where('user_id', $colega->id)->count());
+
+        // Y cuando su dueño entra en ese mismo celular, el MISMO ponche sí se registra: por eso
+        // no podía ser un rechazo definitivo (antes el cliente lo borraba de la cola).
+        $this->actingAs($colega)->postJson('/api/v1/clock/punch-batch', [
+            'punches' => [$this->punch(['user_id' => $colega->id])],
+        ])->assertStatus(200);
+        $this->assertSame(1, DB::table('time_entries')->where('user_id', $colega->id)->count());
     }
 
     /**

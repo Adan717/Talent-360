@@ -114,6 +114,15 @@ quedaron caducados.
   la causa de fondo era la sesión eterna (JEFE-02).
 - JEFE-05: el plan simulado ya no se lee ni se escribe en `localStorage`; al abrir la app se borra el valor viejo.
 
+**JEFE-06 (P1, segundo mensaje del jefe, 2026-09-23): se perdían fichajes hechos sin conexión.** Si alguien
+fichaba sin señal y otra persona entraba después en ese celular, la cola se subía con la sesión
+nueva, el servidor la rechazaba ("sólo tus propios ponches") y el cliente la BORRABA como rechazo
+definitivo. Además, cerrar sesión no revisaba lo pendiente. Corregido: el servidor responde `ajeno`
+(no `rejected`), así que cualquier cliente, incluso uno con la versión vieja en caché, lo conserva hasta que
+su dueño entre; cerrar sesión intenta subir lo pendiente y, si queda algo propio, pregunta antes de
+salir. La subida vive en `subirFichajesPendientes()` (`src/lib/offlineDb.ts`). Las tareas no tienen
+cola sin conexión en esta versión: necesitan red.
+
 Siguiente paso: reproducirlo en dos navegadores con cuentas QA y revisar en el servidor los tokens
 vivos de la cuenta de Adán (`personal_access_tokens`: fecha de creación y último uso) para saber cuándo quedó
 abierta en el celular del jefe. Mitigación inmediata en ese celular: borrar los datos del sitio

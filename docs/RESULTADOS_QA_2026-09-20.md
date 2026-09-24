@@ -96,7 +96,11 @@ Sin reproducir todavía. Causas **verificadas leyendo el código de `0a07640` y 
 | JEFE-04 | P2 | Al abrir la página en un celular con sesión viva no se dice qué cuenta ni qué empresa quedó abierta; en el Reloj aparece a los 1.5 s el banner "Instalar Talent 360 App", que se lee como si obligara a descargar. No es una redirección: es el banner PWA de `RelojVisual`. | `RelojVisual.tsx:1941-1960` (temporizador), `:3332` (texto). |
 | JEFE-05 | P3 | `qa_simulated_tier_override` en `localStorage` impone el plan mostrado en ese dispositivo (`activeTier = simulatedTierOverride \|\| currentTier`). Ya nada en la interfaz lo escribe, pero nadie borra un valor viejo: un equipo que lo usó en pruebas anteriores muestra otro plan que los demás. | `useAppStore.ts:180, 208`; la limpieza de `App.tsx:849` sólo quita `matrix_active_sim_session_id`. |
 
-**Corrección (2026-09-23), pendiente de despliegue y reprueba:**
+**Corrección `eb0302c`, DESPLEGADA el 2026-09-23 (respaldo previo `20260924_031305`); falta la
+reprueba con dos dispositivos.** Comprobado en producción: el `sw.js` vivo usa `talent360-api-por-cuenta`;
+la misma URL pedida con dos tokens distintos quedó en dos entradas separadas y la petición sin token
+no se guardó. Al desplegar, 128 de los 209 tokens del servidor llevaban más de 30 días sin uso y
+quedaron caducados.
 - JEFE-01: la copia de la API se guarda en otra caché (`talent360-api-por-cuenta`), sólo para
   peticiones con token, con la huella del token dentro de la llave, y únicamente se usa cuando la red
   falla (se quitó el corte de 10 s). La caché vieja se borra al abrir la app. Se conserva para que el
